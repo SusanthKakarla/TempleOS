@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { getAdminById } from "@/lib/db/admin-users";
+import type { AdminUser } from "@/types/db";
 
 const COOKIE_NAME = "templeos_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -73,4 +75,21 @@ export async function getSessionAdmin(): Promise<SessionPayload | null> {
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifySessionToken(token);
+}
+
+/**
+ * Live authorization check for Super Admin-only routes/pages. Deliberately
+ * re-reads the admin's current role from the database rather than trusting
+ * whatever role a long-lived (30-day) session cookie might have baked in —
+ * a role change or deactivation must take effect immediately, not after the
+ * cookie expires.
+ */
+export async function requireSuperAdmin(): Promise<AdminUser | null> {
+  const session = await getSessionAdmin();
+  if (!session) return null;
+
+  const admin = await getAdminById(session.adminId);
+  if (!admin || !admin.active || admin.role !== "super_admin") return null;
+
+  return admin;
 }

@@ -8,7 +8,7 @@ export interface Tenant {
   updatedAt: string;
 }
 
-export type AdminRole = "tenant_admin";
+export type AdminRole = "super_admin" | "admin";
 
 export interface AdminUser {
   id: string;

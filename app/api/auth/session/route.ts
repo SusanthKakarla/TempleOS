@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
   if (!admin) {
     devLog("Sign-in rejected: phone number not allowlisted", phoneNumber);
     return NextResponse.json(
-      { error: "This phone number is not authorized for dashboard access." },
+      {
+        error: "This phone number is not authorized for dashboard access.",
+        code: "NOT_AUTHORIZED",
+      },
       { status: 403 },
     );
   }

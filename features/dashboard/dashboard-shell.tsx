@@ -1,18 +1,21 @@
 import type { SessionPayload } from "@/lib/auth/session";
+import type { AdminRole } from "@/types/db";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardTopbar } from "./dashboard-topbar";
 
 export function DashboardShell({
   session,
+  role,
   children,
 }: {
   session: SessionPayload;
+  role: AdminRole;
   children: React.ReactNode;
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar isSuperAdmin={role === "super_admin"} />
       <SidebarInset>
         <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />
         <main className="flex-1 bg-muted/20 p-4 sm:p-6">{children}</main>

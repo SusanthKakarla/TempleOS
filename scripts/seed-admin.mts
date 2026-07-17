@@ -3,6 +3,7 @@ import { getPool } from "../lib/db/pool";
 import { getPilotTenant, updateTenant } from "../lib/db/tenants";
 import { upsertAdminUser } from "../lib/db/admin-users";
 import { normalizePhoneNumber } from "../lib/phone.mts";
+import type { AdminRole } from "../types/db";
 
 config({ path: ".env.local", quiet: true });
 
@@ -26,12 +27,20 @@ async function main() {
 
   if (!adminPhoneRaw) {
     console.error(
-      "Usage: npm run seed:admin -- --phone <phone> [--name <name>] " +
+      "Usage: npm run seed:admin -- --phone <phone> [--name <name>] [--role super_admin|admin] " +
         "[--tenant-name <name>] [--tenant-phone <phone>] [--tenant-address <address>] [--tenant-timezone <tz>]",
     );
     process.exitCode = 1;
     return;
   }
+
+  const roleArg = args.get("role") ?? "super_admin";
+  if (roleArg !== "super_admin" && roleArg !== "admin") {
+    console.error(`--role must be "super_admin" or "admin", got "${roleArg}".`);
+    process.exitCode = 1;
+    return;
+  }
+  const role = roleArg as AdminRole;
 
   const adminPhone = normalizePhoneNumber(adminPhoneRaw);
   if (!adminPhone) {
@@ -66,10 +75,11 @@ async function main() {
     tenantId: tenant.id,
     phoneNumber: adminPhone,
     displayName: adminName,
+    role,
   });
 
   console.log(
-    `Allowlisted admin "${admin.displayName}" (${admin.phoneNumber}) for tenant "${tenant.name}".`,
+    `Allowlisted ${admin.role} "${admin.displayName}" (${admin.phoneNumber}) for tenant "${tenant.name}".`,
   );
 }
 

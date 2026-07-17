@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, LayoutDashboard, Landmark, MessageCircle, Users } from "lucide-react";
+import {
+  CalendarDays,
+  LayoutDashboard,
+  Landmark,
+  MessageCircle,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,8 +35,16 @@ export const NAV_ITEMS = [
   },
 ];
 
-export function AppSidebar() {
+const SUPER_ADMIN_NAV_ITEM = {
+  href: "/dashboard/admins",
+  label: "Admins",
+  icon: ShieldCheck,
+  gradient: "bg-royal-blue",
+};
+
+export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const pathname = usePathname();
+  const navItems = isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   return (
     <Sidebar collapsible="icon">
@@ -47,7 +62,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const isActive =
                   item.href === "/dashboard" ? pathname === item.href : pathname?.startsWith(item.href);
                 const Icon = item.icon;

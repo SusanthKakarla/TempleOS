@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "migrate": "tsx scripts/migrate.mts",
+    "seed": "tsx scripts/seed.mts",
     "seed:admin": "tsx scripts/seed-admin.mts",
     "seed:whatsapp": "tsx scripts/seed-whatsapp-account.mts"
   },

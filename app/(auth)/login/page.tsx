@@ -106,8 +106,17 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
         devLog("Session creation failed", response.status, body.error);
+
+        if (body.code === "NOT_AUTHORIZED") {
+          // Authentication succeeded — the phone number just isn't provisioned
+          // for dashboard access. That's a distinct outcome from a login
+          // failure, so it gets its own page rather than an inline error.
+          router.push(`/access-denied?phone=${encodeURIComponent(phone)}`);
+          return;
+        }
+
         throw new Error(body.error ?? "Sign-in failed");
       }
 
