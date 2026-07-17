@@ -1,19 +1,27 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+const STORAGE_KEY = "theme";
 
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.classList.contains("dark") ? "light" : "dark";
+  root.classList.remove("light", "dark");
+  root.classList.add(next);
+  root.style.colorScheme = next;
+  try {
+    localStorage.setItem(STORAGE_KEY, next);
+  } catch {
+    // Storage may be unavailable (e.g. private browsing) — theme still
+    // applies for this session, it just won't persist across reloads.
+  }
+}
+
+export function ThemeToggle() {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-    >
+    <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggleTheme}>
       <Sun className="size-4 dark:hidden" />
       <Moon className="hidden size-4 dark:block" />
     </Button>
