@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { Cake, Phone, Sparkles, User, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -75,76 +76,99 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
   }
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
         if (next) resetToDevotee();
       }}
     >
-      <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add devotee" : "Edit devotee"}</DialogTitle>
-          <DialogDescription>
+      <SheetTrigger render={trigger} />
+      <SheetContent className="w-full gap-0 sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{mode === "create" ? "Add devotee" : "Edit devotee"}</SheetTitle>
+          <SheetDescription>
             {mode === "create"
               ? "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number."
               : "Update this devotee's details."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+          </SheetDescription>
+        </SheetHeader>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="displayName">Name</Label>
-            <Input
-              id="displayName"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="pl-9"
+                required
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="whatsappPhone">Phone number</Label>
-            <Input
-              id="whatsappPhone"
-              placeholder="+91XXXXXXXXXX"
-              value={whatsappPhone}
-              onChange={(e) => setWhatsappPhone(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="whatsappPhone"
+                placeholder="+91XXXXXXXXXX"
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value)}
+                className="pl-9"
+                required
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="dateOfBirth">Date of birth (optional)</Label>
-            <Input
-              id="dateOfBirth"
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-            />
+            <div className="relative">
+              <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="birthStar">Birth star / Nakshatram (optional)</Label>
-            <Input
-              id="birthStar"
-              value={birthStar}
-              onChange={(e) => setBirthStar(e.target.value)}
-            />
+            <div className="relative">
+              <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="birthStar"
+                value={birthStar}
+                onChange={(e) => setBirthStar(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="ancestralLineage">Gothram / Ancestral lineage (optional)</Label>
-            <Input
-              id="ancestralLineage"
-              value={ancestralLineage}
-              onChange={(e) => setAncestralLineage(e.target.value)}
-            />
+            <div className="relative">
+              <Users className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="ancestralLineage"
+                value={ancestralLineage}
+                onChange={(e) => setAncestralLineage(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <DialogFooter>
+          <SheetFooter className="mt-auto px-0">
             <Button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Save"}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

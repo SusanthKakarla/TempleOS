@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
 import type { Event } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -15,21 +16,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EventFormDialog } from "./event-form-dialog";
+import { EventCard } from "./event-card";
+import { AnnounceDialog } from "./announce-dialog";
 
 function formatEventTime(event: Event): string {
   const start = new Date(event.startsAt);
-  const startLabel = start.toLocaleString(undefined, {
+  const startLabel = start.toLocaleString("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",
   });
   if (!event.endsAt) return startLabel;
   const end = new Date(event.endsAt);
-  const endLabel = end.toLocaleTimeString(undefined, { timeStyle: "short" });
+  const endLabel = end.toLocaleTimeString("en-IN", { timeStyle: "short" });
   return `${startLabel} - ${endLabel}`;
 }
 
 export function EventsTable({ events }: { events: Event[] }) {
   const router = useRouter();
+  const [view, setView] = useState<"table" | "card">("table");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,42 +63,6 @@ export function EventsTable({ events }: { events: Event[] }) {
     }
   }
 
-  async function handleSendAnnouncement(event: Event) {
-    if (
-      !window.confirm(
-        `Send a WhatsApp announcement for "${event.title}" to all opted-in devotees?`,
-      )
-    ) {
-      return;
-    }
-    setError(null);
-    setPendingId(event.id);
-    try {
-      const response = await fetch(`/api/events/${event.id}/announce`, { method: "POST" });
-      const body = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        total?: number;
-        sent?: number;
-        failed?: number;
-      };
-      if (!response.ok) {
-        throw new Error(body.error ?? "Failed to send announcement");
-      }
-      if (body.total === 0) {
-        toast.info("No opted-in devotees to announce to yet.");
-      } else {
-        toast.success(`Announcement sent: ${body.sent} sent, ${body.failed} failed.`);
-      }
-      refresh();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send announcement";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setPendingId(null);
-    }
-  }
-
   async function handleDelete(event: Event) {
     if (!window.confirm(`Delete "${event.title}"? This cannot be undone.`)) return;
     setError(null);
@@ -115,40 +83,72 @@ export function EventsTable({ events }: { events: Event[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl font-semibold">Events</h1>
           <p className="text-sm text-muted-foreground">Create and publish temple events.</p>
         </div>
-        <EventFormDialog
-          mode="create"
-          trigger={<Button>Create event</Button>}
-          onSaved={refresh}
-        />
+        <div className="flex items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")}>
+            <TabsList>
+              <TabsTrigger value="table">
+                <Rows3 className="size-3.5" />
+                Table
+              </TabsTrigger>
+              <TabsTrigger value="card">
+                <LayoutGrid className="size-3.5" />
+                Card
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <EventFormDialog
+            mode="create"
+            trigger={
+              <Button className="hidden gap-1.5 sm:inline-flex">
+                <PlusCircle className="size-4" />
+                Create event
+              </Button>
+            }
+            onSaved={refresh}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="rounded-xl border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>When</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.length === 0 ? (
+      {events.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
+          <CalendarDays className="size-8 text-muted-foreground" />
+          <p className="text-sm font-medium">No events yet</p>
+          <p className="text-sm text-muted-foreground">Create your first temple event to get started.</p>
+        </div>
+      ) : view === "card" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              pending={pendingId === event.id}
+              onSaved={refresh}
+              onTogglePublish={handleTogglePublish}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-background">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No events yet.
-                </TableCell>
+                <TableHead>Title</TableHead>
+                <TableHead>When</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              events.map((event) => (
+            </TableHeader>
+            <TableBody>
+              {events.map((event) => (
                 <TableRow key={event.id}>
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{formatEventTime(event)}</TableCell>
@@ -178,14 +178,15 @@ export function EventsTable({ events }: { events: Event[] }) {
                       {event.status === "published" ? "Unpublish" : "Publish"}
                     </Button>
                     {event.status === "published" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={pendingId === event.id}
-                        onClick={() => handleSendAnnouncement(event)}
-                      >
-                        Send WhatsApp Announcement
-                      </Button>
+                      <AnnounceDialog
+                        event={event}
+                        onAnnounced={refresh}
+                        trigger={
+                          <Button variant="outline" size="sm" disabled={pendingId === event.id}>
+                            Announce
+                          </Button>
+                        }
+                      />
                     )}
                     <Button
                       variant="ghost"
@@ -197,11 +198,22 @@ export function EventsTable({ events }: { events: Event[] }) {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <EventFormDialog
+        mode="create"
+        trigger={
+          <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
+            <PlusCircle className="size-5" />
+            <span className="sr-only">Create event</span>
+          </Button>
+        }
+        onSaved={refresh}
+      />
     </div>
   );
 }

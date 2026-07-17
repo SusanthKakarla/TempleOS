@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Search, UserPlus, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -17,7 +19,12 @@ import {
 import { DevoteeFormDialog } from "./devotee-form-dialog";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
+  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
 export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
@@ -45,7 +52,7 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl font-semibold">Devotees</h1>
           <p className="text-sm text-muted-foreground">
@@ -54,42 +61,62 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
         </div>
         <DevoteeFormDialog
           mode="create"
-          trigger={<Button>Add devotee</Button>}
+          trigger={
+            <Button className="hidden gap-1.5 sm:inline-flex">
+              <UserPlus className="size-4" />
+              Add devotee
+            </Button>
+          }
           onSaved={refresh}
         />
       </div>
 
-      <Input
-        placeholder="Search by name or phone..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="relative max-w-sm">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or phone..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
-      <div className="rounded-xl border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>WhatsApp</TableHead>
-              <TableHead>Birth star</TableHead>
-              <TableHead>Gothram</TableHead>
-              <TableHead>First seen</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {devotees.length === 0 ? (
+      {devotees.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
+          <Users className="size-8 text-muted-foreground" />
+          <p className="text-sm font-medium">No devotees found</p>
+          <p className="text-sm text-muted-foreground">
+            Devotees appear here once they message the temple WhatsApp number, or you can add one
+            manually.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-background">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  No devotees found.
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>WhatsApp</TableHead>
+                <TableHead>Birth star</TableHead>
+                <TableHead>Gothram</TableHead>
+                <TableHead>First seen</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              devotees.map((devotee) => (
+            </TableHeader>
+            <TableBody>
+              {devotees.map((devotee) => (
                 <TableRow key={devotee.id}>
-                  <TableCell className="font-medium">{devotee.displayName}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="size-8">
+                        <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
+                          {getInitials(devotee.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{devotee.displayName}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{devotee.whatsappPhone}</TableCell>
                   <TableCell>
                     <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
@@ -112,11 +139,22 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
                     />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <DevoteeFormDialog
+        mode="create"
+        trigger={
+          <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
+            <UserPlus className="size-5" />
+            <span className="sr-only">Add devotee</span>
+          </Button>
+        }
+        onSaved={refresh}
+      />
     </div>
   );
 }

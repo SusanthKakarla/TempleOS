@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { CalendarDays, MapPin, Sparkles, Type } from "lucide-react";
 import type { Event, EventStatus } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,14 +16,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { dateTimeLocalValueToIso, isoToDateTimeLocalValue } from "./datetime-local";
+import { DateTimeField } from "./date-time-field";
 
 interface EventFormDialogProps {
   mode: "create" | "edit";
@@ -94,6 +90,8 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
     }
   }
 
+  const previewDate = dateTimeLocalValueToIso(startsAt);
+
   return (
     <Dialog
       open={open}
@@ -103,7 +101,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Create event" : "Edit event"}</DialogTitle>
           <DialogDescription>
@@ -115,7 +113,16 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <div className="relative">
+              <Type className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="pl-9"
+                required
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -128,41 +135,48 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
           </div>
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startsAt">Start</Label>
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id="startsAt"
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endsAt">End (optional)</Label>
-              <Input
-                id="endsAt"
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="pl-9"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as EventStatus)}>
-              <SelectTrigger id="status" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DateTimeField id="startsAt" label="Start" value={startsAt} onChange={setStartsAt} required />
+            <DateTimeField id="endsAt" label="End (optional)" value={endsAt} onChange={setEndsAt} />
           </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-saffron" />
+              <div>
+                <p className="text-sm font-medium">Published</p>
+                <p className="text-xs text-muted-foreground">Visible to devotees on WhatsApp.</p>
+              </div>
+            </div>
+            <Switch
+              checked={status === "published"}
+              onCheckedChange={(checked) => setStatus(checked ? "published" : "draft")}
+            />
+          </div>
+
+          {title && previewDate && (
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <CalendarDays className="size-3.5" />
+                Preview
+              </p>
+              <p className="text-sm font-medium">{title}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(previewDate).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                {location ? ` · ${location}` : ""}
+              </p>
+            </div>
+          )}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

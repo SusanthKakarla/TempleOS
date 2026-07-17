@@ -53,6 +53,15 @@ export async function listDevotees(tenantId: string, search?: string): Promise<D
   return rows.map(mapDevotee);
 }
 
+/** Dashboard "Recent Devotees" widget. */
+export async function listRecentDevotees(tenantId: string, limit = 5): Promise<Devotee[]> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    "SELECT * FROM devotees WHERE tenant_id = $1 ORDER BY first_seen_at DESC LIMIT $2",
+    [tenantId, limit],
+  );
+  return rows.map(mapDevotee);
+}
+
 /** Recipients for "Send WhatsApp announcement" — only devotees who opted in via inbound WhatsApp. */
 export async function listOptedInDevotees(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
