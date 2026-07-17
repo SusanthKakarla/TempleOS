@@ -1,4 +1,10 @@
-import { Pool } from "pg";
+import { Pool, types } from "pg";
+
+// DATE columns (OID 1082) default to JS `Date` objects built from local-time
+// components; calling `.toISOString()` on those can roll the date to the
+// adjacent day depending on server timezone. We only ever want the raw
+// "YYYY-MM-DD" string (e.g. devotees.date_of_birth), so keep it as-is.
+types.setTypeParser(1082, (value) => value);
 
 declare global {
   var __templeosPgPool: Pool | undefined;

@@ -9,8 +9,8 @@ interface AdminUserRow {
   role: "tenant_admin";
   firebase_uid: string | null;
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function mapAdminUser(row: AdminUserRow): AdminUser {
@@ -22,8 +22,8 @@ function mapAdminUser(row: AdminUserRow): AdminUser {
     role: row.role,
     firebaseUid: row.firebase_uid,
     active: row.active,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 

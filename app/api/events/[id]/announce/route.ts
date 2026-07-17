@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionAdmin } from "@/lib/auth/session";
+import { getEventById } from "@/lib/db/events";
+import { getTenantById } from "@/lib/db/tenants";
+import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
+import { listOptedInDevotees } from "@/lib/db/devotees";
+import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
+import { buildAnnouncementMessage } from "@/lib/whatsapp/templates";
+import { sendTextMessage } from "@/lib/whatsapp/client";
+
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(_req: NextRequest, { params }: RouteParams) {
+  const session = await getSessionAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const event = await getEventById(session.tenantId, id);
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+  if (event.status !== "published") {
+    return NextResponse.json(
+      { error: "Only published events can be announced" },
+      { status: 400 },
+    );
+  }
+
+  const tenant = await getTenantById(session.tenantId);
+  const whatsappAccount = await getWhatsAppAccountByTenant(session.tenantId);
+  if (!tenant || !whatsappAccount) {
+    return NextResponse.json(
+      { error: "WhatsApp is not connected for this temple yet" },
+      { status: 400 },
+    );
+  }
+
+  const recipients = await listOptedInDevotees(session.tenantId);
+  const message = buildAnnouncementMessage(tenant, event);
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const devotee of recipients) {
+    const result = await sendTextMessage(devotee.whatsappPhone, message);
+    await logWhatsAppMessage(session.tenantId, {
+      devoteeId: devotee.id,
+      direction: "outbound",
+      fromPhone: whatsappAccount.phoneNumber,
+      toPhone: devotee.whatsappPhone,
+      body: message,
+      status: result.success ? "sent" : "failed",
+      providerMessageId: result.providerMessageId,
+    });
+    if (result.success) {
+      sent += 1;
+    } else {
+      failed += 1;
+    }
+  }
+
+  return NextResponse.json({ total: recipients.length, sent, failed });
+}

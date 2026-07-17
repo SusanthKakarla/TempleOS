@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "migrate": "tsx scripts/migrate.mts",
-    "seed:admin": "tsx scripts/seed-admin.mts"
+    "seed:admin": "tsx scripts/seed-admin.mts",
+    "seed:whatsapp": "tsx scripts/seed-whatsapp-account.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

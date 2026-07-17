@@ -7,8 +7,8 @@ interface TenantRow {
   default_contact_phone: string | null;
   address: string | null;
   timezone: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function mapTenant(row: TenantRow): Tenant {
@@ -18,8 +18,8 @@ function mapTenant(row: TenantRow): Tenant {
     defaultContactPhone: row.default_contact_phone,
     address: row.address,
     timezone: row.timezone,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
