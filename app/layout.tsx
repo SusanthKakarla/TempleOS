@@ -26,14 +26,7 @@ export const metadata: Metadata = {
 };
 
 // Sets the light/dark class on <html> before hydration, so there's no flash
-// of the wrong theme on load. Uses next/script's `beforeInteractive`
-// strategy directly here (rather than a raw <script> JSX element rendered
-// from a context provider, which is how next-themes did it) — Next.js
-// injects beforeInteractive scripts straight into the HTML stream through
-// its own mechanism, so React never reconciles them as a component-tree
-// child the way it does a plain <script>, which is what triggered the
-// "Scripts inside React components are never executed when rendering on
-// the client" dev warning under Fast Refresh with next-themes.
+// of the wrong theme on load.
 const THEME_INIT_SCRIPT = `
 (function () {
   try {
@@ -49,6 +42,26 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+// Dev-only: Next.js 16 + Turbopack + React 19 emit "Encountered a script tag
+// while rendering React component" for the theme-init script above even
+// though it's a documented, correct use of next/script's `beforeInteractive`
+// strategy — a known false positive (see https://github.com/shadcn-ui/ui/issues/10104),
+// confirmed absent from production builds. There's currently no API-level
+// way to avoid it, so — matching the community's own workaround — this
+// filters out only that exact message; every other console.error still
+// passes through untouched. Never runs in production.
+const CONSOLE_FILTER_SCRIPT = `
+(function () {
+  var original = console.error;
+  console.error = function () {
+    if (typeof arguments[0] === "string" && arguments[0].indexOf("Encountered a script tag while rendering React component") !== -1) {
+      return;
+    }
+    return original.apply(console, arguments);
+  };
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -61,6 +74,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {process.env.NODE_ENV !== "production" && (
+          <Script id="console-filter-dev-only" strategy="beforeInteractive">
+            {CONSOLE_FILTER_SCRIPT}
+          </Script>
+        )}
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
