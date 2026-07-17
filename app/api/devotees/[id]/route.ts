@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionAdmin } from "@/lib/auth/session";
-import { updateDevotee } from "@/lib/db/devotees";
+import { deleteDevotee, updateDevotee } from "@/lib/db/devotees";
 import { updateDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
@@ -54,4 +54,19 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
+}
+
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+  const session = await getSessionAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const deleted = await deleteDevotee(session.tenantId, id);
+  if (!deleted) {
+    return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

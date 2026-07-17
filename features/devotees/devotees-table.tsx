@@ -31,6 +31,8 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("search") ?? "");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -48,6 +50,30 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
 
   function refresh() {
     router.refresh();
+  }
+
+  async function handleDelete(devotee: Devotee) {
+    if (
+      !window.confirm(
+        `Delete "${devotee.displayName}"? This cannot be undone. Their WhatsApp activity history is kept but will no longer be linked to a name.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setPendingId(devotee.id);
+    try {
+      const response = await fetch(`/api/devotees/${devotee.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Failed to delete devotee");
+      }
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete devotee");
+    } finally {
+      setPendingId(null);
+    }
   }
 
   return (
@@ -80,6 +106,8 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
           className="pl-9"
         />
       </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {devotees.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
@@ -126,17 +154,25 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
                   <TableCell>{devotee.birthStar ?? "—"}</TableCell>
                   <TableCell>{devotee.ancestralLineage ?? "—"}</TableCell>
                   <TableCell>{formatDate(devotee.firstSeenAt)}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="flex justify-end gap-2">
                     <DevoteeFormDialog
                       mode="edit"
                       devotee={devotee}
                       trigger={
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" disabled={pendingId === devotee.id}>
                           Edit
                         </Button>
                       }
                       onSaved={refresh}
                     />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pendingId === devotee.id}
+                      onClick={() => handleDelete(devotee)}
+                    >
+                      Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

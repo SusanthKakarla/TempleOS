@@ -190,6 +190,19 @@ export async function updateDevotee(
   return rows[0] ? mapDevotee(rows[0]) : null;
 }
 
+/**
+ * Message/interaction history rows referencing this devotee are kept (their
+ * devotee_id column is nullable and ON DELETE SET NULL), so WhatsApp Activity
+ * history isn't lost — only the devotee record itself is removed.
+ */
+export async function deleteDevotee(tenantId: string, devoteeId: string): Promise<boolean> {
+  const result = await getPool().query("DELETE FROM devotees WHERE tenant_id = $1 AND id = $2", [
+    tenantId,
+    devoteeId,
+  ]);
+  return (result.rowCount ?? 0) > 0;
+}
+
 export async function countDevotees(tenantId: string): Promise<number> {
   const { rows } = await getPool().query<{ count: string }>(
     "SELECT count(*) FROM devotees WHERE tenant_id = $1",
