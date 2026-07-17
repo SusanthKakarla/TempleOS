@@ -10,6 +10,12 @@ declare global {
   var __templeosPgPool: Pool | undefined;
 }
 
+// Private/local networks (Railway's internal *.railway.internal host included)
+// don't speak TLS; only the public internet-facing hosts need it.
+function needsSSL(connectionString: string): boolean {
+  return !/localhost|127\.0\.0\.1|\.railway\.internal/.test(connectionString);
+}
+
 function createPool(): Pool {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -17,7 +23,7 @@ function createPool(): Pool {
   }
   return new Pool({
     connectionString,
-    ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false },
+    ssl: needsSSL(connectionString) ? { rejectUnauthorized: false } : false,
   });
 }
 
