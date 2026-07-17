@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,23 +27,60 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  // A single invisible reCAPTCHA verifier is created lazily and reused across
+  // every send/resend attempt, per Firebase's recommended pattern. Recreating
+  // it on every call (the previous bug here) leaves a stale widget attached
+  // to the DOM and breaks the second attempt without a full page refresh.
+  const verifierRef = useRef<RecaptchaVerifier | null>(null);
+
+  useEffect(() => {
+    return () => {
+      devLog("Unmounting login page, clearing reCAPTCHA verifier");
+      verifierRef.current?.clear();
+      verifierRef.current = null;
+    };
+  }, []);
+
+  function getOrCreateVerifier(): RecaptchaVerifier {
+    if (verifierRef.current) return verifierRef.current;
+    if (!recaptchaContainerRef.current) {
+      throw new Error("Recaptcha container is missing");
+    }
+
+    devLog("Initializing reCAPTCHA verifier");
+    const auth = getFirebaseAuth();
+    const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+      size: "invisible",
+      callback: () => devLog("reCAPTCHA solved"),
+      "expired-callback": () => {
+        devLog("reCAPTCHA expired; it will be recreated on the next attempt");
+        verifierRef.current?.clear();
+        verifierRef.current = null;
+      },
+    });
+    verifierRef.current = verifier;
+    return verifier;
+  }
 
   async function handleSendOtp(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      if (!recaptchaContainerRef.current) {
-        throw new Error("Recaptcha container is missing");
-      }
+      devLog("Requesting OTP for", phone);
       const auth = getFirebaseAuth();
-      const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-        size: "invisible",
-      });
+      const verifier = getOrCreateVerifier();
       confirmationRef.current = await signInWithPhoneNumber(auth, phone, verifier);
+      devLog("OTP sent successfully");
       setStep("otp");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send the login code");
+      devLog("Failed to send OTP", err);
+      // The widget may be left in a used/invalid state after any failure —
+      // clear it so the next attempt (retry, or a different number) always
+      // gets a fresh one instead of silently failing.
+      verifierRef.current?.clear();
+      verifierRef.current = null;
+      setError(getFirebaseErrorMessage(err, "Failed to send the login code"));
     } finally {
       setLoading(false);
     }
@@ -56,8 +94,10 @@ export default function LoginPage() {
       if (!confirmationRef.current) {
         throw new Error("Start over: request a login code first");
       }
+      devLog("Verifying OTP");
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken();
+      devLog("OTP verified, exchanging Firebase ID token for a session");
 
       const response = await fetch("/api/auth/session", {
         method: "POST",
@@ -67,16 +107,25 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
+        devLog("Session creation failed", response.status, body.error);
         throw new Error(body.error ?? "Sign-in failed");
       }
 
+      devLog("Session created, redirecting to dashboard");
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify the login code");
+      devLog("Failed to verify OTP", err);
+      setError(getFirebaseErrorMessage(err, "Failed to verify the login code"));
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleUseDifferentNumber() {
+    setStep("phone");
+    setOtp("");
+    setError(null);
   }
 
   return (
@@ -130,11 +179,7 @@ export default function LoginPage() {
                 type="button"
                 variant="ghost"
                 className="w-full"
-                onClick={() => {
-                  setStep("phone");
-                  setOtp("");
-                  setError(null);
-                }}
+                onClick={handleUseDifferentNumber}
               >
                 Use a different number
               </Button>
