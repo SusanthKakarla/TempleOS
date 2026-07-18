@@ -16,6 +16,7 @@ export interface Tenant {
   morningClose: string | null;
   eveningOpen: string | null;
   eveningClose: string | null;
+  donationInfo: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +49,10 @@ export interface WhatsAppAccount {
   updatedAt: string;
 }
 
+/** WhatsApp chatbot UI language. Only the bot's own chrome is localized —
+ * admin-authored CMS content is never machine-translated (see migrations/006_language_support.sql). */
+export type SupportedLanguage = "en" | "te";
+
 export type EventStatus = "draft" | "published";
 
 export interface Event {
@@ -76,6 +81,9 @@ export interface Devotee {
   lastSeenAt: string;
   lastInteractionType: string | null;
   whatsappOptInStatus: boolean;
+  // Set only via the WhatsApp bot's language picker (see app/api/whatsapp/webhook/route.ts) —
+  // not editable from the admin dashboard's devotee form.
+  preferredLanguage: SupportedLanguage | null;
   // Cached from donations (see lib/db/donations.ts), not purely derived.
   // isDonor/totalDonatedAmount/lastDonationAt are recomputed from the
   // donations table on every donation write, never patched incrementally.
@@ -112,7 +120,11 @@ export type InteractionType =
   | "viewed_timings"
   | "viewed_history"
   | "viewed_sevas"
-  | "viewed_faq";
+  | "viewed_faq"
+  | "selected_language"
+  | "requested_language_change"
+  | "viewed_donation_info"
+  | "viewed_help";
 
 export interface WhatsAppInteraction {
   id: string;

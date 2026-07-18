@@ -32,6 +32,7 @@ export const updateTenantSettingsSchema = z
     morningClose: nullableTimeOfDay,
     eveningOpen: nullableTimeOfDay,
     eveningClose: nullableTimeOfDay,
+    donationInfo: nullableTrimmedString,
   })
   .refine((data) => isCloseAfterOpen(data.morningOpen, data.morningClose), {
     message: "Morning close must be after morning open",

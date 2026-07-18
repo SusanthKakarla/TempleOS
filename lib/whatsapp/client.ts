@@ -1,6 +1,6 @@
 const GRAPH_API_VERSION = "v21.0";
 
-export interface SendTextMessageResult {
+export interface SendMessageResult {
   success: boolean;
   providerMessageId: string | null;
   error?: string;
@@ -11,8 +11,27 @@ interface GraphSendResponse {
   error?: { message?: string };
 }
 
-/** Sends a text message via the Meta WhatsApp Cloud API. */
-export async function sendTextMessage(toPhone: string, body: string): Promise<SendTextMessageResult> {
+export interface InteractiveButton {
+  id: string;
+  title: string; // Meta limit: 20 chars
+}
+
+export interface InteractiveListRow {
+  id: string;
+  title: string; // Meta limit: 24 chars
+  description?: string; // Meta limit: 72 chars
+}
+
+export interface InteractiveListSection {
+  title: string;
+  rows: InteractiveListRow[];
+}
+
+/** Shared send path for every message type — credential check, fetch, response parsing. */
+async function sendMessage(
+  toPhone: string,
+  messageFields: Record<string, unknown>,
+): Promise<SendMessageResult> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!accessToken || !phoneNumberId) {
@@ -38,8 +57,7 @@ export async function sendTextMessage(toPhone: string, body: string): Promise<Se
         body: JSON.stringify({
           messaging_product: "whatsapp",
           to: toDigits,
-          type: "text",
-          text: { body },
+          ...messageFields,
         }),
       },
     );
@@ -62,4 +80,44 @@ export async function sendTextMessage(toPhone: string, body: string): Promise<Se
       error: err instanceof Error ? err.message : "Unknown error sending WhatsApp message",
     };
   }
+}
+
+/** Sends a plain text message via the Meta WhatsApp Cloud API. */
+export function sendTextMessage(toPhone: string, body: string): Promise<SendMessageResult> {
+  return sendMessage(toPhone, { type: "text", text: { body } });
+}
+
+/** Sends up to 3 tappable reply buttons (e.g. the language picker). */
+export function sendButtonMessage(
+  toPhone: string,
+  bodyText: string,
+  buttons: InteractiveButton[],
+): Promise<SendMessageResult> {
+  return sendMessage(toPhone, {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: bodyText },
+      action: {
+        buttons: buttons.map((b) => ({ type: "reply", reply: { id: b.id, title: b.title } })),
+      },
+    },
+  });
+}
+
+/** Sends a tappable list (up to 10 rows total across sections — the main menu). */
+export function sendListMessage(
+  toPhone: string,
+  bodyText: string,
+  buttonLabel: string,
+  sections: InteractiveListSection[],
+): Promise<SendMessageResult> {
+  return sendMessage(toPhone, {
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: bodyText },
+      action: { button: buttonLabel, sections },
+    },
+  });
 }

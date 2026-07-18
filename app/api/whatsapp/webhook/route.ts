@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupportedLanguage } from "@/types/db";
 import { getWhatsAppAccountByPhoneNumberId } from "@/lib/db/whatsapp-accounts";
 import { getTenantById } from "@/lib/db/tenants";
-import { upsertDevoteeFromWhatsApp } from "@/lib/db/devotees";
+import { upsertDevoteeFromWhatsApp, updateDevoteePreferredLanguage } from "@/lib/db/devotees";
 import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
 import { logWhatsAppInteraction } from "@/lib/db/whatsapp-interactions";
 import { listEvents } from "@/lib/db/events";
@@ -9,19 +10,22 @@ import { getSpecialDayForDate } from "@/lib/db/temple-special-days";
 import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
-import { classifyCommand, commandToInteractionType } from "@/lib/whatsapp/router";
+import { classifyCommand, classifyInteractiveReplyId, commandToInteractionType } from "@/lib/whatsapp/router";
 import {
   buildContactMessage,
+  buildDonationInfoMessage,
   buildEventsMessage,
   buildFaqMessage,
+  buildHelpMessage,
   buildHistoryMessage,
+  buildLanguagePickerMessage,
   buildMenuMessage,
   buildSevasMessage,
   buildTimingsMessage,
   buildUnknownMessage,
   getTenantLocalDateISO,
 } from "@/lib/whatsapp/templates";
-import { sendTextMessage } from "@/lib/whatsapp/client";
+import { sendButtonMessage, sendListMessage, sendTextMessage, type SendMessageResult } from "@/lib/whatsapp/client";
 import { normalizeWhatsAppId } from "@/lib/phone.mts";
 
 // Meta webhook payload shape (subset we use). See:
@@ -30,6 +34,14 @@ interface InboundMessage {
   from?: string;
   type?: string;
   text?: { body?: string };
+  // Inbound tap on an interactive message we sent. Note: these type strings
+  // ("button_reply"/"list_reply") differ from the outbound interactive.type
+  // values ("button"/"list") we send in client.ts.
+  interactive?: {
+    type?: string;
+    button_reply?: { id?: string; title?: string };
+    list_reply?: { id?: string; title?: string };
+  };
 }
 
 interface WhatsAppWebhookPayload {
@@ -64,8 +76,12 @@ async function handleInboundMessage(
   if (!message.from) return;
 
   const devoteePhone = normalizeWhatsAppId(message.from);
+  const interactiveReplyId = message.interactive?.button_reply?.id ?? message.interactive?.list_reply?.id;
+  const interactiveReplyTitle =
+    message.interactive?.button_reply?.title ?? message.interactive?.list_reply?.title;
   const bodyText = message.type === "text" ? (message.text?.body ?? "") : "";
-  const command = classifyCommand(bodyText);
+  const command =
+    message.type === "interactive" ? classifyInteractiveReplyId(interactiveReplyId) : classifyCommand(bodyText);
   const interactionType = commandToInteractionType(command);
 
   const devotee = await upsertDevoteeFromWhatsApp(tenantId, {
@@ -79,7 +95,7 @@ async function handleInboundMessage(
     direction: "inbound",
     fromPhone: devoteePhone,
     toPhone: templeWhatsAppPhone,
-    body: bodyText || `[${message.type ?? "unsupported"} message]`,
+    body: interactiveReplyTitle ?? bodyText ?? `[${message.type ?? "unsupported"} message]`,
     status: "received",
     providerMessageId: null,
   });
@@ -89,38 +105,65 @@ async function handleInboundMessage(
   const tenant = await getTenantById(tenantId);
   if (!tenant) return;
 
-  let replyText: string;
-  if (command === "events") {
-    const events = await listEvents(tenantId, { status: "published", upcomingOnly: true });
-    replyText = buildEventsMessage(tenant, events);
-  } else if (command === "contact") {
-    const socialLinks = await listSocialLinks(tenantId);
-    replyText = buildContactMessage(tenant, socialLinks);
-  } else if (command === "timings") {
-    const todayIso = getTenantLocalDateISO(tenant.timezone);
-    const specialDay = await getSpecialDayForDate(tenantId, todayIso);
-    replyText = buildTimingsMessage(tenant, specialDay);
-  } else if (command === "history") {
-    replyText = buildHistoryMessage(tenant);
-  } else if (command === "sevas") {
-    const sevas = await listSevas(tenantId);
-    replyText = buildSevasMessage(tenant, sevas);
-  } else if (command === "faq") {
-    const faqs = await listFaqs(tenantId);
-    replyText = buildFaqMessage(tenant, faqs);
-  } else if (command === "menu") {
-    replyText = buildMenuMessage(tenant);
+  let sendResult: SendMessageResult;
+  let loggedBody: string;
+
+  if (command === "select_language_en" || command === "select_language_te") {
+    const lang: SupportedLanguage = command === "select_language_en" ? "en" : "te";
+    await updateDevoteePreferredLanguage(tenantId, devotee.id, lang);
+    const menu = buildMenuMessage(tenant, lang);
+    sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
+    loggedBody = menu.body;
+  } else if (command === "change_language" || devotee.preferredLanguage === null) {
+    // First-time devotees must choose a language before anything else, even
+    // if their very first message was a concrete command like "events".
+    const picker = buildLanguagePickerMessage();
+    sendResult = await sendButtonMessage(devoteePhone, picker.body, picker.buttons);
+    loggedBody = picker.body;
   } else {
-    replyText = buildUnknownMessage();
+    const lang = devotee.preferredLanguage;
+    if (command === "menu") {
+      const menu = buildMenuMessage(tenant, lang);
+      sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
+      loggedBody = menu.body;
+    } else {
+      let replyText: string;
+      if (command === "events") {
+        const events = await listEvents(tenantId, { status: "published", upcomingOnly: true });
+        replyText = buildEventsMessage(tenant, events, lang);
+      } else if (command === "contact") {
+        const socialLinks = await listSocialLinks(tenantId);
+        replyText = buildContactMessage(tenant, lang, socialLinks);
+      } else if (command === "timings") {
+        const todayIso = getTenantLocalDateISO(tenant.timezone);
+        const specialDay = await getSpecialDayForDate(tenantId, todayIso);
+        replyText = buildTimingsMessage(tenant, specialDay, lang);
+      } else if (command === "history") {
+        replyText = buildHistoryMessage(tenant, lang);
+      } else if (command === "sevas") {
+        const sevas = await listSevas(tenantId);
+        replyText = buildSevasMessage(tenant, sevas, lang);
+      } else if (command === "faq") {
+        const faqs = await listFaqs(tenantId);
+        replyText = buildFaqMessage(tenant, faqs, lang);
+      } else if (command === "donation_info") {
+        replyText = buildDonationInfoMessage(tenant, lang);
+      } else if (command === "help") {
+        replyText = buildHelpMessage(tenant, lang);
+      } else {
+        replyText = buildUnknownMessage(lang);
+      }
+      sendResult = await sendTextMessage(devoteePhone, replyText);
+      loggedBody = replyText;
+    }
   }
 
-  const sendResult = await sendTextMessage(devoteePhone, replyText);
   await logWhatsAppMessage(tenantId, {
     devoteeId: devotee.id,
     direction: "outbound",
     fromPhone: templeWhatsAppPhone,
     toPhone: devoteePhone,
-    body: replyText,
+    body: loggedBody,
     status: sendResult.success ? "sent" : "failed",
     providerMessageId: sendResult.providerMessageId,
   });

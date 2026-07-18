@@ -1,5 +1,5 @@
 import { getPool } from "./pool";
-import type { Devotee } from "@/types/db";
+import type { Devotee, SupportedLanguage } from "@/types/db";
 
 interface DevoteeRow {
   id: string;
@@ -13,6 +13,7 @@ interface DevoteeRow {
   last_seen_at: Date;
   last_interaction_type: string | null;
   whatsapp_opt_in_status: boolean;
+  preferred_language: string | null;
   is_donor: boolean;
   total_donated_amount: string;
   last_donation_at: Date | null;
@@ -33,6 +34,7 @@ function mapDevotee(row: DevoteeRow): Devotee {
     lastSeenAt: row.last_seen_at.toISOString(),
     lastInteractionType: row.last_interaction_type,
     whatsappOptInStatus: row.whatsapp_opt_in_status,
+    preferredLanguage: row.preferred_language as SupportedLanguage | null,
     isDonor: row.is_donor,
     totalDonatedAmount: row.total_donated_amount,
     lastDonationAt: row.last_donation_at ? row.last_donation_at.toISOString() : null,
@@ -155,6 +157,26 @@ export async function upsertDevoteeFromWhatsApp(
     [tenantId, input.whatsappPhone, input.displayName, input.lastInteractionType],
   );
   return mapDevotee(rows[0]);
+}
+
+/**
+ * Called only from the WhatsApp bot's language picker — a plain, unambiguous
+ * write (always a concrete non-null value), so it bypasses the generic
+ * updateDevotee()/UpdateDevoteeInput CASE-WHEN machinery built for the admin
+ * dashboard's ambiguous partial-update case (was a field provided at all?).
+ */
+export async function updateDevoteePreferredLanguage(
+  tenantId: string,
+  devoteeId: string,
+  language: SupportedLanguage,
+): Promise<Devotee | null> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    `UPDATE devotees SET preferred_language = $3, updated_at = now()
+     WHERE tenant_id = $1 AND id = $2
+     RETURNING *`,
+    [tenantId, devoteeId, language],
+  );
+  return rows[0] ? mapDevotee(rows[0]) : null;
 }
 
 export interface UpdateDevoteeInput {

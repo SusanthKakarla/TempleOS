@@ -41,12 +41,15 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   }
 
   const recipients = await listOptedInDevotees(session.tenantId);
-  const message = buildAnnouncementMessage(tenant, event);
 
   let sent = 0;
   let failed = 0;
 
   for (const devotee of recipients) {
+    // Devotees who haven't picked a language yet (preferredLanguage === null)
+    // default to English for broadcast announcements — there's no live
+    // conversation here to gate on a language picker first.
+    const message = buildAnnouncementMessage(tenant, event, devotee.preferredLanguage ?? "en");
     const result = await sendTextMessage(devotee.whatsappPhone, message);
     await logWhatsAppMessage(session.tenantId, {
       devoteeId: devotee.id,

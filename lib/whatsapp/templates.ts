@@ -1,33 +1,94 @@
-import type { Event, Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
+import type {
+  DayOfWeek,
+  Event,
+  SupportedLanguage,
+  Tenant,
+  TempleFaq,
+  TempleSeva,
+  TempleSocialLink,
+  TempleSpecialDay,
+} from "@/types/db";
 import { formatInr } from "@/lib/currency";
+import { t } from "./i18n";
+import type { InteractiveButton, InteractiveListSection } from "./client";
 
 const MAX_SEVAS_IN_REPLY = 10;
 const MAX_FAQS_IN_REPLY = 5;
 
-export function buildMenuMessage(tenant: Tenant): string {
-  const greeting = tenant.welcomeMessage?.trim() || `Namaste. Welcome to ${tenant.name}.`;
-  return (
-    `${greeting}\n` +
-    `Reply with a number:\n` +
-    `1. View upcoming events\n` +
-    `2. Contact temple\n` +
-    `3. Temple timings\n` +
-    `4. Temple history\n` +
-    `5. Temple sevas\n` +
-    `6. Frequently asked questions`
-  );
+export interface WhatsAppListMessage {
+  body: string;
+  buttonLabel: string;
+  sections: InteractiveListSection[];
 }
 
-function formatEventDateTime(event: Event, timezone: string): { date: string; time: string } {
+export interface WhatsAppButtonMessage {
+  body: string;
+  buttons: InteractiveButton[];
+}
+
+/** The main menu — a WhatsApp List Message (up to 10 rows; this uses 8, one section). */
+export function buildMenuMessage(tenant: Tenant, lang: SupportedLanguage): WhatsAppListMessage {
+  const greeting = tenant.welcomeMessage?.trim() || t(lang, "menuGreetingFallback", { temple: tenant.name });
+
+  return {
+    body: greeting,
+    buttonLabel: t(lang, "menuButtonLabel"),
+    sections: [
+      {
+        title: t(lang, "menuSectionTitle"),
+        rows: [
+          { id: "events", title: t(lang, "menuRowEventsTitle"), description: t(lang, "menuRowEventsDescription") },
+          { id: "contact", title: t(lang, "menuRowContactTitle"), description: t(lang, "menuRowContactDescription") },
+          { id: "timings", title: t(lang, "menuRowTimingsTitle"), description: t(lang, "menuRowTimingsDescription") },
+          { id: "history", title: t(lang, "menuRowHistoryTitle"), description: t(lang, "menuRowHistoryDescription") },
+          { id: "sevas", title: t(lang, "menuRowSevasTitle"), description: t(lang, "menuRowSevasDescription") },
+          { id: "faq", title: t(lang, "menuRowFaqTitle"), description: t(lang, "menuRowFaqDescription") },
+          {
+            id: "donation_info",
+            title: t(lang, "menuRowDonationInfoTitle"),
+            description: t(lang, "menuRowDonationInfoDescription"),
+          },
+          {
+            id: "change_language",
+            title: t(lang, "menuRowChangeLanguageTitle"),
+            description: t(lang, "menuRowChangeLanguageDescription"),
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * Bilingual by design — shown before a devotee has a preferred_language on
+ * file, so there's no single language to render it in yet. Body/button
+ * labels are identical literals duplicated in both locales/en.ts and te.ts.
+ */
+export function buildLanguagePickerMessage(): WhatsAppButtonMessage {
+  return {
+    body: t("en", "languagePickerBody"),
+    buttons: [
+      { id: "lang_en", title: t("en", "languagePickerButtonEnglish") },
+      { id: "lang_te", title: t("en", "languagePickerButtonTelugu") },
+    ],
+  };
+}
+
+function formatEventDateTime(
+  event: Event,
+  timezone: string,
+  lang: SupportedLanguage,
+): { date: string; time: string } {
+  const locale = lang === "te" ? "te-IN" : "en-IN";
   const start = new Date(event.startsAt);
   return {
-    date: start.toLocaleDateString("en-IN", {
+    date: start.toLocaleDateString(locale, {
       day: "numeric",
       month: "short",
       year: "numeric",
       timeZone: timezone,
     }),
-    time: start.toLocaleTimeString("en-IN", {
+    time: start.toLocaleTimeString(locale, {
       hour: "numeric",
       minute: "2-digit",
       timeZone: timezone,
@@ -35,37 +96,40 @@ function formatEventDateTime(event: Event, timezone: string): { date: string; ti
   };
 }
 
-function formatEventLine(event: Event, index: number, timezone: string): string {
-  const { date, time } = formatEventDateTime(event, timezone);
+function formatEventLine(event: Event, index: number, timezone: string, lang: SupportedLanguage): string {
+  const { date, time } = formatEventDateTime(event, timezone, lang);
   const description = event.description ? `\n   ${event.description}` : "";
   return `${index + 1}. ${event.title} - ${date}, ${time}${description}`;
 }
 
-export function buildEventsMessage(tenant: Tenant, events: Event[]): string {
+export function buildEventsMessage(tenant: Tenant, events: Event[], lang: SupportedLanguage): string {
   if (events.length === 0) {
-    return "There are no upcoming events published right now. Please check again later.";
+    return t(lang, "eventsEmpty");
   }
 
-  const lines = events.map((event, index) => formatEventLine(event, index, tenant.timezone));
-  return (
-    `Upcoming events at ${tenant.name}:\n\n${lines.join("\n\n")}\n\n` + `Reply "menu" to go back.`
-  );
+  const lines = events.map((event, index) => formatEventLine(event, index, tenant.timezone, lang));
+  return `${t(lang, "eventsHeader", { temple: tenant.name })}\n\n${lines.join("\n\n")}\n\n${t(lang, "eventsFooter")}`;
 }
 
+/** Proper nouns (Facebook, Instagram, ...) — stays English-only in both languages, unlike day names. */
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export function buildContactMessage(tenant: Tenant, socialLinks: TempleSocialLink[] = []): string {
-  const phone = tenant.defaultContactPhone ?? "the temple office";
+export function buildContactMessage(
+  tenant: Tenant,
+  lang: SupportedLanguage,
+  socialLinks: TempleSocialLink[] = [],
+): string {
+  const phone = tenant.defaultContactPhone ?? t(lang, "contactFallbackPhone");
   const address = tenant.address ? ` or visit ${tenant.address}` : "";
-  const lines = [`Please call ${phone}${address}. A temple volunteer may respond when available.`];
+  const lines = [`${phone}${address}`];
 
   if (tenant.contactEmail) {
-    lines.push(`Email: ${tenant.contactEmail}`);
+    lines.push(`${t(lang, "contactEmailLabel")}: ${tenant.contactEmail}`);
   }
   if (tenant.googleMapsLink) {
-    lines.push(`Directions: ${tenant.googleMapsLink}`);
+    lines.push(`${t(lang, "contactDirectionsLabel")}: ${tenant.googleMapsLink}`);
   }
   if (socialLinks.length > 0) {
     lines.push(socialLinks.map((link) => `${capitalize(link.platform)}: ${link.url}`).join("\n"));
@@ -74,16 +138,14 @@ export function buildContactMessage(tenant: Tenant, socialLinks: TempleSocialLin
   return lines.join("\n");
 }
 
-export function buildUnknownMessage(): string {
-  return `Sorry, I did not understand. Reply "menu" to see options.`;
+export function buildUnknownMessage(lang: SupportedLanguage): string {
+  return t(lang, "unknownMessage");
 }
 
-export function buildAnnouncementMessage(tenant: Tenant, event: Event): string {
-  const { date, time } = formatEventDateTime(event, tenant.timezone);
-  return (
-    `Namaste. Upcoming event at ${tenant.name}: ${event.title} on ${date} at ${time}.\n` +
-    `Reply "events" to view upcoming events.`
-  );
+export function buildAnnouncementMessage(tenant: Tenant, event: Event, lang: SupportedLanguage): string {
+  const { date, time } = formatEventDateTime(event, tenant.timezone, lang);
+  const intro = t(lang, "announcementIntro", { temple: tenant.name, title: event.title, date, time });
+  return `${intro}\n${t(lang, "announcementFooter")}`;
 }
 
 /** Postgres TIME columns come back as "HH:MM:SS" — format as e.g. "6:00 AM". */
@@ -102,9 +164,13 @@ function formatTimeOfDay(time: string): string {
  * eveningOpen/eveningClose set still falls back to the tenant's regular
  * morning hours.
  */
-export function buildTimingsMessage(tenant: Tenant, specialDay: TempleSpecialDay | null): string {
+export function buildTimingsMessage(
+  tenant: Tenant,
+  specialDay: TempleSpecialDay | null,
+  lang: SupportedLanguage,
+): string {
   if (specialDay?.isClosed) {
-    return `${tenant.name} is closed today for ${specialDay.occasion}.`;
+    return t(lang, "timingsClosedForOccasion", { temple: tenant.name, occasion: specialDay.occasion });
   }
 
   const morningOpen = specialDay?.morningOpen ?? tenant.morningOpen;
@@ -113,33 +179,58 @@ export function buildTimingsMessage(tenant: Tenant, specialDay: TempleSpecialDay
   const eveningClose = specialDay?.eveningClose ?? tenant.eveningClose;
 
   if (!morningOpen && !morningClose && !eveningOpen && !eveningClose) {
-    return "Temple timings have not been configured yet. Please contact the temple office.";
+    return t(lang, "timingsNotConfigured");
   }
 
-  const lines = [`${tenant.name} timings${specialDay ? ` (${specialDay.occasion})` : ""}:`];
+  const header = specialDay
+    ? t(lang, "timingsHeaderWithOccasion", { temple: tenant.name, occasion: specialDay.occasion })
+    : t(lang, "timingsHeader", { temple: tenant.name });
+  const lines = [header];
   if (morningOpen && morningClose) {
-    lines.push(`\nMorning:\n${formatTimeOfDay(morningOpen)} - ${formatTimeOfDay(morningClose)}`);
+    lines.push(`\n${t(lang, "timingsMorningLabel")}\n${formatTimeOfDay(morningOpen)} - ${formatTimeOfDay(morningClose)}`);
   }
   if (eveningOpen && eveningClose) {
-    lines.push(`\nEvening:\n${formatTimeOfDay(eveningOpen)} - ${formatTimeOfDay(eveningClose)}`);
+    lines.push(`\n${t(lang, "timingsEveningLabel")}\n${formatTimeOfDay(eveningOpen)} - ${formatTimeOfDay(eveningClose)}`);
   }
   return lines.join("\n");
 }
 
-export function buildHistoryMessage(tenant: Tenant): string {
-  return (
-    tenant.history?.trim() || "Temple history has not been added yet. Please contact the temple office."
-  );
+export function buildHistoryMessage(tenant: Tenant, lang: SupportedLanguage): string {
+  return tenant.history?.trim() || t(lang, "historyFallback");
 }
 
-function formatSevaLine(seva: TempleSeva, index: number): string {
+export function buildDonationInfoMessage(tenant: Tenant, lang: SupportedLanguage): string {
+  return tenant.donationInfo?.trim() || t(lang, "donationInfoFallback");
+}
+
+export function buildHelpMessage(tenant: Tenant, lang: SupportedLanguage): string {
+  return t(lang, "helpBody", { temple: tenant.name });
+}
+
+const DAY_LOCALE_KEY: Record<DayOfWeek, "dayMonday" | "dayTuesday" | "dayWednesday" | "dayThursday" | "dayFriday" | "daySaturday" | "daySunday"> = {
+  monday: "dayMonday",
+  tuesday: "dayTuesday",
+  wednesday: "dayWednesday",
+  thursday: "dayThursday",
+  friday: "dayFriday",
+  saturday: "daySaturday",
+  sunday: "daySunday",
+};
+
+function formatDayName(day: DayOfWeek, lang: SupportedLanguage): string {
+  return t(lang, DAY_LOCALE_KEY[day]);
+}
+
+function formatSevaLine(seva: TempleSeva, index: number, lang: SupportedLanguage): string {
   const headParts = [`${index + 1}. ${seva.name}`];
   if (seva.price) headParts.push(`- ${formatInr(seva.price)}`);
   if (seva.duration) headParts.push(`(${seva.duration})`);
 
   const detailLines = [
     seva.description,
-    seva.availableDays.length > 0 ? `Available: ${seva.availableDays.map(capitalize).join(", ")}` : null,
+    seva.availableDays.length > 0
+      ? `${t(lang, "sevasAvailableLabel")}: ${seva.availableDays.map((day) => formatDayName(day, lang)).join(", ")}`
+      : null,
   ].filter((line): line is string => Boolean(line));
 
   return detailLines.length > 0
@@ -147,31 +238,28 @@ function formatSevaLine(seva: TempleSeva, index: number): string {
     : headParts.join(" ");
 }
 
-export function buildSevasMessage(tenant: Tenant, sevas: TempleSeva[]): string {
+export function buildSevasMessage(tenant: Tenant, sevas: TempleSeva[], lang: SupportedLanguage): string {
   if (sevas.length === 0) {
-    return "No sevas are listed yet. Please contact the temple office for seva information.";
+    return t(lang, "sevasEmpty");
   }
 
   const shown = sevas.slice(0, MAX_SEVAS_IN_REPLY);
-  const lines = shown.map((seva, index) => formatSevaLine(seva, index));
-  const trailer =
-    sevas.length > MAX_SEVAS_IN_REPLY
-      ? "\n\n...and more. Contact the temple office for the full list."
-      : "";
+  const lines = shown.map((seva, index) => formatSevaLine(seva, index, lang));
+  const trailer = sevas.length > MAX_SEVAS_IN_REPLY ? t(lang, "sevasTrailer") : "";
 
-  return `Sevas at ${tenant.name}:\n\n${lines.join("\n\n")}${trailer}`;
+  return `${t(lang, "sevasHeader", { temple: tenant.name })}\n\n${lines.join("\n\n")}${trailer}`;
 }
 
-export function buildFaqMessage(tenant: Tenant, faqs: TempleFaq[]): string {
+export function buildFaqMessage(tenant: Tenant, faqs: TempleFaq[], lang: SupportedLanguage): string {
   if (faqs.length === 0) {
-    return "No frequently asked questions have been added yet. Please contact the temple office.";
+    return t(lang, "faqEmpty");
   }
 
   const shown = faqs.slice(0, MAX_FAQS_IN_REPLY);
   const lines = shown.map((faq, index) => `${index + 1}. ${faq.question}\n   ${faq.answer}`);
-  const trailer = faqs.length > MAX_FAQS_IN_REPLY ? "\n\nMore questions? Contact the temple office." : "";
+  const trailer = faqs.length > MAX_FAQS_IN_REPLY ? t(lang, "faqTrailer") : "";
 
-  return `Frequently asked questions:\n\n${lines.join("\n\n")}${trailer}`;
+  return `${t(lang, "faqHeader")}\n\n${lines.join("\n\n")}${trailer}`;
 }
 
 /**

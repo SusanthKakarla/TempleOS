@@ -16,6 +16,7 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
   const [welcomeMessage, setWelcomeMessage] = useState(tenant.welcomeMessage ?? "");
   const [description, setDescription] = useState(tenant.description ?? "");
   const [history, setHistory] = useState(tenant.history ?? "");
+  const [donationInfo, setDonationInfo] = useState(tenant.donationInfo ?? "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,7 +28,7 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
       const response = await fetch("/api/tenant", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, welcomeMessage, description, history }),
+        body: JSON.stringify({ name, welcomeMessage, description, history, donationInfo }),
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -80,6 +81,16 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
           <div className="space-y-2">
             <Label htmlFor="history">History</Label>
             <Textarea id="history" value={history} onChange={(e) => setHistory(e.target.value)} rows={4} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="donation-info">Donation info</Label>
+            <Textarea
+              id="donation-info"
+              placeholder="How devotees can contribute (bank details, UPI ID, in-person, etc.)"
+              value={donationInfo}
+              onChange={(e) => setDonationInfo(e.target.value)}
+              rows={4}
+            />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={submitting}>

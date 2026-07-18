@@ -16,6 +16,7 @@ interface TenantRow {
   morning_close: string | null;
   evening_open: string | null;
   evening_close: string | null;
+  donation_info: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -36,6 +37,7 @@ function mapTenant(row: TenantRow): Tenant {
     morningClose: row.morning_close,
     eveningOpen: row.evening_open,
     eveningClose: row.evening_close,
+    donationInfo: row.donation_info,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -72,6 +74,7 @@ export type UpdateTenantInput = Partial<
     | "morningClose"
     | "eveningOpen"
     | "eveningClose"
+    | "donationInfo"
   >
 >;
 
@@ -107,6 +110,7 @@ export async function updateTenant(tenantId: string, fields: UpdateTenantInput):
          morning_close = CASE WHEN $20::boolean THEN $21::time ELSE morning_close END,
          evening_open = CASE WHEN $22::boolean THEN $23::time ELSE evening_open END,
          evening_close = CASE WHEN $24::boolean THEN $25::time ELSE evening_close END,
+         donation_info = CASE WHEN $26::boolean THEN $27 ELSE donation_info END,
          updated_at = now()
      WHERE id = $1
      RETURNING *`,
@@ -136,6 +140,8 @@ export async function updateTenant(tenantId: string, fields: UpdateTenantInput):
       fields.eveningOpen ?? null,
       fields.eveningClose !== undefined,
       fields.eveningClose ?? null,
+      fields.donationInfo !== undefined,
+      fields.donationInfo ?? null,
     ],
   );
   return mapTenant(rows[0]);

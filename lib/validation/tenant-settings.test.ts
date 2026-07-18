@@ -16,9 +16,19 @@ describe("updateTenantSettingsSchema", () => {
   });
 
   it("converts empty optional strings to null", () => {
-    const result = updateTenantSettingsSchema.parse({ welcomeMessage: "  ", description: "" });
+    const result = updateTenantSettingsSchema.parse({
+      welcomeMessage: "  ",
+      description: "",
+      donationInfo: "",
+    });
     expect(result.welcomeMessage).toBeNull();
     expect(result.description).toBeNull();
+    expect(result.donationInfo).toBeNull();
+  });
+
+  it("trims donation info", () => {
+    const result = updateTenantSettingsSchema.parse({ donationInfo: "  UPI: temple@upi  " });
+    expect(result.donationInfo).toBe("UPI: temple@upi");
   });
 
   it("validates contact email format", () => {
