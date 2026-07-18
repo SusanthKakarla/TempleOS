@@ -5,14 +5,14 @@ import { Cake, Phone, Sparkles, User, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -76,27 +76,24 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
   }
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
         if (next) resetToDevotee();
       }}
     >
-      <SheetTrigger render={trigger} />
-      <SheetContent className="w-full gap-0 sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{mode === "create" ? "Add devotee" : "Edit devotee"}</SheetTitle>
-          <SheetDescription>
+      <DialogTrigger render={trigger} />
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{mode === "create" ? "Add devotee" : "Edit devotee"}</DialogTitle>
+          <DialogDescription>
             {mode === "create"
               ? "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number."
               : "Update this devotee's details."}
-          </SheetDescription>
-        </SheetHeader>
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
-        >
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">Name</Label>
             <div className="relative">
@@ -124,29 +121,31 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="dateOfBirth">Date of birth (optional)</Label>
-            <div className="relative">
-              <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="pl-9"
-              />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="dateOfBirth">Date of birth (optional)</Label>
+              <div className="relative">
+                <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="birthStar">Birth star / Nakshatram (optional)</Label>
-            <div className="relative">
-              <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="birthStar"
-                value={birthStar}
-                onChange={(e) => setBirthStar(e.target.value)}
-                className="pl-9"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="birthStar">Birth star / Nakshatram (optional)</Label>
+              <div className="relative">
+                <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="birthStar"
+                  value={birthStar}
+                  onChange={(e) => setBirthStar(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
           </div>
           <div className="space-y-2">
@@ -162,13 +161,13 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <SheetFooter className="mt-auto px-0">
+          <DialogFooter>
             <Button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Save"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

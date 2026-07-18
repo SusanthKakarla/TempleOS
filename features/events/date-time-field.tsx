@@ -78,7 +78,7 @@ export function DateTimeField({
             type="time"
             value={timePart}
             onChange={(e) => handleTimeChange(e.target.value)}
-            className="pl-8"
+            className="pl-8 [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
             required={required}
           />
         </div>

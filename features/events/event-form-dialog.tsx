@@ -145,7 +145,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             <DateTimeField id="startsAt" label="Start" value={startsAt} onChange={setStartsAt} required />
             <DateTimeField id="endsAt" label="End (optional)" value={endsAt} onChange={setEndsAt} />
           </div>
