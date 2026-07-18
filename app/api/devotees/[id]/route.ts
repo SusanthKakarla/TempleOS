@@ -63,10 +63,23 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const deleted = await deleteDevotee(session.tenantId, id);
-  if (!deleted) {
-    return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
+  try {
+    const deleted = await deleteDevotee(session.tenantId, id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (isForeignKeyViolation(err)) {
+      return NextResponse.json(
+        { error: "Can't remove a devotee with donation history" },
+        { status: 409 },
+      );
+    }
+    throw err;
   }
+}
 
-  return NextResponse.json({ ok: true });
+function isForeignKeyViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && err.code === "23503";
 }

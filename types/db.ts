@@ -64,6 +64,12 @@ export interface Devotee {
   lastSeenAt: string;
   lastInteractionType: string | null;
   whatsappOptInStatus: boolean;
+  // Cached from donations (see lib/db/donations.ts), not purely derived.
+  // isDonor/totalDonatedAmount/lastDonationAt are recomputed from the
+  // donations table on every donation write, never patched incrementally.
+  isDonor: boolean;
+  totalDonatedAmount: string; // NUMERIC comes back from pg as a string to avoid float precision loss on money
+  lastDonationAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,4 +101,33 @@ export interface WhatsAppInteraction {
   interactionType: InteractionType;
   metadata: Record<string, unknown> | null;
   createdAt: string;
+}
+
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other";
+
+export interface Donation {
+  id: string;
+  tenantId: string;
+  devoteeId: string;
+  amount: string; // NUMERIC comes back from pg as a string to avoid float precision loss on money
+  purpose: string;
+  paymentMethod: PaymentMethod;
+  notes: string | null;
+  donatedAt: string;
+  recordedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** listDonations() joins devotees so the table doesn't need N+1 lookups. */
+export interface DonationWithDonor extends Donation {
+  donorName: string;
+  donorPhone: string;
+}
+
+export interface DonationSummary {
+  totalAllTime: string;
+  totalThisMonth: string;
+  donorCount: number;
+  donationCount: number;
 }

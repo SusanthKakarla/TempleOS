@@ -13,6 +13,9 @@ interface DevoteeRow {
   last_seen_at: Date;
   last_interaction_type: string | null;
   whatsapp_opt_in_status: boolean;
+  is_donor: boolean;
+  total_donated_amount: string;
+  last_donation_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -30,6 +33,9 @@ function mapDevotee(row: DevoteeRow): Devotee {
     lastSeenAt: row.last_seen_at.toISOString(),
     lastInteractionType: row.last_interaction_type,
     whatsappOptInStatus: row.whatsapp_opt_in_status,
+    isDonor: row.is_donor,
+    totalDonatedAmount: row.total_donated_amount,
+    lastDonationAt: row.last_donation_at ? row.last_donation_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -191,9 +197,12 @@ export async function updateDevotee(
 }
 
 /**
- * Message/interaction history rows referencing this devotee are kept (their
- * devotee_id column is nullable and ON DELETE SET NULL), so WhatsApp Activity
- * history isn't lost — only the devotee record itself is removed.
+ * WhatsApp message/interaction history rows referencing this devotee are
+ * kept (their devotee_id column is nullable and ON DELETE SET NULL) — only
+ * the devotee record itself is removed. Donation history has no such
+ * fallback (devotee_id there is required, no ON DELETE action), so deleting
+ * a devotee with donations fails with a foreign key violation; the caller
+ * (the API route) turns that into a friendly 409.
  */
 export async function deleteDevotee(tenantId: string, devoteeId: string): Promise<boolean> {
   const result = await getPool().query("DELETE FROM devotees WHERE tenant_id = $1 AND id = $2", [

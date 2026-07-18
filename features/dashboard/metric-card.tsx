@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatInr } from "@/lib/currency";
 import { useCountUp } from "./use-count-up";
 
 interface MetricCardProps {
@@ -11,10 +12,17 @@ interface MetricCardProps {
   value: number;
   icon: ReactNode;
   gradient: string;
+  /**
+   * Display format for the animated count. A function prop isn't usable here
+   * (this is a Client Component fed from Server Component pages, and
+   * functions can't cross that boundary), so this is a fixed literal instead.
+   */
+  format?: "number" | "currency";
 }
 
-export function MetricCard({ label, value, icon, gradient }: MetricCardProps) {
+export function MetricCard({ label, value, icon, gradient, format = "number" }: MetricCardProps) {
   const displayValue = useCountUp(value);
+  const formatted = format === "currency" ? formatInr(displayValue) : displayValue;
 
   return (
     <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
@@ -30,7 +38,7 @@ export function MetricCard({ label, value, icon, gradient }: MetricCardProps) {
             {icon}
           </span>
         </div>
-        <p className="font-heading text-3xl font-semibold tabular-nums">{displayValue}</p>
+        <p className="font-heading text-3xl font-semibold tabular-nums">{formatted}</p>
       </Card>
     </motion.div>
   );

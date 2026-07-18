@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Landmark,
   MessageCircle,
+  Receipt,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -27,6 +28,12 @@ export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, gradient: "gradient-saffron-gold" },
   { href: "/dashboard/events", label: "Events", icon: CalendarDays, gradient: "gradient-maroon-orange" },
   { href: "/dashboard/devotees", label: "Devotees", icon: Users, gradient: "gradient-blue-purple" },
+  {
+    href: "/dashboard/donations",
+    label: "Donations",
+    icon: Receipt,
+    gradient: "gradient-saffron-gold",
+  },
   {
     href: "/dashboard/whatsapp-activity",
     label: "WhatsApp Activity",

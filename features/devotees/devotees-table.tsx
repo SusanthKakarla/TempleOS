@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Search, UserPlus, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -136,14 +137,17 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
               {devotees.map((devotee) => (
                 <TableRow key={devotee.id}>
                   <TableCell>
-                    <div className="flex items-center gap-2.5">
+                    <Link
+                      href={`/dashboard/devotees/${devotee.id}`}
+                      className="flex items-center gap-2.5 hover:underline"
+                    >
                       <Avatar className="size-8">
                         <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
                           {getInitials(devotee.displayName)}
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{devotee.displayName}</span>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell>{devotee.whatsappPhone}</TableCell>
                   <TableCell>

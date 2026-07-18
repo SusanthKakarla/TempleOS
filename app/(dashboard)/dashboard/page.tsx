@@ -1,6 +1,8 @@
 import {
   AlertTriangle,
   CalendarDays,
+  HandCoins,
+  HeartHandshake,
   MessageCircle,
   Megaphone,
   Send,
@@ -10,6 +12,7 @@ import { getSessionAdmin } from "@/lib/auth/session";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
 import { countDevotees, countOptedInDevotees, listRecentDevotees } from "@/lib/db/devotees";
+import { getDonationSummary } from "@/lib/db/donations";
 import {
   countFailedMessages,
   countMessagesByDirection,
@@ -40,6 +43,7 @@ export default async function DashboardHomePage() {
     messagesReceived,
     messagesSent,
     failedSends,
+    donationSummary,
     upcomingEventsList,
     recentDevotees,
     recentMessages,
@@ -51,6 +55,7 @@ export default async function DashboardHomePage() {
     countMessagesByDirection(session.tenantId, "inbound"),
     countMessagesByDirection(session.tenantId, "outbound"),
     countFailedMessages(session.tenantId),
+    getDonationSummary(session.tenantId),
     listEvents(session.tenantId, { status: "published", upcomingOnly: true }),
     listRecentDevotees(session.tenantId, 5),
     listRecentMessages(session.tenantId, 5),
@@ -92,6 +97,19 @@ export default async function DashboardHomePage() {
           value={optedInDevotees}
           icon={<MessageCircle className="size-4.5" />}
           gradient="gradient-green-emerald"
+        />
+        <MetricCard
+          label="Total Donations (This Month)"
+          value={Number(donationSummary.totalThisMonth)}
+          format="currency"
+          icon={<HandCoins className="size-4.5" />}
+          gradient="gradient-saffron-gold"
+        />
+        <MetricCard
+          label="Total Donors"
+          value={donationSummary.donorCount}
+          icon={<HeartHandshake className="size-4.5" />}
+          gradient="gradient-maroon-orange"
         />
         <MetricCard
           label="Messages Received"
