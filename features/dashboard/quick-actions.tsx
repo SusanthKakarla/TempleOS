@@ -24,8 +24,10 @@ export function QuickActions() {
           mode="create"
           onSaved={refresh}
           trigger={
-            <Button variant="outline" className="flex-1 justify-start gap-2">
-              <CalendarPlus className="size-4 text-saffron" />
+            <Button variant="outline" className="group/action flex-1 justify-start gap-2.5">
+              <span className="gradient-saffron-gold flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/action:scale-110">
+                <CalendarPlus className="size-3.5" />
+              </span>
               Create event
             </Button>
           }
@@ -34,8 +36,10 @@ export function QuickActions() {
           mode="create"
           onSaved={refresh}
           trigger={
-            <Button variant="outline" className="flex-1 justify-start gap-2">
-              <UserPlus className="size-4 text-royal-blue" />
+            <Button variant="outline" className="group/action flex-1 justify-start gap-2.5">
+              <span className="bg-royal-blue flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/action:scale-110">
+                <UserPlus className="size-3.5" />
+              </span>
               Add devotee
             </Button>
           }

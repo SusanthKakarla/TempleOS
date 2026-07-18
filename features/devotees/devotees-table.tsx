@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, UserPlus, Users } from "lucide-react";
+import { UserPlus, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
@@ -18,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DevoteeFormDialog } from "./devotee-form-dialog";
+import { DevoteesSearchInput } from "./devotees-search-input";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
@@ -30,24 +30,8 @@ function getInitials(name: string): string {
 
 export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("search") ?? "");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      if (query.trim()) {
-        params.set("search", query.trim());
-      } else {
-        params.delete("search");
-      }
-      router.replace(`/dashboard/devotees?${params.toString()}`);
-    }, 300);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only when the debounced query changes
-  }, [query]);
 
   function refresh() {
     router.refresh();
@@ -98,21 +82,15 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
         />
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or phone..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+      <DevoteesSearchInput />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {devotees.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <Users className="size-8 text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <Users className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No devotees found</p>
           <p className="text-sm text-muted-foreground">
             Devotees appear here once they message the temple WhatsApp number, or you can add one

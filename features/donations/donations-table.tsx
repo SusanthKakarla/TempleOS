@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { HandCoins, Plus, Search } from "lucide-react";
+import { HandCoins, Plus } from "lucide-react";
 import type { Devotee, DonationWithDonor } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
 import { formatInr } from "@/lib/currency";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
+import { DonationsSearchInput } from "./donations-search-input";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
@@ -37,7 +38,6 @@ export function DonationsTable({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("search") ?? "");
   const [dateFrom, setDateFrom] = useState(searchParams.get("dateFrom") ?? "");
   const [dateTo, setDateTo] = useState(searchParams.get("dateTo") ?? "");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -46,8 +46,6 @@ export function DonationsTable({
   useEffect(() => {
     const timeout = setTimeout(() => {
       const params = new URLSearchParams(searchParams);
-      if (query.trim()) params.set("search", query.trim());
-      else params.delete("search");
       if (dateFrom) params.set("dateFrom", dateFrom);
       else params.delete("dateFrom");
       if (dateTo) params.set("dateTo", dateTo);
@@ -55,8 +53,8 @@ export function DonationsTable({
       router.replace(`/dashboard/donations?${params.toString()}`);
     }, 300);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only when the debounced filters change
-  }, [query, dateFrom, dateTo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only when the debounced date filters change
+  }, [dateFrom, dateTo]);
 
   function refresh() {
     router.refresh();
@@ -109,15 +107,7 @@ export function DonationsTable({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by donor name or phone..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <DonationsSearchInput />
         <Input
           type="date"
           value={dateFrom}
@@ -139,7 +129,9 @@ export function DonationsTable({
 
       {donations.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <HandCoins className="size-8 text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <HandCoins className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No donations found</p>
           <p className="text-sm text-muted-foreground">
             Record a donation to start tracking donor history.

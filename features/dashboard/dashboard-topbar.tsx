@@ -74,6 +74,7 @@ export function DashboardTopbar({
             render={
               <button
                 type="button"
+                aria-label="Account menu"
                 className="flex items-center gap-2 rounded-full p-0.5 transition-colors hover:bg-accent"
               >
                 <Avatar className="size-8">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,12 +21,15 @@ export function RecentDevoteesWidget({ devotees }: { devotees: Devotee[] }) {
       </CardHeader>
       <CardContent className="space-y-1">
         {devotees.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No devotees yet.</p>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <Users className="size-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No devotees yet.</p>
+          </div>
         ) : (
           devotees.map((devotee) => (
             <div
               key={devotee.id}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-200 hover:bg-accent"
             >
               <Avatar className="size-9">
                 <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">

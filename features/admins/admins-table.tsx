@@ -107,8 +107,11 @@ export function AdminsTable({ admins }: { admins: AdminUser[] }) {
 
       {admins.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <Users className="size-8 text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <Users className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No admins found</p>
+          <p className="text-sm text-muted-foreground">Add an admin to give them dashboard access.</p>
         </div>
       ) : (
         <div className="rounded-xl border bg-background">
@@ -143,6 +146,7 @@ export function AdminsTable({ admins }: { admins: AdminUser[] }) {
                         value={admin.role}
                         disabled={pendingId === admin.id || isLastSuperAdmin}
                         onValueChange={(value) => handleRoleChange(admin, value as AdminRole)}
+                        items={{ admin: "Admin", super_admin: "Super Admin" }}
                       >
                         <SelectTrigger className="w-40">
                           <SelectValue />

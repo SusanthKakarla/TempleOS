@@ -118,7 +118,9 @@ export function EventsTable({ events }: { events: Event[] }) {
 
       {events.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <CalendarDays className="size-8 text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <CalendarDays className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No events yet</p>
           <p className="text-sm text-muted-foreground">Create your first temple event to get started.</p>
         </div>

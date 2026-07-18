@@ -58,7 +58,9 @@ export function ActivityFeed({ messages }: { messages: WhatsAppMessage[] }) {
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <MessageCircle className="size-8 text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <MessageCircle className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No WhatsApp activity</p>
           <p className="text-sm text-muted-foreground">
             Messages will show up here once devotees message the temple number.

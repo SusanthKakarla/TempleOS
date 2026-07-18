@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getPool } from "./pool";
 import type { AdminRole, AdminUser } from "@/types/db";
 
@@ -35,12 +36,22 @@ export async function findActiveAdminByPhone(phoneNumber: string): Promise<Admin
   return rows[0] ? mapAdminUser(rows[0]) : null;
 }
 
-export async function getAdminById(adminId: string): Promise<AdminUser | null> {
+/**
+ * React `cache()`-deduped per-request: the dashboard layout and
+ * `requireSuperAdmin()` both look up the current admin on every navigation
+ * (intentionally, for a live role/active-status check — see the layout's
+ * comment), so without this a route like /dashboard/admins pays for the same
+ * row twice. `cache()` only dedupes within a single request, so the live
+ * check still re-runs fresh on every new request.
+ */
+export const getAdminById = cache(async function getAdminById(
+  adminId: string,
+): Promise<AdminUser | null> {
   const { rows } = await getPool().query<AdminUserRow>("SELECT * FROM admin_users WHERE id = $1", [
     adminId,
   ]);
   return rows[0] ? mapAdminUser(rows[0]) : null;
-}
+});
 
 export async function setAdminFirebaseUid(adminId: string, firebaseUid: string): Promise<void> {
   await getPool().query("UPDATE admin_users SET firebase_uid = $2, updated_at = now() WHERE id = $1", [

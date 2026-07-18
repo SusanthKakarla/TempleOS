@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import type { CountryCode } from "libphonenumber-js";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
+import { normalizePhoneNumber } from "@/lib/phone.mts";
+import { useDefaultCountry } from "@/lib/countries";
+import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +25,15 @@ type Step = "phone" | "otp";
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
+  // Defaults to India during SSR/first paint, then refines to the browser's
+  // detected locale — see useDefaultCountry's comment. `countryOverride`
+  // holds the user's own pick once they open the picker, which must win over
+  // the detected default on every subsequent render.
+  const detectedCountry = useDefaultCountry();
+  const [countryOverride, setCountryOverride] = useState<CountryCode | null>(null);
+  const countryIso = countryOverride ?? detectedCountry;
   const [phone, setPhone] = useState("");
+  const [fullPhone, setFullPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,13 +77,21 @@ export default function LoginPage() {
   async function handleSendOtp(event: FormEvent) {
     event.preventDefault();
     setError(null);
+
+    const normalized = normalizePhoneNumber(phone, countryIso);
+    if (!normalized) {
+      setError("Enter a valid phone number");
+      return;
+    }
+
     setLoading(true);
     try {
-      devLog("Requesting OTP for", phone);
+      devLog("Requesting OTP for", normalized);
       const auth = getFirebaseAuth();
       const verifier = getOrCreateVerifier();
-      confirmationRef.current = await signInWithPhoneNumber(auth, phone, verifier);
+      confirmationRef.current = await signInWithPhoneNumber(auth, normalized, verifier);
       devLog("OTP sent successfully");
+      setFullPhone(normalized);
       setStep("otp");
     } catch (err) {
       devLog("Failed to send OTP", err);
@@ -113,7 +133,7 @@ export default function LoginPage() {
           // Authentication succeeded — the phone number just isn't provisioned
           // for dashboard access. That's a distinct outcome from a login
           // failure, so it gets its own page rather than an inline error.
-          router.push(`/access-denied?phone=${encodeURIComponent(phone)}`);
+          router.push(`/access-denied?phone=${encodeURIComponent(fullPhone)}`);
           return;
         }
 
@@ -145,7 +165,7 @@ export default function LoginPage() {
           <CardDescription>
             {step === "phone"
               ? "Enter your phone number to receive a login code."
-              : `Enter the code sent to ${phone}.`}
+              : `Enter the code sent to ${fullPhone}.`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,14 +173,18 @@ export default function LoginPage() {
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91XXXXXXXXXX"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  required
-                />
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="flex-1"
+                    required
+                  />
+                </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>

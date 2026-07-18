@@ -19,14 +19,15 @@ export function UpcomingEventsWidget({ events }: { events: Event[] }) {
       </CardHeader>
       <CardContent className="space-y-1">
         {events.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No upcoming published events yet.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <CalendarDays className="size-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No upcoming published events yet.</p>
+          </div>
         ) : (
           events.map((event) => (
             <div
               key={event.id}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-200 hover:bg-accent"
             >
               <span className="gradient-maroon-orange flex size-9 shrink-0 flex-col items-center justify-center rounded-lg text-[10px] font-semibold leading-none text-white shadow-sm">
                 <CalendarDays className="mb-0.5 size-3.5" />

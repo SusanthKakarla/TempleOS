@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, MessageCircle } from "lucide-react";
 import type { WhatsAppMessage } from "@/types/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +19,15 @@ export function RecentMessagesWidget({ messages }: { messages: WhatsAppMessage[]
       </CardHeader>
       <CardContent className="space-y-1">
         {messages.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No WhatsApp activity yet.</p>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <MessageCircle className="size-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No WhatsApp activity yet.</p>
+          </div>
         ) : (
           messages.map((message) => (
             <div
               key={message.id}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-200 hover:bg-accent"
             >
               <span
                 className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-sm ${

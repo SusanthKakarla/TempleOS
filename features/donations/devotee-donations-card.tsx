@@ -91,7 +91,9 @@ export function DevoteeDonationsCard({
 
       {donations.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
-          <HandCoins className="size-7 text-muted-foreground" />
+          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+            <HandCoins className="size-5 text-muted-foreground" />
+          </div>
           <p className="text-sm text-muted-foreground">No donation history for this devotee.</p>
         </div>
       ) : (

@@ -115,7 +115,11 @@ export function AdminFormDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as AdminRole)}>
+            <Select
+              value={role}
+              onValueChange={(value) => setRole((value ?? "admin") as AdminRole)}
+              items={{ admin: "Admin", super_admin: "Super Admin" }}
+            >
               <SelectTrigger id="role" className="w-full">
                 <ShieldCheck className="size-4 text-royal-blue" />
                 <SelectValue />

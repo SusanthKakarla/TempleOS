@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   CalendarDays,
   LayoutDashboard,
@@ -75,15 +76,22 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.href}>
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active-indicator"
+                        className="absolute inset-y-1 left-0 w-1 rounded-full bg-saffron"
+                        transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                      />
+                    )}
                     <SidebarMenuButton
                       isActive={isActive}
                       tooltip={item.label}
                       render={<Link href={item.href} />}
-                      className="h-10 gap-3"
+                      className="group/nav-item h-10 gap-3"
                     >
                       <span
                         className={cn(
-                          "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform",
+                          "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110",
                           item.gradient,
                         )}
                       >
