@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { verifySessionToken } from "@/lib/auth/session";
+import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
 import {
   parseProvisionTempleInput,
   provisionTemple,
@@ -37,6 +38,10 @@ vi.mock("@/lib/provisioning/temples", () => {
     ProvisionTempleError: MockProvisionTempleError,
   };
 });
+
+vi.mock("@/lib/db/tenants", () => ({
+  listTenantsForSuperAdmin: vi.fn(),
+}));
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
@@ -166,8 +171,80 @@ describe("super admin temple provisioning route", () => {
     vi.mocked(verifySessionToken).mockReset();
     vi.mocked(parseProvisionTempleInput).mockReset();
     vi.mocked(provisionTemple).mockReset();
+    vi.mocked(listTenantsForSuperAdmin).mockReset();
     vi.mocked(cookies).mockReset();
     mockTenantCookie();
+  });
+
+  it("lists provisioned temples for an authenticated super admin", async () => {
+    const temples = [
+      {
+        id: "tenant-1",
+        slug: "sv-temple",
+        name: "Sri Venkateswara Temple",
+        primaryHostname: "svtemple.trytempleos.com",
+        primaryAdminName: "Temple Admin",
+        primaryAdminPhoneNumber: "+14155552672",
+        activeMemberCount: 2,
+        whatsappStatus: "linked" as const,
+        lastUpdatedAt: "2026-07-18T08:00:00.000Z",
+      },
+    ];
+    vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin);
+    vi.mocked(listTenantsForSuperAdmin).mockResolvedValue(temples);
+
+    const res = await GET();
+
+    await expect(res.json()).resolves.toEqual({ temples });
+    expect(res.status).toBe(200);
+    expect(listTenantsForSuperAdmin).toHaveBeenCalledOnce();
+    expect(parseProvisionTempleInput).not.toHaveBeenCalled();
+    expect(provisionTemple).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 for unauthenticated list requests without reading tenant summaries", async () => {
+    vi.mocked(requireSuperAdmin).mockResolvedValue(null);
+
+    const res = await GET();
+
+    await expect(res.json()).resolves.toMatchObject({ code: "UNAUTHENTICATED" });
+    expect(res.status).toBe(401);
+    expect(listTenantsForSuperAdmin).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 for tenant-admin list requests without reading tenant summaries", async () => {
+    mockTenantCookie("tenant-session-token");
+    vi.mocked(requireSuperAdmin).mockResolvedValue(null);
+    vi.mocked(verifySessionToken).mockReturnValue({
+      tenantId: "tenant-1",
+      personId: "person-1",
+      membershipId: "membership-1",
+      roles: ["admin"],
+      phoneNumber: "+917000000000",
+      displayName: "Tenant Admin",
+      exp: Date.now() + 60_000,
+    });
+
+    const res = await GET();
+
+    await expect(res.json()).resolves.toMatchObject({ code: "FORBIDDEN" });
+    expect(res.status).toBe(403);
+    expect(listTenantsForSuperAdmin).not.toHaveBeenCalled();
+  });
+
+  it("returns a stable 500 when the super-admin list read fails", async () => {
+    vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin);
+    vi.mocked(listTenantsForSuperAdmin).mockRejectedValue(
+      new Error("database stack trace with tenant details"),
+    );
+
+    const res = await GET();
+
+    await expect(res.json()).resolves.toEqual({
+      error: "Temple list failed.",
+      code: "TEMPLE_LIST_FAILED",
+    });
+    expect(res.status).toBe(500);
   });
 
   it("provisions a temple for an authenticated super admin", async () => {

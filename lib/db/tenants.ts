@@ -26,6 +26,30 @@ interface TenantRow {
   updated_at: Date;
 }
 
+interface SuperAdminTenantSummaryRow {
+  id: string;
+  slug: string;
+  name: string;
+  primary_hostname: string | null;
+  primary_admin_name: string | null;
+  primary_admin_phone_number: string | null;
+  active_member_count: number | string;
+  whatsapp_status: "linked" | "unlinked";
+  last_updated_at: Date | null;
+}
+
+export interface SuperAdminTenantSummary {
+  id: string;
+  slug: string;
+  name: string;
+  primaryHostname: string | null;
+  primaryAdminName: string | null;
+  primaryAdminPhoneNumber: string | null;
+  activeMemberCount: number;
+  whatsappStatus: "linked" | "unlinked";
+  lastUpdatedAt: string | null;
+}
+
 function mapTenant(row: TenantRow): Tenant {
   return {
     id: row.id,
@@ -49,6 +73,20 @@ function mapTenant(row: TenantRow): Tenant {
     notifyOnEventCancelled: row.notify_on_event_cancelled,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapSuperAdminTenantSummary(row: SuperAdminTenantSummaryRow): SuperAdminTenantSummary {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    primaryHostname: row.primary_hostname,
+    primaryAdminName: row.primary_admin_name,
+    primaryAdminPhoneNumber: row.primary_admin_phone_number,
+    activeMemberCount: Number(row.active_member_count),
+    whatsappStatus: row.whatsapp_status,
+    lastUpdatedAt: row.last_updated_at ? row.last_updated_at.toISOString() : null,
   };
 }
 
@@ -92,6 +130,63 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
     tenantId,
   ]);
   return rows[0] ? mapTenant(rows[0]) : null;
+}
+
+export async function listTenantsForSuperAdmin(): Promise<SuperAdminTenantSummary[]> {
+  const { rows } = await getPool().query<SuperAdminTenantSummaryRow>(
+    `SELECT t.id,
+            t.slug,
+            t.name,
+            primary_domain.hostname AS primary_hostname,
+            primary_admin.display_name AS primary_admin_name,
+            primary_admin.phone_number AS primary_admin_phone_number,
+            COALESCE(member_counts.active_member_count, 0) AS active_member_count,
+            CASE WHEN whatsapp_account.id IS NULL THEN 'unlinked' ELSE 'linked' END AS whatsapp_status,
+            GREATEST(
+              t.updated_at,
+              primary_domain.updated_at,
+              primary_admin.updated_at,
+              primary_admin.role_assigned_at,
+              member_counts.latest_member_updated_at,
+              whatsapp_account.updated_at
+            ) AS last_updated_at
+     FROM tenants t
+     LEFT JOIN LATERAL (
+       SELECT td.hostname, td.updated_at
+       FROM tenant_domains td
+       WHERE td.tenant_id = t.id AND td.kind = 'primary' AND td.status = 'active'
+       ORDER BY td.created_at ASC, td.id ASC
+       LIMIT 1
+     ) primary_domain ON true
+     LEFT JOIN LATERAL (
+       SELECT tm.display_name, p.phone_number, tm.updated_at, tmr.assigned_at AS role_assigned_at
+       FROM tenant_memberships tm
+       INNER JOIN persons p ON p.id = tm.person_id
+       INNER JOIN tenant_membership_roles tmr ON tmr.membership_id = tm.id
+       INNER JOIN role_definitions rd ON rd.id = tmr.role_definition_id
+       WHERE tm.tenant_id = t.id
+         AND tm.status = 'active'
+         AND rd.active = true
+         AND rd.code = 'admin'
+       ORDER BY tm.created_at ASC, tm.id ASC
+       LIMIT 1
+     ) primary_admin ON true
+     LEFT JOIN LATERAL (
+       SELECT count(*)::int AS active_member_count,
+              max(tm.updated_at) AS latest_member_updated_at
+       FROM tenant_memberships tm
+       WHERE tm.tenant_id = t.id AND tm.status = 'active'
+     ) member_counts ON true
+     LEFT JOIN LATERAL (
+       SELECT wa.id, wa.updated_at
+       FROM whatsapp_accounts wa
+       WHERE wa.tenant_id = t.id AND wa.status = 'connected'
+       ORDER BY wa.connected_at DESC NULLS LAST, wa.updated_at DESC, wa.id DESC
+       LIMIT 1
+     ) whatsapp_account ON true
+     ORDER BY t.created_at ASC, t.id ASC`,
+  );
+  return rows.map(mapSuperAdminTenantSummary);
 }
 
 export type UpdateTenantInput = Partial<

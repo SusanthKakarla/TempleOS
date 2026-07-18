@@ -478,6 +478,30 @@ describe("canonical temple provisioning contract", () => {
     expect(client.query).toHaveBeenCalledWith("ROLLBACK");
     expect(client.release).toHaveBeenCalledOnce();
     expect(client.query).not.toHaveBeenCalledWith("COMMIT");
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+  });
+
+  it("rolls back and does not report success when audit logging fails after entity writes", async () => {
+    const parsed = parseProvisionTempleInput(validRawInput);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected validation success");
+    vi.mocked(createAuditLogEntry).mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(provisionTemple(parsed.data, actor)).rejects.toMatchObject({
+      status: 500,
+      code: "PROVISIONING_FAILED",
+    });
+
+    expect(createTenantForSuperAdmin).toHaveBeenCalled();
+    expect(createTenantDomainForSuperAdmin).toHaveBeenCalled();
+    expect(findOrCreatePersonByPhoneForProvisioning).toHaveBeenCalled();
+    expect(createTenantMembershipForProvisioning).toHaveBeenCalled();
+    expect(assignTenantMembershipRolesForProvisioning).toHaveBeenCalled();
+    expect(linkWhatsAppAccountForProvisioning).toHaveBeenCalled();
+    expect(createAuditLogEntry).toHaveBeenCalledOnce();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
   });
 
   it("preserves the original stable provisioning error when rollback fails", async () => {
@@ -530,6 +554,44 @@ describe("canonical temple provisioning contract", () => {
       field: "domain.hostname",
     });
     expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("maps duplicate first-member membership to a stable conflict field", async () => {
+    const parsed = parseProvisionTempleInput(validRawInput);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected validation success");
+    vi.mocked(createTenantMembershipForProvisioning).mockRejectedValueOnce({
+      code: "23505",
+      constraint: "tenant_memberships_tenant_id_person_id_key",
+    });
+
+    await expect(provisionTemple(parsed.data, actor)).rejects.toMatchObject({
+      status: 409,
+      code: "PROVISIONING_CONFLICT",
+      field: "firstMember.phoneNumber",
+    });
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("maps duplicate tenant WhatsApp linkage to a stable conflict field", async () => {
+    const parsed = parseProvisionTempleInput(validRawInput);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected validation success");
+    vi.mocked(linkWhatsAppAccountForProvisioning).mockRejectedValueOnce({
+      code: "23505",
+      constraint: "whatsapp_accounts_tenant_id_unique",
+    });
+
+    await expect(provisionTemple(parsed.data, actor)).rejects.toMatchObject({
+      status: 409,
+      code: "PROVISIONING_CONFLICT",
+      field: "whatsappAccount.tenantId",
+    });
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
     expect(client.release).toHaveBeenCalledOnce();
   });
 

@@ -1,11 +1,7 @@
-## Deferred from: code review of 1-1-create-forward-identity-schema (2026-07-18)
+## Deferred from: code review of 2-6-provisioning-guardrail-tests (2026-07-19)
 
-- Active auth and seed paths still query removed `admin_users`; user chose to defer because Story 1.1 remains schema-only and auth/seed runtime replacement belongs to Stories 1.2-1.5.
+- Role-assignment unique conflicts have no dedicated stable field test [lib/provisioning/temples.test.ts:598] - pre-existing. The current review story explicitly covered tenant slug, hostname, tenant membership, tenant WhatsApp, and Meta phone-number conflicts; role-assignment duplicate behavior can be reviewed with future role-management guardrails.
 
-## Deferred from: code review of 1-2-seed-v0-roles-and-first-super-admin (2026-07-18)
+## Deferred from: code review of 3-1-list-temples-for-super-admin (2026-07-19)
 
-- Fallback Postgres user docs may miss schema CREATE privileges in README.md; this is real local setup guidance risk but pre-existing outside the Story 1.2 seed/bootstrap behavior.
-
-## Deferred from: code review of 1-4-tenant-login-resolves-membership-by-subdomain (2026-07-18)
-
-- Tenant host trust boundary is underspecified in `/api/auth/session`; user chose to defer configured product-domain/trusted-host restrictions to deployment/domain hardening.
+- Multiple active primary domains are not detected [lib/db/tenants.ts:147] - pre-existing. The current schema enforces globally unique hostnames but not one active primary domain per tenant; choosing whether to enforce a partial unique index, expose a conflict state, or handle this in temple-detail/update flows belongs in a future domain/update guardrail story.

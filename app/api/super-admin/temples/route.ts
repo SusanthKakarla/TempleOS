@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { TENANT_SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
+import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
 import {
   parseProvisionTempleInput,
   provisionTemple,
@@ -20,6 +21,23 @@ const stableValidationMessages = new Set([
   "Subdomain cannot produce a tenant hostname.",
   "Timezone must be a valid IANA timezone",
 ]);
+
+export async function GET() {
+  const superAdmin = await requireSuperAdmin();
+  if (!superAdmin) {
+    return superAdminAuthError();
+  }
+
+  try {
+    const temples = await listTenantsForSuperAdmin();
+    return NextResponse.json({ temples });
+  } catch {
+    return NextResponse.json(
+      { error: "Temple list failed.", code: "TEMPLE_LIST_FAILED" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   const superAdmin = await requireSuperAdmin();

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +6,17 @@ const root = path.resolve(__dirname, "..");
 
 function read(relativePath: string): string {
   return readFileSync(path.join(root, relativePath), "utf8");
+}
+
+function listSourceFiles(relativePath: string): string[] {
+  const fullPath = path.join(root, relativePath);
+  try {
+    const stat = statSync(fullPath);
+    if (stat.isFile()) return [relativePath];
+    return readdirSync(fullPath).flatMap((entry) => listSourceFiles(path.join(relativePath, entry)));
+  } catch {
+    return [];
+  }
 }
 
 describe("Story 1.2 production bootstrap scripts", () => {
@@ -37,5 +48,70 @@ describe("Story 1.2 production bootstrap scripts", () => {
     expect(source).toContain("SUPER_ADMIN_PHONE_NUMBER");
     expect(source).toContain("SUPER_ADMIN_DISPLAY_NAME");
     expect(source).not.toContain("+917995362200");
+  });
+});
+
+describe("Story 2.6 production provisioning path guardrails", () => {
+  it("keeps production provisioning entrypoints away from pilot and legacy admin footguns", () => {
+    for (const file of [
+      "lib/provisioning/temples.ts",
+      "app/api/super-admin/temples/route.ts",
+      "scripts/provision-temple.mts",
+    ]) {
+      const source = read(file);
+      expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users|upsertAdminUser/i);
+      expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
+    }
+  });
+
+  it("keeps API and CLI provisioning entrypoints on the canonical service path", () => {
+    for (const file of ["app/api/super-admin/temples/route.ts", "scripts/provision-temple.mts"]) {
+      const source = read(file);
+      expect(source).toMatch(/@\/lib\/provisioning\/temples/);
+      expect(source).toMatch(/parseProvisionTempleInput/);
+      expect(source).toMatch(/provisionTemple/);
+      expect(source).not.toMatch(
+        /createTenantForSuperAdmin|createTenantDomainForSuperAdmin|findOrCreatePersonByPhoneForProvisioning|createTenantMembershipForProvisioning|assignTenantMembershipRolesForProvisioning|linkWhatsAppAccountForProvisioning|createAuditLogEntry/i,
+      );
+      expect(source).not.toMatch(/pool\.query|client\.query/i);
+      expect(source).not.toMatch(
+        /\binsert\s+into\s+(tenants|tenant_domains|persons|tenant_memberships|tenant_membership_roles|whatsapp_accounts|audit_log)\b/i,
+      );
+    }
+  });
+});
+
+describe("Story 3.1 super-admin temple list guardrails", () => {
+  it("keeps the broad temple list function out of tenant-dashboard code paths", () => {
+    const files = [
+      ...listSourceFiles("app/(dashboard)"),
+      ...listSourceFiles("app/api").filter((file) => {
+        if (!/\/route\.tsx?$/.test(file)) return false;
+        if (file.startsWith("app/api/super-admin/")) return false;
+        const source = read(file);
+        return /@\/lib\/auth\/tenant-admin|requireTenantAdminSession/.test(source);
+      }),
+      ...listSourceFiles("lib/auth/session.ts"),
+      ...listSourceFiles("lib/auth/tenant-admin.ts"),
+    ].filter((file) => /\.(ts|tsx)$/.test(file) && !file.endsWith(".test.ts"));
+
+    expect(files.length).toBeGreaterThan(0);
+
+    for (const file of files) {
+      const source = read(file);
+      expect(source).not.toMatch(/listTenantsForSuperAdmin/);
+    }
+  });
+
+  it("keeps the super-admin temple list page behind the super-admin boundary", () => {
+    const source = read("app/(super-admin)/super-admin/page.tsx");
+    expect(source).toMatch(/requireSuperAdminPage/);
+    expect(source).toMatch(/listTenantsForSuperAdmin/);
+    expect(source).toMatch(/\/super-admin\/temples\/new/);
+    expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users/i);
+    expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
+    expect(source.indexOf("await requireSuperAdminPage()")).toBeLessThan(
+      source.indexOf("await listTenantsForSuperAdmin()"),
+    );
   });
 });

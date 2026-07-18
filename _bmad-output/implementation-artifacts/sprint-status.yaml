@@ -1,5 +1,5 @@
 # generated: 2026-07-18T17:32:34+0530
-# last_updated: 2026-07-19T00:54:00+0530
+# last_updated: 2026-07-19T01:30:00+0530
 # project: templeOS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18T17:32:34+0530
-last_updated: 2026-07-19T00:54:00+0530
+last_updated: 2026-07-19T01:30:00+0530
 project: templeOS
 project_key: NOKEY
 tracking_system: file-system
@@ -62,10 +62,10 @@ development_status:
   2-3-super-admin-provision-temple-api: done
   2-4-super-admin-new-temple-form: done
   2-5-provision-temple-cli: done
-  2-6-provisioning-guardrail-tests: backlog
-  epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-list-temples-for-super-admin: backlog
+  2-6-provisioning-guardrail-tests: done
+  epic-2-retrospective: done
+  epic-3: in-progress
+  3-1-list-temples-for-super-admin: done
   3-2-view-temple-detail-for-super-admin: backlog
   3-3-update-provisioned-temple-details: backlog
   3-4-govern-fixed-platform-role-definitions: backlog
@@ -81,3 +81,25 @@ development_status:
   4-5-manage-tenant-members-and-roles: backlog
   4-6-tenant-dashboard-guardrail-tests: backlog
   epic-4-retrospective: optional
+
+action_items:
+  - epic: 2
+    action: "Add the deferred role-assignment duplicate-conflict test in the Epic 3 role-management scope."
+    owner: "Amelia / Dana"
+    status: open
+  - epic: 2
+    action: "Keep Epic 3 repository functions explicitly super-admin-only, with tests or guardrails preventing tenant dashboard imports."
+    owner: "Winston / Amelia"
+    status: open
+  - epic: 2
+    action: "For each Epic 3 API story, include explicit checks for auth denial, tenant-scope isolation, stable error fields, and audit behavior where mutations occur."
+    owner: "Amelia / Dana"
+    status: open
+  - epic: 2
+    action: "Preserve the WhatsApp V0 boundary: read status only, no update, disconnect, transfer, or embedded signup controls."
+    owner: "Alice / Amelia"
+    status: open
+  - epic: 2
+    action: "Keep the Super Admin UI ready for Epic 3 operations by creating stories with visible list/detail/update/status flows, not API-only endpoints."
+    owner: "Sally / Amelia"
+    status: open
