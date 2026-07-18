@@ -28,6 +28,70 @@ export interface Tenant {
 
 export type AdminRole = "super_admin" | "admin";
 
+export interface SuperAdmin {
+  id: string;
+  phoneNumber: string;
+  displayName: string;
+  firebaseUid: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Person {
+  id: string;
+  phoneNumber: string;
+  displayName: string;
+  firebaseUid: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TenantDomainKind = "primary" | "custom";
+export type TenantDomainStatus = "active" | "inactive";
+
+export interface TenantDomain {
+  id: string;
+  tenantId: string;
+  hostname: string;
+  kind: TenantDomainKind;
+  status: TenantDomainStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RoleCode = "admin" | "priest" | "committee_member" | "volunteer" | "devotee";
+
+export interface RoleDefinition {
+  id: string;
+  code: RoleCode;
+  displayName: string;
+  description: string | null;
+  capabilitySet: Record<string, unknown>;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TenantMembershipStatus = "active" | "inactive";
+
+export interface TenantMembership {
+  id: string;
+  tenantId: string;
+  personId: string;
+  displayName: string;
+  status: TenantMembershipStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantMembershipRole {
+  membershipId: string;
+  roleDefinitionId: string;
+  assignedByMembershipId: string | null;
+  assignedAt: string;
+}
+
 export interface AdminUser {
   id: string;
   tenantId: string;

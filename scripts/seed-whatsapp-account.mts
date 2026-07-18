@@ -1,10 +1,8 @@
-import { config } from "dotenv";
+import "./load-env.mts";
 import { getPool } from "../lib/db/pool";
 import { getPilotTenant } from "../lib/db/tenants";
 import { upsertWhatsAppAccount } from "../lib/db/whatsapp-accounts";
 import { normalizePhoneNumber } from "../lib/phone.mts";
-
-config({ path: ".env.local", quiet: true });
 
 function parseArgs(): Map<string, string> {
   const args = process.argv.slice(2);

@@ -1,4 +1,4 @@
-import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
+import parsePhoneNumberFromString, { type CountryCode } from "libphonenumber-js";
 
 const DEFAULT_COUNTRY: CountryCode = "IN";
 
@@ -9,7 +9,7 @@ export function normalizePhoneNumber(
 ): string | null {
   const cleaned = raw.trim();
   if (!cleaned) return null;
-  const parsed = parsePhoneNumberFromString(cleaned, defaultCountry);
+  const parsed = parsePhoneNumberFromString(cleaned, { defaultCountry });
   return parsed && parsed.isValid() ? parsed.number : null;
 }
 

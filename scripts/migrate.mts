@@ -1,9 +1,7 @@
-import { config } from "dotenv";
+import "./load-env.mts";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { Pool } from "pg";
-
-config({ path: ".env.local", quiet: true });
 
 // Private/local networks (Railway's internal *.railway.internal host included)
 // don't speak TLS; only the public internet-facing hosts need it.
@@ -14,7 +12,7 @@ function needsSSL(connectionString: string): boolean {
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("DATABASE_URL is not set. Add it to .env.local.");
+    throw new Error("DATABASE_URL is not set. Add it to .env or .env.local.");
   }
 
   const pool = new Pool({

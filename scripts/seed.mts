@@ -1,55 +1,32 @@
-import { config } from "dotenv";
+import "./load-env.mts";
 import { getPool } from "../lib/db/pool";
-import { getPilotTenant } from "../lib/db/tenants";
-import { countSuperAdmins, upsertAdminUser } from "../lib/db/admin-users";
-import { normalizePhoneNumber } from "../lib/phone.mts";
-
-config({ path: ".env.local", quiet: true });
+import { seedV0RoleDefinitions } from "../lib/db/role-definitions";
+import { upsertFirstSuperAdmin } from "../lib/db/super-admins";
 
 /**
- * Idempotent bootstrap: creates the initial Super Admin from ADMIN_PHONE_NUMBER
- * if (and only if) no Super Admin exists yet for the pilot tenant. Safe to run
- * on every deploy — `npm run seed`.
+ * Idempotent platform bootstrap. Safe to run on every deploy.
+ *
+ * The optional first super-admin seed is driven by env so deployments can
+ * create the initial platform actor without attaching them to any tenant.
  */
 async function main() {
-  const tenant = await getPilotTenant();
-  if (!tenant) {
-    console.error("No pilot tenant found. Run `npm run migrate` first.");
-    process.exitCode = 1;
-    return;
-  }
+  const roles = await seedV0RoleDefinitions();
+  console.log(`Seeded ${roles.length} V0 role definitions.`);
 
-  const existing = await countSuperAdmins(tenant.id);
-  if (existing > 0) {
-    console.log(`Super Admin already provisioned for "${tenant.name}" — nothing to do.`);
-    return;
-  }
-
-  const adminPhoneRaw = process.env.ADMIN_PHONE_NUMBER;
-  if (!adminPhoneRaw) {
+  const phoneNumber = process.env.SUPER_ADMIN_PHONE_NUMBER;
+  if (!phoneNumber) {
     console.warn(
-      "No Super Admin exists yet and ADMIN_PHONE_NUMBER is not set — skipping bootstrap. " +
-        "Set ADMIN_PHONE_NUMBER and rerun `npm run seed`, or use `npm run seed:admin` directly.",
+      "SUPER_ADMIN_PHONE_NUMBER is not set — skipping first Super Admin bootstrap. " +
+        "Run `npm run seed:super-admin -- --phone <phone> --name <name>` when ready.",
     );
     return;
   }
 
-  const adminPhone = normalizePhoneNumber(adminPhoneRaw);
-  if (!adminPhone) {
-    console.error(`ADMIN_PHONE_NUMBER "${adminPhoneRaw}" is not a valid phone number.`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const displayName = process.env.ADMIN_DISPLAY_NAME ?? "Super Admin";
-  const admin = await upsertAdminUser({
-    tenantId: tenant.id,
-    phoneNumber: adminPhone,
-    displayName,
-    role: "super_admin",
+  const superAdmin = await upsertFirstSuperAdmin({
+    phoneNumber,
+    displayName: process.env.SUPER_ADMIN_DISPLAY_NAME ?? "Super Admin",
   });
-
-  console.log(`Bootstrapped Super Admin "${admin.displayName}" (${admin.phoneNumber}) for "${tenant.name}".`);
+  console.log(`Bootstrapped Super Admin "${superAdmin.displayName}" (${superAdmin.phoneNumber}).`);
 }
 
 main()

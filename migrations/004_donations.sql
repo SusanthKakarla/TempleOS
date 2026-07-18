@@ -9,9 +9,10 @@ CREATE TABLE donations (
   payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'upi', 'bank_transfer', 'cheque', 'other')),
   notes TEXT,
   donated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  recorded_by UUID REFERENCES admin_users(id) ON DELETE SET NULL,
+  recorded_by UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  FOREIGN KEY (recorded_by, tenant_id) REFERENCES tenant_memberships(id, tenant_id) ON DELETE SET NULL
 );
 CREATE INDEX idx_donations_tenant_donated_at ON donations(tenant_id, donated_at DESC);
 CREATE INDEX idx_donations_devotee_id ON donations(devotee_id);

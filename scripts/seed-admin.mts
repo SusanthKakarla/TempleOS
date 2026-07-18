@@ -1,11 +1,9 @@
-import { config } from "dotenv";
+import "./load-env.mts";
 import { getPool } from "../lib/db/pool";
 import { getPilotTenant, updateTenant } from "../lib/db/tenants";
 import { upsertAdminUser } from "../lib/db/admin-users";
 import { normalizePhoneNumber } from "../lib/phone.mts";
 import type { AdminRole } from "../types/db";
-
-config({ path: ".env.local", quiet: true });
 
 function parseArgs(): Map<string, string> {
   const args = process.argv.slice(2);

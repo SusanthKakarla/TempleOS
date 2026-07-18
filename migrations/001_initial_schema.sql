@@ -1,4 +1,4 @@
--- Initial schema for TempleOS MVP.
+-- Initial schema for TempleOS forward identity reset.
 -- Tenant-aware tables all carry tenant_id with an FK + index for scoped queries.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -13,18 +13,75 @@ CREATE TABLE tenants (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE admin_users (
+CREATE TABLE super_admins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  phone_number TEXT NOT NULL UNIQUE,
+  phone_number TEXT NOT NULL UNIQUE CHECK (phone_number ~ '^\+[1-9][0-9]{1,14}$'),
   display_name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'tenant_admin' CHECK (role = 'tenant_admin'),
   firebase_uid TEXT,
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_admin_users_tenant_id ON admin_users(tenant_id);
+
+CREATE TABLE persons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone_number TEXT NOT NULL UNIQUE CHECK (phone_number ~ '^\+[1-9][0-9]{1,14}$'),
+  display_name TEXT NOT NULL,
+  firebase_uid TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tenant_domains (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  hostname TEXT NOT NULL UNIQUE CHECK (
+    length(hostname) <= 253
+    AND hostname = lower(hostname)
+    AND hostname ~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'
+    AND hostname !~ '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+    AND position('.' in hostname) > 1
+  ),
+  kind TEXT NOT NULL DEFAULT 'primary' CHECK (kind IN ('primary', 'custom')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tenant_domains_tenant_id ON tenant_domains(tenant_id);
+
+CREATE TABLE role_definitions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  description TEXT,
+  capability_set JSONB NOT NULL DEFAULT '{}'::jsonb,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tenant_memberships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+  display_name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (id, tenant_id),
+  UNIQUE (tenant_id, person_id)
+);
+CREATE INDEX idx_tenant_memberships_tenant_id ON tenant_memberships(tenant_id);
+CREATE INDEX idx_tenant_memberships_person_id ON tenant_memberships(person_id);
+
+CREATE TABLE tenant_membership_roles (
+  membership_id UUID NOT NULL REFERENCES tenant_memberships(id) ON DELETE CASCADE,
+  role_definition_id UUID NOT NULL REFERENCES role_definitions(id) ON DELETE CASCADE,
+  assigned_by_membership_id UUID REFERENCES tenant_memberships(id) ON DELETE SET NULL,
+  assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (membership_id, role_definition_id)
+);
+CREATE INDEX idx_tenant_membership_roles_role_definition_id ON tenant_membership_roles(role_definition_id);
 
 CREATE TABLE whatsapp_accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,9 +105,10 @@ CREATE TABLE events (
   starts_at TIMESTAMPTZ NOT NULL,
   ends_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
-  created_by UUID REFERENCES admin_users(id) ON DELETE SET NULL,
+  created_by UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  FOREIGN KEY (created_by, tenant_id) REFERENCES tenant_memberships(id, tenant_id) ON DELETE SET NULL
 );
 CREATE INDEX idx_events_tenant_id ON events(tenant_id);
 CREATE INDEX idx_events_tenant_status_starts_at ON events(tenant_id, status, starts_at);
