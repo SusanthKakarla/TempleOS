@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { TENANT_SESSION_MAX_AGE_SECONDS, createSessionToken, verifySessionToken } from "./session";
+import type { RoleCode } from "@/types/db";
 
 beforeAll(() => {
   process.env.SESSION_SECRET = "test-secret";
@@ -11,8 +12,10 @@ afterEach(() => {
 
 describe("session token", () => {
   const payload = {
-    adminId: "admin-1",
     tenantId: "tenant-1",
+    personId: "person-1",
+    membershipId: "membership-1",
+    roles: ["admin"] as RoleCode[],
     phoneNumber: "+919876543210",
     displayName: "Test Admin",
   };
@@ -38,6 +41,26 @@ describe("session token", () => {
   it("rejects a malformed token", () => {
     expect(verifySessionToken("not-a-real-token")).toBeNull();
     expect(verifySessionToken("")).toBeNull();
+  });
+
+  it("rejects old tenant sessions with adminId instead of membership identity", () => {
+    const token = createSessionToken({
+      tenantId: "tenant-1",
+      adminId: "admin-1",
+      phoneNumber: "+919876543210",
+      displayName: "Test Admin",
+    } as never);
+
+    expect(verifySessionToken(token)).toBeNull();
+  });
+
+  it("rejects sessions with unknown role codes", () => {
+    const token = createSessionToken({
+      ...payload,
+      roles: ["owner"],
+    } as never);
+
+    expect(verifySessionToken(token)).toBeNull();
   });
 
   it("rejects an expired token", () => {

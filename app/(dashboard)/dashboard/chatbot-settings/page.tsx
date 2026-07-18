@@ -1,4 +1,4 @@
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { listSpecialDays } from "@/lib/db/temple-special-days";
 import { listSevas } from "@/lib/db/temple-sevas";
@@ -7,8 +7,7 @@ import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
 
 export default async function ChatbotSettingsPage() {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  const session = await requireDashboardAdmin();
 
   const [tenant, specialDays, sevas, faqs, socialLinks] = await Promise.all([
     getTenantById(session.tenantId),

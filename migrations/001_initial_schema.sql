@@ -31,6 +31,7 @@ CREATE TABLE persons (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX idx_persons_firebase_uid_unique ON persons(firebase_uid) WHERE firebase_uid IS NOT NULL;
 
 CREATE TABLE tenant_domains (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,5 +1,5 @@
 # generated: 2026-07-18T17:32:34+0530
-# last_updated: 2026-07-18T18:32:40+0530
+# last_updated: 2026-07-18T22:36:30+0530
 # project: templeOS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18T17:32:34+0530
-last_updated: 2026-07-18T18:32:40+0530
+last_updated: 2026-07-18T22:36:30+0530
 project: templeOS
 project_key: NOKEY
 tracking_system: file-system
@@ -52,8 +52,8 @@ development_status:
   1-1-create-forward-identity-schema: done
   1-2-seed-v0-roles-and-first-super-admin: done
   1-3-super-admin-phone-otp-session: done
-  1-4-tenant-login-resolves-membership-by-subdomain: backlog
-  1-5-enforce-role-based-tenant-dashboard-access: backlog
+  1-4-tenant-login-resolves-membership-by-subdomain: done
+  1-5-enforce-role-based-tenant-dashboard-access: done
   1-6-identity-and-session-isolation-tests: backlog
   epic-1-retrospective: optional
   epic-2: backlog

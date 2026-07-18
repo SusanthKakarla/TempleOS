@@ -42,6 +42,9 @@ describe("forward identity reset schema", () => {
   it("enforces unique normalized identity, domain, and membership keys", () => {
     expect(initialSchema.match(/phone_number TEXT NOT NULL UNIQUE CHECK/g)).toHaveLength(2);
     expect(initialSchema).toMatch(/phone_number ~ '\^\\\+\[1-9\]\[0-9\]\{1,14\}\$'/);
+    expect(initialSchema).toMatch(
+      /CREATE UNIQUE INDEX idx_persons_firebase_uid_unique ON persons\(firebase_uid\) WHERE firebase_uid IS NOT NULL;/,
+    );
     expect(initialSchema).toMatch(/hostname TEXT NOT NULL UNIQUE CHECK/);
     expect(initialSchema).toMatch(/length\(hostname\) <= 253/);
     expect(initialSchema).toMatch(/hostname = lower\(hostname\)/);

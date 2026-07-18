@@ -60,7 +60,12 @@ export interface TenantDomain {
   updatedAt: string;
 }
 
-export type RoleCode = "admin" | "priest" | "committee_member" | "volunteer" | "devotee";
+export const ROLE_CODES = ["admin", "priest", "committee_member", "volunteer", "devotee"] as const;
+export type RoleCode = (typeof ROLE_CODES)[number];
+
+export function isRoleCode(value: unknown): value is RoleCode {
+  return typeof value === "string" && (ROLE_CODES as readonly string[]).includes(value);
+}
 
 export interface RoleDefinition {
   id: string;

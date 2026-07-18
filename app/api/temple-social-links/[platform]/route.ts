@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { deleteSocialLink, upsertSocialLink } from "@/lib/db/temple-social-links";
 import { socialPlatformSchema, upsertSocialLinkSchema } from "@/lib/validation/temple-social-links";
 
@@ -8,10 +8,11 @@ interface RouteParams {
 }
 
 export async function PUT(req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { platform: rawPlatform } = await params;
   const platformResult = socialPlatformSchema.safeParse(rawPlatform);
@@ -32,10 +33,11 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { platform: rawPlatform } = await params;
   const platformResult = socialPlatformSchema.safeParse(rawPlatform);

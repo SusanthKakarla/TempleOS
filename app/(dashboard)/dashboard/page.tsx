@@ -8,7 +8,7 @@ import {
   Send,
   Users,
 } from "lucide-react";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
 import { countDevotees, countOptedInDevotees, listRecentDevotees } from "@/lib/db/devotees";
@@ -32,8 +32,7 @@ function greeting(): string {
 }
 
 export default async function DashboardHomePage() {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  const session = await requireDashboardAdmin();
 
   const [
     tenant,

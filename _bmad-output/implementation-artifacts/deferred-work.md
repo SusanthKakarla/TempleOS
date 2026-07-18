@@ -5,3 +5,7 @@
 ## Deferred from: code review of 1-2-seed-v0-roles-and-first-super-admin (2026-07-18)
 
 - Fallback Postgres user docs may miss schema CREATE privileges in README.md; this is real local setup guidance risk but pre-existing outside the Story 1.2 seed/bootstrap behavior.
+
+## Deferred from: code review of 1-4-tenant-login-resolves-membership-by-subdomain (2026-07-18)
+
+- Tenant host trust boundary is underspecified in `/api/auth/session`; user chose to defer configured product-domain/trusted-host restrictions to deployment/domain hardening.

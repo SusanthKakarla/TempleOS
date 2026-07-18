@@ -3,7 +3,10 @@ import { getSessionAdmin } from "@/lib/auth/session";
 import { deleteEvent, getEventById, updateEvent } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { enqueueEventNotifications } from "@/lib/db/event-notifications";
-import { decideEventNotificationType, isAutoNotifyEnabled } from "@/lib/events/notification-policy";
+import {
+  decideEventNotificationType,
+  isAutoNotifyEnabled,
+} from "@/lib/events/notification-policy";
 import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
 import { updateEventSchema } from "@/lib/validation/events";
 
@@ -12,10 +15,11 @@ interface RouteParams {
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { id } = await params;
   const priorEvent = await getEventById(session.tenantId, id);
@@ -26,9 +30,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const json = await req.json().catch(() => null);
   const parsed = updateEventSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, {
-      status: 400,
-    });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
+      {
+        status: 400,
+      },
+    );
   }
 
   const event = await updateEvent(session.tenantId, id, parsed.data);
@@ -47,7 +54,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (notificationType) {
     const tenant = await getTenantById(session.tenantId);
     if (tenant && isAutoNotifyEnabled(tenant, notificationType)) {
-      const insertedIds = await enqueueEventNotifications(session.tenantId, event.id, notificationType);
+      const insertedIds = await enqueueEventNotifications(
+        session.tenantId,
+        event.id,
+        notificationType,
+      );
       if (insertedIds.length > 0) {
         after(() => processEventNotifications(insertedIds));
       }
@@ -58,10 +69,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { id } = await params;
   const deleted = await deleteEvent(session.tenantId, id);

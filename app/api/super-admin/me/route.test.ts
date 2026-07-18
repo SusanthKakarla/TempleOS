@@ -69,8 +69,10 @@ describe("super admin me route", () => {
     mockTenantCookie("tenant-session-token");
     vi.mocked(requireSuperAdmin).mockResolvedValue(null);
     vi.mocked(verifySessionToken).mockReturnValue({
-      adminId: "admin-1",
       tenantId: "tenant-1",
+      personId: "person-1",
+      membershipId: "membership-1",
+      roles: ["admin"],
       phoneNumber: "+917000000000",
       displayName: "Tenant Admin",
       exp: Date.now() + 60_000,

@@ -1,3 +1,5 @@
+const GENERIC_TENANT_HOSTNAMES = new Set(["trytempleos.com", "www.trytempleos.com", "localhost"]);
+
 export function normalizeTenantHostname(raw: string): string | null {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) return null;
@@ -11,6 +13,10 @@ export function normalizeTenantHostname(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function isGenericTenantHostname(hostname: string): boolean {
+  return GENERIC_TENANT_HOSTNAMES.has(hostname);
 }
 
 function isValidTenantHostname(hostname: string): boolean {

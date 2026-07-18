@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { createDonation, listDonations } from "@/lib/db/donations";
 import { createDonationSchema } from "@/lib/validation/donations";
 
 export async function GET(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const params = req.nextUrl.searchParams;
   const donations = await listDonations(session.tenantId, {
@@ -20,10 +21,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const json = await req.json().catch(() => null);
   const parsed = createDonationSchema.safeParse(json);
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: parsed.data.paymentMethod,
       notes: parsed.data.notes ?? null,
       donatedAt: parsed.data.donatedAt,
-      recordedBy: session.adminId,
+      recordedBy: session.membershipId,
     });
     return NextResponse.json({ donation }, { status: 201 });
   } catch (err) {

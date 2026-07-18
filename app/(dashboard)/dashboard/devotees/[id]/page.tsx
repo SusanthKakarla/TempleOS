@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Cake, HandCoins, MessageCircle, Phone, Sparkles, Users } from "lucide-react";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { listDonationsByDevotee } from "@/lib/db/donations";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +24,7 @@ function formatDate(iso: string): string {
 }
 
 export default async function DevoteeDetailPage({ params }: DevoteeDetailPageProps) {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  const session = await requireDashboardAdmin();
 
   const { id } = await params;
   const devotee = await getDevoteeById(session.tenantId, id);

@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { after, NextRequest, NextResponse } from "next/server";
 import { getSessionAdmin } from "@/lib/auth/session";
+=======
+import { NextRequest, NextResponse } from "next/server";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+>>>>>>> 5e593d8 (Enforce tenant admin dashboard access)
 import { createEvent, listEvents } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { enqueueEventNotifications } from "@/lib/db/event-notifications";
@@ -8,10 +13,11 @@ import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
 import { createEventSchema, eventStatusSchema } from "@/lib/validation/events";
 
 export async function GET(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const statusParam = req.nextUrl.searchParams.get("status");
   const statusResult = statusParam ? eventStatusSchema.safeParse(statusParam) : undefined;
@@ -27,10 +33,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const json = await req.json().catch(() => null);
   const parsed = createEventSchema.safeParse(json);
@@ -47,7 +54,7 @@ export async function POST(req: NextRequest) {
     startsAt: parsed.data.startsAt,
     endsAt: parsed.data.endsAt ?? null,
     status: parsed.data.status,
-    createdBy: session.adminId,
+    createdBy: session.membershipId,
   });
 
   // An event can be created already-published (the Create dialog's

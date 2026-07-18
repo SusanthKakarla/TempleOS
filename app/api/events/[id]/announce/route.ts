@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { getEventById } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
@@ -13,10 +13,11 @@ interface RouteParams {
 }
 
 export async function POST(_req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { id } = await params;
 

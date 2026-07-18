@@ -8,7 +8,8 @@ export default function WhatsAppActivityIndexPage() {
       </div>
       <p className="text-sm font-medium">Select a conversation</p>
       <p className="max-w-xs text-sm text-muted-foreground">
-        Choose a devotee from the list to view their full WhatsApp message history.
+        Choose a devotee from the list to view their full WhatsApp message
+        history.
       </p>
     </div>
   );

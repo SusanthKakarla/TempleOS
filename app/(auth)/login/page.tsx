@@ -7,7 +7,6 @@ import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } fro
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
-import { useDefaultCountry } from "@/lib/countries";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +24,8 @@ type Step = "phone" | "otp";
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
-  // Defaults to India during SSR/first paint, then refines to the browser's
-  // detected locale — see useDefaultCountry's comment. `countryOverride`
-  // holds the user's own pick once they open the picker, which must win over
-  // the detected default on every subsequent render.
-  const detectedCountry = useDefaultCountry();
   const [countryOverride, setCountryOverride] = useState<CountryCode | null>(null);
-  const countryIso = countryOverride ?? detectedCountry;
+  const countryIso = countryOverride ?? "IN";
   const [phone, setPhone] = useState("");
   const [fullPhone, setFullPhone] = useState("");
   const [otp, setOtp] = useState("");
