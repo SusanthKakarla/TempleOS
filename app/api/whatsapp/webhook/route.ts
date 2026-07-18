@@ -5,12 +5,21 @@ import { upsertDevoteeFromWhatsApp } from "@/lib/db/devotees";
 import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
 import { logWhatsAppInteraction } from "@/lib/db/whatsapp-interactions";
 import { listEvents } from "@/lib/db/events";
+import { getSpecialDayForDate } from "@/lib/db/temple-special-days";
+import { listSevas } from "@/lib/db/temple-sevas";
+import { listFaqs } from "@/lib/db/temple-faqs";
+import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { classifyCommand, commandToInteractionType } from "@/lib/whatsapp/router";
 import {
   buildContactMessage,
   buildEventsMessage,
+  buildFaqMessage,
+  buildHistoryMessage,
   buildMenuMessage,
+  buildSevasMessage,
+  buildTimingsMessage,
   buildUnknownMessage,
+  getTenantLocalDateISO,
 } from "@/lib/whatsapp/templates";
 import { sendTextMessage } from "@/lib/whatsapp/client";
 import { normalizeWhatsAppId } from "@/lib/phone.mts";
@@ -85,7 +94,20 @@ async function handleInboundMessage(
     const events = await listEvents(tenantId, { status: "published", upcomingOnly: true });
     replyText = buildEventsMessage(tenant, events);
   } else if (command === "contact") {
-    replyText = buildContactMessage(tenant);
+    const socialLinks = await listSocialLinks(tenantId);
+    replyText = buildContactMessage(tenant, socialLinks);
+  } else if (command === "timings") {
+    const todayIso = getTenantLocalDateISO(tenant.timezone);
+    const specialDay = await getSpecialDayForDate(tenantId, todayIso);
+    replyText = buildTimingsMessage(tenant, specialDay);
+  } else if (command === "history") {
+    replyText = buildHistoryMessage(tenant);
+  } else if (command === "sevas") {
+    const sevas = await listSevas(tenantId);
+    replyText = buildSevasMessage(tenant, sevas);
+  } else if (command === "faq") {
+    const faqs = await listFaqs(tenantId);
+    replyText = buildFaqMessage(tenant, faqs);
   } else if (command === "menu") {
     replyText = buildMenuMessage(tenant);
   } else {

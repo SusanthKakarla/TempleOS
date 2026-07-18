@@ -4,6 +4,18 @@ export interface Tenant {
   defaultContactPhone: string | null;
   address: string | null;
   timezone: string;
+  // WhatsApp chatbot CMS content (see lib/whatsapp/templates.ts) — every
+  // field is nullable since existing tenants predate this and the admin
+  // fills them in via the Chatbot Settings page.
+  welcomeMessage: string | null;
+  description: string | null;
+  history: string | null;
+  contactEmail: string | null;
+  googleMapsLink: string | null;
+  morningOpen: string | null; // "HH:MM:SS", as returned by pg for TIME columns
+  morningClose: string | null;
+  eveningOpen: string | null;
+  eveningClose: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,7 +104,15 @@ export interface WhatsAppMessage {
   createdAt: string;
 }
 
-export type InteractionType = "menu" | "viewed_events" | "requested_contact" | "unknown";
+export type InteractionType =
+  | "menu"
+  | "viewed_events"
+  | "requested_contact"
+  | "unknown"
+  | "viewed_timings"
+  | "viewed_history"
+  | "viewed_sevas"
+  | "viewed_faq";
 
 export interface WhatsAppInteraction {
   id: string;
@@ -130,4 +150,62 @@ export interface DonationSummary {
   totalThisMonth: string;
   donorCount: number;
   donationCount: number;
+}
+
+export interface TempleSpecialDay {
+  id: string;
+  tenantId: string;
+  date: string; // "YYYY-MM-DD"
+  occasion: string;
+  isClosed: boolean;
+  morningOpen: string | null;
+  morningClose: string | null;
+  eveningOpen: string | null;
+  eveningClose: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+export interface TempleSeva {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  price: string | null; // NUMERIC comes back from pg as a string to avoid float precision loss on money
+  duration: string | null;
+  availableDays: DayOfWeek[];
+  bookingEnabled: boolean; // reserved for a future booking milestone; not acted on yet
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TempleFaq {
+  id: string;
+  tenantId: string;
+  question: string;
+  answer: string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SocialPlatform = "facebook" | "instagram" | "youtube" | "twitter" | "website" | "other";
+
+export interface TempleSocialLink {
+  id: string;
+  tenantId: string;
+  platform: SocialPlatform;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
 }

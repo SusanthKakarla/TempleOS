@@ -9,6 +9,7 @@ import {
   Landmark,
   MessageCircle,
   Receipt,
+  Settings2,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -39,6 +40,12 @@ export const NAV_ITEMS = [
     href: "/dashboard/whatsapp-activity",
     label: "WhatsApp Activity",
     icon: MessageCircle,
+    gradient: "gradient-green-emerald",
+  },
+  {
+    href: "/dashboard/chatbot-settings",
+    label: "Chatbot Settings",
+    icon: Settings2,
     gradient: "gradient-green-emerald",
   },
 ];
