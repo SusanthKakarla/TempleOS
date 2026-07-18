@@ -105,4 +105,26 @@ describe("super admin auth boundary", () => {
       /templeos_session|setSessionCookie|TENANT_SESSION_COOKIE_NAME/,
     );
   });
+
+  it("keeps the super-admin temple detail page behind auth and within read-only V0 scope", () => {
+    const source = readFileSync(
+      path.join(process.cwd(), "app/(super-admin)/super-admin/temples/[tenantId]/page.tsx"),
+      "utf8",
+    );
+
+    expect(source).toMatch(/params:\s*Promise<\{\s*tenantId:\s*string\s*\}>/);
+    expect(source).toMatch(/await params/);
+    expect(source).toMatch(/requireSuperAdminPage/);
+    expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
+    expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
+    expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
+      source.indexOf("await fetchTempleDetailForSuperAdmin"),
+    );
+    expect(source).toMatch(/notFound\(\)/);
+    expect(source).toMatch(/\/super-admin/);
+    expect(source).toMatch(/Members/);
+    expect(source).toMatch(/WhatsApp/);
+    expect(source).not.toMatch(/delete|transfer|impersonat|data export|disconnect|embedded signup/i);
+  });
 });

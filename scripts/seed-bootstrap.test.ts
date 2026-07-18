@@ -81,8 +81,8 @@ describe("Story 2.6 production provisioning path guardrails", () => {
   });
 });
 
-describe("Story 3.1 super-admin temple list guardrails", () => {
-  it("keeps the broad temple list function out of tenant-dashboard code paths", () => {
+describe("Epic 3 super-admin temple operation guardrails", () => {
+  it("keeps broad super-admin temple read functions out of tenant-dashboard code paths", () => {
     const files = [
       ...listSourceFiles("app/(dashboard)"),
       ...listSourceFiles("app/api").filter((file) => {
@@ -100,6 +100,7 @@ describe("Story 3.1 super-admin temple list guardrails", () => {
     for (const file of files) {
       const source = read(file);
       expect(source).not.toMatch(/listTenantsForSuperAdmin/);
+      expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
     }
   });
 
@@ -112,6 +113,20 @@ describe("Story 3.1 super-admin temple list guardrails", () => {
     expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
     expect(source.indexOf("await requireSuperAdminPage()")).toBeLessThan(
       source.indexOf("await listTenantsForSuperAdmin()"),
+    );
+  });
+
+  it("keeps the super-admin temple detail page behind the super-admin boundary", () => {
+    const source = read("app/(super-admin)/super-admin/temples/[tenantId]/page.tsx");
+    expect(source).toMatch(/requireSuperAdminPage/);
+    expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
+    expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
+    expect(source).toMatch(/notFound\(\)/);
+    expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users/i);
+    expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
+    expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
+      source.indexOf("await fetchTempleDetailForSuperAdmin"),
     );
   });
 });

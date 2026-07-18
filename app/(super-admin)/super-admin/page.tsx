@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Globe2, Landmark, MessageCircle, Plus, UsersRound } from "lucide-react";
+import { ArrowRight, Globe2, Landmark, MessageCircle, Plus, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +56,7 @@ export default async function SuperAdminPage() {
                   <TableHead>Primary Admin</TableHead>
                   <TableHead>WhatsApp</TableHead>
                   <TableHead className="text-right">Last Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -106,6 +107,16 @@ export default async function SuperAdminPage() {
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatTimestamp(temple.lastUpdatedAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        render={<Link href={`/super-admin/temples/${temple.id}`} />}
+                      >
+                        View
+                        <ArrowRight className="size-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
