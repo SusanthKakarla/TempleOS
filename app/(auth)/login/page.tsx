@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sendBlocked, setSendBlocked] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   // A single invisible reCAPTCHA verifier is created lazily and reused across
@@ -44,12 +45,29 @@ export default function LoginPage() {
   // it on every call (the previous bug here) leaves a stale widget attached
   // to the DOM and breaks the second attempt without a full page refresh.
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const sendingOtpRef = useRef(false);
+  const sendBlockedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function resetVerifier() {
+    verifierRef.current?.clear();
+    verifierRef.current = null;
+  }
+
+  function getFirebaseErrorCode(err: unknown): string | undefined {
+    if (typeof err === "object" && err !== null && "code" in err) {
+      const code = (err as { code: unknown }).code;
+      return typeof code === "string" ? code : undefined;
+    }
+    return undefined;
+  }
 
   useEffect(() => {
     return () => {
       devLog("Unmounting login page, clearing reCAPTCHA verifier");
-      verifierRef.current?.clear();
-      verifierRef.current = null;
+      if (sendBlockedTimeoutRef.current) {
+        clearTimeout(sendBlockedTimeoutRef.current);
+      }
+      resetVerifier();
     };
   }, []);
 
@@ -66,8 +84,7 @@ export default function LoginPage() {
       callback: () => devLog("reCAPTCHA solved"),
       "expired-callback": () => {
         devLog("reCAPTCHA expired; it will be recreated on the next attempt");
-        verifierRef.current?.clear();
-        verifierRef.current = null;
+        resetVerifier();
       },
     });
     verifierRef.current = verifier;
@@ -76,11 +93,14 @@ export default function LoginPage() {
 
   async function handleSendOtp(event: FormEvent) {
     event.preventDefault();
+    if (sendingOtpRef.current || sendBlocked) return;
+    sendingOtpRef.current = true;
     setError(null);
 
     const normalized = normalizePhoneNumber(phone, countryIso);
     if (!normalized) {
       setError("Enter a valid phone number");
+      sendingOtpRef.current = false;
       return;
     }
 
@@ -95,13 +115,20 @@ export default function LoginPage() {
       setStep("otp");
     } catch (err) {
       devLog("Failed to send OTP", err);
+      if (getFirebaseErrorCode(err) === "auth/too-many-requests") {
+        setSendBlocked(true);
+        sendBlockedTimeoutRef.current = setTimeout(() => {
+          setSendBlocked(false);
+          sendBlockedTimeoutRef.current = null;
+        }, 60_000);
+      }
       // The widget may be left in a used/invalid state after any failure —
       // clear it so the next attempt (retry, or a different number) always
       // gets a fresh one instead of silently failing.
-      verifierRef.current?.clear();
-      verifierRef.current = null;
+      resetVerifier();
       setError(getFirebaseErrorMessage(err, "Failed to send the login code"));
     } finally {
+      sendingOtpRef.current = false;
       setLoading(false);
     }
   }
@@ -187,8 +214,8 @@ export default function LoginPage() {
                 </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending..." : "Send code"}
+              <Button type="submit" className="w-full" disabled={loading || sendBlocked}>
+                {loading ? "Sending..." : sendBlocked ? "Wait before retrying" : "Send code"}
               </Button>
             </form>
           ) : (

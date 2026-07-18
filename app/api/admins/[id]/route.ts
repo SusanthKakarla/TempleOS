@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth/session";
+import { requireLegacyTenantSuperAdmin } from "@/lib/auth/session";
 import { countSuperAdmins, deleteAdminById, getAdminById, updateAdminRole } from "@/lib/db/admin-users";
 import { updateAdminRoleSchema } from "@/lib/validation/admins";
 
@@ -8,7 +8,7 @@ interface RouteParams {
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const admin = await requireSuperAdmin();
+  const admin = await requireLegacyTenantSuperAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const admin = await requireSuperAdmin();
+  const admin = await requireLegacyTenantSuperAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

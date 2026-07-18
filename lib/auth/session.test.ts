@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createSessionToken, verifySessionToken } from "./session";
+import { TENANT_SESSION_MAX_AGE_SECONDS, createSessionToken, verifySessionToken } from "./session";
 
 beforeAll(() => {
   process.env.SESSION_SECRET = "test-secret";
@@ -43,7 +43,11 @@ describe("session token", () => {
   it("rejects an expired token", () => {
     vi.useFakeTimers();
     const token = createSessionToken(payload);
-    vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000); // past the 30-day expiry
+    vi.advanceTimersByTime((TENANT_SESSION_MAX_AGE_SECONDS + 1) * 1000);
     expect(verifySessionToken(token)).toBeNull();
+  });
+
+  it("uses a 7-day tenant dashboard lifetime", () => {
+    expect(TENANT_SESSION_MAX_AGE_SECONDS).toBe(60 * 60 * 24 * 7);
   });
 });

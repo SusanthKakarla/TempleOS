@@ -38,7 +38,7 @@ export async function findActiveAdminByPhone(phoneNumber: string): Promise<Admin
 
 /**
  * React `cache()`-deduped per-request: the dashboard layout and
- * `requireSuperAdmin()` both look up the current admin on every navigation
+ * `requireLegacyTenantSuperAdmin()` both look up the current admin on every navigation
  * (intentionally, for a live role/active-status check — see the layout's
  * comment), so without this a route like /dashboard/admins pays for the same
  * row twice. `cache()` only dedupes within a single request, so the live

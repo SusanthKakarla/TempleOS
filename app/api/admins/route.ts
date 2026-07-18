@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth/session";
+import { requireLegacyTenantSuperAdmin } from "@/lib/auth/session";
 import { createAdmin, listAdmins } from "@/lib/db/admin-users";
 import { createAdminSchema } from "@/lib/validation/admins";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requireLegacyTenantSuperAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireSuperAdmin();
+  const admin = await requireLegacyTenantSuperAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

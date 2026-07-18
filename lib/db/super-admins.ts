@@ -55,3 +55,46 @@ export async function upsertFirstSuperAdmin(input: {
   );
   return mapSuperAdmin(rows[0]);
 }
+
+export async function findActiveSuperAdminByPhone(phoneNumberInput: string): Promise<SuperAdmin | null> {
+  const phoneNumber = normalizePhoneNumber(phoneNumberInput);
+  if (!phoneNumber) return null;
+
+  const { rows } = await getPool().query<SuperAdminRow>(
+    "SELECT * FROM super_admins WHERE phone_number = $1 AND active = true LIMIT 1",
+    [phoneNumber],
+  );
+  return rows[0] ? mapSuperAdmin(rows[0]) : null;
+}
+
+export async function getSuperAdminById(id: string): Promise<SuperAdmin | null> {
+  const { rows } = await getPool().query<SuperAdminRow>(
+    "SELECT * FROM super_admins WHERE id = $1 LIMIT 1",
+    [id],
+  );
+  return rows[0] ? mapSuperAdmin(rows[0]) : null;
+}
+
+export async function bindSuperAdminFirebaseUid(
+  superAdminId: string,
+  firebaseUid: string,
+): Promise<boolean> {
+  const result = await getPool().query<{ id: string }>(
+    `UPDATE super_admins
+     SET firebase_uid = $2,
+         updated_at = now()
+     WHERE id = $1
+       AND active = true
+       AND (firebase_uid IS NULL OR firebase_uid = $2)
+       AND NOT EXISTS (
+         SELECT 1
+         FROM super_admins existing
+         WHERE existing.firebase_uid = $2
+           AND existing.id <> $1
+           AND existing.active = true
+       )
+     RETURNING id`,
+    [superAdminId, firebaseUid],
+  );
+  return (result.rowCount ?? result.rows.length) > 0;
+}

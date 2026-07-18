@@ -1,10 +1,10 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { createSignedSessionToken, verifySignedSessionToken } from "./session-token";
 import { getAdminById } from "@/lib/db/admin-users";
 import type { AdminUser } from "@/types/db";
 
-const COOKIE_NAME = "templeos_session";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+export const TENANT_SESSION_COOKIE_NAME = "templeos_session";
+export const TENANT_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export interface SessionPayload {
   adminId: string;
@@ -14,67 +14,53 @@ export interface SessionPayload {
   exp: number;
 }
 
-function getSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    throw new Error("SESSION_SECRET is not set");
-  }
-  return secret;
-}
-
-function sign(payloadB64: string): string {
-  return createHmac("sha256", getSecret()).update(payloadB64).digest("base64url");
-}
-
 export function createSessionToken(payload: Omit<SessionPayload, "exp">): string {
-  const full: SessionPayload = { ...payload, exp: Date.now() + MAX_AGE_SECONDS * 1000 };
-  const payloadB64 = Buffer.from(JSON.stringify(full), "utf8").toString("base64url");
-  const signature = sign(payloadB64);
-  return `${payloadB64}.${signature}`;
+  return createSignedSessionToken(payload, TENANT_SESSION_MAX_AGE_SECONDS);
 }
 
 export function verifySessionToken(token: string): SessionPayload | null {
-  const [payloadB64, signature] = token.split(".");
-  if (!payloadB64 || !signature) return null;
-
-  const expectedSignature = sign(payloadB64);
-  const provided = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
-    return null;
-  }
-
-  try {
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8")) as SessionPayload;
-    if (typeof payload.exp !== "number" || payload.exp < Date.now()) return null;
-    return payload;
-  } catch {
-    return null;
-  }
+  return verifySignedSessionToken(token, isSessionPayload);
 }
 
 export async function setSessionCookie(payload: Omit<SessionPayload, "exp">): Promise<void> {
   const token = createSessionToken(payload);
   const store = await cookies();
-  store.set(COOKIE_NAME, token, {
+  store.set(TENANT_SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: MAX_AGE_SECONDS,
+    maxAge: TENANT_SESSION_MAX_AGE_SECONDS,
   });
 }
 
 export async function clearSessionCookie(): Promise<void> {
   const store = await cookies();
-  store.delete(COOKIE_NAME);
+  store.delete(TENANT_SESSION_COOKIE_NAME);
 }
 
 export async function getSessionAdmin(): Promise<SessionPayload | null> {
   const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
+  const token = store.get(TENANT_SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return verifySessionToken(token);
+}
+
+function isSessionPayload(payload: unknown): payload is SessionPayload {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "adminId" in payload &&
+    "tenantId" in payload &&
+    "phoneNumber" in payload &&
+    "displayName" in payload &&
+    "exp" in payload &&
+    typeof payload.adminId === "string" &&
+    typeof payload.tenantId === "string" &&
+    typeof payload.phoneNumber === "string" &&
+    typeof payload.displayName === "string" &&
+    typeof payload.exp === "number"
+  );
 }
 
 /**
@@ -84,7 +70,7 @@ export async function getSessionAdmin(): Promise<SessionPayload | null> {
  * a role change or deactivation must take effect immediately, not after the
  * cookie expires.
  */
-export async function requireSuperAdmin(): Promise<AdminUser | null> {
+export async function requireLegacyTenantSuperAdmin(): Promise<AdminUser | null> {
   const session = await getSessionAdmin();
   if (!session) return null;
 
