@@ -1,5 +1,5 @@
 # generated: 2026-07-18T17:32:34+0530
-# last_updated: 2026-07-19T00:35:08+0530
+# last_updated: 2026-07-19T00:54:00+0530
 # project: templeOS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18T17:32:34+0530
-last_updated: 2026-07-19T00:35:08+0530
+last_updated: 2026-07-19T00:54:00+0530
 project: templeOS
 project_key: NOKEY
 tracking_system: file-system
@@ -61,7 +61,7 @@ development_status:
   2-2-provision-temple-transaction: done
   2-3-super-admin-provision-temple-api: done
   2-4-super-admin-new-temple-form: done
-  2-5-provision-temple-cli: backlog
+  2-5-provision-temple-cli: done
   2-6-provisioning-guardrail-tests: backlog
   epic-2-retrospective: optional
   epic-3: backlog
