@@ -1,0 +1,22 @@
+import { NewTempleForm } from "@/features/super-admin/new-temple-form";
+import { requireSuperAdminPage } from "../../require-super-admin";
+
+export default async function NewTemplePage() {
+  await requireSuperAdminPage();
+
+  return (
+    <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
+          <h1 className="text-2xl font-semibold tracking-normal">New Temple</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Create the tenant, primary subdomain, first member, and optional WhatsApp linkage through
+            the canonical provisioning API.
+          </p>
+        </header>
+        <NewTempleForm />
+      </div>
+    </main>
+  );
+}
