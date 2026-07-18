@@ -80,6 +80,29 @@ describe("super admin auth boundary", () => {
     expect(pageSource).toMatch(/requireSuperAdminPage/);
     expect(guardSource).toMatch(/@\/lib\/auth\/super-admin-session/);
     expect(guardSource).toMatch(/requireSuperAdmin/);
+    expect(guardSource).toMatch(/redirect\(`\/super-admin\/login\?next=/);
     expect(guardSource).toMatch(/forbidden/);
+  });
+
+  it("keeps the super admin login page on the super-admin session endpoint", () => {
+    const pageSource = readFileSync(
+      path.join(process.cwd(), "app/(super-admin)/super-admin/login/page.tsx"),
+      "utf8",
+    );
+    const formSource = readFileSync(
+      path.join(process.cwd(), "features/super-admin/super-admin-login-form.tsx"),
+      "utf8",
+    );
+
+    expect(pageSource).toMatch(/requireSuperAdmin/);
+    expect(pageSource).toMatch(/redirect\(redirectPath\)/);
+    expect(pageSource).toMatch(/getSafeSuperAdminNextPath/);
+    expect(formSource).toMatch(/\/api\/super-admin\/auth\/session/);
+    expect(formSource).toMatch(/credentials:\s*"same-origin"/);
+    expect(formSource).toMatch(/router\.push\(redirectPath\)/);
+    expect(`${pageSource}\n${formSource}`).not.toMatch(/\/api\/auth\/session/);
+    expect(`${pageSource}\n${formSource}`).not.toMatch(
+      /templeos_session|setSessionCookie|TENANT_SESSION_COOKIE_NAME/,
+    );
   });
 });
