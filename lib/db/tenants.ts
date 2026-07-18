@@ -1,8 +1,10 @@
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import type { Tenant } from "@/types/db";
 
 interface TenantRow {
   id: string;
+  slug: string;
   name: string;
   default_contact_phone: string | null;
   address: string | null;
@@ -27,6 +29,7 @@ interface TenantRow {
 function mapTenant(row: TenantRow): Tenant {
   return {
     id: row.id,
+    slug: row.slug,
     name: row.name,
     defaultContactPhone: row.default_contact_phone,
     address: row.address,
@@ -47,6 +50,33 @@ function mapTenant(row: TenantRow): Tenant {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
+}
+
+export interface CreateTenantForSuperAdminInput {
+  name: string;
+  slug: string;
+  defaultContactPhone?: string | null;
+  address?: string | null;
+  timezone: string;
+}
+
+export async function createTenantForSuperAdmin(
+  input: CreateTenantForSuperAdminInput,
+  client: QueryClient = getPool(),
+): Promise<Tenant> {
+  const { rows } = await client.query<TenantRow>(
+    `INSERT INTO tenants (name, slug, default_contact_phone, address, timezone)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      input.name,
+      input.slug,
+      input.defaultContactPhone ?? null,
+      input.address ?? null,
+      input.timezone,
+    ],
+  );
+  return mapTenant(rows[0]);
 }
 
 /** The MVP supports exactly one tenant; this is the canonical lookup for it. */

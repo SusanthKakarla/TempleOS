@@ -1,4 +1,5 @@
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
 import type { TenantDomain } from "@/types/db";
 
@@ -10,6 +11,19 @@ interface TenantDomainRow {
   status: TenantDomain["status"];
   created_at: Date;
   updated_at: Date;
+}
+
+export async function createTenantDomainForSuperAdmin(
+  input: { tenantId: string; hostname: string },
+  client: QueryClient = getPool(),
+): Promise<TenantDomain> {
+  const { rows } = await client.query<TenantDomainRow>(
+    `INSERT INTO tenant_domains (tenant_id, hostname, kind, status)
+     VALUES ($1, $2, 'primary', 'active')
+     RETURNING *`,
+    [input.tenantId, input.hostname],
+  );
+  return mapTenantDomain(rows[0]);
 }
 
 function mapTenantDomain(row: TenantDomainRow): TenantDomain {

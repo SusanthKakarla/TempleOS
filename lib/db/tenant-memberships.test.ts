@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import {
+  assignTenantMembershipRolesForProvisioning,
   findActiveTenantMembershipByPersonAndTenant,
   getTenantMembershipById,
 } from "./tenant-memberships";
@@ -73,5 +74,18 @@ describe("tenant memberships repository", () => {
     expect(query).toHaveBeenCalledWith(expect.stringContaining("WHERE tm.id = $1"), [
       "membership-1",
     ]);
+  });
+
+  it("fails provisioning role assignment when any requested role is not active in the database", async () => {
+    query
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{ ...row, role_codes: ["admin"] }] });
+
+    await expect(
+      assignTenantMembershipRolesForProvisioning(
+        { membershipId: "membership-1", roles: ["admin", "priest"] },
+        { query },
+      ),
+    ).rejects.toThrow("Provisioning role assignment incomplete.");
   });
 });

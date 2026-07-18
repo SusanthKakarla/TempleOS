@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import { isRoleCode, type RoleCode, type TenantMembership } from "@/types/db";
 
 export interface TenantMembershipWithRoles extends TenantMembership {
@@ -44,8 +45,10 @@ const membershipWithRolesSelect = `
 export async function findActiveTenantMembershipByPersonAndTenant(input: {
   personId: string;
   tenantId: string;
+  client?: QueryClient;
 }): Promise<TenantMembershipWithRoles | null> {
-  const { rows } = await getPool().query<TenantMembershipRow>(
+  const queryClient = input.client ?? getPool();
+  const { rows } = await queryClient.query<TenantMembershipRow>(
     `${membershipWithRolesSelect}
      WHERE tm.person_id = $1 AND tm.tenant_id = $2 AND tm.status = 'active'
      GROUP BY tm.id
@@ -57,8 +60,9 @@ export async function findActiveTenantMembershipByPersonAndTenant(input: {
 
 export const getTenantMembershipById = cache(async function getTenantMembershipById(
   membershipId: string,
+  client: QueryClient = getPool(),
 ): Promise<TenantMembershipWithRoles | null> {
-  const { rows } = await getPool().query<TenantMembershipRow>(
+  const { rows } = await client.query<TenantMembershipRow>(
     `${membershipWithRolesSelect}
      WHERE tm.id = $1 AND tm.status = 'active'
      GROUP BY tm.id
@@ -67,3 +71,41 @@ export const getTenantMembershipById = cache(async function getTenantMembershipB
   );
   return rows[0] ? mapTenantMembership(rows[0]) : null;
 });
+
+export async function createTenantMembershipForProvisioning(
+  input: { tenantId: string; personId: string; displayName: string },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles> {
+  const { rows } = await client.query<TenantMembershipRow>(
+    `INSERT INTO tenant_memberships (tenant_id, person_id, display_name, status)
+     VALUES ($1, $2, $3, 'active')
+     RETURNING *, ARRAY[]::text[] AS role_codes`,
+    [input.tenantId, input.personId, input.displayName],
+  );
+  return mapTenantMembership(rows[0]);
+}
+
+export async function assignTenantMembershipRolesForProvisioning(
+  input: { membershipId: string; roles: RoleCode[] },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles> {
+  await client.query(
+    `INSERT INTO tenant_membership_roles (membership_id, role_definition_id)
+     SELECT $1, id
+     FROM role_definitions
+     WHERE active = true AND code = ANY($2::text[])
+     ON CONFLICT DO NOTHING`,
+    [input.membershipId, input.roles],
+  );
+
+  const membership = await getTenantMembershipById(input.membershipId, client);
+  if (!membership) {
+    throw new Error("Provisioning role assignment could not reload the created membership.");
+  }
+  const assignedRoles = new Set(membership.roles);
+  const missingRoles = input.roles.filter((role) => !assignedRoles.has(role));
+  if (missingRoles.length > 0) {
+    throw new Error("Provisioning role assignment incomplete.");
+  }
+  return membership;
+}

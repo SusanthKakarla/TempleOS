@@ -54,6 +54,30 @@ describe("forward identity reset schema", () => {
     expect(initialSchema).toMatch(/UNIQUE \(tenant_id, person_id\)/);
   });
 
+  it("adds unique tenant slugs for super-admin provisioning", () => {
+    expect(migrationChain).toMatch(/slug TEXT/);
+    expect(migrationChain).toMatch(/UNIQUE \(slug\)|slug TEXT NOT NULL UNIQUE/);
+    expect(migrationChain).toMatch(/substr\([^)]*id::text, 1, 8\)/);
+    expect(migrationChain).toMatch(/left\([^)]*base_slug, 54\)/);
+  });
+
+  it("deduplicates existing WhatsApp rows before enforcing one account per tenant", () => {
+    expect(migrationChain).toMatch(/ROW_NUMBER\(\) OVER \(PARTITION BY tenant_id/);
+    expect(migrationChain).toMatch(/DELETE FROM whatsapp_accounts/);
+    expect(migrationChain).toMatch(/whatsapp_accounts_tenant_id_unique UNIQUE \(tenant_id\)/);
+  });
+
+  it("creates a durable audit log for privileged writes", () => {
+    expect(migrationChain).toMatch(/CREATE TABLE audit_log \(/);
+    expect(migrationChain).toMatch(/actor_type TEXT NOT NULL/);
+    expect(migrationChain).toMatch(/actor_id UUID NOT NULL/);
+    expect(migrationChain).toMatch(/tenant_id UUID REFERENCES tenants\(id\)/);
+    expect(migrationChain).toMatch(/action TEXT NOT NULL/);
+    expect(migrationChain).toMatch(/target_type TEXT NOT NULL/);
+    expect(migrationChain).toMatch(/target_id UUID/);
+    expect(migrationChain).toMatch(/metadata JSONB NOT NULL DEFAULT '\{\}'::jsonb/);
+  });
+
   it("binds author references to the same tenant as their rows", () => {
     expect(initialSchema).toMatch(
       /FOREIGN KEY \(created_by, tenant_id\) REFERENCES tenant_memberships\(id, tenant_id\)/,

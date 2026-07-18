@@ -23,6 +23,7 @@ import {
 
 const tenant: Tenant = {
   id: "tenant-1",
+  slug: "sv-temple",
   name: "Sri Venkateswara Temple",
   defaultContactPhone: "+919876500000",
   address: "123 Temple Street",

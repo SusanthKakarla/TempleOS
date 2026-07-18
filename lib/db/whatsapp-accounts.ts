@@ -1,4 +1,5 @@
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import type { WhatsAppAccount, WhatsAppAccountStatus } from "@/types/db";
 
 interface WhatsAppAccountRow {
@@ -51,6 +52,23 @@ export interface UpsertWhatsAppAccountInput {
   metaBusinessAccountId: string;
 }
 
+export interface LinkWhatsAppAccountForProvisioningInput extends UpsertWhatsAppAccountInput {
+  tenantId: string;
+}
+
+export async function linkWhatsAppAccountForProvisioning(
+  input: LinkWhatsAppAccountForProvisioningInput,
+  client: QueryClient = getPool(),
+): Promise<WhatsAppAccount> {
+  const { rows } = await client.query<WhatsAppAccountRow>(
+    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, status, connected_at)
+     VALUES ($1, $2, $3, $4, 'connected', now())
+     RETURNING *`,
+    [input.tenantId, input.phoneNumber, input.metaPhoneNumberId, input.metaBusinessAccountId],
+  );
+  return mapAccount(rows[0]);
+}
+
 /** Manual/operator-managed setup: links a tenant to its Meta WhatsApp phone number. */
 export async function upsertWhatsAppAccount(
   tenantId: string,
@@ -59,8 +77,9 @@ export async function upsertWhatsAppAccount(
   const { rows } = await getPool().query<WhatsAppAccountRow>(
     `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, status, connected_at)
      VALUES ($1, $2, $3, $4, 'connected', now())
-     ON CONFLICT (meta_phone_number_id)
+     ON CONFLICT (tenant_id)
      DO UPDATE SET phone_number = EXCLUDED.phone_number,
+                   meta_phone_number_id = EXCLUDED.meta_phone_number_id,
                    meta_business_account_id = EXCLUDED.meta_business_account_id,
                    status = 'connected',
                    connected_at = now(),

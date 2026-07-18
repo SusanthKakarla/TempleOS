@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import type { Person } from "@/types/db";
 
@@ -10,6 +11,26 @@ interface PersonRow {
   firebase_uid: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export async function findOrCreatePersonByPhoneForProvisioning(
+  input: { phoneNumber: string; displayName: string },
+  client: QueryClient = getPool(),
+): Promise<Person> {
+  const normalized = normalizePhoneNumber(input.phoneNumber);
+  if (!normalized) {
+    throw new Error("Provisioning received an invalid phone number after validation.");
+  }
+
+  const { rows } = await client.query<PersonRow>(
+    `INSERT INTO persons (phone_number, display_name)
+     VALUES ($1, $2)
+     ON CONFLICT (phone_number)
+     DO UPDATE SET phone_number = EXCLUDED.phone_number
+     RETURNING *`,
+    [normalized, input.displayName],
+  );
+  return mapPerson(rows[0]);
 }
 
 function mapPerson(row: PersonRow): Person {

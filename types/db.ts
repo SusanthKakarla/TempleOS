@@ -1,5 +1,6 @@
 export interface Tenant {
   id: string;
+  slug: string;
   name: string;
   defaultContactPhone: string | null;
   address: string | null;
@@ -24,6 +25,18 @@ export interface Tenant {
   notifyOnEventCancelled: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorType: "super_admin" | "tenant_member";
+  actorId: string;
+  tenantId: string | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export type AdminRole = "super_admin" | "admin";
