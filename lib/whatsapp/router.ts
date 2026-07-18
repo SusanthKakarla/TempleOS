@@ -76,6 +76,7 @@ const INTERACTIVE_REPLY_ID_TO_COMMAND: Record<string, WhatsAppCommand> = {
   change_language: "change_language",
   lang_en: "select_language_en",
   lang_te: "select_language_te",
+  menu: "menu", // "Main Menu" button on event notifications (lib/whatsapp/templates.ts)
 };
 
 /** Classifies a tapped WhatsApp interactive button/list reply by its id. */

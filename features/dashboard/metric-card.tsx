@@ -17,12 +17,13 @@ interface MetricCardProps {
    * (this is a Client Component fed from Server Component pages, and
    * functions can't cross that boundary), so this is a fixed literal instead.
    */
-  format?: "number" | "currency";
+  format?: "number" | "currency" | "percent";
 }
 
 export function MetricCard({ label, value, icon, gradient, format = "number" }: MetricCardProps) {
   const displayValue = useCountUp(value);
-  const formatted = format === "currency" ? formatInr(displayValue) : displayValue;
+  const formatted =
+    format === "currency" ? formatInr(displayValue) : format === "percent" ? `${displayValue}%` : displayValue;
 
   return (
     <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>

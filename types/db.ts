@@ -17,6 +17,11 @@ export interface Tenant {
   eveningOpen: string | null;
   eveningClose: string | null;
   donationInfo: string | null;
+  // Admin toggles for the automatic WhatsApp event notification system (see
+  // migrations/007_event_notifications.sql) — independent per notification type.
+  notifyOnNewEvent: boolean;
+  notifyOnEventUpdated: boolean;
+  notifyOnEventCancelled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,7 +58,7 @@ export interface WhatsAppAccount {
  * admin-authored CMS content is never machine-translated (see migrations/006_language_support.sql). */
 export type SupportedLanguage = "en" | "te";
 
-export type EventStatus = "draft" | "published";
+export type EventStatus = "draft" | "published" | "cancelled";
 
 export interface Event {
   id: string;
@@ -65,6 +70,33 @@ export interface Event {
   endsAt: string | null;
   status: EventStatus;
   createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type EventNotificationType = "new_event" | "event_updated" | "event_cancelled";
+export type EventNotificationDeliveryStatus =
+  | "pending"
+  | "queued"
+  | "sent"
+  | "delivered"
+  | "failed"
+  | "retrying";
+
+export interface EventNotification {
+  id: string;
+  tenantId: string;
+  eventId: string;
+  devoteeId: string;
+  whatsappMessageId: string | null;
+  notificationType: EventNotificationType;
+  deliveryStatus: EventNotificationDeliveryStatus;
+  attemptCount: number;
+  nextAttemptAt: string;
+  sentAt: string | null;
+  deliveredAt: string | null; // reserved for a future Meta delivery-receipt webhook; unset in v1
+  readAt: string | null; // reserved for future; unset in v1
+  failureReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +122,9 @@ export interface Devotee {
   isDonor: boolean;
   totalDonatedAmount: string; // NUMERIC comes back from pg as a string to avoid float precision loss on money
   lastDonationAt: string | null;
+  // Devotee-level opt-out for automatic event notifications (see
+  // migrations/007_event_notifications.sql) — independent of whatsappOptInStatus.
+  eventNotificationsEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }

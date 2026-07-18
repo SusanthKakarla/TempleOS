@@ -11,7 +11,7 @@ const nullableTrimmedString = z
   .nullable()
   .optional();
 
-export const eventStatusSchema = z.enum(["draft", "published"]);
+export const eventStatusSchema = z.enum(["draft", "published", "cancelled"]);
 
 export const createEventSchema = z
   .object({

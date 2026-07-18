@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
-import type { Event } from "@/types/db";
+import type { Event, EventStatus } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,12 @@ import {
 import { EventFormDialog } from "./event-form-dialog";
 import { EventCard } from "./event-card";
 import { AnnounceDialog } from "./announce-dialog";
+
+const STATUS_BADGE_VARIANT: Record<EventStatus, "default" | "secondary" | "destructive"> = {
+  published: "default",
+  draft: "secondary",
+  cancelled: "destructive",
+};
 
 function formatEventTime(event: Event): string {
   const start = new Date(event.startsAt);
@@ -41,15 +48,14 @@ export function EventsTable({ events }: { events: Event[] }) {
     router.refresh();
   }
 
-  async function handleTogglePublish(event: Event) {
+  async function handleSetStatus(event: Event, status: EventStatus) {
     setError(null);
     setPendingId(event.id);
     try {
-      const nextStatus = event.status === "published" ? "draft" : "published";
       const response = await fetch(`/api/events/${event.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({ status }),
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -61,6 +67,19 @@ export function EventsTable({ events }: { events: Event[] }) {
     } finally {
       setPendingId(null);
     }
+  }
+
+  function handleTogglePublish(event: Event) {
+    return handleSetStatus(event, event.status === "published" ? "draft" : "published");
+  }
+
+  function handleCancel(event: Event) {
+    if (!window.confirm(`Cancel "${event.title}"? Devotees who were notified will be told it's cancelled.`)) return;
+    return handleSetStatus(event, "cancelled");
+  }
+
+  function handleReopen(event: Event) {
+    return handleSetStatus(event, "draft");
   }
 
   async function handleDelete(event: Event) {
@@ -133,6 +152,8 @@ export function EventsTable({ events }: { events: Event[] }) {
               pending={pendingId === event.id}
               onSaved={refresh}
               onTogglePublish={handleTogglePublish}
+              onCancel={handleCancel}
+              onReopen={handleReopen}
               onDelete={handleDelete}
             />
           ))}
@@ -156,9 +177,17 @@ export function EventsTable({ events }: { events: Event[] }) {
                   <TableCell>{formatEventTime(event)}</TableCell>
                   <TableCell>{event.location ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={event.status === "published" ? "default" : "secondary"}>
-                      {event.status}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{event.status}</Badge>
+                      {event.status !== "draft" && (
+                        <Link
+                          href={`/dashboard/notifications?eventId=${event.id}`}
+                          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                        >
+                          Notifications
+                        </Link>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <EventFormDialog
@@ -171,24 +200,45 @@ export function EventsTable({ events }: { events: Event[] }) {
                       }
                       onSaved={refresh}
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pendingId === event.id}
-                      onClick={() => handleTogglePublish(event)}
-                    >
-                      {event.status === "published" ? "Unpublish" : "Publish"}
-                    </Button>
-                    {event.status === "published" && (
-                      <AnnounceDialog
-                        event={event}
-                        onAnnounced={refresh}
-                        trigger={
-                          <Button variant="outline" size="sm" disabled={pendingId === event.id}>
-                            Announce
-                          </Button>
-                        }
-                      />
+                    {event.status === "cancelled" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={pendingId === event.id}
+                        onClick={() => handleReopen(event)}
+                      >
+                        Reopen
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pendingId === event.id}
+                          onClick={() => handleTogglePublish(event)}
+                        >
+                          {event.status === "published" ? "Unpublish" : "Publish"}
+                        </Button>
+                        {event.status === "published" && (
+                          <AnnounceDialog
+                            event={event}
+                            onAnnounced={refresh}
+                            trigger={
+                              <Button variant="outline" size="sm" disabled={pendingId === event.id}>
+                                Announce
+                              </Button>
+                            }
+                          />
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pendingId === event.id}
+                          onClick={() => handleCancel(event)}
+                        >
+                          Cancel
+                        </Button>
+                      </>
                     )}
                     <Button
                       variant="ghost"

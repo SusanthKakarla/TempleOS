@@ -3,6 +3,7 @@
 import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TempleInfoForm } from "./temple-info-form";
+import { NotificationPreferencesForm } from "./notification-preferences-form";
 import { TempleTimingsForm } from "./temple-timings-form";
 import { SpecialDaysTable } from "./special-days-table";
 import { SevasTable } from "./sevas-table";
@@ -33,8 +34,9 @@ export function ChatbotSettingsTabs({
         <TabsTrigger value="faq">FAQ</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="info">
+      <TabsContent value="info" className="space-y-4">
         <TempleInfoForm tenant={tenant} />
+        <NotificationPreferencesForm tenant={tenant} />
       </TabsContent>
 
       <TabsContent value="timings" className="space-y-4">

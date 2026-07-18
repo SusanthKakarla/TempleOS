@@ -17,6 +17,7 @@ interface DevoteeRow {
   is_donor: boolean;
   total_donated_amount: string;
   last_donation_at: Date | null;
+  event_notifications_enabled: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -38,6 +39,7 @@ function mapDevotee(row: DevoteeRow): Devotee {
     isDonor: row.is_donor,
     totalDonatedAmount: row.total_donated_amount,
     lastDonationAt: row.last_donation_at ? row.last_donation_at.toISOString() : null,
+    eventNotificationsEnabled: row.event_notifications_enabled,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -185,6 +187,7 @@ export interface UpdateDevoteeInput {
   dateOfBirth?: string | null;
   birthStar?: string | null;
   ancestralLineage?: string | null;
+  eventNotificationsEnabled?: boolean;
 }
 
 export async function updateDevotee(
@@ -199,6 +202,7 @@ export async function updateDevotee(
          date_of_birth = CASE WHEN $5::boolean THEN $6 ELSE date_of_birth END,
          birth_star = CASE WHEN $7::boolean THEN $8 ELSE birth_star END,
          ancestral_lineage = CASE WHEN $9::boolean THEN $10 ELSE ancestral_lineage END,
+         event_notifications_enabled = COALESCE($11::boolean, event_notifications_enabled),
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING *`,
@@ -213,6 +217,7 @@ export async function updateDevotee(
       input.birthStar ?? null,
       "ancestralLineage" in input,
       input.ancestralLineage ?? null,
+      input.eventNotificationsEnabled ?? null,
     ],
   );
   return rows[0] ? mapDevotee(rows[0]) : null;

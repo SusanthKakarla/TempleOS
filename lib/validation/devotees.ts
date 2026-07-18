@@ -31,6 +31,7 @@ export const updateDevoteeSchema = z.object({
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
+  eventNotificationsEnabled: z.boolean().optional(),
 });
 
 export type CreateDevoteePayload = z.infer<typeof createDevoteeSchema>;

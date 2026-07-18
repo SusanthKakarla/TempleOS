@@ -5,12 +5,16 @@ import {
   buildAnnouncementMessage,
   buildContactMessage,
   buildDonationInfoMessage,
+  buildEventCancelledNotification,
+  buildEventNotificationMessage,
+  buildEventUpdatedNotification,
   buildEventsMessage,
   buildFaqMessage,
   buildHelpMessage,
   buildHistoryMessage,
   buildLanguagePickerMessage,
   buildMenuMessage,
+  buildNewEventNotification,
   buildSevasMessage,
   buildTimingsMessage,
   buildUnknownMessage,
@@ -27,6 +31,9 @@ const tenant: Tenant = {
   description: null,
   history: null,
   donationInfo: null,
+  notifyOnNewEvent: true,
+  notifyOnEventUpdated: true,
+  notifyOnEventCancelled: true,
   contactEmail: null,
   googleMapsLink: null,
   morningOpen: null,
@@ -420,6 +427,57 @@ describe("formatEventDateTime locale (via buildEventsMessage)", () => {
     const message = buildEventsMessage(tenant, [makeEvent()], "te");
     // Intl te-IN renders the month name in Telugu script (e.g. "సెప్టెంబర్"), never "Sep".
     expect(message).not.toContain("Sep ");
+  });
+});
+
+describe("event notification builders", () => {
+  const notificationBuilders = [buildNewEventNotification, buildEventUpdatedNotification, buildEventCancelledNotification];
+
+  for (const build of notificationBuilders) {
+    describe(build.name, () => {
+      it("resolves placeholders and includes the location line", () => {
+        const message = build(tenant, makeEvent(), "en");
+        expect(message.body).toContain(tenant.name);
+        expect(message.body).toContain("Ganesh Chaturthi");
+        expect(message.body).toContain("Main hall");
+      });
+
+      it("omits the location line when the event has no location", () => {
+        const message = build(tenant, makeEvent({ location: null }), "en");
+        expect(message.body).not.toMatch(/📍/);
+      });
+
+      it("has exactly the events/menu/contact buttons, each within Meta's 20-char limit", () => {
+        for (const lang of ["en", "te"] as const) {
+          const message = build(tenant, makeEvent(), lang);
+          expect(message.buttons.map((b) => b.id)).toEqual(["events", "menu", "contact"]);
+          for (const button of message.buttons) {
+            expect(button.title.length).toBeLessThanOrEqual(20);
+          }
+        }
+      });
+
+      it("renders the Telugu intro while leaving the admin-authored event title unchanged", () => {
+        const message = build(tenant, makeEvent(), "te");
+        expect(message.body).toMatch(/[ఀ-౿]/); // contains Telugu script
+        expect(message.body).toContain("Ganesh Chaturthi"); // admin-authored title stays verbatim
+      });
+    });
+  }
+
+  describe("buildEventNotificationMessage", () => {
+    it("dispatches to the matching builder for each notification type", () => {
+      const event = makeEvent();
+      expect(buildEventNotificationMessage("new_event", tenant, event, "en")).toEqual(
+        buildNewEventNotification(tenant, event, "en"),
+      );
+      expect(buildEventNotificationMessage("event_updated", tenant, event, "en")).toEqual(
+        buildEventUpdatedNotification(tenant, event, "en"),
+      );
+      expect(buildEventNotificationMessage("event_cancelled", tenant, event, "en")).toEqual(
+        buildEventCancelledNotification(tenant, event, "en"),
+      );
+    });
   });
 });
 

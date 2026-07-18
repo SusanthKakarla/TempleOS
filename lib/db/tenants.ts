@@ -17,6 +17,9 @@ interface TenantRow {
   evening_open: string | null;
   evening_close: string | null;
   donation_info: string | null;
+  notify_on_new_event: boolean;
+  notify_on_event_updated: boolean;
+  notify_on_event_cancelled: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -38,6 +41,9 @@ function mapTenant(row: TenantRow): Tenant {
     eveningOpen: row.evening_open,
     eveningClose: row.evening_close,
     donationInfo: row.donation_info,
+    notifyOnNewEvent: row.notify_on_new_event,
+    notifyOnEventUpdated: row.notify_on_event_updated,
+    notifyOnEventCancelled: row.notify_on_event_cancelled,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -75,6 +81,9 @@ export type UpdateTenantInput = Partial<
     | "eveningOpen"
     | "eveningClose"
     | "donationInfo"
+    | "notifyOnNewEvent"
+    | "notifyOnEventUpdated"
+    | "notifyOnEventCancelled"
   >
 >;
 
@@ -111,6 +120,9 @@ export async function updateTenant(tenantId: string, fields: UpdateTenantInput):
          evening_open = CASE WHEN $22::boolean THEN $23::time ELSE evening_open END,
          evening_close = CASE WHEN $24::boolean THEN $25::time ELSE evening_close END,
          donation_info = CASE WHEN $26::boolean THEN $27 ELSE donation_info END,
+         notify_on_new_event = COALESCE($28::boolean, notify_on_new_event),
+         notify_on_event_updated = COALESCE($29::boolean, notify_on_event_updated),
+         notify_on_event_cancelled = COALESCE($30::boolean, notify_on_event_cancelled),
          updated_at = now()
      WHERE id = $1
      RETURNING *`,
@@ -142,6 +154,9 @@ export async function updateTenant(tenantId: string, fields: UpdateTenantInput):
       fields.eveningClose ?? null,
       fields.donationInfo !== undefined,
       fields.donationInfo ?? null,
+      fields.notifyOnNewEvent ?? null,
+      fields.notifyOnEventUpdated ?? null,
+      fields.notifyOnEventCancelled ?? null,
     ],
   );
   return mapTenant(rows[0]);

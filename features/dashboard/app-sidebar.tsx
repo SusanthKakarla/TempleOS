@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  BellRing,
   CalendarDays,
   LayoutDashboard,
   Landmark,
@@ -40,6 +41,12 @@ export const NAV_ITEMS = [
     href: "/dashboard/whatsapp-activity",
     label: "WhatsApp Activity",
     icon: MessageCircle,
+    gradient: "gradient-green-emerald",
+  },
+  {
+    href: "/dashboard/notifications",
+    label: "Notifications",
+    icon: BellRing,
     gradient: "gradient-green-emerald",
   },
   {

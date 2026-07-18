@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
-import { Cake, Phone, Sparkles, User, Users } from "lucide-react";
+import { Bell, Cake, Phone, Sparkles, User, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface DevoteeFormDialogProps {
   mode: "create" | "edit";
@@ -30,6 +31,9 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
   const [dateOfBirth, setDateOfBirth] = useState(devotee?.dateOfBirth ?? "");
   const [birthStar, setBirthStar] = useState(devotee?.birthStar ?? "");
   const [ancestralLineage, setAncestralLineage] = useState(devotee?.ancestralLineage ?? "");
+  const [eventNotificationsEnabled, setEventNotificationsEnabled] = useState(
+    devotee?.eventNotificationsEnabled ?? true,
+  );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,6 +43,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
     setDateOfBirth(devotee?.dateOfBirth ?? "");
     setBirthStar(devotee?.birthStar ?? "");
     setAncestralLineage(devotee?.ancestralLineage ?? "");
+    setEventNotificationsEnabled(devotee?.eventNotificationsEnabled ?? true);
     setError(null);
   }
 
@@ -58,6 +63,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
           dateOfBirth,
           birthStar,
           ancestralLineage,
+          ...(mode === "edit" ? { eventNotificationsEnabled } : {}),
         }),
       });
 
@@ -160,6 +166,20 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
               />
             </div>
           </div>
+          {mode === "edit" && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <Bell className="size-4 text-saffron" />
+                <div>
+                  <p className="text-sm font-medium">Event notifications</p>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically notify about new, updated, or cancelled events.
+                  </p>
+                </div>
+              </div>
+              <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

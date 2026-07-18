@@ -71,4 +71,13 @@ export const te: LocaleDictionary = {
   languagePickerBody: "🙏 Welcome! Please choose your preferred language.\nదయచేసి మీ భాషను ఎంచుకోండి.",
   languagePickerButtonEnglish: "English",
   languagePickerButtonTelugu: "తెలుగు",
+
+  notifyNewEventIntro: "🙏 నమస్తే. {temple}లో కొత్త కార్యక్రమం ప్రకటించారు: *{title}*, {date} న {time}కి.",
+  notifyEventUpdatedIntro: "🔔 {temple}లోని *{title}* కార్యక్రమం నవీకరించబడింది. కొత్త తేదీ/సమయం: {date} న {time}.",
+  notifyEventCancelledIntro: "⚠️ {temple}లోని *{title}* కార్యక్రమం రద్దు చేయబడింది. అసౌకర్యానికి క్షమించండి.",
+  notifyLocationLine: "📍 {location}",
+  notifyFooter: 'మరిన్ని వివరాల కోసం క్రింద నొక్కండి, లేదా ఎప్పుడైనా "మెను" అని రిప్లై ఇవ్వండి.',
+  notifyViewEventButton: "కార్యక్రమాలు",
+  notifyMainMenuButton: "మెను",
+  notifyContactButton: "సంప్రదించండి",
 };

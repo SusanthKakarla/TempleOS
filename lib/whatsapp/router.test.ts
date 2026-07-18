@@ -102,6 +102,7 @@ describe("classifyInteractiveReplyId", () => {
     expect(classifyInteractiveReplyId("change_language")).toBe("change_language");
     expect(classifyInteractiveReplyId("lang_en")).toBe("select_language_en");
     expect(classifyInteractiveReplyId("lang_te")).toBe("select_language_te");
+    expect(classifyInteractiveReplyId("menu")).toBe("menu");
   });
 
   it("falls back to unknown for an unrecognized or missing id", () => {

@@ -76,4 +76,14 @@ export interface LocaleDictionary {
   languagePickerBody: string;
   languagePickerButtonEnglish: string;
   languagePickerButtonTelugu: string;
+
+  // Automatic WhatsApp event notifications (see migrations/007_event_notifications.sql)
+  notifyNewEventIntro: string; // params: temple, title, date, time
+  notifyEventUpdatedIntro: string; // params: temple, title, date, time
+  notifyEventCancelledIntro: string; // params: temple, title, date, time
+  notifyLocationLine: string; // params: location
+  notifyFooter: string;
+  notifyViewEventButton: string; // button title, Meta limit: 20 chars
+  notifyMainMenuButton: string; // button title, Meta limit: 20 chars
+  notifyContactButton: string; // button title, Meta limit: 20 chars
 }

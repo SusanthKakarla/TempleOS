@@ -1,6 +1,7 @@
 import type {
   DayOfWeek,
   Event,
+  EventNotificationType,
   SupportedLanguage,
   Tenant,
   TempleFaq,
@@ -10,6 +11,7 @@ import type {
 } from "@/types/db";
 import { formatInr } from "@/lib/currency";
 import { t } from "./i18n";
+import type { LocaleDictionary } from "./locales/types";
 import type { InteractiveButton, InteractiveListSection } from "./client";
 
 const MAX_SEVAS_IN_REPLY = 10;
@@ -94,6 +96,64 @@ function formatEventDateTime(
       timeZone: timezone,
     }),
   };
+}
+
+/** Shared 3-button row for every event notification (Meta caps at 3 buttons). */
+function notificationButtons(lang: SupportedLanguage): InteractiveButton[] {
+  return [
+    { id: "events", title: t(lang, "notifyViewEventButton") },
+    { id: "menu", title: t(lang, "notifyMainMenuButton") },
+    { id: "contact", title: t(lang, "notifyContactButton") },
+  ];
+}
+
+function buildNotificationBody(
+  introKey: keyof LocaleDictionary,
+  tenant: Tenant,
+  event: Event,
+  lang: SupportedLanguage,
+): string {
+  const { date, time } = formatEventDateTime(event, tenant.timezone, lang);
+  const intro = t(lang, introKey, { temple: tenant.name, title: event.title, date, time });
+  const locationLine = event.location ? `\n${t(lang, "notifyLocationLine", { location: event.location })}` : "";
+  return `${intro}${locationLine}\n${t(lang, "notifyFooter")}`;
+}
+
+/**
+ * The "View Events" button lists ALL upcoming published events (id "events",
+ * the same stateless command as the main menu row) — not the specific event
+ * just announced. The bot has no conversation state (NFR-009 in router.ts),
+ * so a per-event drill-down isn't possible; the button label says "Events"
+ * (plural) to set the right expectation.
+ */
+export function buildNewEventNotification(tenant: Tenant, event: Event, lang: SupportedLanguage): WhatsAppButtonMessage {
+  return { body: buildNotificationBody("notifyNewEventIntro", tenant, event, lang), buttons: notificationButtons(lang) };
+}
+
+export function buildEventUpdatedNotification(tenant: Tenant, event: Event, lang: SupportedLanguage): WhatsAppButtonMessage {
+  return { body: buildNotificationBody("notifyEventUpdatedIntro", tenant, event, lang), buttons: notificationButtons(lang) };
+}
+
+export function buildEventCancelledNotification(tenant: Tenant, event: Event, lang: SupportedLanguage): WhatsAppButtonMessage {
+  return { body: buildNotificationBody("notifyEventCancelledIntro", tenant, event, lang), buttons: notificationButtons(lang) };
+}
+
+const NOTIFICATION_BUILDER_BY_TYPE: Record<
+  EventNotificationType,
+  (tenant: Tenant, event: Event, lang: SupportedLanguage) => WhatsAppButtonMessage
+> = {
+  new_event: buildNewEventNotification,
+  event_updated: buildEventUpdatedNotification,
+  event_cancelled: buildEventCancelledNotification,
+};
+
+export function buildEventNotificationMessage(
+  type: EventNotificationType,
+  tenant: Tenant,
+  event: Event,
+  lang: SupportedLanguage,
+): WhatsAppButtonMessage {
+  return NOTIFICATION_BUILDER_BY_TYPE[type](tenant, event, lang);
 }
 
 function formatEventLine(event: Event, index: number, timezone: string, lang: SupportedLanguage): string {
