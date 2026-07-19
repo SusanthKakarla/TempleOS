@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { getEventNotificationSummary, listRecentEventNotifications } from "@/lib/db/event-notifications";
@@ -10,6 +11,7 @@ interface PageProps {
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
   const session = await requireDashboardAdmin();
+  const t = await getTranslations("notifications");
 
   const { eventId } = await searchParams;
 
@@ -26,33 +28,31 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold">Notification Center</h1>
-        <p className="text-sm text-muted-foreground">
-          Automatic WhatsApp notifications sent to devotees when events are published, updated, or cancelled.
-        </p>
+        <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          label="Total Sent"
+          label={t("metrics.totalSent")}
           value={summary.sent}
           icon={<CheckCircle2 className="size-4.5" />}
           gradient="gradient-green-emerald"
         />
         <MetricCard
-          label="Failed"
+          label={t("metrics.failed")}
           value={summary.failed}
           icon={<XCircle className="size-4.5" />}
           gradient="bg-destructive"
         />
         <MetricCard
-          label="Pending"
+          label={t("metrics.pending")}
           value={summary.pending}
           icon={<Clock className="size-4.5" />}
           gradient="gradient-saffron-gold"
         />
         <MetricCard
-          label="Success Rate"
+          label={t("metrics.successRate")}
           value={successRate}
           format="percent"
           icon={<BellRing className="size-4.5" />}

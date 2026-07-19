@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { HandCoins, Plus } from "lucide-react";
-import type { Devotee, Donation } from "@/types/db";
+import type { Devotee, Donation, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -16,16 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/currency";
+import { formatDate } from "@/lib/date";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
-}
-
-function paymentMethodLabel(value: string): string {
-  return PAYMENT_METHOD_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
 
 export function DevoteeDonationsCard({
   devotee,
@@ -35,15 +29,24 @@ export function DevoteeDonationsCard({
   donations: Donation[];
 }) {
   const router = useRouter();
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("devotees.donationsCard");
+  const tCommon = useTranslations("common");
+  const tDonations = useTranslations("donations");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function paymentMethodLabel(value: string): string {
+    const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
+    return option ? tDonations(`paymentMethods.${option.value}`) : value;
+  }
 
   function refresh() {
     router.refresh();
   }
 
   async function handleDelete(donation: Donation) {
-    if (!window.confirm(`Delete this ${formatInr(donation.amount)} donation? This cannot be undone.`)) {
+    if (!window.confirm(t("confirmDelete", { amount: formatInr(donation.amount) }))) {
       return;
     }
     setError(null);
@@ -52,11 +55,11 @@ export function DevoteeDonationsCard({
       const response = await fetch(`/api/donations/${donation.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete donation");
+        throw new Error(body.error ?? t("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete donation");
+      setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setPendingId(null);
     }
@@ -66,11 +69,14 @@ export function DevoteeDonationsCard({
     <Card className="gap-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-heading text-lg font-semibold">Donations</h2>
+          <h2 className="font-heading text-lg font-semibold">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">
             {devotee.isDonor
-              ? `${formatInr(devotee.totalDonatedAmount)} total · last on ${formatDate(devotee.lastDonationAt!)}`
-              : "No donations recorded yet."}
+              ? t("summary", {
+                  amount: formatInr(devotee.totalDonatedAmount),
+                  date: formatDate(devotee.lastDonationAt!, locale),
+                })
+              : t("noDonations")}
           </p>
         </div>
         <DonationFormDialog
@@ -80,7 +86,7 @@ export function DevoteeDonationsCard({
           trigger={
             <Button size="sm" className="gap-1.5">
               <Plus className="size-4" />
-              Add donation
+              {t("addButton")}
             </Button>
           }
           onSaved={refresh}
@@ -94,18 +100,18 @@ export function DevoteeDonationsCard({
           <div className="flex size-12 items-center justify-center rounded-full bg-muted">
             <HandCoins className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">No donation history for this devotee.</p>
+          <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
         </div>
       ) : (
         <div className="rounded-xl border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Amount</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("columns.amount")}</TableHead>
+                <TableHead>{t("columns.purpose")}</TableHead>
+                <TableHead>{t("columns.method")}</TableHead>
+                <TableHead>{t("columns.date")}</TableHead>
+                <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,7 +122,7 @@ export function DevoteeDonationsCard({
                   <TableCell>
                     <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod)}</Badge>
                   </TableCell>
-                  <TableCell>{formatDate(donation.donatedAt)}</TableCell>
+                  <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <DonationFormDialog
                       mode="edit"
@@ -125,7 +131,7 @@ export function DevoteeDonationsCard({
                       fixedDevoteeId={devotee.id}
                       trigger={
                         <Button variant="outline" size="sm" disabled={pendingId === donation.id}>
-                          Edit
+                          {tCommon("edit")}
                         </Button>
                       }
                       onSaved={refresh}
@@ -136,7 +142,7 @@ export function DevoteeDonationsCard({
                       disabled={pendingId === donation.id}
                       onClick={() => handleDelete(donation)}
                     >
-                      Delete
+                      {tCommon("delete")}
                     </Button>
                   </TableCell>
                 </TableRow>

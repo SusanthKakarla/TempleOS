@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { HandCoins, Plus } from "lucide-react";
-import type { Devotee, DonationWithDonor } from "@/types/db";
+import type { Devotee, DonationWithDonor, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,18 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/currency";
+import { formatDate } from "@/lib/date";
 import { ExportMenu } from "@/features/export/export-menu";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
 import { DonationsSearchInput } from "./donations-search-input";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
-}
-
-function paymentMethodLabel(value: string): string {
-  return PAYMENT_METHOD_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
 
 export function DonationsTable({
   donations,
@@ -40,6 +34,15 @@ export function DonationsTable({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("donations");
+  const tCommon = useTranslations("common");
+
+  function paymentMethodLabel(value: string): string {
+    const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
+    return option ? t(`paymentMethods.${option.value}`) : value;
+  }
+
   const [dateFrom, setDateFrom] = useState(searchParams.get("dateFrom") ?? "");
   const [dateTo, setDateTo] = useState(searchParams.get("dateTo") ?? "");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -74,7 +77,7 @@ export function DonationsTable({
   async function handleDelete(donation: DonationWithDonor) {
     if (
       !window.confirm(
-        `Delete this ${formatInr(donation.amount)} donation from ${donation.donorName}? This cannot be undone.`,
+        t("confirmDelete", { amount: formatInr(donation.amount), name: donation.donorName }),
       )
     ) {
       return;
@@ -85,11 +88,11 @@ export function DonationsTable({
       const response = await fetch(`/api/donations/${donation.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete donation");
+        throw new Error(body.error ?? t("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete donation");
+      setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setPendingId(null);
     }
@@ -99,10 +102,8 @@ export function DonationsTable({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">Donations</h1>
-          <p className="text-sm text-muted-foreground">
-            Manually recorded donations. No online payments or receipts.
-          </p>
+          <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <ExportMenu
@@ -117,7 +118,7 @@ export function DonationsTable({
             trigger={
               <Button className="hidden gap-1.5 sm:inline-flex">
                 <Plus className="size-4" />
-                Add donation
+                {t("addButton")}
               </Button>
             }
             onSaved={refresh}
@@ -132,15 +133,15 @@ export function DonationsTable({
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           className="w-40"
-          aria-label="From date"
+          aria-label={t("dateFromLabel")}
         />
-        <span className="text-sm text-muted-foreground">to</span>
+        <span className="text-sm text-muted-foreground">{t("dateRangeSeparator")}</span>
         <Input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
           className="w-40"
-          aria-label="To date"
+          aria-label={t("dateToLabel")}
         />
       </div>
 
@@ -151,10 +152,8 @@ export function DonationsTable({
           <div className="flex size-14 items-center justify-center rounded-full bg-muted">
             <HandCoins className="size-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No donations found</p>
-          <p className="text-sm text-muted-foreground">
-            Record a donation to start tracking donor history.
-          </p>
+          <p className="text-sm font-medium">{t("emptyState.title")}</p>
+          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
         </div>
       ) : (
         <div className="rounded-xl border bg-background">
@@ -165,15 +164,15 @@ export function DonationsTable({
                   <Checkbox
                     checked={selectedIds.length > 0 && selectedIds.length === donations.length}
                     onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                    aria-label="Select all donations"
+                    aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>Donor</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("columns.donor")}</TableHead>
+                <TableHead>{t("columns.amount")}</TableHead>
+                <TableHead>{t("columns.purpose")}</TableHead>
+                <TableHead>{t("columns.method")}</TableHead>
+                <TableHead>{t("columns.date")}</TableHead>
+                <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -183,7 +182,7 @@ export function DonationsTable({
                     <Checkbox
                       checked={selectedIds.includes(donation.id)}
                       onCheckedChange={(checked) => toggleSelected(donation.id, checked === true)}
-                      aria-label={`Select donation from ${donation.donorName}`}
+                      aria-label={t("selectRow", { name: donation.donorName })}
                     />
                   </TableCell>
                   <TableCell>
@@ -200,7 +199,7 @@ export function DonationsTable({
                   <TableCell>
                     <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod)}</Badge>
                   </TableCell>
-                  <TableCell>{formatDate(donation.donatedAt)}</TableCell>
+                  <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <DonationFormDialog
                       mode="edit"
@@ -208,7 +207,7 @@ export function DonationsTable({
                       devotees={devotees}
                       trigger={
                         <Button variant="outline" size="sm" disabled={pendingId === donation.id}>
-                          Edit
+                          {tCommon("edit")}
                         </Button>
                       }
                       onSaved={refresh}
@@ -219,7 +218,7 @@ export function DonationsTable({
                       disabled={pendingId === donation.id}
                       onClick={() => handleDelete(donation)}
                     >
-                      Delete
+                      {tCommon("delete")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -235,7 +234,7 @@ export function DonationsTable({
         trigger={
           <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
             <Plus className="size-5" />
-            <span className="sr-only">Add donation</span>
+            <span className="sr-only">{t("addButton")}</span>
           </Button>
         }
         onSaved={refresh}

@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -37,14 +38,6 @@ interface CommitResponse {
   errors: { rowNumber: number; message: string }[];
 }
 
-const STATUS_LABEL: Record<PreviewRow["status"], string> = {
-  valid: "Valid",
-  invalid: "Invalid",
-  duplicate_in_file: "Duplicate (in file)",
-  duplicate_in_db: "Duplicate (existing)",
-  empty: "Empty row",
-};
-
 const STATUS_VARIANT: Record<PreviewRow["status"], "default" | "secondary" | "destructive"> = {
   valid: "default",
   invalid: "destructive",
@@ -55,6 +48,7 @@ const STATUS_VARIANT: Record<PreviewRow["status"], "default" | "secondary" | "de
 
 export function DevoteeImportWizard() {
   const router = useRouter();
+  const t = useTranslations("devotees.importWizard");
   const [step, setStep] = useState<Step>("upload");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [result, setResult] = useState<CommitResponse | null>(null);
@@ -73,12 +67,12 @@ export function DevoteeImportWizard() {
       const response = await fetch("/api/devotees/import/preview", { method: "POST", body: formData });
       const body = (await response.json().catch(() => ({}))) as PreviewResponse & { error?: string };
       if (!response.ok) {
-        throw new Error(body.error ?? "Failed to read file");
+        throw new Error(body.error ?? t("readError"));
       }
       setPreview(body);
       setStep("reviewing");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to read file");
+      setError(err instanceof Error ? err.message : t("readError"));
     } finally {
       setBusy(false);
       event.target.value = "";
@@ -98,12 +92,12 @@ export function DevoteeImportWizard() {
       });
       const body = (await response.json().catch(() => ({}))) as CommitResponse & { error?: string };
       if (!response.ok) {
-        throw new Error(body.error ?? "Import failed");
+        throw new Error(body.error ?? t("importError"));
       }
       setResult(body);
       setStep("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(err instanceof Error ? err.message : t("importError"));
       setStep("reviewing");
     } finally {
       setBusy(false);
@@ -127,10 +121,8 @@ export function DevoteeImportWizard() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-heading text-2xl font-semibold">Import Devotees</h1>
-        <p className="text-sm text-muted-foreground">
-          Upload a CSV or Excel file to bulk-add devotees. Review and fix any issues before importing.
-        </p>
+        <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -142,17 +134,15 @@ export function DevoteeImportWizard() {
               <FileUp className="size-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium">Upload a .csv or .xlsx file</p>
-              <p className="text-sm text-muted-foreground">
-                Needs &ldquo;Name&rdquo; and &ldquo;WhatsApp Phone&rdquo; columns at minimum.
-              </p>
+              <p className="text-sm font-medium">{t("upload.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("upload.description")}</p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <label
                 className={cn(buttonVariants({ variant: "default" }), "cursor-pointer gap-1.5", busy && "pointer-events-none opacity-50")}
               >
                 <Upload className="size-4" />
-                {busy ? "Reading file…" : "Upload file"}
+                {busy ? t("upload.reading") : t("upload.uploadButton")}
                 <input
                   type="file"
                   accept=".csv,.xlsx"
@@ -167,7 +157,7 @@ export function DevoteeImportWizard() {
                 className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
               >
                 <Download className="size-4" />
-                Download template
+                {t("upload.downloadTemplate")}
               </Link>
             </div>
           </CardContent>
@@ -177,25 +167,25 @@ export function DevoteeImportWizard() {
       {step === "reviewing" && preview && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <CountChip label="Total" value={preview.totalRows} icon={Users} />
-            <CountChip label="Valid" value={preview.validCount} icon={CheckCircle2} tone="text-emerald" />
-            <CountChip label="Invalid" value={preview.invalidCount} icon={XCircle} tone="text-destructive" />
-            <CountChip label="Skipped" value={preview.skippedCount} icon={AlertTriangle} tone="text-saffron" />
+            <CountChip label={t("countChips.total")} value={preview.totalRows} icon={Users} />
+            <CountChip label={t("countChips.valid")} value={preview.validCount} icon={CheckCircle2} tone="text-emerald" />
+            <CountChip label={t("countChips.invalid")} value={preview.invalidCount} icon={XCircle} tone="text-destructive" />
+            <CountChip label={t("countChips.skipped")} value={preview.skippedCount} icon={AlertTriangle} tone="text-saffron" />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Tabs value={showOnlyProblems ? "problems" : "all"} onValueChange={(v) => setShowOnlyProblems(v === "problems")}>
               <TabsList>
-                <TabsTrigger value="all">All rows</TabsTrigger>
-                <TabsTrigger value="problems">Only issues</TabsTrigger>
+                <TabsTrigger value="all">{t("tabs.all")}</TabsTrigger>
+                <TabsTrigger value="problems">{t("tabs.problems")}</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={startOver} disabled={busy}>
-                Start over
+                {t("startOver")}
               </Button>
               <Button onClick={handleImport} disabled={busy || preview.validCount === 0}>
-                Import {preview.validCount} valid row{preview.validCount === 1 ? "" : "s"}
+                {t("importRows", { count: preview.validCount })}
               </Button>
             </div>
           </div>
@@ -204,11 +194,11 @@ export function DevoteeImportWizard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Row</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Issues</TableHead>
+                  <TableHead>{t("columns.row")}</TableHead>
+                  <TableHead>{t("columns.name")}</TableHead>
+                  <TableHead>{t("columns.phone")}</TableHead>
+                  <TableHead>{t("columns.status")}</TableHead>
+                  <TableHead>{t("columns.issues")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,7 +208,7 @@ export function DevoteeImportWizard() {
                     <TableCell>{row.data.displayName || "—"}</TableCell>
                     <TableCell>{row.data.whatsappPhone || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[row.status]}>{STATUS_LABEL[row.status]}</Badge>
+                      <Badge variant={STATUS_VARIANT[row.status]}>{t(`statusLabels.${row.status}`)}</Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {row.errors.join("; ") || "—"}
@@ -234,8 +224,8 @@ export function DevoteeImportWizard() {
       {step === "importing" && (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm font-medium">Importing devotees…</p>
-            <p className="text-sm text-muted-foreground">This may take a moment for larger files.</p>
+            <p className="text-sm font-medium">{t("importing.title")}</p>
+            <p className="text-sm text-muted-foreground">{t("importing.description")}</p>
           </CardContent>
         </Card>
       )}
@@ -246,23 +236,25 @@ export function DevoteeImportWizard() {
             <CheckCircle2 className="size-10 text-emerald" />
             <div>
               <p className="text-sm font-medium">
-                <span className="text-emerald">{result.imported} imported</span>
-                {result.skipped > 0 && <span className="text-muted-foreground"> · {result.skipped} skipped</span>}
-                {result.failed > 0 && <span className="text-destructive"> · {result.failed} failed</span>}
+                <span className="text-emerald">{t("done.imported", { count: result.imported })}</span>
+                {result.skipped > 0 && (
+                  <span className="text-muted-foreground"> · {t("done.skipped", { count: result.skipped })}</span>
+                )}
+                {result.failed > 0 && (
+                  <span className="text-destructive"> · {t("done.failed", { count: result.failed })}</span>
+                )}
               </p>
               {result.errors.length > 0 && (
                 <ul className="mt-2 space-y-1 text-left text-xs text-destructive">
                   {result.errors.map((e) => (
-                    <li key={e.rowNumber}>
-                      Row {e.rowNumber}: {e.message}
-                    </li>
+                    <li key={e.rowNumber}>{t("done.rowError", { row: e.rowNumber, message: e.message })}</li>
                   ))}
                 </ul>
               )}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={startOver}>
-                Import another file
+                {t("done.importAnother")}
               </Button>
               <Button
                 onClick={() => {
@@ -270,7 +262,7 @@ export function DevoteeImportWizard() {
                   router.refresh();
                 }}
               >
-                View devotees
+                {t("done.viewDevotees")}
               </Button>
             </div>
           </CardContent>
@@ -279,7 +271,7 @@ export function DevoteeImportWizard() {
 
       {step === "upload" && (
         <Link href="/dashboard/devotees" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
-          Back to devotees
+          {t("backToDevotees")}
         </Link>
       )}
     </div>

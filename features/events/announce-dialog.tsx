@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, Megaphone } from "lucide-react";
 import type { Event } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ export function AnnounceDialog({
   trigger: ReactElement;
   onAnnounced: () => void;
 }) {
+  const t = useTranslations("events.announceDialog");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("confirm");
   const [recipientCount, setRecipientCount] = useState<number | null>(null);
@@ -69,14 +72,14 @@ export function AnnounceDialog({
       const response = await fetch(`/api/events/${event.id}/announce`, { method: "POST" });
       const body = (await response.json().catch(() => ({}))) as AnnounceResult & { error?: string };
       if (!response.ok) {
-        throw new Error(body.error ?? "Failed to send announcement");
+        throw new Error(body.error ?? t("errorFallback"));
       }
       setProgress(100);
       setResult({ total: body.total, sent: body.sent, failed: body.failed });
       setPhase("done");
       onAnnounced();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send announcement");
+      setError(err instanceof Error ? err.message : t("errorFallback"));
       setPhase("confirm");
     } finally {
       if (progressTimer.current) clearInterval(progressTimer.current);
@@ -90,12 +93,10 @@ export function AnnounceDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Megaphone className="size-4.5 text-saffron" />
-            Send WhatsApp Announcement
+            {t("title")}
           </DialogTitle>
           <DialogDescription>
-            {phase === "done"
-              ? "Announcement sent."
-              : `Notify opted-in devotees about "${event.title}".`}
+            {phase === "done" ? t("descriptionDone") : t("descriptionConfirm", { title: event.title })}
           </DialogDescription>
         </DialogHeader>
 
@@ -104,8 +105,8 @@ export function AnnounceDialog({
             <p className="font-medium">{event.title}</p>
             <p className="text-muted-foreground">
               {recipientCount === null
-                ? "Checking recipients..."
-                : `${recipientCount} opted-in devotee${recipientCount === 1 ? "" : "s"} will receive this.`}
+                ? t("checkingRecipients")
+                : t("recipientCount", { count: recipientCount })}
             </p>
           </div>
         )}
@@ -116,11 +117,11 @@ export function AnnounceDialog({
           <div className="flex flex-col items-center gap-2 py-4 text-center">
             <CheckCircle2 className="size-10 text-emerald" />
             <p className="text-sm">
-              <span className="font-semibold text-emerald">{result.sent} sent</span>
+              <span className="font-semibold text-emerald">{t("sentResult", { count: result.sent })}</span>
               {result.failed > 0 && (
-                <span className="text-destructive"> &middot; {result.failed} failed</span>
+                <span className="text-destructive"> &middot; {t("failedResult", { count: result.failed })}</span>
               )}
-              {result.total === 0 && " — no opted-in devotees yet."}
+              {result.total === 0 && ` — ${t("noRecipients")}`}
             </p>
           </div>
         )}
@@ -129,10 +130,10 @@ export function AnnounceDialog({
 
         <DialogFooter>
           {phase === "done" ? (
-            <Button onClick={() => setOpen(false)}>Close</Button>
+            <Button onClick={() => setOpen(false)}>{tCommon("close")}</Button>
           ) : (
             <Button onClick={handleSend} disabled={phase === "sending" || recipientCount === 0}>
-              {phase === "sending" ? "Sending..." : "Send announcement"}
+              {phase === "sending" ? t("sending") : t("send")}
             </Button>
           )}
         </DialogFooter>

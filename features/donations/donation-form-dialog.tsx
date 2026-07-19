@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import { IndianRupee, User } from "lucide-react";
 import type { Devotee, Donation, PaymentMethod } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dateTimeLocalValueToIso, isoToDateTimeLocalValue } from "@/features/events/datetime-local";
 import { DateTimeField } from "@/features/events/date-time-field";
-import { DONATION_PURPOSE_OTHER, DONATION_PURPOSE_PRESETS, PAYMENT_METHOD_OPTIONS } from "./donation-options";
+import {
+  DONATION_PURPOSE_OTHER,
+  DONATION_PURPOSE_PRESET_KEYS,
+  DONATION_PURPOSE_PRESETS,
+  PAYMENT_METHOD_OPTIONS,
+} from "./donation-options";
 
 interface DonationFormDialogProps {
   mode: "create" | "edit";
@@ -47,6 +53,9 @@ export function DonationFormDialog({
   trigger,
   onSaved,
 }: DonationFormDialogProps) {
+  const t = useTranslations("donations");
+  const tForm = useTranslations("donations.formDialog");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
   const [amount, setAmount] = useState(donation?.amount ?? "");
@@ -78,22 +87,22 @@ export function DonationFormDialog({
     setError(null);
 
     if (!devoteeId) {
-      setError("Select a devotee");
+      setError(tForm("errors.selectDevotee"));
       return;
     }
     const amountNumber = Number(amount);
     if (!amount || Number.isNaN(amountNumber) || amountNumber <= 0) {
-      setError("Enter a valid amount greater than zero");
+      setError(tForm("errors.invalidAmount"));
       return;
     }
     const purpose = purposePreset === DONATION_PURPOSE_OTHER ? customPurpose.trim() : purposePreset;
     if (!purpose) {
-      setError("Enter a purpose");
+      setError(tForm("errors.enterPurpose"));
       return;
     }
     const donatedAtIso = dateTimeLocalValueToIso(donatedAt);
     if (!donatedAtIso) {
-      setError("Donation date is required");
+      setError(tForm("errors.dateRequired"));
       return;
     }
 
@@ -116,16 +125,21 @@ export function DonationFormDialog({
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save donation");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
 
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save donation");
+      setError(err instanceof Error ? err.message : tForm("errorFallback"));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function purposeLabel(preset: string): string {
+    const key = DONATION_PURPOSE_PRESET_KEYS[preset as keyof typeof DONATION_PURPOSE_PRESET_KEYS];
+    return key ? t(`purposePresets.${key}`) : preset;
   }
 
   return (
@@ -139,16 +153,14 @@ export function DonationFormDialog({
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add donation" : "Edit donation"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? tForm("createTitle") : tForm("editTitle")}</DialogTitle>
           <DialogDescription>
-            {mode === "create"
-              ? "Record a donation received in cash, UPI, or another manual method."
-              : "Update this donation record."}
+            {mode === "create" ? tForm("createDescription") : tForm("editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="devoteeId">Devotee</Label>
+            <Label htmlFor="devoteeId">{tForm("fields.devotee")}</Label>
             <Select
               value={devoteeId}
               onValueChange={(value) => setDevoteeId(value ?? "")}
@@ -159,7 +171,7 @@ export function DonationFormDialog({
             >
               <SelectTrigger id="devoteeId" className="w-full">
                 <User className="size-4 text-muted-foreground" />
-                <SelectValue placeholder="Select a devotee" />
+                <SelectValue placeholder={tForm("fields.devoteePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {devotees.map((devotee) => (
@@ -173,7 +185,7 @@ export function DonationFormDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (₹)</Label>
+              <Label htmlFor="amount">{tForm("fields.amount")}</Label>
               <div className="relative">
                 <IndianRupee className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -189,11 +201,11 @@ export function DonationFormDialog({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment method</Label>
+              <Label htmlFor="paymentMethod">{tForm("fields.paymentMethod")}</Label>
               <Select
                 value={paymentMethod}
                 onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
-                items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, o.label]))}
+                items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
               >
                 <SelectTrigger id="paymentMethod" className="w-full">
                   <SelectValue />
@@ -201,7 +213,7 @@ export function DonationFormDialog({
                 <SelectContent>
                   {PAYMENT_METHOD_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(`paymentMethods.${option.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -210,23 +222,30 @@ export function DonationFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purpose">Purpose</Label>
-            <Select value={purposePreset} onValueChange={(value) => setPurposePreset(value ?? "")}>
+            <Label htmlFor="purpose">{tForm("fields.purpose")}</Label>
+            <Select
+              value={purposePreset}
+              onValueChange={(value) => setPurposePreset(value ?? "")}
+              items={Object.fromEntries([
+                ...DONATION_PURPOSE_PRESETS.map((preset) => [preset, purposeLabel(preset)]),
+                [DONATION_PURPOSE_OTHER, t("purposePresets.other")],
+              ])}
+            >
               <SelectTrigger id="purpose" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {DONATION_PURPOSE_PRESETS.map((preset) => (
                   <SelectItem key={preset} value={preset}>
-                    {preset}
+                    {purposeLabel(preset)}
                   </SelectItem>
                 ))}
-                <SelectItem value={DONATION_PURPOSE_OTHER}>{DONATION_PURPOSE_OTHER}</SelectItem>
+                <SelectItem value={DONATION_PURPOSE_OTHER}>{t("purposePresets.other")}</SelectItem>
               </SelectContent>
             </Select>
             {purposePreset === DONATION_PURPOSE_OTHER && (
               <Input
-                placeholder="Describe the purpose"
+                placeholder={tForm("fields.purposePlaceholder")}
                 value={customPurpose}
                 onChange={(e) => setCustomPurpose(e.target.value)}
                 required
@@ -234,17 +253,23 @@ export function DonationFormDialog({
             )}
           </div>
 
-          <DateTimeField id="donatedAt" label="Donation date" value={donatedAt} onChange={setDonatedAt} required />
+          <DateTimeField
+            id="donatedAt"
+            label={tForm("fields.donationDate")}
+            value={donatedAt}
+            onChange={setDonatedAt}
+            required
+          />
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
+            <Label htmlFor="notes">{tForm("fields.notes")}</Label>
             <Textarea id="notes" value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,4 +1,13 @@
 {
+  "common": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "search": "Search"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "events": "Events",
@@ -337,6 +346,258 @@
       "description": "Answered by the WhatsApp chatbot's FAQ option.",
       "fields": { "question": "Question", "answer": "Answer" },
       "errorFallback": "Failed to save FAQ"
+    }
+  },
+  "events": {
+    "pageHeader": { "title": "Events", "subtitle": "Create and publish temple events." },
+    "viewTabs": { "table": "Table", "card": "Card" },
+    "createButton": "Create event",
+    "columns": { "title": "Title", "when": "When", "location": "Location", "status": "Status", "actions": "Actions" },
+    "selectAll": "Select all events",
+    "selectRow": "Select {title}",
+    "notifications": "Notifications",
+    "emptyState": { "title": "No events yet", "description": "Create your first temple event to get started." },
+    "status": { "published": "published", "draft": "draft", "cancelled": "cancelled" },
+    "buttons": {
+      "reopen": "Reopen",
+      "unpublish": "Unpublish",
+      "publish": "Publish",
+      "announce": "Announce"
+    },
+    "confirmCancel": "Cancel \"{title}\"? Devotees who were notified will be told it's cancelled.",
+    "confirmDelete": "Delete \"{title}\"? This cannot be undone.",
+    "updateError": "Failed to update event",
+    "deleteError": "Failed to delete event",
+    "cancelledLabel": "Cancelled",
+    "publishedLabel": "Published",
+    "formDialog": {
+      "createTitle": "Create event",
+      "editTitle": "Edit event",
+      "createDescription": "Add a new temple event. It stays a draft until published.",
+      "editDescription": "Update this event's details.",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "location": "Location",
+        "start": "Start",
+        "end": "End (optional)"
+      },
+      "published": { "label": "Published", "description": "Visible to devotees on WhatsApp." },
+      "preview": "Preview",
+      "startRequired": "Start date/time is required",
+      "errorFallback": "Failed to save event",
+      "pickDate": "Pick a date"
+    },
+    "announceDialog": {
+      "title": "Send WhatsApp Announcement",
+      "descriptionDone": "Announcement sent.",
+      "descriptionConfirm": "Notify opted-in devotees about \"{title}\".",
+      "checkingRecipients": "Checking recipients...",
+      "recipientCount": "{count, plural, one {# opted-in devotee} other {# opted-in devotees}} will receive this.",
+      "sentResult": "{count} sent",
+      "failedResult": "{count} failed",
+      "noRecipients": "no opted-in devotees yet.",
+      "send": "Send announcement",
+      "sending": "Sending...",
+      "errorFallback": "Failed to send announcement"
+    }
+  },
+  "devotees": {
+    "pageHeader": {
+      "title": "Devotees",
+      "subtitle": "Devotees who message the temple WhatsApp number, plus any you add manually."
+    },
+    "importButton": "Import",
+    "addButton": "Add devotee",
+    "searchPlaceholder": "Search by name or phone...",
+    "columns": {
+      "name": "Name",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "birthStar": "Birth star",
+      "gothram": "Gothram",
+      "firstSeen": "First seen",
+      "actions": "Actions"
+    },
+    "selectAll": "Select all devotees",
+    "selectRow": "Select {name}",
+    "optedIn": "Opted in",
+    "notOptedIn": "Not opted in",
+    "emptyState": {
+      "title": "No devotees found",
+      "description": "Devotees appear here once they message the temple WhatsApp number, or you can add one manually."
+    },
+    "confirmDelete": "Delete \"{name}\"? This cannot be undone. Their WhatsApp activity history is kept but will no longer be linked to a name.",
+    "deleteError": "Failed to delete devotee",
+    "formDialog": {
+      "createTitle": "Add devotee",
+      "editTitle": "Edit devotee",
+      "createDescription": "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number.",
+      "editDescription": "Update this devotee's details.",
+      "fields": {
+        "name": "Name",
+        "phoneNumber": "Phone number",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "dateOfBirth": "Date of birth (optional)",
+        "birthStar": "Birth star / Nakshatram (optional)",
+        "gothram": "Gothram / Ancestral lineage (optional)"
+      },
+      "eventNotifications": {
+        "label": "Event notifications",
+        "description": "Automatically notify about new, updated, or cancelled events."
+      },
+      "errorFallback": "Failed to save devotee"
+    },
+    "detail": {
+      "backToDevotees": "Back to devotees",
+      "dateOfBirth": "Date of birth",
+      "birthStar": "Birth star",
+      "gothram": "Gothram",
+      "donor": "Donor",
+      "totalDonated": "Total donated",
+      "lastDonation": "Last donation",
+      "firstSeen": "First seen"
+    },
+    "donationsCard": {
+      "title": "Donations",
+      "summary": "{amount} total · last on {date}",
+      "noDonations": "No donations recorded yet.",
+      "addButton": "Add donation",
+      "emptyState": "No donation history for this devotee.",
+      "columns": { "amount": "Amount", "purpose": "Purpose", "method": "Method", "date": "Date", "actions": "Actions" },
+      "confirmDelete": "Delete this {amount} donation? This cannot be undone.",
+      "deleteError": "Failed to delete donation"
+    },
+    "importWizard": {
+      "pageHeader": {
+        "title": "Import Devotees",
+        "subtitle": "Upload a CSV or Excel file to bulk-add devotees. Review and fix any issues before importing."
+      },
+      "upload": {
+        "title": "Upload a .csv or .xlsx file",
+        "description": "Needs “Name” and “WhatsApp Phone” columns at minimum.",
+        "uploadButton": "Upload file",
+        "reading": "Reading file…",
+        "downloadTemplate": "Download template"
+      },
+      "statusLabels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "duplicate_in_file": "Duplicate (in file)",
+        "duplicate_in_db": "Duplicate (existing)",
+        "empty": "Empty row"
+      },
+      "countChips": { "total": "Total", "valid": "Valid", "invalid": "Invalid", "skipped": "Skipped" },
+      "tabs": { "all": "All rows", "problems": "Only issues" },
+      "startOver": "Start over",
+      "importRows": "{count, plural, one {Import # valid row} other {Import # valid rows}}",
+      "columns": { "row": "Row", "name": "Name", "phone": "Phone", "status": "Status", "issues": "Issues" },
+      "importing": { "title": "Importing devotees…", "description": "This may take a moment for larger files." },
+      "done": {
+        "imported": "{count} imported",
+        "skipped": "{count} skipped",
+        "failed": "{count} failed",
+        "rowError": "Row {row}: {message}",
+        "importAnother": "Import another file",
+        "viewDevotees": "View devotees"
+      },
+      "backToDevotees": "Back to devotees",
+      "readError": "Failed to read file",
+      "importError": "Import failed"
+    }
+  },
+  "donations": {
+    "pageHeader": { "title": "Donations", "subtitle": "Manually recorded donations. No online payments or receipts." },
+    "addButton": "Add donation",
+    "searchPlaceholder": "Search by donor name or phone...",
+    "dateFromLabel": "From date",
+    "dateToLabel": "To date",
+    "dateRangeSeparator": "to",
+    "columns": {
+      "donor": "Donor",
+      "amount": "Amount",
+      "purpose": "Purpose",
+      "method": "Method",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "selectAll": "Select all donations",
+    "selectRow": "Select donation from {name}",
+    "emptyState": { "title": "No donations found", "description": "Record a donation to start tracking donor history." },
+    "confirmDelete": "Delete this {amount} donation from {name}? This cannot be undone.",
+    "deleteError": "Failed to delete donation",
+    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other" },
+    "purposePresets": {
+      "generalDonation": "General Donation",
+      "annadanam": "Annadanam (Food Offering)",
+      "seva": "Seva",
+      "festivalSponsorship": "Festival Sponsorship",
+      "templeMaintenance": "Temple Maintenance",
+      "archana": "Archana",
+      "abhishekam": "Abhishekam",
+      "constructionRenovation": "Construction / Renovation",
+      "vastraAlankaram": "Vastra / Alankaram",
+      "other": "Other"
+    },
+    "formDialog": {
+      "createTitle": "Add donation",
+      "editTitle": "Edit donation",
+      "createDescription": "Record a donation received in cash, UPI, or another manual method.",
+      "editDescription": "Update this donation record.",
+      "fields": {
+        "devotee": "Devotee",
+        "devoteePlaceholder": "Select a devotee",
+        "amount": "Amount (₹)",
+        "paymentMethod": "Payment method",
+        "purpose": "Purpose",
+        "purposePlaceholder": "Describe the purpose",
+        "notes": "Notes (optional)",
+        "donationDate": "Donation date"
+      },
+      "errors": {
+        "selectDevotee": "Select a devotee",
+        "invalidAmount": "Enter a valid amount greater than zero",
+        "enterPurpose": "Enter a purpose",
+        "dateRequired": "Donation date is required"
+      },
+      "errorFallback": "Failed to save donation"
+    }
+  },
+  "notifications": {
+    "pageHeader": {
+      "title": "Notification Center",
+      "subtitle": "Automatic WhatsApp notifications sent to devotees when events are published, updated, or cancelled."
+    },
+    "metrics": {
+      "totalSent": "Total Sent",
+      "failed": "Failed",
+      "pending": "Pending",
+      "successRate": "Success Rate"
+    },
+    "list": {
+      "titleAll": "Recent notifications",
+      "titleFiltered": "Notifications for this event",
+      "clearFilter": "Clear filter",
+      "resendFailed": "Resend {count} failed",
+      "emptyState": {
+        "title": "No notifications yet",
+        "description": "Publishing, updating, or cancelling an event will queue notifications here automatically."
+      },
+      "columns": { "event": "Event", "devotee": "Devotee", "type": "Type", "status": "Status", "sent": "Sent" },
+      "typeLabels": {
+        "new_event": "New event",
+        "event_updated": "Event updated",
+        "event_cancelled": "Event cancelled"
+      },
+      "statusLabels": {
+        "sent": "sent",
+        "delivered": "delivered",
+        "failed": "failed",
+        "pending": "pending",
+        "queued": "queued",
+        "retrying": "retrying"
+      },
+      "resendError": "Failed to resend notifications"
     }
   }
 }

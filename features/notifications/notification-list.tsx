@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { BellRing, CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
-import type { EventNotificationDeliveryStatus } from "@/types/db";
+import type { EventNotificationDeliveryStatus, SupportedLanguage } from "@/types/db";
 import type { EventNotificationListItem } from "@/lib/db/event-notifications";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDateTime } from "@/lib/date";
 
 const STATUS_BADGE_VARIANT: Record<EventNotificationDeliveryStatus, "default" | "secondary" | "destructive"> = {
   sent: "default",
@@ -25,17 +27,6 @@ function StatusIcon({ status }: { status: EventNotificationDeliveryStatus }) {
   return <Clock className="size-3.5 text-muted-foreground" />;
 }
 
-function formatTimestamp(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-}
-
-const NOTIFICATION_TYPE_LABEL: Record<string, string> = {
-  new_event: "New event",
-  event_updated: "Event updated",
-  event_cancelled: "Event cancelled",
-};
-
 export function NotificationList({
   notifications,
   eventId,
@@ -44,6 +35,8 @@ export function NotificationList({
   eventId?: string;
 }) {
   const router = useRouter();
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("notifications.list");
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,11 +50,11 @@ export function NotificationList({
       const response = await fetch(`/api/events/${eventId}/notifications/resend`, { method: "POST" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to resend notifications");
+        throw new Error(body.error ?? t("resendError"));
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend notifications");
+      setError(err instanceof Error ? err.message : t("resendError"));
     } finally {
       setResending(false);
     }
@@ -71,18 +64,18 @@ export function NotificationList({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-heading text-lg font-semibold">
-          {eventId ? "Notifications for this event" : "Recent notifications"}
+          {eventId ? t("titleFiltered") : t("titleAll")}
         </h2>
         <div className="flex items-center gap-2">
           {eventId && (
             <Link href="/dashboard/notifications" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
-              Clear filter
+              {t("clearFilter")}
             </Link>
           )}
           {eventId && failedCount > 0 && (
             <Button variant="outline" size="sm" onClick={handleResendFailed} disabled={resending} className="gap-1.5">
               <RefreshCw className={resending ? "size-3.5 animate-spin" : "size-3.5"} />
-              Resend {failedCount} failed
+              {t("resendFailed", { count: failedCount })}
             </Button>
           )}
         </div>
@@ -95,21 +88,19 @@ export function NotificationList({
           <div className="flex size-14 items-center justify-center rounded-full bg-muted">
             <BellRing className="size-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No notifications yet</p>
-          <p className="text-sm text-muted-foreground">
-            Publishing, updating, or cancelling an event will queue notifications here automatically.
-          </p>
+          <p className="text-sm font-medium">{t("emptyState.title")}</p>
+          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
         </div>
       ) : (
         <div className="rounded-xl border bg-background">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Devotee</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Sent</TableHead>
+                <TableHead>{t("columns.event")}</TableHead>
+                <TableHead>{t("columns.devotee")}</TableHead>
+                <TableHead>{t("columns.type")}</TableHead>
+                <TableHead>{t("columns.status")}</TableHead>
+                <TableHead>{t("columns.sent")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -117,17 +108,23 @@ export function NotificationList({
                 <TableRow key={n.id}>
                   <TableCell className="font-medium">{n.eventTitle}</TableCell>
                   <TableCell>{n.devoteeName}</TableCell>
-                  <TableCell>{NOTIFICATION_TYPE_LABEL[n.notificationType] ?? n.notificationType}</TableCell>
+                  <TableCell>
+                    {t.has(`typeLabels.${n.notificationType}`)
+                      ? t(`typeLabels.${n.notificationType}`)
+                      : n.notificationType}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <Badge variant={STATUS_BADGE_VARIANT[n.deliveryStatus]} className="w-fit gap-1">
                         <StatusIcon status={n.deliveryStatus} />
-                        {n.deliveryStatus}
+                        {t(`statusLabels.${n.deliveryStatus}`)}
                       </Badge>
                       {n.failureReason && <span className="text-xs text-destructive">{n.failureReason}</span>}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatTimestamp(n.sentAt)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {n.sentAt ? formatDateTime(n.sentAt, locale) : "—"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

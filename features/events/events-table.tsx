@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
-import type { Event, EventStatus } from "@/types/db";
+import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ExportMenu } from "@/features/export/export-menu";
+import { formatDateTime, formatTime } from "@/lib/date";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventCard } from "./event-card";
 import { AnnounceDialog } from "./announce-dialog";
@@ -28,20 +30,18 @@ const STATUS_BADGE_VARIANT: Record<EventStatus, "default" | "secondary" | "destr
   cancelled: "destructive",
 };
 
-function formatEventTime(event: Event): string {
-  const start = new Date(event.startsAt);
-  const startLabel = start.toLocaleString("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+function formatEventTime(event: Event, locale: SupportedLanguage): string {
+  const startLabel = formatDateTime(event.startsAt, locale);
   if (!event.endsAt) return startLabel;
-  const end = new Date(event.endsAt);
-  const endLabel = end.toLocaleTimeString("en-IN", { timeStyle: "short" });
+  const endLabel = formatTime(event.endsAt, locale);
   return `${startLabel} - ${endLabel}`;
 }
 
 export function EventsTable({ events }: { events: Event[] }) {
   const router = useRouter();
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("events");
+  const tCommon = useTranslations("common");
   const [view, setView] = useState<"table" | "card">("table");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +70,11 @@ export function EventsTable({ events }: { events: Event[] }) {
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to update event");
+        throw new Error(body.error ?? t("updateError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update event");
+      setError(err instanceof Error ? err.message : t("updateError"));
     } finally {
       setPendingId(null);
     }
@@ -85,7 +85,7 @@ export function EventsTable({ events }: { events: Event[] }) {
   }
 
   function handleCancel(event: Event) {
-    if (!window.confirm(`Cancel "${event.title}"? Devotees who were notified will be told it's cancelled.`)) return;
+    if (!window.confirm(t("confirmCancel", { title: event.title }))) return;
     return handleSetStatus(event, "cancelled");
   }
 
@@ -94,18 +94,18 @@ export function EventsTable({ events }: { events: Event[] }) {
   }
 
   async function handleDelete(event: Event) {
-    if (!window.confirm(`Delete "${event.title}"? This cannot be undone.`)) return;
+    if (!window.confirm(t("confirmDelete", { title: event.title }))) return;
     setError(null);
     setPendingId(event.id);
     try {
       const response = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete event");
+        throw new Error(body.error ?? t("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+      setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setPendingId(null);
     }
@@ -115,19 +115,19 @@ export function EventsTable({ events }: { events: Event[] }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">Events</h1>
-          <p className="text-sm text-muted-foreground">Create and publish temple events.</p>
+          <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")}>
             <TabsList>
               <TabsTrigger value="table">
                 <Rows3 className="size-3.5" />
-                Table
+                {t("viewTabs.table")}
               </TabsTrigger>
               <TabsTrigger value="card">
                 <LayoutGrid className="size-3.5" />
-                Card
+                {t("viewTabs.card")}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -137,7 +137,7 @@ export function EventsTable({ events }: { events: Event[] }) {
             trigger={
               <Button className="hidden gap-1.5 sm:inline-flex">
                 <PlusCircle className="size-4" />
-                Create event
+                {t("createButton")}
               </Button>
             }
             onSaved={refresh}
@@ -152,8 +152,8 @@ export function EventsTable({ events }: { events: Event[] }) {
           <div className="flex size-14 items-center justify-center rounded-full bg-muted">
             <CalendarDays className="size-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No events yet</p>
-          <p className="text-sm text-muted-foreground">Create your first temple event to get started.</p>
+          <p className="text-sm font-medium">{t("emptyState.title")}</p>
+          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
         </div>
       ) : view === "card" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -179,14 +179,14 @@ export function EventsTable({ events }: { events: Event[] }) {
                   <Checkbox
                     checked={selectedIds.length > 0 && selectedIds.length === events.length}
                     onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                    aria-label="Select all events"
+                    aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>When</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("columns.title")}</TableHead>
+                <TableHead>{t("columns.when")}</TableHead>
+                <TableHead>{t("columns.location")}</TableHead>
+                <TableHead>{t("columns.status")}</TableHead>
+                <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,21 +196,21 @@ export function EventsTable({ events }: { events: Event[] }) {
                     <Checkbox
                       checked={selectedIds.includes(event.id)}
                       onCheckedChange={(checked) => toggleSelected(event.id, checked === true)}
-                      aria-label={`Select ${event.title}`}
+                      aria-label={t("selectRow", { title: event.title })}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{event.title}</TableCell>
-                  <TableCell>{formatEventTime(event)}</TableCell>
+                  <TableCell>{formatEventTime(event, locale)}</TableCell>
                   <TableCell>{event.location ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{event.status}</Badge>
+                      <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{t(`status.${event.status}`)}</Badge>
                       {event.status !== "draft" && (
                         <Link
                           href={`/dashboard/notifications?eventId=${event.id}`}
                           className="text-xs text-muted-foreground underline-offset-2 hover:underline"
                         >
-                          Notifications
+                          {t("notifications")}
                         </Link>
                       )}
                     </div>
@@ -221,7 +221,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                       event={event}
                       trigger={
                         <Button variant="outline" size="sm" disabled={pendingId === event.id}>
-                          Edit
+                          {tCommon("edit")}
                         </Button>
                       }
                       onSaved={refresh}
@@ -233,7 +233,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                         disabled={pendingId === event.id}
                         onClick={() => handleReopen(event)}
                       >
-                        Reopen
+                        {t("buttons.reopen")}
                       </Button>
                     ) : (
                       <>
@@ -243,7 +243,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                           disabled={pendingId === event.id}
                           onClick={() => handleTogglePublish(event)}
                         >
-                          {event.status === "published" ? "Unpublish" : "Publish"}
+                          {event.status === "published" ? t("buttons.unpublish") : t("buttons.publish")}
                         </Button>
                         {event.status === "published" && (
                           <AnnounceDialog
@@ -251,7 +251,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                             onAnnounced={refresh}
                             trigger={
                               <Button variant="outline" size="sm" disabled={pendingId === event.id}>
-                                Announce
+                                {t("buttons.announce")}
                               </Button>
                             }
                           />
@@ -262,7 +262,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                           disabled={pendingId === event.id}
                           onClick={() => handleCancel(event)}
                         >
-                          Cancel
+                          {tCommon("cancel")}
                         </Button>
                       </>
                     )}
@@ -272,7 +272,7 @@ export function EventsTable({ events }: { events: Event[] }) {
                       disabled={pendingId === event.id}
                       onClick={() => handleDelete(event)}
                     >
-                      Delete
+                      {tCommon("delete")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -287,7 +287,7 @@ export function EventsTable({ events }: { events: Event[] }) {
         trigger={
           <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
             <PlusCircle className="size-5" />
-            <span className="sr-only">Create event</span>
+            <span className="sr-only">{t("createButton")}</span>
           </Button>
         }
         onSaved={refresh}

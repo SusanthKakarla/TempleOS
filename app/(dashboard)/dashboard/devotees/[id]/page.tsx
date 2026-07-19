@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ArrowLeft, Cake, HandCoins, MessageCircle, Phone, Sparkles, Users } from "lucide-react";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { getDevoteeById } from "@/lib/db/devotees";
@@ -8,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatInr } from "@/lib/currency";
+import { formatDate } from "@/lib/date";
+import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
 
 interface DevoteeDetailPageProps {
@@ -19,12 +22,11 @@ function getInitials(name: string): string {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
-}
-
 export default async function DevoteeDetailPage({ params }: DevoteeDetailPageProps) {
   const session = await requireDashboardAdmin();
+  const locale = (await getLocale()) as SupportedLanguage;
+  const t = await getTranslations("devotees.detail");
+  const tDevotees = await getTranslations("devotees");
 
   const { id } = await params;
   const devotee = await getDevoteeById(session.tenantId, id);
@@ -39,7 +41,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        Back to devotees
+        {t("backToDevotees")}
       </Link>
 
       <Card className="gap-4 p-5">
@@ -61,12 +63,12 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
           <div className="flex flex-wrap gap-2">
             <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
               <MessageCircle className="size-3.5" />
-              {devotee.whatsappOptInStatus ? "Opted in" : "Not opted in"}
+              {devotee.whatsappOptInStatus ? tDevotees("optedIn") : tDevotees("notOptedIn")}
             </Badge>
             {devotee.isDonor && (
               <Badge className="gradient-saffron-gold text-saffron-foreground">
                 <HandCoins className="size-3.5" />
-                Donor
+                {t("donor")}
               </Badge>
             )}
           </div>
@@ -76,21 +78,21 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
           <div className="flex items-center gap-2.5">
             <Cake className="size-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Date of birth</p>
+              <p className="text-xs text-muted-foreground">{t("dateOfBirth")}</p>
               <p className="text-sm font-medium">{devotee.dateOfBirth ?? "—"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
             <Sparkles className="size-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Birth star</p>
+              <p className="text-xs text-muted-foreground">{t("birthStar")}</p>
               <p className="text-sm font-medium">{devotee.birthStar ?? "—"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
             <Users className="size-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Gothram</p>
+              <p className="text-xs text-muted-foreground">{t("gothram")}</p>
               <p className="text-sm font-medium">{devotee.ancestralLineage ?? "—"}</p>
             </div>
           </div>
@@ -99,18 +101,18 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
         {devotee.isDonor && (
           <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-muted-foreground">Total donated</p>
+              <p className="text-xs text-muted-foreground">{t("totalDonated")}</p>
               <p className="font-heading text-lg font-semibold">{formatInr(devotee.totalDonatedAmount)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Last donation</p>
+              <p className="text-xs text-muted-foreground">{t("lastDonation")}</p>
               <p className="font-heading text-lg font-semibold">
-                {devotee.lastDonationAt ? formatDate(devotee.lastDonationAt) : "—"}
+                {devotee.lastDonationAt ? formatDate(devotee.lastDonationAt, locale) : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">First seen</p>
-              <p className="font-heading text-lg font-semibold">{formatDate(devotee.firstSeenAt)}</p>
+              <p className="text-xs text-muted-foreground">{t("firstSeen")}</p>
+              <p className="font-heading text-lg font-semibold">{formatDate(devotee.firstSeenAt, locale)}</p>
             </div>
           </div>
         )}

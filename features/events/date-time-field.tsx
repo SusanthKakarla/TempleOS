@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarIcon, ClockIcon } from "lucide-react";
+import type { SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatDate } from "@/lib/date";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -34,6 +37,8 @@ export function DateTimeField({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("events.formDialog");
   const { datePart, timePart } = splitValue(value);
   const selectedDate = toDate(datePart);
 
@@ -64,7 +69,7 @@ export function DateTimeField({
                 className="flex-1 justify-start gap-2 font-normal"
               >
                 <CalendarIcon className="size-4 text-muted-foreground" />
-                {selectedDate ? selectedDate.toLocaleDateString("en-IN", { dateStyle: "medium" }) : "Pick a date"}
+                {selectedDate ? formatDate(selectedDate, locale) : t("pickDate")}
               </Button>
             }
           />

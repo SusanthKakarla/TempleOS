@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import { Bell, Cake, Phone, Sparkles, User, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ interface DevoteeFormDialogProps {
 }
 
 export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFormDialogProps) {
+  const t = useTranslations("devotees.formDialog");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState(devotee?.whatsappPhone ?? "");
   const [displayName, setDisplayName] = useState(devotee?.displayName ?? "");
@@ -69,13 +72,13 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save devotee");
+        throw new Error(body.error ?? t("errorFallback"));
       }
 
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save devotee");
+      setError(err instanceof Error ? err.message : t("errorFallback"));
     } finally {
       setSubmitting(false);
     }
@@ -92,16 +95,12 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add devotee" : "Edit devotee"}</DialogTitle>
-          <DialogDescription>
-            {mode === "create"
-              ? "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number."
-              : "Update this devotee's details."}
-          </DialogDescription>
+          <DialogTitle>{mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
+          <DialogDescription>{mode === "create" ? t("createDescription") : t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="displayName">Name</Label>
+            <Label htmlFor="displayName">{t("fields.name")}</Label>
             <div className="relative">
               <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -114,12 +113,12 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="whatsappPhone">Phone number</Label>
+            <Label htmlFor="whatsappPhone">{t("fields.phoneNumber")}</Label>
             <div className="relative">
               <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="whatsappPhone"
-                placeholder="+91XXXXXXXXXX"
+                placeholder={t("fields.phonePlaceholder")}
                 value={whatsappPhone}
                 onChange={(e) => setWhatsappPhone(e.target.value)}
                 className="pl-9"
@@ -129,7 +128,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of birth (optional)</Label>
+              <Label htmlFor="dateOfBirth">{t("fields.dateOfBirth")}</Label>
               <div className="relative">
                 <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -142,7 +141,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="birthStar">Birth star / Nakshatram (optional)</Label>
+              <Label htmlFor="birthStar">{t("fields.birthStar")}</Label>
               <div className="relative">
                 <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -155,7 +154,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ancestralLineage">Gothram / Ancestral lineage (optional)</Label>
+            <Label htmlFor="ancestralLineage">{t("fields.gothram")}</Label>
             <div className="relative">
               <Users className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -171,10 +170,8 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
               <div className="flex items-center gap-2">
                 <Bell className="size-4 text-saffron" />
                 <div>
-                  <p className="text-sm font-medium">Event notifications</p>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically notify about new, updated, or cancelled events.
-                  </p>
+                  <p className="text-sm font-medium">{t("eventNotifications.label")}</p>
+                  <p className="text-xs text-muted-foreground">{t("eventNotifications.description")}</p>
                 </div>
               </div>
               <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
@@ -183,7 +180,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

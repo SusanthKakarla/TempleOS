@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, MapPin } from "lucide-react";
-import type { Event, EventStatus } from "@/types/db";
+import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { formatDateTime, formatTime } from "@/lib/date";
 import { EventFormDialog } from "./event-form-dialog";
 import { AnnounceDialog } from "./announce-dialog";
 
@@ -17,12 +19,10 @@ const STATUS_BADGE_VARIANT: Record<EventStatus, "default" | "secondary" | "destr
   cancelled: "destructive",
 };
 
-function formatEventTime(event: Event): string {
-  const start = new Date(event.startsAt);
-  const startLabel = start.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+function formatEventTime(event: Event, locale: SupportedLanguage): string {
+  const startLabel = formatDateTime(event.startsAt, locale);
   if (!event.endsAt) return startLabel;
-  const end = new Date(event.endsAt);
-  return `${startLabel} - ${end.toLocaleTimeString("en-IN", { timeStyle: "short" })}`;
+  return `${startLabel} - ${formatTime(event.endsAt, locale)}`;
 }
 
 interface EventCardProps {
@@ -44,6 +44,9 @@ export function EventCard({
   onReopen,
   onDelete,
 }: EventCardProps) {
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("events");
+  const tCommon = useTranslations("common");
   return (
     <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
       <Card className="h-full gap-3 overflow-hidden py-0">
@@ -52,7 +55,7 @@ export function EventCard({
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-heading text-base font-semibold leading-snug">{event.title}</h3>
             <Badge variant={STATUS_BADGE_VARIANT[event.status]} className="shrink-0">
-              {event.status}
+              {t(`status.${event.status}`)}
             </Badge>
           </div>
           {event.status !== "draft" && (
@@ -60,7 +63,7 @@ export function EventCard({
               href={`/dashboard/notifications?eventId=${event.id}`}
               className="text-xs text-muted-foreground underline-offset-2 hover:underline"
             >
-              Notifications
+              {t("notifications")}
             </Link>
           )}
         </CardHeader>
@@ -71,7 +74,7 @@ export function EventCard({
           <div className="flex flex-wrap gap-2 pt-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
               <CalendarDays className="size-3.5 text-saffron" />
-              {formatEventTime(event)}
+              {formatEventTime(event, locale)}
             </span>
             {event.location && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -83,7 +86,7 @@ export function EventCard({
         </CardContent>
         <CardFooter className="mt-1 flex items-center justify-between gap-2 border-t py-3">
           {event.status === "cancelled" ? (
-            <span className="text-xs text-muted-foreground">Cancelled</span>
+            <span className="text-xs text-muted-foreground">{t("cancelledLabel")}</span>
           ) : (
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               <Switch
@@ -91,7 +94,7 @@ export function EventCard({
                 disabled={pending}
                 onCheckedChange={() => onTogglePublish(event)}
               />
-              Published
+              {t("publishedLabel")}
             </label>
           )}
           <div className="flex items-center gap-1.5">
@@ -101,7 +104,7 @@ export function EventCard({
               onSaved={onSaved}
               trigger={
                 <Button variant="ghost" size="sm" disabled={pending}>
-                  Edit
+                  {tCommon("edit")}
                 </Button>
               }
             />
@@ -111,22 +114,22 @@ export function EventCard({
                 onAnnounced={onSaved}
                 trigger={
                   <Button variant="ghost" size="sm" disabled={pending}>
-                    Announce
+                    {t("buttons.announce")}
                   </Button>
                 }
               />
             )}
             {event.status === "cancelled" ? (
               <Button variant="ghost" size="sm" disabled={pending} onClick={() => onReopen(event)}>
-                Reopen
+                {t("buttons.reopen")}
               </Button>
             ) : (
               <Button variant="ghost" size="sm" disabled={pending} onClick={() => onCancel(event)}>
-                Cancel
+                {tCommon("cancel")}
               </Button>
             )}
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => onDelete(event)}>
-              Delete
+              {tCommon("delete")}
             </Button>
           </div>
         </CardFooter>
