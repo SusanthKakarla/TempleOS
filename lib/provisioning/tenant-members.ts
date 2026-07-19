@@ -5,6 +5,7 @@ import type { QueryClient } from "@/lib/db/query-client";
 import { listActiveRoleCodesForSuperAdmin } from "@/lib/db/role-definitions";
 import {
   findActiveTenantMembershipByPersonAndTenant,
+  getTenantMembershipByTenantAndIdForSuperAdmin,
   createTenantMembershipForProvisioning,
   assignTenantMembershipRolesForProvisioning,
   deactivateTenantMembership,
@@ -78,7 +79,7 @@ async function countOtherActiveAdmins(
 
 const inviteTenantMemberSchema = z.object({
   phoneNumber: z.string().trim().min(1, "Phone number is required"),
-  displayName: z.string().trim().min(1, "Name is required").max(200),
+  displayName: z.string().trim().min(1, "Name is required").max(200, "Name must be at most 200 characters"),
   roles: z.array(z.string()).min(1, "At least one role is required"),
 });
 
@@ -216,8 +217,21 @@ export async function changeTenantMemberRoles(
   try {
     await client.query("BEGIN");
 
+    // Fetched BEFORE the change — replaceTenantMembershipRoles deletes and
+    // re-inserts the role rows, so its own return value already reflects the
+    // NEW state. Capturing "before" separately is the only way to log an
+    // honest diff (and to know whether this member currently holds admin at
+    // all, for the last-admin guard below).
+    const currentMembership = await getTenantMembershipByTenantAndIdForSuperAdmin(
+      { tenantId: actor.tenantId, membershipId: input.membershipId },
+      client,
+    );
+    if (!currentMembership) {
+      throw new TenantMemberActionError("Member not found.", 404, "MEMBER_NOT_FOUND");
+    }
+
     const willKeepAdmin = input.roles.includes("admin");
-    if (!willKeepAdmin) {
+    if (!willKeepAdmin && currentMembership.roles.includes("admin")) {
       const otherAdmins = await countOtherActiveAdmins(actor.tenantId, input.membershipId, client);
       if (otherAdmins === 0) {
         throw new TenantMemberActionError(
@@ -228,10 +242,15 @@ export async function changeTenantMemberRoles(
       }
     }
 
-    const previous = await replaceTenantMembershipRoles(
+    const updated = await replaceTenantMembershipRoles(
       { tenantId: actor.tenantId, membershipId: input.membershipId, roles: input.roles },
       client,
     );
+
+    const previousRoles = new Set(currentMembership.roles);
+    const nextRoles = new Set(updated.roles);
+    const assignedRoles = updated.roles.filter((role) => !previousRoles.has(role));
+    const removedRoles = currentMembership.roles.filter((role) => !nextRoles.has(role));
 
     await createAuditLogEntry(
       {
@@ -241,13 +260,13 @@ export async function changeTenantMemberRoles(
         action: "tenant_member.roles_changed",
         targetType: "tenant_membership",
         targetId: input.membershipId,
-        metadata: { previousRoles: previous.roles, newRoles: input.roles },
+        metadata: { previousRoles: currentMembership.roles, newRoles: updated.roles, assignedRoles, removedRoles },
       },
       client,
     );
 
     await client.query("COMMIT");
-    return { ...previous, roles: input.roles };
+    return updated;
   } catch (err) {
     try {
       await client.query("ROLLBACK");
