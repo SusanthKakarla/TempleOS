@@ -1,5 +1,4 @@
 import { after, NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
 import { deleteEvent, getEventById, updateEvent } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { enqueueEventNotifications } from "@/lib/db/event-notifications";
@@ -8,6 +7,10 @@ import {
   isAutoNotifyEnabled,
 } from "@/lib/events/notification-policy";
 import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
+import {
+  requireTenantAdminSession,
+  tenantAdminAuthResponse,
+} from "@/lib/auth/tenant-admin";
 import { updateEventSchema } from "@/lib/validation/events";
 
 interface RouteParams {

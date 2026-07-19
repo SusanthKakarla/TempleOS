@@ -115,22 +115,22 @@ NFR-020: New production provisioning paths must not call `getPilotTenant()`.
 UX-DR1: The tenant admin dashboard must remain utilitarian and easy for a temple committee member to operate.
 UX-DR2: Event creation must stay simple and must not feel like a full CMS.
 UX-DR3: Devotee add and edit workflows must be clear and form-driven.
-UX-DR4: WhatsApp Activity must be deferred for now; any retained WhatsApp UI in this slice is read-only linkage/status shell only.
+UX-DR4: WhatsApp Activity and WhatsApp linkage/status shell UI are deferred for now.
 UX-DR5: Tenant dashboard UI must avoid platform-owner concepts such as tenants, billing, and system settings.
 UX-DR6: Deferred - WhatsApp messages must be short when the WhatsApp slice is implemented.
 UX-DR7: Deferred - WhatsApp menus must be number-based when the WhatsApp slice is implemented.
 UX-DR8: Deferred - WhatsApp unknown-input recovery must guide devotees back to the menu when the WhatsApp slice is implemented.
 UX-DR9: Deferred - WhatsApp flows must not ask devotees for DOB, birth star, gothram, registration, or payment when the WhatsApp slice is implemented.
 UX-DR10: Deferred - WhatsApp flows must work for users who are not technically sophisticated when the WhatsApp slice is implemented.
-UX-DR11: The Super Admin tenant list must show basic temple status including tenant details, subdomain, admins or members, and WhatsApp connected or unlinked state.
+UX-DR11: The Super Admin tenant list must show basic temple status including tenant details, subdomain, and admins or members. WhatsApp connected/unlinked state is deferred with Story 3.6.
 UX-DR12: The Super Admin new-temple form must collect temple name, subdomain slug with generated full hostname, phone, address, timezone, first member phone and name, first member roles defaulting to `admin`, and optional WhatsApp phone, Meta phone number ID, and business account ID.
 UX-DR13: Super Admin screens must avoid self-serve onboarding affordances such as public signup, billing, approval queue, embedded WhatsApp signup, tenant deletion, tenant transfer, impersonation, and data export.
 
 ### Deferred Scope Overrides
 
 - WhatsApp devotee engagement is deferred for this active epic plan. Do not build webhook verification, inbound message handling, deterministic WhatsApp menus, WhatsApp event discovery, event announcements, outbound delivery, or live WhatsApp activity logs in this slice.
-- Keep only read-only WhatsApp linkage/status shell behavior already covered by Super Admin operations, so the UI can show linked/unlinked setup state without mutation controls.
-- The deferred WhatsApp requirements are FR-010, the inbound-auto-create portion of FR-011, FR-016, FR-017, FR-018, FR-019, FR-020, FR-021, the live-message portion of FR-024, and future full WhatsApp linkage management beyond provisioning/status shell.
+- Defer the read-only WhatsApp linkage/status shell from Story 3.6 for now. Active Super Admin operations should not add linked/unlinked WhatsApp status UI, mutation controls, embedded signup, disconnect, or transfer flows in this slice.
+- The deferred WhatsApp requirements are FR-010, the inbound-auto-create portion of FR-011, FR-016, FR-017, FR-018, FR-019, FR-020, FR-021, the live-message portion of FR-024, Story 3.6's read-only linkage/status shell, and future full WhatsApp linkage management beyond provisioning-time optional data capture.
 
 ### FR Coverage Map
 
@@ -176,7 +176,7 @@ FR-039: Epic 2 - `provisionTemple` performs canonical tenant provisioning in one
 FR-040: Epic 2 - CLI provisioning wraps the canonical provisioning service.
 FR-041: Epic 1 and Epic 4 - Tenant dashboard login resolves tenant from `tenant_domains.hostname` before membership authorization.
 FR-042: Epic 3 and Epic 4 - Tenant-local admin management becomes member management by phone and tenant-scoped roles.
-FR-043: Epic 2 and Epic 3 for optional provisioning-time linkage and read-only status shell; full manual linkage management is deferred.
+FR-043: Epic 2 for optional provisioning-time linkage. Epic 3 read-only linkage/status shell is deferred with Story 3.6; full manual linkage management remains deferred.
 
 ## Epic List
 
@@ -705,7 +705,9 @@ So that first setup and support corrections can be handled centrally.
 **When** the transaction commits
 **Then** an audit log entry records the actor, tenant, target membership, assigned roles, and removed roles.
 
-### Story 3.6: Show WhatsApp Linkage Status Shell
+### Story 3.6: Show WhatsApp Linkage Status Shell (Deferred)
+
+**Status:** Deferred for now. Do not create or implement this story in the active Epic 3 slice unless it is explicitly re-scoped later.
 
 As a super admin,
 I want to see whether a temple has WhatsApp linked or unlinked,
@@ -736,7 +738,7 @@ So that I can verify setup status while full linkage management remains deferred
 ### Story 3.7: Super Admin Operations Guardrail Tests
 
 As a platform operator,
-I want tests for cross-tenant reads, safe updates, role governance, member role assignment, WhatsApp status shell, and excluded lifecycle actions,
+I want tests for cross-tenant reads, safe updates, role governance, member role assignment, and excluded lifecycle actions,
 So that operations stay inside the V0 boundary.
 
 **Acceptance Criteria:**
@@ -761,9 +763,9 @@ So that operations stay inside the V0 boundary.
 **Then** roles in another tenant remain unchanged
 **And** authorization checks use the tenant-scoped membership.
 
-**Given** WhatsApp status shell tests run
-**When** linked and unlinked tenants are displayed
-**Then** the UI shows status accurately
+**Given** WhatsApp status shell remains deferred
+**When** Super Admin operations guardrail tests run
+**Then** active operations do not expose linked/unlinked WhatsApp status UI
 **And** no update, disconnect, transfer, or embedded signup action is available.
 
 ## Epic 4: Tenant Admin Dashboard On Membership Auth

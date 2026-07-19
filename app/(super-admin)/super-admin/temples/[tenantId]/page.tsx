@@ -6,8 +6,6 @@ import {
   Globe2,
   Landmark,
   MapPin,
-  MessageCircle,
-  Phone,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -53,14 +51,14 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
               <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
               <h1 className="text-2xl font-semibold tracking-normal">{temple.tenant.name}</h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Tenant details, domain setup, member roles, and WhatsApp linkage.
+                Tenant details, domain setup, and member roles.
               </p>
             </div>
             <Badge variant="outline">{temple.tenant.slug}</Badge>
           </div>
         </header>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-md border bg-background p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Landmark className="size-4 text-muted-foreground" />
@@ -93,23 +91,6 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
             )}
           </div>
 
-          <div className="rounded-md border bg-background p-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <MessageCircle className="size-4 text-muted-foreground" />
-              WhatsApp
-            </div>
-            {temple.whatsappAccount ? (
-              <dl className="mt-4 grid gap-3 text-sm">
-                <DetailRow label="Phone" value={temple.whatsappAccount.phoneNumber} />
-                <DetailRow label="Meta phone ID" value={temple.whatsappAccount.metaPhoneNumberId} />
-                <DetailRow label="Business ID" value={temple.whatsappAccount.metaBusinessAccountId} />
-                <DetailRow label="Status" value={formatTitle(temple.whatsappAccount.status)} />
-                <DetailRow label="Connected" value={formatTimestamp(temple.whatsappAccount.connectedAt)} />
-              </dl>
-            ) : (
-              <EmptyPanel icon={<Phone className="size-5" />} label="No WhatsApp account linked" />
-            )}
-          </div>
         </section>
 
         <TempleDetailEditForm tenant={temple.tenant} />

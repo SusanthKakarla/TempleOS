@@ -190,12 +190,26 @@ describe("super admin temple provisioning route", () => {
         lastUpdatedAt: "2026-07-18T08:00:00.000Z",
       },
     ];
+    const activeOperationTemples = [
+      {
+        id: "tenant-1",
+        slug: "sv-temple",
+        name: "Sri Venkateswara Temple",
+        primaryHostname: "svtemple.trytempleos.com",
+        primaryAdminName: "Temple Admin",
+        primaryAdminPhoneNumber: "+14155552672",
+        activeMemberCount: 2,
+        lastUpdatedAt: "2026-07-18T08:00:00.000Z",
+      },
+    ];
     vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin);
     vi.mocked(listTenantsForSuperAdmin).mockResolvedValue(temples);
 
     const res = await GET();
 
-    await expect(res.json()).resolves.toEqual({ temples });
+    const body = await res.json();
+    expect(body).toEqual({ temples: activeOperationTemples });
+    expect(JSON.stringify(body)).not.toMatch(/whatsappStatus|linked|unlinked/i);
     expect(res.status).toBe(200);
     expect(listTenantsForSuperAdmin).toHaveBeenCalledOnce();
     expect(parseProvisionTempleInput).not.toHaveBeenCalled();

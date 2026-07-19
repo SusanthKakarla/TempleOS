@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, Landmark, MessageCircle, Plus, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, Globe2, Landmark, Plus, ShieldCheck, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ export default async function SuperAdminPage() {
             <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
             <h1 className="text-2xl font-semibold tracking-normal">Temples</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Provisioned tenant records, domain setup, first admin/member status, and WhatsApp linkage.
+              Provisioned tenant records, domain setup, and first admin/member status.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -45,7 +45,7 @@ export default async function SuperAdminPage() {
             <Landmark className="mb-4 size-10 text-muted-foreground" />
             <h2 className="text-lg font-semibold tracking-normal">No temples provisioned</h2>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Create the first temple to assign its subdomain, first member, and optional WhatsApp linkage.
+              Create the first temple to assign its subdomain and first member.
             </p>
             <Button className="mt-6" render={<Link href="/super-admin/temples/new" />}>
               <Plus className="size-4" />
@@ -60,7 +60,6 @@ export default async function SuperAdminPage() {
                   <TableHead>Temple</TableHead>
                   <TableHead>Hostname</TableHead>
                   <TableHead>Primary Admin</TableHead>
-                  <TableHead>WhatsApp</TableHead>
                   <TableHead className="text-right">Last Updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -104,12 +103,6 @@ export default async function SuperAdminPage() {
                           </p>
                         </div>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={temple.whatsappStatus === "linked" ? "secondary" : "outline"}>
-                        <MessageCircle className="size-3" />
-                        {temple.whatsappStatus === "linked" ? "Linked" : "Unlinked"}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatTimestamp(temple.lastUpdatedAt)}

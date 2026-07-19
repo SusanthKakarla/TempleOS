@@ -160,6 +160,48 @@ describe("tenant memberships repository", () => {
     ]);
   });
 
+  it("uses tenant plus membership identity instead of person identity for same-person role replacement", async () => {
+    const tenantBMembershipId = "tenant-b-membership";
+    const sharedPersonId = "shared-person";
+
+    query
+      .mockResolvedValueOnce({ rows: [{ id: "tenant-a-membership" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            ...row,
+            id: "tenant-a-membership",
+            tenant_id: "tenant-a",
+            person_id: sharedPersonId,
+            role_codes: ["admin"],
+          },
+        ],
+      });
+
+    await replaceTenantMembershipRolesForSuperAdmin(
+      { tenantId: "tenant-a", membershipId: "tenant-a-membership", roles: ["admin"] },
+      { query },
+    );
+
+    expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining("WHERE tenant_id = $1 AND id = $2"), [
+      "tenant-a",
+      "tenant-a-membership",
+    ]);
+    expect(String(query.mock.calls[0][0])).not.toContain("person_id");
+    expect(query).toHaveBeenNthCalledWith(2, expect.any(String), ["tenant-a-membership"]);
+    expect(query).toHaveBeenNthCalledWith(3, expect.any(String), ["tenant-a-membership", ["admin"]]);
+    expect(query).toHaveBeenNthCalledWith(4, expect.stringContaining("WHERE tm.tenant_id = $1 AND tm.id = $2"), [
+      "tenant-a",
+      "tenant-a-membership",
+    ]);
+
+    const calledArguments = JSON.stringify(query.mock.calls.map(([, params]) => params));
+    expect(calledArguments).not.toContain(tenantBMembershipId);
+    expect(calledArguments).not.toContain(sharedPersonId);
+  });
+
   it("fails replacement when a requested role is inactive or missing", async () => {
     query
       .mockResolvedValueOnce({ rows: [{ id: "membership-1" }] })

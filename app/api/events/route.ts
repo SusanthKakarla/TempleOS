@@ -1,10 +1,8 @@
-<<<<<<< HEAD
 import { after, NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
-=======
-import { NextRequest, NextResponse } from "next/server";
-import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
->>>>>>> 5e593d8 (Enforce tenant admin dashboard access)
+import {
+  requireTenantAdminSession,
+  tenantAdminAuthResponse,
+} from "@/lib/auth/tenant-admin";
 import { createEvent, listEvents } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { enqueueEventNotifications } from "@/lib/db/event-notifications";
@@ -20,9 +18,14 @@ export async function GET(req: NextRequest) {
   const { session } = auth;
 
   const statusParam = req.nextUrl.searchParams.get("status");
-  const statusResult = statusParam ? eventStatusSchema.safeParse(statusParam) : undefined;
+  const statusResult = statusParam
+    ? eventStatusSchema.safeParse(statusParam)
+    : undefined;
   if (statusParam && !statusResult?.success) {
-    return NextResponse.json({ error: "Invalid status filter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid status filter" },
+      { status: 400 },
+    );
   }
 
   const events = await listEvents(session.tenantId, {
@@ -42,9 +45,12 @@ export async function POST(req: NextRequest) {
   const json = await req.json().catch(() => null);
   const parsed = createEventSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, {
-      status: 400,
-    });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
+      {
+        status: 400,
+      },
+    );
   }
 
   const event = await createEvent(session.tenantId, {
@@ -65,7 +71,11 @@ export async function POST(req: NextRequest) {
   if (event.status === "published") {
     const tenant = await getTenantById(session.tenantId);
     if (tenant && isAutoNotifyEnabled(tenant, "new_event")) {
-      const insertedIds = await enqueueEventNotifications(session.tenantId, event.id, "new_event");
+      const insertedIds = await enqueueEventNotifications(
+        session.tenantId,
+        event.id,
+        "new_event",
+      );
       if (insertedIds.length > 0) {
         after(() => processEventNotifications(insertedIds));
       }

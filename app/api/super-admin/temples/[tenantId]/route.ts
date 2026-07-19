@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { TENANT_SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
-import { getTenantDetailForSuperAdmin } from "@/lib/db/tenants";
+import { getTenantDetailForSuperAdmin, type SuperAdminTenantDetail } from "@/lib/db/tenants";
 import {
   parseUpdateProvisionedTempleInput,
   updateProvisionedTemple,
@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest, context: TempleDetailRouteContext) 
       return templeNotFoundResponse();
     }
 
-    return NextResponse.json({ temple });
+    return NextResponse.json({ temple: activeOperationTempleDetail(temple) });
   } catch {
     return NextResponse.json(
       { error: "Temple detail failed.", code: "TEMPLE_DETAIL_FAILED" },
@@ -87,10 +87,18 @@ export async function PATCH(req: NextRequest, context: TempleDetailRouteContext)
       displayName: superAdmin.displayName,
     });
 
-    return NextResponse.json({ temple });
+    return NextResponse.json({ temple: activeOperationTempleDetail(temple) });
   } catch (err) {
     return templeUpdateErrorResponse(err);
   }
+}
+
+function activeOperationTempleDetail(temple: SuperAdminTenantDetail) {
+  return {
+    tenant: temple.tenant,
+    domain: temple.domain,
+    members: temple.members,
+  };
 }
 
 function templeNotFoundResponse(): NextResponse {

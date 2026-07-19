@@ -690,6 +690,7 @@ describe("canonical provisioned temple update contract", () => {
         },
         domain: { hostname: "other.trytempleos.com" },
         billing: { plan: "paid" },
+        dataExport: { format: "csv" },
         impersonation: true,
         transfer: { owner: "new-owner" },
       },
@@ -704,9 +705,25 @@ describe("canonical provisioned temple update contract", () => {
           "tenant.deletedAt",
           "domain",
           "billing",
+          "dataExport",
           "impersonation",
           "transfer",
         ]),
+      );
+    }
+  });
+
+  it("rejects display labels as role assignment input", () => {
+    const result = parseAssignTenantMemberRolesInput(
+      { roles: ["Admin", "Volunteer"] },
+      "11111111-1111-4111-8111-111111111111",
+      "22222222-2222-4222-8222-222222222222",
+    );
+
+    expect(result).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!result.ok) {
+      expect(result.errors.map((error) => error.message)).toEqual(
+        expect.arrayContaining(["Unknown role code: Admin", "Unknown role code: Volunteer"]),
       );
     }
   });

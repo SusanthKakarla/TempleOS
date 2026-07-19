@@ -97,7 +97,23 @@ const templeDetail = {
       updatedAt: "2026-07-18T08:10:00.000Z",
     },
   ],
-  whatsappAccount: null,
+  whatsappAccount: {
+    id: "whatsapp-1",
+    tenantId,
+    phoneNumber: "+14155552673",
+    metaPhoneNumberId: "meta-phone-1",
+    metaBusinessAccountId: "meta-business-1",
+    status: "connected" as const,
+    connectedAt: "2026-07-18T00:30:00.000Z",
+    createdAt: "2026-07-18T00:30:00.000Z",
+    updatedAt: "2026-07-18T08:20:00.000Z",
+  },
+};
+
+const activeOperationTempleDetail = {
+  tenant: templeDetail.tenant,
+  domain: templeDetail.domain,
+  members: templeDetail.members,
 };
 
 function request(id = tenantId): Request {
@@ -154,7 +170,11 @@ describe("super admin temple detail route", () => {
 
     const res = await GET(request() as never, context());
 
-    await expect(res.json()).resolves.toEqual({ temple: templeDetail });
+    const body = await res.json();
+    expect(body).toEqual({ temple: activeOperationTempleDetail });
+    expect(JSON.stringify(body)).not.toMatch(
+      /whatsappAccount|metaPhoneNumberId|metaBusinessAccountId|connected|linked|unlinked/i,
+    );
     expect(res.status).toBe(200);
     expect(getTenantDetailForSuperAdmin).toHaveBeenCalledWith(tenantId);
   });
@@ -244,7 +264,11 @@ describe("super admin temple detail route", () => {
 
     const res = await PATCH(patchRequest(updateBody) as never, context());
 
-    await expect(res.json()).resolves.toEqual({ temple: templeDetail });
+    const body = await res.json();
+    expect(body).toEqual({ temple: activeOperationTempleDetail });
+    expect(JSON.stringify(body)).not.toMatch(
+      /whatsappAccount|metaPhoneNumberId|metaBusinessAccountId|connected|linked|unlinked/i,
+    );
     expect(res.status).toBe(200);
     expect(parseUpdateProvisionedTempleInput).toHaveBeenCalledWith(updateBody, tenantId);
     expect(updateProvisionedTemple).toHaveBeenCalledWith(

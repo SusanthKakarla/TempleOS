@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { TENANT_SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
-import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
+import { listTenantsForSuperAdmin, type SuperAdminTenantSummary } from "@/lib/db/tenants";
 import {
   parseProvisionTempleInput,
   provisionTemple,
@@ -29,7 +29,7 @@ export async function GET() {
   }
 
   try {
-    const temples = await listTenantsForSuperAdmin();
+    const temples = (await listTenantsForSuperAdmin()).map(activeOperationTempleSummary);
     return NextResponse.json({ temples });
   } catch {
     return NextResponse.json(
@@ -37,6 +37,19 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+function activeOperationTempleSummary(temple: SuperAdminTenantSummary) {
+  return {
+    id: temple.id,
+    slug: temple.slug,
+    name: temple.name,
+    primaryHostname: temple.primaryHostname,
+    primaryAdminName: temple.primaryAdminName,
+    primaryAdminPhoneNumber: temple.primaryAdminPhoneNumber,
+    activeMemberCount: temple.activeMemberCount,
+    lastUpdatedAt: temple.lastUpdatedAt,
+  };
 }
 
 export async function POST(req: NextRequest) {
