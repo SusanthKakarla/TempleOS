@@ -34,18 +34,26 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
   const [fullPhone, setFullPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sendBlocked, setSendBlocked] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaWidgetContainerRef = useRef<HTMLDivElement | null>(null);
   const sendingOtpRef = useRef(false);
   const verifyingOtpRef = useRef(false);
   const sendBlockedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function resetVerifier() {
-    verifierRef.current?.clear();
+    try {
+      verifierRef.current?.clear();
+    } catch (err) {
+      devLog("Failed to clear Super Admin reCAPTCHA verifier", err);
+    }
     verifierRef.current = null;
+    recaptchaWidgetContainerRef.current?.remove();
+    recaptchaWidgetContainerRef.current = null;
   }
 
   function getFirebaseErrorCode(err: unknown): string | undefined {
@@ -74,7 +82,10 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
 
     devLog("Initializing Super Admin reCAPTCHA verifier");
     const auth = getFirebaseAuth();
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+    const widgetContainer = document.createElement("div");
+    recaptchaContainerRef.current.replaceChildren(widgetContainer);
+    recaptchaWidgetContainerRef.current = widgetContainer;
+    const verifier = new RecaptchaVerifier(auth, widgetContainer, {
       size: "invisible",
       callback: () => devLog("Super Admin reCAPTCHA solved"),
       "expired-callback": () => {
@@ -86,19 +97,7 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
     return verifier;
   }
 
-  async function handleSendOtp(event: FormEvent) {
-    event.preventDefault();
-    if (sendingOtpRef.current || sendBlocked) return;
-    sendingOtpRef.current = true;
-    setError(null);
-
-    const normalized = normalizePhoneNumber(phone, countryIso);
-    if (!normalized) {
-      setError("Enter a valid phone number");
-      sendingOtpRef.current = false;
-      return;
-    }
-
+  async function requestOtp(normalized: string, options?: { isResend?: boolean }) {
     setLoading(true);
     try {
       devLog("Requesting Super Admin OTP for", normalized);
@@ -106,10 +105,14 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
       const verifier = getOrCreateVerifier();
       confirmationRef.current = await signInWithPhoneNumber(auth, normalized, verifier);
       devLog("Super Admin OTP sent successfully");
+      resetVerifier();
       setFullPhone(normalized);
       setStep("otp");
+      setOtp("");
+      setStatusMessage(options?.isResend ? "A new login code was sent." : null);
     } catch (err) {
       devLog("Failed to send Super Admin OTP", err);
+      confirmationRef.current = null;
       if (getFirebaseErrorCode(err) === "auth/too-many-requests") {
         setSendBlocked(true);
         sendBlockedTimeoutRef.current = setTimeout(() => {
@@ -125,11 +128,39 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
     }
   }
 
+  async function handleSendOtp(event: FormEvent) {
+    event.preventDefault();
+    if (sendingOtpRef.current || sendBlocked) return;
+    sendingOtpRef.current = true;
+    setError(null);
+    setStatusMessage(null);
+
+    const normalized = normalizePhoneNumber(phone, countryIso);
+    if (!normalized) {
+      setError("Enter a valid phone number");
+      sendingOtpRef.current = false;
+      return;
+    }
+
+    await requestOtp(normalized);
+  }
+
+  async function handleResendOtp() {
+    if (sendingOtpRef.current || sendBlocked || !fullPhone) return;
+    sendingOtpRef.current = true;
+    setError(null);
+    setStatusMessage(null);
+    confirmationRef.current = null;
+    resetVerifier();
+    await requestOtp(fullPhone, { isResend: true });
+  }
+
   async function handleVerifyOtp(event: FormEvent) {
     event.preventDefault();
     if (verifyingOtpRef.current) return;
     verifyingOtpRef.current = true;
     setError(null);
+    setStatusMessage(null);
     setLoading(true);
     try {
       if (!confirmationRef.current) {
@@ -177,6 +208,7 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
     setStep("phone");
     setOtp("");
     setError(null);
+    setStatusMessage(null);
   }
 
   return (
@@ -227,8 +259,18 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {statusMessage && <p className="text-sm text-muted-foreground">{statusMessage}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Verifying..." : "Verify & sign in"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleResendOtp}
+                disabled={loading || sendBlocked}
+              >
+                {sendBlocked ? "Wait before retrying" : "Request a new code"}
               </Button>
               <Button
                 type="button"

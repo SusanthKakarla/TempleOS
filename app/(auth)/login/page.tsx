@@ -37,17 +37,20 @@ export default function LoginPage() {
   const [sendBlocked, setSendBlocked] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
-  // A single invisible reCAPTCHA verifier is created lazily and reused across
-  // every send/resend attempt, per Firebase's recommended pattern. Recreating
-  // it on every call (the previous bug here) leaves a stale widget attached
-  // to the DOM and breaks the second attempt without a full page refresh.
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaWidgetContainerRef = useRef<HTMLDivElement | null>(null);
   const sendingOtpRef = useRef(false);
   const sendBlockedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function resetVerifier() {
-    verifierRef.current?.clear();
+    try {
+      verifierRef.current?.clear();
+    } catch (err) {
+      devLog("Failed to clear reCAPTCHA verifier", err);
+    }
     verifierRef.current = null;
+    recaptchaWidgetContainerRef.current?.remove();
+    recaptchaWidgetContainerRef.current = null;
   }
 
   function getFirebaseErrorCode(err: unknown): string | undefined {
@@ -105,7 +108,10 @@ export default function LoginPage() {
 
     devLog("Initializing reCAPTCHA verifier");
     const auth = getFirebaseAuth();
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+    const widgetContainer = document.createElement("div");
+    recaptchaContainerRef.current.replaceChildren(widgetContainer);
+    recaptchaWidgetContainerRef.current = widgetContainer;
+    const verifier = new RecaptchaVerifier(auth, widgetContainer, {
       size: "invisible",
       callback: () => devLog("reCAPTCHA solved"),
       "expired-callback": () => {
@@ -137,6 +143,7 @@ export default function LoginPage() {
       const verifier = getOrCreateVerifier();
       confirmationRef.current = await signInWithPhoneNumber(auth, normalized, verifier);
       devLog("OTP sent successfully");
+      resetVerifier();
       setFullPhone(normalized);
       setStep("otp");
     } catch (err) {
@@ -205,6 +212,8 @@ export default function LoginPage() {
   }
 
   function handleUseDifferentNumber() {
+    confirmationRef.current = null;
+    resetVerifier();
     setStep("phone");
     setOtp("");
     setError(null);
