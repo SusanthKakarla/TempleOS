@@ -117,7 +117,9 @@ describe("super admin auth boundary", () => {
     expect(source).toMatch(/requireSuperAdminPage/);
     expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
     expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    expect(source).toMatch(/TempleDetailEditForm/);
     expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
+    expect(source).not.toMatch(/updateProvisionedTemple|updateProvisionedTenantDetailsForSuperAdmin/);
     expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
       source.indexOf("await fetchTempleDetailForSuperAdmin"),
     );
@@ -126,5 +128,27 @@ describe("super admin auth boundary", () => {
     expect(source).toMatch(/Members/);
     expect(source).toMatch(/WhatsApp/);
     expect(source).not.toMatch(/delete|transfer|impersonat|data export|disconnect|embedded signup/i);
+  });
+
+  it("keeps the temple detail edit form limited to safe update fields and duplicate-submit guarded", () => {
+    const formSource = readFileSync(
+      path.join(process.cwd(), "features/super-admin/temple-detail-edit-form.tsx"),
+      "utf8",
+    );
+    const helperSource = readFileSync(
+      path.join(process.cwd(), "features/super-admin/temple-detail-edit-form-helpers.ts"),
+      "utf8",
+    );
+
+    expect(formSource).toMatch(/method:\s*"PATCH"/);
+    expect(formSource).toMatch(/submittingRef/);
+    expect(formSource).toMatch(/router\.refresh/);
+    expect(helperSource).toMatch(/name/);
+    expect(helperSource).toMatch(/defaultContactPhone/);
+    expect(helperSource).toMatch(/address/);
+    expect(helperSource).toMatch(/timezone/);
+    expect(`${formSource}\n${helperSource}`).not.toMatch(
+      /slug|hostname|delete|transfer|billing|impersonat|data export|disconnect|embedded signup/i,
+    );
   });
 });

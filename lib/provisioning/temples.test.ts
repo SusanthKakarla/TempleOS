@@ -16,6 +16,8 @@ vi.mock("@/lib/db/pool", () => ({
 
 vi.mock("@/lib/db/tenants", () => ({
   createTenantForSuperAdmin: vi.fn(),
+  getTenantDetailForSuperAdmin: vi.fn(),
+  updateProvisionedTenantDetailsForSuperAdmin: vi.fn(),
 }));
 
 vi.mock("@/lib/db/tenant-domains", () => ({
@@ -41,7 +43,11 @@ vi.mock("@/lib/db/audit-log", () => ({
 
 import { normalizeTenantHostname } from "@/lib/tenant-domains";
 import { getPool } from "@/lib/db/pool";
-import { createTenantForSuperAdmin } from "@/lib/db/tenants";
+import {
+  createTenantForSuperAdmin,
+  getTenantDetailForSuperAdmin,
+  updateProvisionedTenantDetailsForSuperAdmin,
+} from "@/lib/db/tenants";
 import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import {
@@ -56,6 +62,9 @@ import {
   parseProvisionTempleInput,
   PRODUCT_DOMAIN,
   provisionTemple,
+  parseUpdateProvisionedTempleInput,
+  updateProvisionedTemple,
+  UpdateProvisionedTempleError,
   RESERVED_TENANT_SUBDOMAINS,
 } from "./temples";
 
@@ -167,6 +176,13 @@ beforeEach(() => {
   client.release.mockReset();
   vi.mocked(getPool).mockReturnValue({ connect: vi.fn().mockResolvedValue(client) } as never);
   vi.mocked(createTenantForSuperAdmin).mockResolvedValue(createdTenant);
+  vi.mocked(updateProvisionedTenantDetailsForSuperAdmin).mockResolvedValue(createdTenant);
+  vi.mocked(getTenantDetailForSuperAdmin).mockResolvedValue({
+    tenant: createdTenant,
+    domain: createdDomain,
+    members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
+    whatsappAccount: linkedWhatsAppAccount,
+  });
   vi.mocked(createTenantDomainForSuperAdmin).mockResolvedValue(createdDomain);
   vi.mocked(findOrCreatePersonByPhoneForProvisioning).mockResolvedValue(createdPerson);
   vi.mocked(createTenantMembershipForProvisioning).mockResolvedValue(createdMembership);
@@ -611,5 +627,227 @@ describe("canonical temple provisioning contract", () => {
     });
     expect(client.query).toHaveBeenCalledWith("ROLLBACK");
     expect(client.release).toHaveBeenCalledOnce();
+  });
+});
+
+describe("canonical provisioned temple update contract", () => {
+  const tenantId = "tenant-1";
+
+  it("maps safe raw update input to the canonical UpdateProvisionedTempleInput shape", () => {
+    const result = parseUpdateProvisionedTempleInput(
+      {
+        tenant: {
+          name: " Updated Temple ",
+          defaultContactPhone: "7995362200",
+          address: "  ",
+          timezone: "Asia/Kolkata",
+        },
+      },
+      tenantId,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("expected validation success");
+    expect(result.data).toEqual({
+      tenantId,
+      tenant: {
+        name: "Updated Temple",
+        defaultContactPhone: "+917995362200",
+        address: null,
+        timezone: "Asia/Kolkata",
+      },
+    });
+  });
+
+  it("rejects blocked lifecycle and domain fields before writes", () => {
+    const result = parseUpdateProvisionedTempleInput(
+      {
+        tenant: {
+          name: "Updated Temple",
+          slug: "new-slug",
+          deletedAt: "2026-07-19",
+        },
+        domain: { hostname: "other.trytempleos.com" },
+        billing: { plan: "paid" },
+        impersonation: true,
+        transfer: { owner: "new-owner" },
+      },
+      tenantId,
+    );
+
+    expect(result).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!result.ok) {
+      expect(result.errors.map((error) => error.path.join("."))).toEqual(
+        expect.arrayContaining([
+          "tenant.slug",
+          "tenant.deletedAt",
+          "domain",
+          "billing",
+          "impersonation",
+          "transfer",
+        ]),
+      );
+    }
+  });
+
+  it("rejects invalid phone, unsupported timezone, and empty safe updates", () => {
+    const invalidPhone = parseUpdateProvisionedTempleInput(
+      { tenant: { defaultContactPhone: "123" } },
+      tenantId,
+    );
+    expect(invalidPhone).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!invalidPhone.ok) {
+      expect(invalidPhone.errors).toContainEqual(
+        expect.objectContaining({ path: ["tenant", "defaultContactPhone"] }),
+      );
+    }
+
+    const invalidTimezone = parseUpdateProvisionedTempleInput(
+      { tenant: { timezone: "Mars/Base" } },
+      tenantId,
+    );
+    expect(invalidTimezone).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!invalidTimezone.ok) {
+      expect(invalidTimezone.errors).toContainEqual(
+        expect.objectContaining({ path: ["tenant", "timezone"] }),
+      );
+    }
+
+    const empty = parseUpdateProvisionedTempleInput({ tenant: {} }, tenantId);
+    expect(empty).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!empty.ok) {
+      expect(empty.errors).toContainEqual(expect.objectContaining({ path: ["tenant"] }));
+    }
+  });
+
+  it("updates safe fields and writes audit metadata inside one transaction", async () => {
+    vi.mocked(getTenantDetailForSuperAdmin)
+      .mockResolvedValueOnce({
+        tenant: {
+          ...createdTenant,
+          name: "Original Temple",
+          defaultContactPhone: "+14155552671",
+          address: "Old Address",
+          timezone: "UTC",
+        },
+        domain: createdDomain,
+        members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
+        whatsappAccount: linkedWhatsAppAccount,
+      })
+      .mockResolvedValueOnce({
+        tenant: createdTenant,
+        domain: createdDomain,
+        members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
+        whatsappAccount: linkedWhatsAppAccount,
+      });
+    const parsed = parseUpdateProvisionedTempleInput(
+      {
+        tenant: {
+          name: "Updated Temple",
+          defaultContactPhone: "+1 415 555 9999",
+          address: null,
+          timezone: "America/Los_Angeles",
+        },
+      },
+      tenantId,
+    );
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected validation success");
+
+    const result = await updateProvisionedTemple(parsed.data, actor);
+
+    expect(client.query).toHaveBeenNthCalledWith(1, "BEGIN");
+    expect(updateProvisionedTenantDetailsForSuperAdmin).toHaveBeenCalledWith(parsed.data.tenantId, parsed.data.tenant, client);
+    expect(createAuditLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: "super_admin",
+        actorId: "super-admin-1",
+        tenantId,
+        action: "temple.updated",
+        targetType: "tenant",
+        targetId: tenantId,
+        metadata: {
+          changedFields: ["name", "defaultContactPhone", "address", "timezone"],
+        },
+      }),
+      client,
+    );
+    expect(getTenantDetailForSuperAdmin).toHaveBeenCalledWith(tenantId, client);
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
+    expect(result.tenant.name).toBe(createdTenant.name);
+  });
+
+  it("returns current detail without update or audit for no-op safe submissions", async () => {
+    vi.mocked(getTenantDetailForSuperAdmin).mockResolvedValueOnce({
+      tenant: {
+        ...createdTenant,
+        name: "Updated Temple",
+        defaultContactPhone: "+14155559999",
+        address: null,
+        timezone: "America/Los_Angeles",
+      },
+      domain: createdDomain,
+      members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
+      whatsappAccount: linkedWhatsAppAccount,
+    });
+
+    const result = await updateProvisionedTemple(
+      {
+        tenantId,
+        tenant: {
+          name: "Updated Temple",
+          defaultContactPhone: "+14155559999",
+          address: null,
+          timezone: "America/Los_Angeles",
+        },
+      },
+      actor,
+    );
+
+    expect(updateProvisionedTenantDetailsForSuperAdmin).not.toHaveBeenCalled();
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
+    expect(result.tenant.name).toBe("Updated Temple");
+  });
+
+  it("returns a stable not-found error without audit when the tenant is missing", async () => {
+    vi.mocked(getTenantDetailForSuperAdmin).mockResolvedValueOnce(null);
+
+    let caught: unknown;
+    try {
+      await updateProvisionedTemple({ tenantId, tenant: { name: "Missing" } }, actor);
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(UpdateProvisionedTempleError);
+    expect(caught).toMatchObject({ status: 404, code: "TEMPLE_NOT_FOUND" });
+
+    expect(updateProvisionedTenantDetailsForSuperAdmin).not.toHaveBeenCalled();
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("rolls back when audit logging fails after the tenant update", async () => {
+    vi.mocked(createAuditLogEntry).mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(
+      updateProvisionedTemple({ tenantId, tenant: { name: "Updated Temple" } }, actor),
+    ).rejects.toMatchObject({ status: 500, code: "TEMPLE_UPDATE_FAILED" });
+
+    expect(updateProvisionedTenantDetailsForSuperAdmin).toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("requires a super-admin actor for updates", async () => {
+    await expect(
+      updateProvisionedTemple({ tenantId, tenant: { name: "Updated Temple" } }, { ...actor, type: "tenant_member" } as never),
+    ).rejects.toMatchObject({ status: 500, code: "TEMPLE_UPDATE_FAILED" });
+    expect(updateProvisionedTenantDetailsForSuperAdmin).not.toHaveBeenCalled();
   });
 });

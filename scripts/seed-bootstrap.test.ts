@@ -101,6 +101,7 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
       const source = read(file);
       expect(source).not.toMatch(/listTenantsForSuperAdmin/);
       expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
+      expect(source).not.toMatch(/updateProvisionedTemple|updateProvisionedTenantDetailsForSuperAdmin/);
     }
   });
 
@@ -121,12 +122,25 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
     expect(source).toMatch(/requireSuperAdminPage/);
     expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
     expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    expect(source).toMatch(/TempleDetailEditForm/);
     expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
+    expect(source).not.toMatch(/updateProvisionedTemple|updateProvisionedTenantDetailsForSuperAdmin/);
     expect(source).toMatch(/notFound\(\)/);
     expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users/i);
     expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
     expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
       source.indexOf("await fetchTempleDetailForSuperAdmin"),
     );
+  });
+
+  it("keeps the super-admin temple detail route update on the canonical service path", () => {
+    const source = read("app/api/super-admin/temples/[tenantId]/route.ts");
+    expect(source).toMatch(/export async function PATCH/);
+    expect(source).toMatch(/requireSuperAdmin/);
+    expect(source).toMatch(/parseUpdateProvisionedTempleInput/);
+    expect(source).toMatch(/updateProvisionedTemple/);
+    expect(source).not.toMatch(/updateProvisionedTenantDetailsForSuperAdmin/);
+    expect(source).not.toMatch(/pool\.query|client\.query/i);
+    expect(source).not.toMatch(/insert\s+into|update\s+tenants/i);
   });
 });

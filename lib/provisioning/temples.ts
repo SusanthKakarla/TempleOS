@@ -7,12 +7,17 @@ import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
 } from "@/lib/db/tenant-memberships";
-import { createTenantForSuperAdmin } from "@/lib/db/tenants";
+import {
+  createTenantForSuperAdmin,
+  getTenantDetailForSuperAdmin,
+  updateProvisionedTenantDetailsForSuperAdmin,
+} from "@/lib/db/tenants";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
 import { isRoleCode, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
+import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
 export const PRODUCT_DOMAIN = "trytempleos.com";
@@ -72,6 +77,16 @@ export interface ProvisionTempleResult {
   whatsappAccount: WhatsAppAccount | null;
 }
 
+export interface UpdateProvisionedTempleInput {
+  tenantId: string;
+  tenant: Partial<{
+    name: string;
+    defaultContactPhone: string | null;
+    address: string | null;
+    timezone: string;
+  }>;
+}
+
 export interface ProvisionTempleValidationIssue {
   path: string[];
   message: string;
@@ -79,6 +94,15 @@ export interface ProvisionTempleValidationIssue {
 
 export type ProvisionTempleValidationResult =
   | { ok: true; data: ProvisionTempleInput }
+  | {
+      ok: false;
+      status: 400;
+      code: "VALIDATION_ERROR";
+      errors: ProvisionTempleValidationIssue[];
+    };
+
+export type UpdateProvisionedTempleValidationResult =
+  | { ok: true; data: UpdateProvisionedTempleInput }
   | {
       ok: false;
       status: 400;
@@ -95,6 +119,18 @@ export class ProvisionTempleError extends Error {
   ) {
     super(message);
     this.name = "ProvisionTempleError";
+  }
+}
+
+export class UpdateProvisionedTempleError extends Error {
+  constructor(
+    message: string,
+    public readonly status: 400 | 404 | 500,
+    public readonly code: "VALIDATION_ERROR" | "TEMPLE_NOT_FOUND" | "TEMPLE_UPDATE_FAILED",
+    public readonly errors: ProvisionTempleValidationIssue[] = [],
+  ) {
+    super(message);
+    this.name = "UpdateProvisionedTempleError";
   }
 }
 
@@ -129,6 +165,26 @@ const rawProvisionTempleSchema = z.object({
       metaBusinessAccountId: z.string().trim().min(1, "Meta business account ID is required"),
     })
     .nullish(),
+});
+
+const rawUpdateProvisionedTempleSchema = z.object({
+  tenant: z
+    .object({
+      name: z.string().trim().min(1, "Temple name is required").max(200).optional(),
+      defaultContactPhone: z.string().nullable().optional(),
+      address: z
+        .string()
+        .transform((value) => nullableTrim(value))
+        .nullable()
+        .optional(),
+      timezone: z
+        .string()
+        .trim()
+        .min(1, "Timezone is required")
+        .refine(isValidIanaTimeZone, "Timezone must be a valid IANA timezone")
+        .optional(),
+    })
+    .optional(),
 });
 
 export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidationResult {
@@ -224,6 +280,51 @@ export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidati
   };
 }
 
+export function parseUpdateProvisionedTempleInput(
+  raw: unknown,
+  tenantId: string,
+): UpdateProvisionedTempleValidationResult {
+  const issues = findBlockedUpdateFields(raw);
+  const parsed = rawUpdateProvisionedTempleSchema.safeParse(raw);
+  if (!parsed.success) {
+    issues.push(
+      ...parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+      })),
+    );
+  }
+
+  const tenant = parsed.success ? parsed.data.tenant : undefined;
+  const safeTenant: UpdateProvisionedTempleInput["tenant"] = {};
+  if (tenant?.name !== undefined) safeTenant.name = tenant.name;
+  if (tenant?.address !== undefined) safeTenant.address = tenant.address;
+  if (tenant?.timezone !== undefined) safeTenant.timezone = tenant.timezone;
+  if (tenant?.defaultContactPhone !== undefined) {
+    safeTenant.defaultContactPhone = normalizeNullablePhone(
+      tenant.defaultContactPhone,
+      ["tenant", "defaultContactPhone"],
+      issues,
+    );
+  }
+
+  if (Object.keys(safeTenant).length === 0) {
+    issues.push({ path: ["tenant"], message: "At least one safe tenant field is required." });
+  }
+
+  if (issues.length > 0 || !parsed.success) {
+    return validationError(issues);
+  }
+
+  return {
+    ok: true,
+    data: {
+      tenantId,
+      tenant: safeTenant,
+    },
+  };
+}
+
 export async function provisionTemple(
   input: ProvisionTempleInput,
   actor: ProvisionTempleActor,
@@ -312,6 +413,132 @@ export async function provisionTemple(
   } finally {
     client.release();
   }
+}
+
+export async function updateProvisionedTemple(
+  input: UpdateProvisionedTempleInput,
+  actor: ProvisionTempleActor,
+): Promise<SuperAdminTenantDetail> {
+  const parsed = parseUpdateProvisionedTempleInput({ tenant: input.tenant }, input.tenantId);
+  if (!parsed.ok) {
+    throw new UpdateProvisionedTempleError("Temple update input is invalid.", 400, "VALIDATION_ERROR", parsed.errors);
+  }
+
+  if (actor.type !== "super_admin" || !actor.superAdminId) {
+    throw new UpdateProvisionedTempleError("Super admin actor is required for temple updates.", 500, "TEMPLE_UPDATE_FAILED");
+  }
+
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+
+    const currentDetail = await getTenantDetailForSuperAdmin(parsed.data.tenantId, client);
+    if (!currentDetail) {
+      throw new UpdateProvisionedTempleError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    const changedTenantFields = changedProvisionedTenantFields(currentDetail.tenant, parsed.data.tenant);
+    if (changedTenantFields.length === 0) {
+      await client.query("COMMIT");
+      return currentDetail;
+    }
+
+    const changedTenantUpdate = pickChangedProvisionedTenantFields(parsed.data.tenant, changedTenantFields);
+    const updatedTenant = await updateProvisionedTenantDetailsForSuperAdmin(
+      parsed.data.tenantId,
+      changedTenantUpdate,
+      client,
+    );
+    if (!updatedTenant) {
+      throw new UpdateProvisionedTempleError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    await createAuditLogEntry(
+      {
+        actorType: "super_admin",
+        actorId: actor.superAdminId,
+        tenantId: parsed.data.tenantId,
+        action: "temple.updated",
+        targetType: "tenant",
+        targetId: parsed.data.tenantId,
+        metadata: {
+          changedFields: changedTenantFields,
+        },
+      },
+      client,
+    );
+
+    const detail = await getTenantDetailForSuperAdmin(parsed.data.tenantId, client);
+    if (!detail) {
+      throw new UpdateProvisionedTempleError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    await client.query("COMMIT");
+    return detail;
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original stable update error for callers.
+    }
+    throw toUpdateProvisionedTempleError(err);
+  } finally {
+    client.release();
+  }
+}
+
+type SafeProvisionedTenantField = keyof UpdateProvisionedTempleInput["tenant"];
+
+const safeProvisionedTenantFields: SafeProvisionedTenantField[] = [
+  "name",
+  "defaultContactPhone",
+  "address",
+  "timezone",
+];
+
+function changedProvisionedTenantFields(
+  currentTenant: Tenant,
+  tenant: UpdateProvisionedTempleInput["tenant"],
+): SafeProvisionedTenantField[] {
+  return safeProvisionedTenantFields.filter((field) => field in tenant && currentTenant[field] !== tenant[field]);
+}
+
+function pickChangedProvisionedTenantFields(
+  tenant: UpdateProvisionedTempleInput["tenant"],
+  fields: SafeProvisionedTenantField[],
+): UpdateProvisionedTempleInput["tenant"] {
+  const changedTenant: UpdateProvisionedTempleInput["tenant"] = {};
+  for (const field of fields) {
+    changedTenant[field] = tenant[field] as never;
+  }
+  return changedTenant;
+}
+
+function findBlockedUpdateFields(raw: unknown): ProvisionTempleValidationIssue[] {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return [{ path: ["tenant"], message: "Tenant update payload is required." }];
+  }
+
+  const issues: ProvisionTempleValidationIssue[] = [];
+  const root = raw as Record<string, unknown>;
+  for (const key of Object.keys(root)) {
+    if (key !== "tenant") {
+      issues.push({ path: [key], message: "Field is not editable in this operation." });
+    }
+  }
+
+  if (typeof root.tenant !== "object" || root.tenant === null || Array.isArray(root.tenant)) {
+    issues.push({ path: ["tenant"], message: "Tenant update payload is required." });
+    return issues;
+  }
+
+  const allowedTenantFields = new Set(["name", "defaultContactPhone", "address", "timezone"]);
+  for (const key of Object.keys(root.tenant as Record<string, unknown>)) {
+    if (!allowedTenantFields.has(key)) {
+      issues.push({ path: ["tenant", key], message: "Field is not editable in this operation." });
+    }
+  }
+  return issues;
 }
 
 function normalizeSubdomain(value: string): string | null {
@@ -410,6 +637,11 @@ function toProvisionTempleError(err: unknown): ProvisionTempleError {
     return new ProvisionTempleError("Temple provisioning conflicts with an existing record.", 409, "PROVISIONING_CONFLICT", field);
   }
   return new ProvisionTempleError("Temple provisioning failed.", 500, "PROVISIONING_FAILED");
+}
+
+function toUpdateProvisionedTempleError(err: unknown): UpdateProvisionedTempleError {
+  if (err instanceof UpdateProvisionedTempleError) return err;
+  return new UpdateProvisionedTempleError("Temple update failed.", 500, "TEMPLE_UPDATE_FAILED");
 }
 
 function isUniqueViolation(err: unknown): boolean {

@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import type { RoleCode } from "@/types/db";
 import { requireSuperAdminPage } from "../../require-super-admin";
@@ -116,6 +117,8 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
             )}
           </div>
         </section>
+
+        <TempleDetailEditForm tenant={temple.tenant} />
 
         <section className="rounded-md border bg-background">
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">

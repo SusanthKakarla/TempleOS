@@ -347,6 +347,40 @@ export async function getTenantDetailForSuperAdmin(
   };
 }
 
+export interface UpdateProvisionedTenantDetailsForSuperAdminInput {
+  name?: string;
+  defaultContactPhone?: string | null;
+  address?: string | null;
+  timezone?: string;
+}
+
+export async function updateProvisionedTenantDetailsForSuperAdmin(
+  tenantId: string,
+  fields: UpdateProvisionedTenantDetailsForSuperAdminInput,
+  client: QueryClient,
+): Promise<Tenant | null> {
+  const { rows } = await client.query<TenantRow>(
+    `UPDATE tenants
+     SET name = COALESCE($2, name),
+         default_contact_phone = CASE WHEN $3::boolean THEN $4 ELSE default_contact_phone END,
+         address = CASE WHEN $5::boolean THEN $6 ELSE address END,
+         timezone = COALESCE($7, timezone),
+         updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      tenantId,
+      fields.name ?? null,
+      fields.defaultContactPhone !== undefined,
+      fields.defaultContactPhone ?? null,
+      fields.address !== undefined,
+      fields.address ?? null,
+      fields.timezone ?? null,
+    ],
+  );
+  return rows[0] ? mapTenant(rows[0]) : null;
+}
+
 export type UpdateTenantInput = Partial<
   Pick<
     Tenant,

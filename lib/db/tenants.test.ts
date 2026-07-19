@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { getTenantDetailForSuperAdmin, listTenantsForSuperAdmin } from "./tenants";
+import {
+  getTenantDetailForSuperAdmin,
+  listTenantsForSuperAdmin,
+  updateProvisionedTenantDetailsForSuperAdmin,
+} from "./tenants";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -242,5 +246,71 @@ describe("tenant repository super-admin detail", () => {
       members: [],
       whatsappAccount: null,
     });
+  });
+});
+
+describe("tenant repository super-admin safe update", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("updates only safe provisioned temple fields through a caller-provided client", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          ...tenantRow,
+          name: "Updated Temple",
+          default_contact_phone: "+14155559999",
+          address: null,
+          timezone: "Asia/Kolkata",
+          updated_at: new Date("2026-07-19T00:00:00Z"),
+        },
+      ],
+    });
+
+    await expect(
+      updateProvisionedTenantDetailsForSuperAdmin(
+        "tenant-1",
+        {
+          name: "Updated Temple",
+          defaultContactPhone: "+14155559999",
+          address: null,
+          timezone: "Asia/Kolkata",
+        },
+        { query },
+      ),
+    ).resolves.toMatchObject({
+      id: "tenant-1",
+      name: "Updated Temple",
+      defaultContactPhone: "+14155559999",
+      address: null,
+      timezone: "Asia/Kolkata",
+    });
+
+    const sql = String(query.mock.calls[0][0]);
+    expect(sql).toContain("UPDATE tenants");
+    expect(sql).toContain("default_contact_phone");
+    expect(sql).toContain("RETURNING *");
+    expect(sql).not.toMatch(/slug|hostname|deleted|billing|imperson/i);
+    expect(query.mock.calls[0][1]).toEqual([
+      "tenant-1",
+      "Updated Temple",
+      true,
+      "+14155559999",
+      true,
+      null,
+      "Asia/Kolkata",
+    ]);
+  });
+
+  it("returns null when the safe update target tenant does not exist", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      updateProvisionedTenantDetailsForSuperAdmin("missing-tenant", { name: "Missing" }, { query }),
+    ).resolves.toBeNull();
   });
 });
