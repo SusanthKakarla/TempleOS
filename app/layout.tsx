@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Telugu, Playfair_Display } from "next/font/google";
 import Script from "next/script";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -18,6 +20,11 @@ const geistMono = Geist_Mono({
 const playfairDisplay = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
+});
+
+const notoSansTelugu = Noto_Sans_Telugu({
+  variable: "--font-noto-telugu",
+  subsets: ["telugu"],
 });
 
 export const metadata: Metadata = {
@@ -62,15 +69,18 @@ const CONSOLE_FILTER_SCRIPT = `
 })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} h-full antialiased`}
+      lang={locale}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${notoSansTelugu.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
@@ -82,10 +92,12 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
-        <TooltipProvider delay={200}>
-          {children}
-          <Toaster />
-        </TooltipProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <TooltipProvider delay={200}>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

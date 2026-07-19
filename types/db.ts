@@ -97,6 +97,7 @@ export interface TenantMembership {
   personId: string;
   displayName: string;
   status: TenantMembershipStatus;
+  preferredUiLanguage: SupportedLanguage | null;
   createdAt: string;
   updatedAt: string;
 }

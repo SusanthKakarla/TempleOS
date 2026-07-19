@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "dashboard": "డ్యాష్‌బోర్డ్",
+    "events": "కార్యక్రమాలు",
+    "devotees": "భక్తులు",
+    "donations": "విరాళాలు",
+    "conversations": "సంభాషణలు",
+    "notifications": "నోటిఫికేషన్‌లు",
+    "chatbotSettings": "చాట్‌బాట్ సెట్టింగులు",
+    "admins": "నిర్వాహకులు"
+  },
+  "topbar": {
+    "accountMenu": "ఖాతా మెనూ",
+    "signOut": "సైన్ అవుట్",
+    "signingOut": "సైన్ అవుట్ అవుతోంది...",
+    "language": "భాష",
+    "english": "English",
+    "telugu": "తెలుగు"
+  },
+  "dashboardHome": {
+    "greetingMorning": "శుభోదయం",
+    "greetingAfternoon": "శుభ మధ్యాహ్నం",
+    "greetingEvening": "శుభ సాయంత్రం",
+    "namaste": "నమస్తే 🙏",
+    "todayIs": "{greeting}. ఈరోజు {date}.",
+    "metrics": {
+      "upcomingEvents": "రాబోయే కార్యక్రమాలు",
+      "totalDevotees": "మొత్తం భక్తులు",
+      "whatsappOptIns": "వాట్సాప్ ఆప్ట్-ఇన్‌లు",
+      "totalDonationsThisMonth": "మొత్తం విరాళాలు (ఈ నెల)",
+      "totalDonors": "మొత్తం దాతలు",
+      "messagesReceived": "అందిన సందేశాలు",
+      "messagesSent": "పంపిన సందేశాలు",
+      "failedSends": "విఫలమైన పంపకాలు"
+    },
+    "upcomingEvents": {
+      "title": "రాబోయే కార్యక్రమాలు",
+      "viewAll": "అన్నీ చూడండి",
+      "empty": "ఇంకా ప్రచురించిన రాబోయే కార్యక్రమాలు లేవు.",
+      "published": "ప్రచురించబడింది"
+    },
+    "recentDevotees": {
+      "title": "ఇటీవలి భక్తులు",
+      "viewAll": "అన్నీ చూడండి",
+      "empty": "ఇంకా భక్తులు లేరు.",
+      "optedIn": "చేరారు",
+      "notOptedIn": "చేరలేదు"
+    },
+    "recentMessages": {
+      "title": "ఇటీవలి వాట్సాప్ సందేశాలు",
+      "viewAll": "అన్నీ చూడండి",
+      "empty": "ఇంకా వాట్సాప్ కార్యకలాపం లేదు."
+    },
+    "quickActions": {
+      "title": "త్వరిత చర్యలు",
+      "createEvent": "కార్యక్రమాన్ని సృష్టించండి",
+      "addDevotee": "భక్తుడిని జోడించండి"
+    }
+  }
+}

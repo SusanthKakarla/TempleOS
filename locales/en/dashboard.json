@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "events": "Events",
+    "devotees": "Devotees",
+    "donations": "Donations",
+    "conversations": "Conversations",
+    "notifications": "Notifications",
+    "chatbotSettings": "Chatbot Settings",
+    "admins": "Admins"
+  },
+  "topbar": {
+    "accountMenu": "Account menu",
+    "signOut": "Sign out",
+    "signingOut": "Signing out...",
+    "language": "Language",
+    "english": "English",
+    "telugu": "తెలుగు"
+  },
+  "dashboardHome": {
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "namaste": "Namaste 🙏",
+    "todayIs": "{greeting}. Today is {date}.",
+    "metrics": {
+      "upcomingEvents": "Upcoming Events",
+      "totalDevotees": "Total Devotees",
+      "whatsappOptIns": "WhatsApp Opt-ins",
+      "totalDonationsThisMonth": "Total Donations (This Month)",
+      "totalDonors": "Total Donors",
+      "messagesReceived": "Messages Received",
+      "messagesSent": "Messages Sent",
+      "failedSends": "Failed Sends"
+    },
+    "upcomingEvents": {
+      "title": "Upcoming Events",
+      "viewAll": "View all",
+      "empty": "No upcoming published events yet.",
+      "published": "Published"
+    },
+    "recentDevotees": {
+      "title": "Recent Devotees",
+      "viewAll": "View all",
+      "empty": "No devotees yet.",
+      "optedIn": "Opted in",
+      "notOptedIn": "Not opted in"
+    },
+    "recentMessages": {
+      "title": "Recent WhatsApp Messages",
+      "viewAll": "View all",
+      "empty": "No WhatsApp activity yet."
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "createEvent": "Create event",
+      "addDevotee": "Add devotee"
+    }
+  }
+}

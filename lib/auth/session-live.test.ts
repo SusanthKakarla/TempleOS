@@ -35,6 +35,7 @@ const membership = {
   personId: "person-1",
   displayName: "Live Name",
   status: "active" as const,
+  preferredUiLanguage: null,
   roles: ["volunteer"] as RoleCode[],
   createdAt: "2026-07-18T00:00:00.000Z",
   updatedAt: "2026-07-18T00:00:00.000Z",

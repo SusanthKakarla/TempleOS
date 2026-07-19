@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   BellRing,
@@ -28,44 +29,45 @@ import {
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, gradient: "gradient-saffron-gold" },
-  { href: "/dashboard/events", label: "Events", icon: CalendarDays, gradient: "gradient-maroon-orange" },
-  { href: "/dashboard/devotees", label: "Devotees", icon: Users, gradient: "gradient-blue-purple" },
+  { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard, gradient: "gradient-saffron-gold" },
+  { href: "/dashboard/events", labelKey: "events", icon: CalendarDays, gradient: "gradient-maroon-orange" },
+  { href: "/dashboard/devotees", labelKey: "devotees", icon: Users, gradient: "gradient-blue-purple" },
   {
     href: "/dashboard/donations",
-    label: "Donations",
+    labelKey: "donations",
     icon: Receipt,
     gradient: "gradient-saffron-gold",
   },
   {
     href: "/dashboard/whatsapp-activity",
-    label: "Conversations",
+    labelKey: "conversations",
     icon: MessageCircle,
     gradient: "gradient-green-emerald",
   },
   {
     href: "/dashboard/notifications",
-    label: "Notifications",
+    labelKey: "notifications",
     icon: BellRing,
     gradient: "gradient-green-emerald",
   },
   {
     href: "/dashboard/chatbot-settings",
-    label: "Chatbot Settings",
+    labelKey: "chatbotSettings",
     icon: Settings2,
     gradient: "gradient-green-emerald",
   },
-];
+] as const;
 
 const SUPER_ADMIN_NAV_ITEM = {
   href: "/dashboard/admins",
-  label: "Admins",
+  labelKey: "admins",
   icon: ShieldCheck,
   gradient: "bg-royal-blue",
-};
+} as const;
 
 export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
   const navItems = isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   return (
@@ -99,7 +101,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     )}
                     <SidebarMenuButton
                       isActive={isActive}
-                      tooltip={item.label}
+                      tooltip={t(item.labelKey)}
                       render={<Link href={item.href} />}
                       className="group/nav-item h-10 gap-3"
                     >
@@ -111,7 +113,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       >
                         <Icon className="size-3.5" />
                       </span>
-                      <span className="font-medium">{item.label}</span>
+                      <span className="font-medium">{t(item.labelKey)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

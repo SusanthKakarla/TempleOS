@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "./language-switcher";
 import { NAV_ITEMS } from "./app-sidebar";
 
 function getInitials(name: string): string {
@@ -38,10 +40,12 @@ export function DashboardTopbar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("nav");
+  const tTopbar = useTranslations("topbar");
   const [signingOut, setSigningOut] = useState(false);
 
   const currentItem = [...NAV_ITEMS].reverse().find((item) => pathname?.startsWith(item.href));
-  const currentLabel = currentItem?.label ?? "Dashboard";
+  const currentLabel = t(currentItem?.labelKey ?? "dashboard");
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -68,13 +72,14 @@ export function DashboardTopbar({
         </Breadcrumb>
       </div>
       <div className="flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <button
                 type="button"
-                aria-label="Account menu"
+                aria-label={tTopbar("accountMenu")}
                 className="flex items-center gap-2 rounded-full p-0.5 transition-colors hover:bg-accent"
               >
                 <Avatar className="size-8">
@@ -93,7 +98,7 @@ export function DashboardTopbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
               <LogOut />
-              {signingOut ? "Signing out..." : "Sign out"}
+              {signingOut ? tTopbar("signingOut") : tTopbar("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

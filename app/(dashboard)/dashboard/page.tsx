@@ -8,6 +8,7 @@ import {
   Send,
   Users,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
@@ -24,15 +25,16 @@ import { RecentDevoteesWidget } from "@/features/dashboard/recent-devotees-widge
 import { RecentMessagesWidget } from "@/features/dashboard/recent-messages-widget";
 import { QuickActions } from "@/features/dashboard/quick-actions";
 
-function greeting(): string {
+function greetingKey(): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "greetingMorning";
+  if (hour < 17) return "greetingAfternoon";
+  return "greetingEvening";
 }
 
 export default async function DashboardHomePage() {
   const session = await requireDashboardAdmin();
+  const t = await getTranslations("dashboardHome");
 
   const [
     tenant,
@@ -71,59 +73,59 @@ export default async function DashboardHomePage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold">
-          Namaste 🙏 {tenant ? `— ${tenant.name}` : ""}
+          {t("namaste")} {tenant ? `— ${tenant.name}` : ""}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {greeting()}. Today is {today}.
+          {t("todayIs", { greeting: t(greetingKey()), date: today })}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
-          label="Upcoming Events"
+          label={t("metrics.upcomingEvents")}
           value={upcomingEvents}
           icon={<CalendarDays className="size-4.5" />}
           gradient="gradient-saffron-gold"
         />
         <MetricCard
-          label="Total Devotees"
+          label={t("metrics.totalDevotees")}
           value={totalDevotees}
           icon={<Users className="size-4.5" />}
           gradient="gradient-blue-purple"
         />
         <MetricCard
-          label="WhatsApp Opt-ins"
+          label={t("metrics.whatsappOptIns")}
           value={optedInDevotees}
           icon={<MessageCircle className="size-4.5" />}
           gradient="gradient-green-emerald"
         />
         <MetricCard
-          label="Total Donations (This Month)"
+          label={t("metrics.totalDonationsThisMonth")}
           value={Number(donationSummary.totalThisMonth)}
           format="currency"
           icon={<HandCoins className="size-4.5" />}
           gradient="gradient-saffron-gold"
         />
         <MetricCard
-          label="Total Donors"
+          label={t("metrics.totalDonors")}
           value={donationSummary.donorCount}
           icon={<HeartHandshake className="size-4.5" />}
           gradient="gradient-maroon-orange"
         />
         <MetricCard
-          label="Messages Received"
+          label={t("metrics.messagesReceived")}
           value={messagesReceived}
           icon={<Send className="size-4.5" />}
           gradient="bg-royal-blue"
         />
         <MetricCard
-          label="Messages Sent"
+          label={t("metrics.messagesSent")}
           value={messagesSent}
           icon={<Megaphone className="size-4.5" />}
           gradient="gradient-maroon-orange"
         />
         <MetricCard
-          label="Failed Sends"
+          label={t("metrics.failedSends")}
           value={failedSends}
           icon={<AlertTriangle className="size-4.5" />}
           gradient="bg-destructive"

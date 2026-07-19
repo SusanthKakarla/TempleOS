@@ -5,6 +5,7 @@ import { resolveTenantHost } from "@/lib/auth/tenant-host";
 import { getActiveTenantDomainByHostname } from "@/lib/db/tenant-domains";
 import { bindPersonFirebaseUid, findPersonByPhone } from "@/lib/db/persons";
 import { findActiveTenantMembershipByPersonAndTenant } from "@/lib/db/tenant-memberships";
+import { setLocaleCookie } from "@/lib/i18n/locale";
 import { verifyFirebaseIdToken } from "@/lib/firebase/admin";
 import { devLog } from "@/lib/firebase/errors";
 
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
     phoneNumber: person.phoneNumber,
     displayName: membership.displayName,
   });
+  await setLocaleCookie(membership.preferredUiLanguage ?? "en");
   devLog("Session created for tenant member", membership.id, person.phoneNumber);
 
   return NextResponse.json({ ok: true });

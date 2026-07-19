@@ -6,6 +6,7 @@ import { getActiveTenantDomainByHostname } from "@/lib/db/tenant-domains";
 import { bindPersonFirebaseUid, findPersonByPhone } from "@/lib/db/persons";
 import { findActiveTenantMembershipByPersonAndTenant } from "@/lib/db/tenant-memberships";
 import { devLog } from "@/lib/firebase/errors";
+import { setLocaleCookie } from "@/lib/i18n/locale";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -15,6 +16,10 @@ vi.mock("@/lib/firebase/admin", () => ({
 vi.mock("@/lib/auth/session", () => ({
   clearSessionCookie: vi.fn(),
   setSessionCookie: vi.fn(),
+}));
+
+vi.mock("@/lib/i18n/locale", () => ({
+  setLocaleCookie: vi.fn(),
 }));
 
 vi.mock("@/lib/db/tenant-domains", () => ({
@@ -59,6 +64,7 @@ const membership: TenantMembershipWithRoles = {
   personId: "person-1",
   displayName: "Tenant Member",
   status: "active",
+  preferredUiLanguage: null,
   roles: ["admin", "priest"],
   createdAt: "2026-07-18T00:00:00.000Z",
   updatedAt: "2026-07-18T00:00:00.000Z",
@@ -99,6 +105,7 @@ describe("tenant auth session route", () => {
     vi.mocked(verifyFirebaseIdToken).mockReset();
     vi.mocked(setSessionCookie).mockReset();
     vi.mocked(clearSessionCookie).mockReset();
+    vi.mocked(setLocaleCookie).mockReset();
     vi.mocked(getActiveTenantDomainByHostname).mockReset();
     vi.mocked(findPersonByPhone).mockReset();
     vi.mocked(bindPersonFirebaseUid).mockReset();

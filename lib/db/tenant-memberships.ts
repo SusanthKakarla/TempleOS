@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
-import { isRoleCode, type RoleCode, type TenantMembership } from "@/types/db";
+import { isRoleCode, type RoleCode, type SupportedLanguage, type TenantMembership } from "@/types/db";
 
 export interface TenantMembershipWithRoles extends TenantMembership {
   roles: RoleCode[];
@@ -13,6 +13,7 @@ interface TenantMembershipRow {
   person_id: string;
   display_name: string;
   status: TenantMembership["status"];
+  preferred_ui_language: SupportedLanguage | null;
   role_codes: string[] | null;
   created_at: Date;
   updated_at: Date;
@@ -25,6 +26,7 @@ function mapTenantMembership(row: TenantMembershipRow): TenantMembershipWithRole
     personId: row.person_id,
     displayName: row.display_name,
     status: row.status,
+    preferredUiLanguage: row.preferred_ui_language,
     roles: (row.role_codes ?? []).filter(isRoleCode),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -170,4 +172,15 @@ export async function replaceTenantMembershipRolesForSuperAdmin(
   }
 
   return membership;
+}
+
+export async function updateTenantMembershipLocale(
+  membershipId: string,
+  locale: SupportedLanguage,
+  client: QueryClient = getPool(),
+): Promise<void> {
+  await client.query(
+    `UPDATE tenant_memberships SET preferred_ui_language = $1 WHERE id = $2`,
+    [locale, membershipId],
+  );
 }

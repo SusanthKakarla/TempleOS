@@ -41,6 +41,7 @@ function membership(
     personId: person.id,
     displayName: `Member ${tenantId}`,
     status: "active",
+    preferredUiLanguage: null,
     roles,
     createdAt: "2026-07-18T00:00:00.000Z",
     updatedAt: "2026-07-18T00:00:00.000Z",
@@ -78,6 +79,7 @@ describe("identity and session isolation guardrails", () => {
     vi.doUnmock("@/lib/db/persons");
     vi.doUnmock("@/lib/firebase/admin");
     vi.doUnmock("@/lib/firebase/errors");
+    vi.doUnmock("@/lib/i18n/locale");
     vi.doUnmock("next/headers");
     vi.unstubAllEnvs();
     vi.stubEnv("NODE_ENV", "test");
@@ -199,6 +201,7 @@ describe("identity and session isolation guardrails", () => {
       findActiveTenantMembershipByPersonAndTenant,
     }));
     vi.doMock("@/lib/firebase/errors", () => ({ devLog: vi.fn() }));
+    vi.doMock("@/lib/i18n/locale", () => ({ setLocaleCookie: vi.fn() }));
 
     const { POST } = await import("./auth/session/route");
     const res = await POST(
@@ -345,6 +348,7 @@ describe("identity and session isolation guardrails", () => {
       findActiveTenantMembershipByPersonAndTenant,
     }));
     vi.doMock("@/lib/firebase/errors", () => ({ devLog }));
+    vi.doMock("@/lib/i18n/locale", () => ({ setLocaleCookie: vi.fn() }));
 
     vi.stubEnv("TEMPLEOS_LOCAL_TENANT_HOST", "temple-a.trytempleos.com");
     const { POST } = await import("./auth/session/route");

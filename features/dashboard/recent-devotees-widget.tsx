@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,20 +11,21 @@ function getInitials(name: string): string {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function RecentDevoteesWidget({ devotees }: { devotees: Devotee[] }) {
+export async function RecentDevoteesWidget({ devotees }: { devotees: Devotee[] }) {
+  const t = await getTranslations("dashboardHome.recentDevotees");
   return (
     <Card className="gap-3">
       <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-base">Recent Devotees</CardTitle>
+        <CardTitle className="text-base">{t("title")}</CardTitle>
         <Link href="/dashboard/devotees" className="text-xs text-primary hover:underline">
-          View all
+          {t("viewAll")}
         </Link>
       </CardHeader>
       <CardContent className="space-y-1">
         {devotees.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <Users className="size-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No devotees yet.</p>
+            <p className="text-sm text-muted-foreground">{t("empty")}</p>
           </div>
         ) : (
           devotees.map((devotee) => (
@@ -41,7 +43,7 @@ export function RecentDevoteesWidget({ devotees }: { devotees: Devotee[] }) {
                 <p className="truncate text-xs text-muted-foreground">{devotee.whatsappPhone}</p>
               </div>
               <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"} className="shrink-0">
-                {devotee.whatsappOptInStatus ? "Opted in" : "Not opted in"}
+                {devotee.whatsappOptInStatus ? t("optedIn") : t("notOptedIn")}
               </Badge>
             </div>
           ))
