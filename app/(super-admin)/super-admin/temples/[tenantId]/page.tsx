@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Globe2,
   Landmark,
+  LogOut,
   MapPin,
   UserRound,
 } from "lucide-react";
@@ -54,7 +55,13 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
                 Tenant details, domain setup, and member roles.
               </p>
             </div>
-            <Badge variant="outline">{temple.tenant.slug}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">{temple.tenant.slug}</Badge>
+              <Button variant="outline" render={<Link href="/super-admin/logout" />}>
+                <LogOut className="size-4" />
+                Log out
+              </Button>
+            </div>
           </div>
         </header>
 

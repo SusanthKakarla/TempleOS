@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, Landmark, Plus, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, Globe2, Landmark, LogOut, Plus, ShieldCheck, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +32,10 @@ export default async function SuperAdminPage() {
             <Button variant="outline" render={<Link href="/super-admin/roles" />}>
               <ShieldCheck className="size-4" />
               Role Catalog
+            </Button>
+            <Button variant="outline" render={<Link href="/super-admin/logout" />}>
+              <LogOut className="size-4" />
+              Log out
             </Button>
             <Button render={<Link href="/super-admin/temples/new" />}>
               <Plus className="size-4" />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BadgeCheck, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BadgeCheck, KeyRound, LogOut, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,10 +44,16 @@ export default async function SuperAdminRolesPage() {
                 Fixed V0 platform roles, meanings, and capability markers used across temples.
               </p>
             </div>
-            <Badge variant="secondary">
-              <ShieldCheck className="size-3" />
-              Fixed V0
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                <ShieldCheck className="size-3" />
+                Fixed V0
+              </Badge>
+              <Button variant="outline" render={<Link href="/super-admin/logout" />}>
+                <LogOut className="size-4" />
+                Log out
+              </Button>
+            </div>
           </div>
         </header>
 
