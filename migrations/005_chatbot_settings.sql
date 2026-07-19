@@ -67,8 +67,7 @@ CREATE TABLE temple_social_links (
   UNIQUE (tenant_id, platform)
 );
 
--- Extend the existing plain TEXT+CHECK "enum" (same pattern as
--- 003_admin_roles.sql for admin_users.role) with the four new chatbot
+-- Extend the existing plain TEXT+CHECK "enum" with the four new chatbot
 -- commands introduced in this milestone.
 ALTER TABLE whatsapp_interactions DROP CONSTRAINT whatsapp_interactions_interaction_type_check;
 ALTER TABLE whatsapp_interactions ADD CONSTRAINT whatsapp_interactions_interaction_type_check

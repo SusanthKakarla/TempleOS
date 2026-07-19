@@ -210,14 +210,6 @@ export async function createTenantForSuperAdmin(
   return mapTenant(rows[0]);
 }
 
-/** The MVP supports exactly one tenant; this is the canonical lookup for it. */
-export async function getPilotTenant(): Promise<Tenant | null> {
-  const { rows } = await getPool().query<TenantRow>(
-    "SELECT * FROM tenants ORDER BY created_at ASC LIMIT 1",
-  );
-  return rows[0] ? mapTenant(rows[0]) : null;
-}
-
 export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   const { rows } = await getPool().query<TenantRow>("SELECT * FROM tenants WHERE id = $1", [
     tenantId,
@@ -414,11 +406,9 @@ export type UpdateTenantInput = Partial<
  * fields` pattern used in lib/db/events.ts/donations.ts: those repos are
  * only ever called with a `req.json()`-parsed body, where JSON serialization
  * already drops undefined-valued keys, so the two checks are equivalent
- * there. updateTenant also has a direct, non-HTTP caller (scripts/seed-admin.mts)
- * that builds a plain object literal with possibly-undefined values — for
- * that caller "x" in fields is always true, which would silently null out
- * every field it didn't intend to touch. `!== undefined` handles both
- * calling conventions correctly.
+ * there. Direct object-literal callers may pass possibly-undefined values, and
+ * that pattern would silently null out fields if we relied on key presence.
+ * `!== undefined` handles both calling conventions correctly.
  */
 export async function updateTenant(tenantId: string, fields: UpdateTenantInput): Promise<Tenant> {
   const { rows } = await getPool().query<TenantRow>(

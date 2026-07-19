@@ -32,7 +32,7 @@ FIREBASE_PRIVATE_KEY=
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-TEMPLEOS_LOCAL_TENANT_HOST=pilot.trytempleos.com
+TEMPLEOS_LOCAL_TENANT_HOST=your-temple.trytempleos.com
 ```
 
 Generate a session secret with:
@@ -65,18 +65,17 @@ Create the database if it does not already exist:
 npm run migrate
 npm run seed
 npm run seed:super-admin -- --phone "+14155552671" --name "Your Name"
-npm run seed:admin -- --phone "+14155552671" --name "Your Name" --tenant-host "pilot.trytempleos.com" --roles admin
 ```
 
 `npm run seed` creates the fixed V0 role catalog. `seed:super-admin`
 bootstraps the first platform super admin in `super_admins`; it does not attach
-that person to a tenant. `seed:admin` creates the pilot tenant login data used by
-`/login`: an active `tenant_domains` row, a `persons` row for the phone number,
-an active `tenant_memberships` row, and `tenant_membership_roles`.
+that person to a tenant.
 
-When signing in from `http://localhost:3000`, the backend uses
-`TEMPLEOS_LOCAL_TENANT_HOST` as the tenant hostname. Keep it equal to the
-`--tenant-host` passed to `seed:admin`.
+Create real tenants through `/super-admin/temples/new` after signing in at
+`/super-admin/login`, or use `npm run provision:temple` for scripted setup.
+When signing in to the tenant dashboard from `http://localhost:3000`, the
+backend uses `TEMPLEOS_LOCAL_TENANT_HOST` as the tenant hostname. Keep it equal
+to the provisioned tenant domain.
 
 ### 5. Run the app
 

@@ -39,8 +39,6 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
-export type AdminRole = "super_admin" | "admin";
-
 export interface SuperAdmin {
   id: string;
   phoneNumber: string;
@@ -108,18 +106,6 @@ export interface TenantMembershipRole {
   roleDefinitionId: string;
   assignedByMembershipId: string | null;
   assignedAt: string;
-}
-
-export interface AdminUser {
-  id: string;
-  tenantId: string;
-  phoneNumber: string;
-  displayName: string;
-  role: AdminRole;
-  firebaseUid: string | null;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export type WhatsAppAccountStatus = "connected" | "disconnected";

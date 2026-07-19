@@ -34,13 +34,10 @@ describe("Story 1.2 production bootstrap scripts", () => {
     }
   });
 
-  it("seeds local tenant admins through forward identity tables", () => {
-    const source = read("scripts/seed-admin.mts");
-    expect(source).not.toMatch(/admin_users|admin-users|upsertAdminUser/);
-    expect(source).toMatch(/tenant_domains/);
-    expect(source).toMatch(/persons/);
-    expect(source).toMatch(/tenant_memberships/);
-    expect(source).toMatch(/tenant_membership_roles/);
+  it("does not expose retired pilot-only seed commands", () => {
+    const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
+    expect(pkg.scripts["seed:admin"]).toBeUndefined();
+    expect(pkg.scripts["seed:whatsapp"]).toBeUndefined();
   });
 
   it("documents the real first super admin as CLI or env seed input, not hardcoded SQL", () => {

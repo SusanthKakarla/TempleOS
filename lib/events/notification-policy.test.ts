@@ -86,6 +86,7 @@ describe("decideEventNotificationType", () => {
 describe("isAutoNotifyEnabled", () => {
   const baseTenant: Tenant = {
     id: "tenant-1",
+    slug: "sv-temple",
     name: "Sri Venkateswara Temple",
     defaultContactPhone: null,
     address: null,

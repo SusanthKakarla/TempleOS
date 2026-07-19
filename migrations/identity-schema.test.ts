@@ -39,6 +39,13 @@ describe("forward identity reset schema", () => {
     expect(migrationChain).not.toMatch(/ALTER TABLE admin_users/);
   });
 
+  it("does not seed a fake pilot tenant in fresh environments", () => {
+    const pilotSeed = readMigration("002_seed_pilot_tenant.sql");
+    expect(pilotSeed).not.toMatch(/INSERT INTO tenants/i);
+    expect(pilotSeed).not.toMatch(/Pilot Temple/);
+    expect(pilotSeed).toMatch(/Retired after the super-admin provisioning cutover/);
+  });
+
   it("enforces unique normalized identity, domain, and membership keys", () => {
     expect(initialSchema.match(/phone_number TEXT NOT NULL UNIQUE CHECK/g)).toHaveLength(2);
     expect(initialSchema).toMatch(/phone_number ~ '\^\\\+\[1-9\]\[0-9\]\{1,14\}\$'/);

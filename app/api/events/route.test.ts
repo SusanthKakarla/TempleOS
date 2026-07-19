@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 import { requireTenantAdminSession } from "@/lib/auth/tenant-admin";
 import { createEvent, listEvents } from "@/lib/db/events";
+import { getTenantById } from "@/lib/db/tenants";
+import { enqueueEventNotifications } from "@/lib/db/event-notifications";
 import type { SessionPayload } from "@/lib/auth/session";
 
 vi.mock("@/lib/auth/tenant-admin", () => ({
@@ -13,6 +15,18 @@ vi.mock("@/lib/auth/tenant-admin", () => ({
 vi.mock("@/lib/db/events", () => ({
   createEvent: vi.fn(),
   listEvents: vi.fn(),
+}));
+
+vi.mock("@/lib/db/tenants", () => ({
+  getTenantById: vi.fn(),
+}));
+
+vi.mock("@/lib/db/event-notifications", () => ({
+  enqueueEventNotifications: vi.fn(),
+}));
+
+vi.mock("@/lib/whatsapp/event-notifications", () => ({
+  processEventNotifications: vi.fn(),
 }));
 
 const adminSession: SessionPayload = {
@@ -40,6 +54,8 @@ describe("events tenant admin API gate", () => {
     vi.mocked(requireTenantAdminSession).mockReset();
     vi.mocked(createEvent).mockReset();
     vi.mocked(listEvents).mockReset();
+    vi.mocked(getTenantById).mockReset();
+    vi.mocked(enqueueEventNotifications).mockReset();
   });
 
   it("returns 401 without a valid tenant session", async () => {
@@ -91,6 +107,7 @@ describe("events tenant admin API gate", () => {
 
   it("creates events with membership author and session tenant only", async () => {
     vi.mocked(requireTenantAdminSession).mockResolvedValue({ ok: true, session: adminSession });
+    vi.mocked(getTenantById).mockResolvedValue(null);
     vi.mocked(createEvent).mockResolvedValue({
       id: "event-1",
       tenantId: "tenant-1",
