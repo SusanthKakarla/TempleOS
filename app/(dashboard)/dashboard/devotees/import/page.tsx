@@ -1,9 +1,8 @@
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { DevoteeImportWizard } from "@/features/devotees/devotee-import-wizard";
 
 export default async function DevoteeImportPage() {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  await requireDashboardAdmin();
 
   return <DevoteeImportWizard />;
 }

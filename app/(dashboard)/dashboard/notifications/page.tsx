@@ -1,5 +1,5 @@
 import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { getEventNotificationSummary, listRecentEventNotifications } from "@/lib/db/event-notifications";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
@@ -9,8 +9,7 @@ interface PageProps {
 }
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  const session = await requireDashboardAdmin();
 
   const { eventId } = await searchParams;
 

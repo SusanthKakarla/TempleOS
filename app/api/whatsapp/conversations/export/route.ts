@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { listConversations } from "@/lib/db/whatsapp-conversations";
 import { buildExportFile, type ExportFormat } from "@/lib/export";
@@ -12,10 +12,11 @@ const formatSchema = z.enum(["xlsx", "csv", "pdf"]);
 
 /** Export All / Export Filtered — respects the conversation list's current search/filter state. */
 export async function GET(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const formatParam = formatSchema.safeParse(req.nextUrl.searchParams.get("format"));
   if (!formatParam.success) {

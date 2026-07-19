@@ -1,6 +1,9 @@
 import { MessageCircle } from "lucide-react";
+import { requireDashboardAdmin } from "../require-dashboard-admin";
 
-export default function WhatsAppActivityIndexPage() {
+export default async function WhatsAppActivityIndexPage() {
+  await requireDashboardAdmin();
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-muted">

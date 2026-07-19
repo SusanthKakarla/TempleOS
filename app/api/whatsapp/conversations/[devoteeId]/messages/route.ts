@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { listMessagesForDevotee } from "@/lib/db/whatsapp-messages";
 
 interface RouteParams {
@@ -8,10 +8,11 @@ interface RouteParams {
 
 /** "Load older messages" — cursor-paginated by the oldest currently-loaded message's createdAt. */
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const { devoteeId } = await params;
   const before = req.nextUrl.searchParams.get("before") ?? undefined;

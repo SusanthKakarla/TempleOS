@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { buildExportFile } from "@/lib/export";
 import { fileResponse } from "@/lib/export/response";
 import { DEVOTEE_IMPORT_TEMPLATE_COLUMNS } from "@/lib/export/columns/devotees";
 
 export async function GET() {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const tenant = await getTenantById(session.tenantId);
   if (!tenant) {

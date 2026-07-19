@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { listExistingPhones } from "@/lib/db/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { validateImportRow, type PreviewRow, type RawImportRow } from "@/lib/validation/devotee-import";
@@ -27,10 +27,11 @@ const HEADER_ALIASES: Record<string, keyof RawImportRow> = {
  * reviewed this preview and confirmed.
  */
 export async function POST(req: NextRequest) {
-  const session = await getSessionAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
   }
+  const { session } = auth;
 
   const formData = await req.formData().catch(() => null);
   const file = formData?.get("file");

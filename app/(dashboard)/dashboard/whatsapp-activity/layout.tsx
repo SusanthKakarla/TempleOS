@@ -1,4 +1,4 @@
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { getWhatsAppStats } from "@/lib/db/whatsapp-conversations";
 import { WhatsAppStatsBar } from "@/features/whatsapp/whatsapp-stats-bar";
@@ -10,8 +10,7 @@ export default async function WhatsAppActivityLayout({
   children: React.ReactNode;
   list: React.ReactNode;
 }) {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
+  const session = await requireDashboardAdmin();
 
   const tenant = await getTenantById(session.tenantId);
   const stats = tenant ? await getWhatsAppStats(session.tenantId, tenant.timezone) : null;

@@ -1,4 +1,4 @@
-import { getSessionAdmin } from "@/lib/auth/session";
+import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { listConversations } from "@/lib/db/whatsapp-conversations";
 import { ConversationList } from "@/features/whatsapp/conversation-list";
 import type { SupportedLanguage } from "@/types/db";
@@ -12,8 +12,7 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
  * its own), and it needs the exact same filtered list, not an empty state.
  */
 export async function ConversationListSlot({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getSessionAdmin();
-  if (!session) return null;
+  const session = await requireDashboardAdmin();
 
   const params = await searchParams;
   const getParam = (key: string): string | undefined => (typeof params[key] === "string" ? params[key] : undefined);
