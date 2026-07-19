@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, Landmark, MessageCircle, Plus, UsersRound } from "lucide-react";
+import { ArrowRight, Globe2, Landmark, MessageCircle, Plus, ShieldCheck, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,10 +28,16 @@ export default async function SuperAdminPage() {
               Provisioned tenant records, domain setup, first admin/member status, and WhatsApp linkage.
             </p>
           </div>
-          <Button render={<Link href="/super-admin/temples/new" />}>
-            <Plus className="size-4" />
-            New Temple
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" render={<Link href="/super-admin/roles" />}>
+              <ShieldCheck className="size-4" />
+              Role Catalog
+            </Button>
+            <Button render={<Link href="/super-admin/temples/new" />}>
+              <Plus className="size-4" />
+              New Temple
+            </Button>
+          </div>
         </header>
 
         {temples.length === 0 ? (

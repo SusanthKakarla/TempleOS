@@ -107,6 +107,43 @@ function mapRoleDefinition(row: RoleDefinitionRow): RoleDefinition {
   };
 }
 
+const v0RoleOrder = new Map(V0_ROLE_DEFINITIONS.map((role, index) => [role.code, index]));
+
+export async function listRoleDefinitionsForSuperAdmin(): Promise<RoleDefinition[]> {
+  const { rows } = await getPool().query<RoleDefinitionRow>(
+    `SELECT *
+     FROM role_definitions
+     WHERE code = ANY($1::text[])
+     ORDER BY array_position($1::text[], code)`,
+    [V0_ROLE_DEFINITIONS.map((role) => role.code)],
+  );
+
+  const roles = rows
+    .map(mapRoleDefinition)
+    .sort(
+      (a, b) =>
+        (v0RoleOrder.get(a.code) ?? Number.MAX_SAFE_INTEGER) -
+        (v0RoleOrder.get(b.code) ?? Number.MAX_SAFE_INTEGER),
+    );
+
+  assertCompleteV0RoleCatalog(roles);
+  return roles;
+}
+
+function assertCompleteV0RoleCatalog(roles: RoleDefinition[]): void {
+  const expectedCodes = V0_ROLE_DEFINITIONS.map((role) => role.code);
+  const actualCodes = roles.map((role) => role.code);
+  const uniqueActualCodes = new Set(actualCodes);
+
+  if (
+    roles.length !== expectedCodes.length ||
+    uniqueActualCodes.size !== expectedCodes.length ||
+    expectedCodes.some((code) => !uniqueActualCodes.has(code))
+  ) {
+    throw new Error("Role catalog is incomplete.");
+  }
+}
+
 export async function seedV0RoleDefinitions(): Promise<RoleDefinition[]> {
   const client = await getPool().connect();
   const roles: RoleDefinition[] = [];

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { seedV0RoleDefinitions, V0_ROLE_DEFINITIONS } from "./role-definitions";
+import {
+  listRoleDefinitionsForSuperAdmin,
+  seedV0RoleDefinitions,
+  V0_ROLE_DEFINITIONS,
+} from "./role-definitions";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -16,6 +20,7 @@ describe("V0 role definitions", () => {
     release.mockReset();
     query.mockResolvedValue({ rows: [] });
     (getPool as unknown as Mock).mockReturnValue({
+      query,
       connect: vi.fn().mockResolvedValue({ query, release }),
     });
   });
@@ -118,4 +123,68 @@ describe("V0 role definitions", () => {
     expect(query).not.toHaveBeenCalledWith("COMMIT");
     expect(release).toHaveBeenCalledOnce();
   });
+
+  it("lists role definitions for super admin in fixed V0 role order", async () => {
+    query.mockResolvedValue({
+      rows: [
+        roleRow("role-volunteer", "volunteer", "Volunteer", true),
+        roleRow("role-admin", "admin", "Admin", true),
+        roleRow("role-devotee", "devotee", "Devotee", false),
+        roleRow("role-priest", "priest", "Priest", true),
+        roleRow("role-committee", "committee_member", "Committee Member", true),
+      ],
+    });
+
+    const roles = await listRoleDefinitionsForSuperAdmin();
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("FROM role_definitions"), [
+      V0_ROLE_DEFINITIONS.map((role) => role.code),
+    ]);
+    expect(roles.map((role) => role.code)).toEqual([
+      "admin",
+      "priest",
+      "committee_member",
+      "volunteer",
+      "devotee",
+    ]);
+    expect(roles[0]).toMatchObject({
+      id: "role-admin",
+      code: "admin",
+      displayName: "Admin",
+      active: true,
+      capabilitySet: { dashboardAccess: true },
+    });
+    expect(roles[4]).toMatchObject({
+      code: "devotee",
+      active: false,
+    });
+  });
+
+  it("fails closed when the fixed V0 catalog is incomplete", async () => {
+    query.mockResolvedValue({
+      rows: [
+        roleRow("role-admin", "admin", "Admin", true),
+        roleRow("role-priest", "priest", "Priest", true),
+        roleRow("role-committee", "committee_member", "Committee Member", true),
+        roleRow("role-volunteer", "volunteer", "Volunteer", true),
+      ],
+    });
+
+    await expect(listRoleDefinitionsForSuperAdmin()).rejects.toThrow(
+      "Role catalog is incomplete.",
+    );
+  });
 });
+
+function roleRow(id: string, code: string, displayName: string, active: boolean) {
+  return {
+    id,
+    code,
+    display_name: displayName,
+    description: `${displayName} V0 meaning`,
+    capability_set: { dashboardAccess: code === "admin" },
+    active,
+    created_at: new Date("2026-07-18T00:00:00Z"),
+    updated_at: new Date("2026-07-18T00:00:00Z"),
+  };
+}

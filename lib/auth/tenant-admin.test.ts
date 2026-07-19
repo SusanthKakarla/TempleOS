@@ -31,6 +31,20 @@ describe("tenant admin authorization", () => {
     });
   });
 
+  it("does not treat display labels as tenant-admin authorization", async () => {
+    vi.mocked(getSessionAdmin).mockResolvedValue({
+      ...baseSession,
+      roles: ["priest"],
+      displayName: "Admin",
+    });
+
+    await expect(requireTenantAdminSession()).resolves.toEqual({
+      ok: false,
+      status: 403,
+      code: "TENANT_ADMIN_REQUIRED",
+    });
+  });
+
   it.each([
     { roles: ["priest"] },
     { roles: ["committee_member"] },

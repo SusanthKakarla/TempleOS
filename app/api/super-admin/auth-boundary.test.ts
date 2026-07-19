@@ -130,6 +130,40 @@ describe("super admin auth boundary", () => {
     expect(source).not.toMatch(/delete|transfer|impersonat|data export|disconnect|embedded signup/i);
   });
 
+  it("keeps the super-admin role catalog page behind auth and fixed-role only", () => {
+    const source = readFileSync(
+      path.join(process.cwd(), "app/(super-admin)/super-admin/roles/page.tsx"),
+      "utf8",
+    );
+    const indexSource = readFileSync(
+      path.join(process.cwd(), "app/(super-admin)/super-admin/page.tsx"),
+      "utf8",
+    );
+
+    expect(source).toMatch(/requireSuperAdminPage/);
+    expect(source).toMatch(/listRoleDefinitionsForSuperAdmin/);
+    expect(source).not.toMatch(/headers|x-forwarded-proto|getAll\(\)|cookieHeader|fetch\(/);
+    expect(source).toMatch(/admin/);
+    expect(source).toMatch(/priest/);
+    expect(source).toMatch(/committee_member/);
+    expect(source).toMatch(/volunteer/);
+    expect(source).toMatch(/devotee/);
+    expect(source).toMatch(/Role Catalog/);
+    expect(source).not.toMatch(/create|rename|delete|deactivate|tenant override|custom-role|capability-edit|billing|impersonat|data export|disconnect|embedded signup/i);
+    expect(indexSource).toMatch(/\/super-admin\/roles/);
+  });
+
+  it("keeps Story 3.4 out of tenant member role assignment mutation scope", () => {
+    const sources = [
+      readFileSync(path.join(process.cwd(), "app/api/super-admin/roles/route.ts"), "utf8"),
+      readFileSync(path.join(process.cwd(), "app/(super-admin)/super-admin/roles/page.tsx"), "utf8"),
+    ].join("\n");
+
+    expect(sources).toMatch(/listRoleDefinitionsForSuperAdmin/);
+    expect(sources).not.toMatch(/assignTenantMemberRoles|tenant_membership_roles|membershipId|members\/\[/);
+    expect(sources).not.toMatch(/tenantId|display-label edits|role-code edits|active-state toggles|tenant override/i);
+  });
+
   it("keeps the temple detail edit form limited to safe update fields and duplicate-submit guarded", () => {
     const formSource = readFileSync(
       path.join(process.cwd(), "features/super-admin/temple-detail-edit-form.tsx"),
