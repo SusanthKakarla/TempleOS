@@ -340,3 +340,31 @@ export function getTenantLocalDateISO(timezone: string): string {
   const day = parts.find((p) => p.type === "day")?.value;
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * The UTC instant corresponding to local midnight, today, in `timezone` —
+ * used for "today's messages"-style stat queries. Starts with a naive guess
+ * (the tenant-local date interpreted as UTC), then corrects by the actual
+ * wall-clock offset at that instant (DST-safe, unlike a fixed offset table).
+ */
+export function getTenantDayStartUTC(timezone: string): Date {
+  const dateStr = getTenantLocalDateISO(timezone);
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const naiveUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(naiveUTC));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const hour = get("hour") % 24; // some engines report midnight as "24" with hour12:false
+  const wallClockAsUTC = Date.UTC(get("year"), get("month") - 1, get("day"), hour, get("minute"), get("second"));
+
+  return new Date(naiveUTC - (wallClockAsUTC - naiveUTC));
+}

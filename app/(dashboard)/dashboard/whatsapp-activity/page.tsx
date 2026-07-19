@@ -1,22 +1,15 @@
-import { getSessionAdmin } from "@/lib/auth/session";
-import { listRecentMessages } from "@/lib/db/whatsapp-messages";
-import { ActivityFeed } from "@/features/whatsapp/activity-feed";
+import { MessageCircle } from "lucide-react";
 
-export default async function WhatsAppActivityPage() {
-  const session = await getSessionAdmin();
-  if (!session) return null; // guarded by the dashboard layout
-
-  const messages = await listRecentMessages(session.tenantId);
-
+export default function WhatsAppActivityIndexPage() {
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">WhatsApp Activity</h1>
-        <p className="text-sm text-muted-foreground">
-          Recent inbound and outbound messages with the temple WhatsApp number.
-        </p>
+    <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+        <MessageCircle className="size-6 text-muted-foreground" />
       </div>
-      <ActivityFeed messages={messages} />
+      <p className="text-sm font-medium">Select a conversation</p>
+      <p className="max-w-xs text-sm text-muted-foreground">
+        Choose a devotee from the list to view their full WhatsApp message history.
+      </p>
     </div>
   );
 }

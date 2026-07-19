@@ -53,6 +53,16 @@ export async function listEvents(
   return rows.map(mapEvent);
 }
 
+/** "Export Selected" — fetch exactly the rows an admin picked in the table. */
+export async function listEventsByIds(tenantId: string, ids: string[]): Promise<Event[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await getPool().query<EventRow>(
+    "SELECT * FROM events WHERE tenant_id = $1 AND id = ANY($2::uuid[]) ORDER BY starts_at ASC",
+    [tenantId, ids],
+  );
+  return rows.map(mapEvent);
+}
+
 export async function getEventById(tenantId: string, eventId: string): Promise<Event | null> {
   const { rows } = await getPool().query<EventRow>(
     "SELECT * FROM events WHERE tenant_id = $1 AND id = $2",

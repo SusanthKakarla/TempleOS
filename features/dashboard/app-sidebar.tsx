@@ -39,7 +39,7 @@ export const NAV_ITEMS = [
   },
   {
     href: "/dashboard/whatsapp-activity",
-    label: "WhatsApp Activity",
+    label: "Conversations",
     icon: MessageCircle,
     gradient: "gradient-green-emerald",
   },

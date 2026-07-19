@@ -240,6 +240,20 @@ export async function listDonations(
   return rows.map(mapDonationWithDonor);
 }
 
+/** "Export Selected" — fetch exactly the rows an admin picked in the table. */
+export async function listDonationsByIds(tenantId: string, ids: string[]): Promise<DonationWithDonor[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await getPool().query<DonationWithDonorRow>(
+    `SELECT d.*, dev.display_name AS donor_name, dev.whatsapp_phone AS donor_phone
+     FROM donations d
+     JOIN devotees dev ON dev.id = d.devotee_id
+     WHERE d.tenant_id = $1 AND d.id = ANY($2::uuid[])
+     ORDER BY d.donated_at DESC`,
+    [tenantId, ids],
+  );
+  return rows.map(mapDonationWithDonor);
+}
+
 export async function listDonationsByDevotee(tenantId: string, devoteeId: string): Promise<Donation[]> {
   const { rows } = await getPool().query<DonationRow>(
     "SELECT * FROM donations WHERE tenant_id = $1 AND devotee_id = $2 ORDER BY donated_at DESC",

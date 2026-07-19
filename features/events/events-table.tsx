@@ -7,6 +7,7 @@ import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
 import type { Event, EventStatus } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -16,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ExportMenu } from "@/features/export/export-menu";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventCard } from "./event-card";
 import { AnnounceDialog } from "./announce-dialog";
@@ -43,9 +45,18 @@ export function EventsTable({ events }: { events: Event[] }) {
   const [view, setView] = useState<"table" | "card">("table");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   function refresh() {
     router.refresh();
+  }
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds(checked ? events.map((e) => e.id) : []);
   }
 
   async function handleSetStatus(event: Event, status: EventStatus) {
@@ -120,6 +131,7 @@ export function EventsTable({ events }: { events: Event[] }) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <ExportMenu exportUrl="/api/events/export" selectedIds={selectedIds} moduleLabel="events" />
           <EventFormDialog
             mode="create"
             trigger={
@@ -163,6 +175,13 @@ export function EventsTable({ events }: { events: Event[] }) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selectedIds.length > 0 && selectedIds.length === events.length}
+                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                    aria-label="Select all events"
+                  />
+                </TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>When</TableHead>
                 <TableHead>Location</TableHead>
@@ -173,6 +192,13 @@ export function EventsTable({ events }: { events: Event[] }) {
             <TableBody>
               {events.map((event) => (
                 <TableRow key={event.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(event.id)}
+                      onCheckedChange={(checked) => toggleSelected(event.id, checked === true)}
+                      aria-label={`Select ${event.title}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{formatEventTime(event)}</TableCell>
                   <TableCell>{event.location ?? "—"}</TableCell>

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { UserPlus, Users } from "lucide-react";
+import { Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee } from "@/types/db";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
@@ -16,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ExportMenu } from "@/features/export/export-menu";
 import { DevoteeFormDialog } from "./devotee-form-dialog";
 import { DevoteesSearchInput } from "./devotees-search-input";
 
@@ -30,11 +33,21 @@ function getInitials(name: string): string {
 
 export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   function refresh() {
     router.refresh();
+  }
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds(checked ? devotees.map((d) => d.id) : []);
   }
 
   async function handleDelete(devotee: Devotee) {
@@ -70,16 +83,28 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
             Devotees who message the temple WhatsApp number, plus any you add manually.
           </p>
         </div>
-        <DevoteeFormDialog
-          mode="create"
-          trigger={
-            <Button className="hidden gap-1.5 sm:inline-flex">
-              <UserPlus className="size-4" />
-              Add devotee
-            </Button>
-          }
-          onSaved={refresh}
-        />
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/devotees/import" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
+            <Upload className="size-4" />
+            Import
+          </Link>
+          <ExportMenu
+            exportUrl="/api/devotees/export"
+            filterParams={searchParams}
+            selectedIds={selectedIds}
+            moduleLabel="devotees"
+          />
+          <DevoteeFormDialog
+            mode="create"
+            trigger={
+              <Button className="hidden gap-1.5 sm:inline-flex">
+                <UserPlus className="size-4" />
+                Add devotee
+              </Button>
+            }
+            onSaved={refresh}
+          />
+        </div>
       </div>
 
       <DevoteesSearchInput />
@@ -102,6 +127,13 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selectedIds.length > 0 && selectedIds.length === devotees.length}
+                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                    aria-label="Select all devotees"
+                  />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>WhatsApp</TableHead>
@@ -114,6 +146,13 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
             <TableBody>
               {devotees.map((devotee) => (
                 <TableRow key={devotee.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(devotee.id)}
+                      onCheckedChange={(checked) => toggleSelected(devotee.id, checked === true)}
+                      aria-label={`Select ${devotee.displayName}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Link
                       href={`/dashboard/devotees/${devotee.id}`}

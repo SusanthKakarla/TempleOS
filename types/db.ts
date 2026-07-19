@@ -131,6 +131,7 @@ export interface Devotee {
 
 export type MessageDirection = "inbound" | "outbound";
 export type MessageStatus = "queued" | "sent" | "delivered" | "failed" | "received";
+export type WhatsAppMessageType = "text" | "button" | "list" | "button_reply" | "list_reply" | "unsupported";
 
 export interface WhatsAppMessage {
   id: string;
@@ -140,11 +141,59 @@ export interface WhatsAppMessage {
   fromPhone: string;
   toPhone: string;
   body: string;
+  messageType: WhatsAppMessageType;
   providerMessageId: string | null;
   status: MessageStatus;
   receivedAt: string | null;
   sentAt: string | null;
   createdAt: string;
+}
+
+/**
+ * Summary/cache row, one per devotee with >=1 message ever exchanged — a
+ * WhatsApp "conversation" is always 1:1 with a devotee in this app (every
+ * inbound message always resolves to a devotee before being logged, see
+ * upsertDevoteeFromWhatsApp in lib/db/devotees.ts), so this is not a
+ * freestanding many-to-one entity. Kept in sync by logWhatsAppMessage()
+ * (lib/db/whatsapp-messages.ts), the single choke point for every send/log
+ * path (webhook inbound/outbound, announcements, event notifications).
+ */
+export interface WhatsAppConversation {
+  id: string;
+  tenantId: string;
+  devoteeId: string;
+  lastMessageId: string | null;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  lastDirection: MessageDirection | null;
+  unreadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** listConversations()'s read shape — joins devotee fields the conversation list needs, avoiding N+1 lookups. */
+export interface ConversationSummary {
+  devoteeId: string;
+  displayName: string;
+  whatsappPhone: string;
+  isDonor: boolean;
+  preferredLanguage: SupportedLanguage | null;
+  whatsappOptInStatus: boolean;
+  lastSeenAt: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  lastDirection: MessageDirection | null;
+  unreadCount: number;
+}
+
+export interface WhatsAppStats {
+  totalConversations: number;
+  unreadConversations: number;
+  todaysMessages: number;
+  repliesSentToday: number;
+  activeDevotees: number;
+  newDevoteesFromWhatsApp: number;
+  avgBotResponseSeconds: number | null;
 }
 
 export type InteractionType =

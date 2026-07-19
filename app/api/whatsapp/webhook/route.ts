@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { SupportedLanguage } from "@/types/db";
+import type { SupportedLanguage, WhatsAppMessageType } from "@/types/db";
 import { getWhatsAppAccountByPhoneNumberId } from "@/lib/db/whatsapp-accounts";
 import { getTenantById } from "@/lib/db/tenants";
 import { upsertDevoteeFromWhatsApp, updateDevoteePreferredLanguage } from "@/lib/db/devotees";
@@ -11,6 +11,7 @@ import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { classifyCommand, classifyInteractiveReplyId, commandToInteractionType } from "@/lib/whatsapp/router";
+import { inboundMessageType } from "@/lib/whatsapp/message-type";
 import {
   buildContactMessage,
   buildDonationInfoMessage,
@@ -96,6 +97,7 @@ async function handleInboundMessage(
     fromPhone: devoteePhone,
     toPhone: templeWhatsAppPhone,
     body: interactiveReplyTitle ?? bodyText ?? `[${message.type ?? "unsupported"} message]`,
+    messageType: inboundMessageType(message),
     status: "received",
     providerMessageId: null,
   });
@@ -107,6 +109,7 @@ async function handleInboundMessage(
 
   let sendResult: SendMessageResult;
   let loggedBody: string;
+  let messageType: WhatsAppMessageType;
 
   if (command === "select_language_en" || command === "select_language_te") {
     const lang: SupportedLanguage = command === "select_language_en" ? "en" : "te";
@@ -114,19 +117,23 @@ async function handleInboundMessage(
     const menu = buildMenuMessage(tenant, lang);
     sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
     loggedBody = menu.body;
+    messageType = "list";
   } else if (command === "change_language" || devotee.preferredLanguage === null) {
     // First-time devotees must choose a language before anything else, even
     // if their very first message was a concrete command like "events".
     const picker = buildLanguagePickerMessage();
     sendResult = await sendButtonMessage(devoteePhone, picker.body, picker.buttons);
     loggedBody = picker.body;
+    messageType = "button";
   } else {
     const lang = devotee.preferredLanguage;
     if (command === "menu") {
       const menu = buildMenuMessage(tenant, lang);
       sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
       loggedBody = menu.body;
+      messageType = "list";
     } else {
+      messageType = "text";
       let replyText: string;
       if (command === "events") {
         const events = await listEvents(tenantId, { status: "published", upcomingOnly: true });
@@ -164,6 +171,7 @@ async function handleInboundMessage(
     fromPhone: templeWhatsAppPhone,
     toPhone: devoteePhone,
     body: loggedBody,
+    messageType,
     status: sendResult.success ? "sent" : "failed",
     providerMessageId: sendResult.providerMessageId,
   });

@@ -47,6 +47,7 @@ async function processOneEventNotification(id: string): Promise<void> {
     fromPhone: whatsappAccount.phoneNumber,
     toPhone: devotee.whatsappPhone,
     body: message.body,
+    messageType: "button",
     status: result.success ? "sent" : "failed",
     providerMessageId: result.providerMessageId,
   });

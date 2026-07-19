@@ -7,6 +7,7 @@ import { HandCoins, Plus } from "lucide-react";
 import type { Devotee, DonationWithDonor } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/currency";
+import { ExportMenu } from "@/features/export/export-menu";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
 import { DonationsSearchInput } from "./donations-search-input";
@@ -42,6 +44,15 @@ export function DonationsTable({
   const [dateTo, setDateTo] = useState(searchParams.get("dateTo") ?? "");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds(checked ? donations.map((d) => d.id) : []);
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -93,17 +104,25 @@ export function DonationsTable({
             Manually recorded donations. No online payments or receipts.
           </p>
         </div>
-        <DonationFormDialog
-          mode="create"
-          devotees={devotees}
-          trigger={
-            <Button className="hidden gap-1.5 sm:inline-flex">
-              <Plus className="size-4" />
-              Add donation
-            </Button>
-          }
-          onSaved={refresh}
-        />
+        <div className="flex items-center gap-2">
+          <ExportMenu
+            exportUrl="/api/donations/export"
+            filterParams={searchParams}
+            selectedIds={selectedIds}
+            moduleLabel="donations"
+          />
+          <DonationFormDialog
+            mode="create"
+            devotees={devotees}
+            trigger={
+              <Button className="hidden gap-1.5 sm:inline-flex">
+                <Plus className="size-4" />
+                Add donation
+              </Button>
+            }
+            onSaved={refresh}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -142,6 +161,13 @@ export function DonationsTable({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selectedIds.length > 0 && selectedIds.length === donations.length}
+                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                    aria-label="Select all donations"
+                  />
+                </TableHead>
                 <TableHead>Donor</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Purpose</TableHead>
@@ -153,6 +179,13 @@ export function DonationsTable({
             <TableBody>
               {donations.map((donation) => (
                 <TableRow key={donation.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(donation.id)}
+                      onCheckedChange={(checked) => toggleSelected(donation.id, checked === true)}
+                      aria-label={`Select donation from ${donation.donorName}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Link
                       href={`/dashboard/devotees/${donation.devoteeId}`}

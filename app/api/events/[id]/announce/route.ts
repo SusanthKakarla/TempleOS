@@ -57,6 +57,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
       fromPhone: whatsappAccount.phoneNumber,
       toPhone: devotee.whatsappPhone,
       body: message,
+      messageType: "text",
       status: result.success ? "sent" : "failed",
       providerMessageId: result.providerMessageId,
     });

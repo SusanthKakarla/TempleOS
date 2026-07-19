@@ -63,6 +63,26 @@ export async function listDevotees(tenantId: string, search?: string): Promise<D
   return rows.map(mapDevotee);
 }
 
+/** "Export Selected" — fetch exactly the rows an admin picked in the table. */
+export async function listDevoteesByIds(tenantId: string, ids: string[]): Promise<Devotee[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await getPool().query<DevoteeRow>(
+    "SELECT * FROM devotees WHERE tenant_id = $1 AND id = ANY($2::uuid[]) ORDER BY display_name ASC",
+    [tenantId, ids],
+  );
+  return rows.map(mapDevotee);
+}
+
+/** Devotee import — checks a batch of normalized phone numbers against existing devotees in one query. */
+export async function listExistingPhones(tenantId: string, phones: string[]): Promise<Set<string>> {
+  if (phones.length === 0) return new Set();
+  const { rows } = await getPool().query<{ whatsapp_phone: string }>(
+    "SELECT whatsapp_phone FROM devotees WHERE tenant_id = $1 AND whatsapp_phone = ANY($2::text[])",
+    [tenantId, phones],
+  );
+  return new Set(rows.map((r) => r.whatsapp_phone));
+}
+
 /** Dashboard "Recent Devotees" widget. */
 export async function listRecentDevotees(tenantId: string, limit = 5): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
