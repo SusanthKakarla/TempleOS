@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, Landmark, LogOut, Plus, ShieldCheck, UsersRound } from "lucide-react";
+import {
+  ArrowRight,
+  Globe2,
+  Landmark,
+  LogOut,
+  Plus,
+  ShieldCheck,
+  UsersRound,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
+import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { requireSuperAdminPage } from "./require-super-admin";
 
 export default async function SuperAdminPage() {
@@ -22,18 +31,27 @@ export default async function SuperAdminPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Super Admin
+            </p>
             <h1 className="text-2xl font-semibold tracking-normal">Temples</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Provisioned tenant records, domain setup, and first admin/member status.
+              Provisioned tenant records, domain setup, and first admin/member
+              status.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" render={<Link href="/super-admin/roles" />}>
+            <Button
+              variant="outline"
+              render={<Link href="/super-admin/roles" />}
+            >
               <ShieldCheck className="size-4" />
               Role Catalog
             </Button>
-            <Button variant="outline" render={<Link href="/super-admin/logout" />}>
+            <Button
+              variant="outline"
+              render={<Link href="/super-admin/logout" />}
+            >
               <LogOut className="size-4" />
               Log out
             </Button>
@@ -47,11 +65,16 @@ export default async function SuperAdminPage() {
         {temples.length === 0 ? (
           <section className="flex min-h-80 flex-col items-center justify-center rounded-md border border-dashed bg-background px-6 py-12 text-center">
             <Landmark className="mb-4 size-10 text-muted-foreground" />
-            <h2 className="text-lg font-semibold tracking-normal">No temples provisioned</h2>
+            <h2 className="text-lg font-semibold tracking-normal">
+              No temples provisioned
+            </h2>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
               Create the first temple to assign its subdomain and first member.
             </p>
-            <Button className="mt-6" render={<Link href="/super-admin/temples/new" />}>
+            <Button
+              className="mt-6"
+              render={<Link href="/super-admin/temples/new" />}
+            >
               <Plus className="size-4" />
               New Temple
             </Button>
@@ -74,7 +97,9 @@ export default async function SuperAdminPage() {
                     <TableCell>
                       <div className="min-w-52">
                         <p className="font-medium">{temple.name}</p>
-                        <p className="text-xs text-muted-foreground">{temple.slug}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {temple.slug}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -95,8 +120,9 @@ export default async function SuperAdminPage() {
                             {temple.primaryAdminName}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {temple.primaryAdminPhoneNumber ?? "Phone unavailable"} ·{" "}
-                            {pluralizeMembers(temple.activeMemberCount)}
+                            {temple.primaryAdminPhoneNumber ??
+                              "Phone unavailable"}{" "}
+                            · {pluralizeMembers(temple.activeMemberCount)}
                           </p>
                         </div>
                       ) : (
@@ -115,7 +141,9 @@ export default async function SuperAdminPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        render={<Link href={`/super-admin/temples/${temple.id}`} />}
+                        render={
+                          <Link href={`/super-admin/temples/${temple.id}`} />
+                        }
                       >
                         View
                         <ArrowRight className="size-3.5" />

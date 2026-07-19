@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
+import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import { requireSuperAdminPage } from "../../require-super-admin";
@@ -29,7 +30,9 @@ interface TempleDetailPageProps {
   params: Promise<{ tenantId: string }>;
 }
 
-export default async function SuperAdminTempleDetailPage({ params }: TempleDetailPageProps) {
+export default async function SuperAdminTempleDetailPage({
+  params,
+}: TempleDetailPageProps) {
   const { tenantId } = await params;
   await requireSuperAdminPage(`/super-admin/temples/${tenantId}`);
   const temple = await fetchTempleDetailForSuperAdmin(tenantId);
@@ -37,27 +40,40 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
   if (!temple) {
     notFound();
   }
-  const roles = (await listRoleDefinitionsForSuperAdmin()).filter((role) => role.active);
+  const roles = (await listRoleDefinitionsForSuperAdmin()).filter(
+    (role) => role.active,
+  );
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="space-y-4">
-          <Button variant="ghost" className="px-0" render={<Link href="/super-admin" />}>
+          <Button
+            variant="ghost"
+            className="px-0"
+            render={<Link href="/super-admin" />}
+          >
             <ArrowLeft className="size-4" />
             Temples
           </Button>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
-              <h1 className="text-2xl font-semibold tracking-normal">{temple.tenant.name}</h1>
+              <p className="text-sm font-medium text-muted-foreground">
+                Super Admin
+              </p>
+              <h1 className="text-2xl font-semibold tracking-normal">
+                {temple.tenant.name}
+              </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Tenant details, domain setup, and member roles.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{temple.tenant.slug}</Badge>
-              <Button variant="outline" render={<Link href="/super-admin/logout" />}>
+              <Button
+                variant="outline"
+                render={<Link href="/super-admin/logout" />}
+              >
                 <LogOut className="size-4" />
                 Log out
               </Button>
@@ -74,10 +90,19 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
             <dl className="mt-4 grid gap-3 text-sm">
               <DetailRow label="Tenant ID" value={temple.tenant.id} />
               <DetailRow label="Timezone" value={temple.tenant.timezone} />
-              <DetailRow label="Contact phone" value={temple.tenant.defaultContactPhone} />
-              <DetailRow label="Contact email" value={temple.tenant.contactEmail} />
+              <DetailRow
+                label="Contact phone"
+                value={temple.tenant.defaultContactPhone}
+              />
+              <DetailRow
+                label="Contact email"
+                value={temple.tenant.contactEmail}
+              />
               <DetailRow label="Address" value={temple.tenant.address} />
-              <DetailRow label="Updated" value={formatTimestamp(temple.tenant.updatedAt)} />
+              <DetailRow
+                label="Updated"
+                value={formatTimestamp(temple.tenant.updatedAt)}
+              />
             </dl>
           </div>
 
@@ -89,15 +114,26 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
             {temple.domain ? (
               <dl className="mt-4 grid gap-3 text-sm">
                 <DetailRow label="Hostname" value={temple.domain.hostname} />
-                <DetailRow label="Kind" value={formatTitle(temple.domain.kind)} />
-                <DetailRow label="Status" value={formatTitle(temple.domain.status)} />
-                <DetailRow label="Updated" value={formatTimestamp(temple.domain.updatedAt)} />
+                <DetailRow
+                  label="Kind"
+                  value={formatTitle(temple.domain.kind)}
+                />
+                <DetailRow
+                  label="Status"
+                  value={formatTitle(temple.domain.status)}
+                />
+                <DetailRow
+                  label="Updated"
+                  value={formatTimestamp(temple.domain.updatedAt)}
+                />
               </dl>
             ) : (
-              <EmptyPanel icon={<MapPin className="size-5" />} label="No active primary domain" />
+              <EmptyPanel
+                icon={<MapPin className="size-5" />}
+                label="No active primary domain"
+              />
             )}
           </div>
-
         </section>
 
         <TempleDetailEditForm tenant={temple.tenant} />
@@ -105,16 +141,22 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
         <section className="rounded-md border bg-background">
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
             <div>
-              <h2 className="text-base font-semibold tracking-normal">Members</h2>
+              <h2 className="text-base font-semibold tracking-normal">
+                Members
+              </h2>
               <p className="text-sm text-muted-foreground">
-                Active tenant memberships and platform-governed role assignments.
+                Active tenant memberships and platform-governed role
+                assignments.
               </p>
             </div>
             <Badge variant="secondary">{temple.members.length} active</Badge>
           </div>
           {temple.members.length === 0 ? (
             <div className="px-4 py-10">
-              <EmptyPanel icon={<UserRound className="size-5" />} label="No active members" />
+              <EmptyPanel
+                icon={<UserRound className="size-5" />}
+                label="No active members"
+              />
             </div>
           ) : (
             <Table>
@@ -132,7 +174,9 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
                     <TableCell>
                       <div className="min-w-56">
                         <p className="font-medium">{member.displayName}</p>
-                        <p className="text-xs text-muted-foreground">{member.personId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.personId}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>{member.phoneNumber}</TableCell>
@@ -140,15 +184,25 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
                       <div className="mb-3 flex min-w-56 flex-wrap gap-1">
                         {member.roles.length > 0 ? (
                           member.roles.map((role) => (
-                            <Badge key={role} variant={role === "admin" ? "secondary" : "outline"}>
-                              {roles.find((item) => item.code === role)?.displayName ?? role}
+                            <Badge
+                              key={role}
+                              variant={
+                                role === "admin" ? "secondary" : "outline"
+                              }
+                            >
+                              {roles.find((item) => item.code === role)
+                                ?.displayName ?? role}
                             </Badge>
                           ))
                         ) : (
                           <Badge variant="outline">No roles</Badge>
                         )}
                       </div>
-                      <MemberRoleEditor tenantId={temple.tenant.id} member={member} roles={roles} />
+                      <MemberRoleEditor
+                        tenantId={temple.tenant.id}
+                        member={member}
+                        roles={roles}
+                      />
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatTimestamp(member.updatedAt)}
@@ -164,7 +218,9 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
   );
 }
 
-async function fetchTempleDetailForSuperAdmin(tenantId: string): Promise<SuperAdminTenantDetail | null> {
+async function fetchTempleDetailForSuperAdmin(
+  tenantId: string,
+): Promise<SuperAdminTenantDetail | null> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
   if (!host) {
@@ -178,10 +234,13 @@ async function fetchTempleDetailForSuperAdmin(tenantId: string): Promise<SuperAd
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
 
-  const res = await fetch(`${protocol}://${host}/api/super-admin/temples/${tenantId}`, {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${protocol}://${host}/api/super-admin/temples/${tenantId}`,
+    {
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      cache: "no-store",
+    },
+  );
 
   if (res.status === 404) return null;
   if (!res.ok) {
@@ -196,7 +255,9 @@ function DetailRow({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="grid gap-1">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="break-words text-foreground">{value || "Not available"}</dd>
+      <dd className="break-words text-foreground">
+        {value || "Not available"}
+      </dd>
     </div>
   );
 }
