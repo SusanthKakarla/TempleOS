@@ -128,6 +128,24 @@ describe("super admin auth boundary", () => {
     );
   });
 
+  it("keeps the super admin dashboard logout on the session API", () => {
+    const pageSource = readFileSync(
+      path.join(process.cwd(), "app/(super-admin)/super-admin/page.tsx"),
+      "utf8",
+    );
+    const buttonSource = readFileSync(
+      path.join(process.cwd(), "features/super-admin/super-admin-sign-out-button.tsx"),
+      "utf8",
+    );
+
+    expect(pageSource).toMatch(/SuperAdminSignOutButton/);
+    expect(pageSource).not.toMatch(/\/super-admin\/logout/);
+    expect(buttonSource).toMatch(/\/api\/super-admin\/auth\/session/);
+    expect(buttonSource).toMatch(/method:\s*"DELETE"/);
+    expect(buttonSource).toMatch(/router\.push\("\/super-admin\/login"\)/);
+    expect(buttonSource).not.toMatch(/\/api\/auth\/session|router\.push\("\/login"\)/);
+  });
+
   it("keeps the super-admin temple detail page behind auth and within active V0 scope", () => {
     const source = readFileSync(
       path.join(process.cwd(), "app/(super-admin)/super-admin/temples/[tenantId]/page.tsx"),

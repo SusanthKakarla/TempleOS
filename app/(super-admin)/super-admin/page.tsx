@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Globe2,
   Landmark,
-  LogOut,
   Plus,
   ShieldCheck,
   UsersRound,
@@ -48,13 +47,7 @@ export default async function SuperAdminPage() {
               <ShieldCheck className="size-4" />
               Role Catalog
             </Button>
-            <Button
-              variant="outline"
-              render={<Link href="/super-admin/logout" />}
-            >
-              <LogOut className="size-4" />
-              Log out
-            </Button>
+            <SuperAdminSignOutButton />
             <Button render={<Link href="/super-admin/temples/new" />}>
               <Plus className="size-4" />
               New Temple
