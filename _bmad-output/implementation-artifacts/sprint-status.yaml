@@ -1,5 +1,5 @@
 # generated: 2026-07-18T17:32:34+0530
-# last_updated: 2026-07-19T09:10:06+0530
+# last_updated: 2026-07-19T09:33:38+0530
 # project: templeOS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -22,6 +22,7 @@
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
+#   - deferred: Story intentionally removed from the active slice for now
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
@@ -41,7 +42,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18T17:32:34+0530
-last_updated: 2026-07-19T09:10:06+0530
+last_updated: 2026-07-19T09:33:38+0530
 project: templeOS
 project_key: NOKEY
 tracking_system: file-system
@@ -69,9 +70,9 @@ development_status:
   3-2-view-temple-detail-for-super-admin: done
   3-3-update-provisioned-temple-details: done
   3-4-govern-fixed-platform-role-definitions: done
-  3-5-assign-tenant-member-roles-as-super-admin: ready-for-dev
-  3-6-show-whatsapp-linkage-status-shell: backlog
-  3-7-super-admin-operations-guardrail-tests: backlog
+  3-5-assign-tenant-member-roles-as-super-admin: done
+  3-6-show-whatsapp-linkage-status-shell: deferred
+  3-7-super-admin-operations-guardrail-tests: ready-for-dev
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-tenant-dashboard-uses-membership-session: backlog

@@ -72,6 +72,20 @@ export const getTenantMembershipById = cache(async function getTenantMembershipB
   return rows[0] ? mapTenantMembership(rows[0]) : null;
 });
 
+export async function getTenantMembershipByTenantAndIdForSuperAdmin(
+  input: { tenantId: string; membershipId: string },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles | null> {
+  const { rows } = await client.query<TenantMembershipRow>(
+    `${membershipWithRolesSelect}
+     WHERE tm.tenant_id = $1 AND tm.id = $2 AND tm.status = 'active'
+     GROUP BY tm.id
+     LIMIT 1`,
+    [input.tenantId, input.membershipId],
+  );
+  return rows[0] ? mapTenantMembership(rows[0]) : null;
+}
+
 export async function createTenantMembershipForProvisioning(
   input: { tenantId: string; personId: string; displayName: string },
   client: QueryClient = getPool(),
@@ -107,5 +121,53 @@ export async function assignTenantMembershipRolesForProvisioning(
   if (missingRoles.length > 0) {
     throw new Error("Provisioning role assignment incomplete.");
   }
+  return membership;
+}
+
+export async function replaceTenantMembershipRolesForSuperAdmin(
+  input: { tenantId: string; membershipId: string; roles: RoleCode[] },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles> {
+  const roles = Array.from(new Set(input.roles));
+  const { rows: lockedRows } = await client.query<{ id: string }>(
+    `SELECT id
+     FROM tenant_memberships
+     WHERE tenant_id = $1 AND id = $2 AND status = 'active'
+     FOR UPDATE`,
+    [input.tenantId, input.membershipId],
+  );
+  if (!lockedRows[0]) {
+    throw new Error("Super-admin role assignment target is not active in the requested tenant.");
+  }
+
+  await client.query("DELETE FROM tenant_membership_roles WHERE membership_id = $1", [
+    input.membershipId,
+  ]);
+
+  if (roles.length > 0) {
+    await client.query(
+      `INSERT INTO tenant_membership_roles (membership_id, role_definition_id)
+       SELECT $1, id
+       FROM role_definitions
+       WHERE active = true AND code = ANY($2::text[])
+       ON CONFLICT DO NOTHING`,
+      [input.membershipId, roles],
+    );
+  }
+
+  const membership = await getTenantMembershipByTenantAndIdForSuperAdmin(
+    { tenantId: input.tenantId, membershipId: input.membershipId },
+    client,
+  );
+  if (!membership) {
+    throw new Error("Super-admin role assignment could not reload the target membership.");
+  }
+
+  const assignedRoles = new Set(membership.roles);
+  const missingRoles = roles.filter((role) => !assignedRoles.has(role));
+  if (missingRoles.length > 0) {
+    throw new Error("Super-admin role assignment incomplete.");
+  }
+
   return membership;
 }

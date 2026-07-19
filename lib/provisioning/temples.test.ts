@@ -31,6 +31,8 @@ vi.mock("@/lib/db/persons", () => ({
 vi.mock("@/lib/db/tenant-memberships", () => ({
   assignTenantMembershipRolesForProvisioning: vi.fn(),
   createTenantMembershipForProvisioning: vi.fn(),
+  getTenantMembershipByTenantAndIdForSuperAdmin: vi.fn(),
+  replaceTenantMembershipRolesForSuperAdmin: vi.fn(),
 }));
 
 vi.mock("@/lib/db/whatsapp-accounts", () => ({
@@ -41,8 +43,17 @@ vi.mock("@/lib/db/audit-log", () => ({
   createAuditLogEntry: vi.fn(),
 }));
 
+vi.mock("@/lib/db/role-definitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/db/role-definitions")>();
+  return {
+    ...actual,
+    listActiveRoleCodesForSuperAdmin: vi.fn(),
+  };
+});
+
 import { normalizeTenantHostname } from "@/lib/tenant-domains";
 import { getPool } from "@/lib/db/pool";
+import { listActiveRoleCodesForSuperAdmin } from "@/lib/db/role-definitions";
 import {
   createTenantForSuperAdmin,
   getTenantDetailForSuperAdmin,
@@ -53,6 +64,8 @@ import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
+  getTenantMembershipByTenantAndIdForSuperAdmin,
+  replaceTenantMembershipRolesForSuperAdmin,
   type TenantMembershipWithRoles,
 } from "@/lib/db/tenant-memberships";
 import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
@@ -62,6 +75,8 @@ import {
   parseProvisionTempleInput,
   PRODUCT_DOMAIN,
   provisionTemple,
+  assignTenantMemberRoles,
+  parseAssignTenantMemberRolesInput,
   parseUpdateProvisionedTempleInput,
   updateProvisionedTemple,
   UpdateProvisionedTempleError,
@@ -187,6 +202,12 @@ beforeEach(() => {
   vi.mocked(findOrCreatePersonByPhoneForProvisioning).mockResolvedValue(createdPerson);
   vi.mocked(createTenantMembershipForProvisioning).mockResolvedValue(createdMembership);
   vi.mocked(assignTenantMembershipRolesForProvisioning).mockResolvedValue(createdMembership);
+  vi.mocked(getTenantMembershipByTenantAndIdForSuperAdmin).mockResolvedValue(createdMembership);
+  vi.mocked(listActiveRoleCodesForSuperAdmin).mockImplementation(async (roles) => Array.from(new Set(roles)));
+  vi.mocked(replaceTenantMembershipRolesForSuperAdmin).mockResolvedValue({
+    ...createdMembership,
+    roles: ["admin", "volunteer"],
+  });
   vi.mocked(linkWhatsAppAccountForProvisioning).mockResolvedValue(linkedWhatsAppAccount);
   vi.mocked(createAuditLogEntry).mockResolvedValue({ id: "audit-1" } as never);
   client.query.mockResolvedValue({ rows: [] });
@@ -849,5 +870,186 @@ describe("canonical provisioned temple update contract", () => {
       updateProvisionedTemple({ tenantId, tenant: { name: "Updated Temple" } }, { ...actor, type: "tenant_member" } as never),
     ).rejects.toMatchObject({ status: 500, code: "TEMPLE_UPDATE_FAILED" });
     expect(updateProvisionedTenantDetailsForSuperAdmin).not.toHaveBeenCalled();
+  });
+});
+
+describe("super-admin tenant member role assignment", () => {
+  const tenantId = "11111111-1111-4111-8111-111111111111";
+  const membershipId = "22222222-2222-4222-8222-222222222222";
+
+  it("parses role assignment input and de-duplicates valid V0 role codes", () => {
+    const result = parseAssignTenantMemberRolesInput(
+      { roles: ["volunteer", "admin", "volunteer"] },
+      tenantId,
+      membershipId,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        tenantId,
+        membershipId,
+        roles: ["volunteer", "admin"],
+      },
+    });
+  });
+
+  it("rejects malformed IDs, missing roles, and unknown role codes", () => {
+    const result = parseAssignTenantMemberRolesInput(
+      { roles: ["admin", "owner"] },
+      "not-a-uuid",
+      "also-not-a-uuid",
+    );
+
+    expect(result).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!result.ok) {
+      expect(result.errors.map((error) => error.path.join("."))).toEqual(
+        expect.arrayContaining(["tenantId", "membershipId", "roles"]),
+      );
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ path: ["roles"], message: "Unknown role code: owner" }),
+      );
+    }
+
+    const missingRoles = parseAssignTenantMemberRolesInput({}, tenantId, membershipId);
+    expect(missingRoles).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+  });
+
+  it("rejects extra role-assignment body fields", () => {
+    const result = parseAssignTenantMemberRolesInput(
+      {
+        roles: ["admin"],
+        tenantId,
+        personId: "person-1",
+        auditActorId: "attacker",
+      },
+      tenantId,
+      membershipId,
+    );
+
+    expect(result).toMatchObject({ ok: false, status: 400, code: "VALIDATION_ERROR" });
+    if (!result.ok) {
+      expect(result.errors.map((error) => error.path.join("."))).toContain("roles");
+    }
+  });
+
+  it("replaces tenant-scoped member roles and writes audit metadata inside one transaction", async () => {
+    const previousMembership: TenantMembershipWithRoles = {
+      ...createdMembership,
+      id: membershipId,
+      tenantId,
+      roles: ["admin", "priest"],
+    };
+    const updatedMembership: TenantMembershipWithRoles = {
+      ...createdMembership,
+      id: membershipId,
+      tenantId,
+      roles: ["admin", "volunteer"],
+    };
+    vi.mocked(getTenantMembershipByTenantAndIdForSuperAdmin).mockResolvedValueOnce(previousMembership);
+    vi.mocked(replaceTenantMembershipRolesForSuperAdmin).mockResolvedValueOnce(updatedMembership);
+    vi.mocked(getTenantDetailForSuperAdmin).mockResolvedValueOnce({
+      tenant: { ...createdTenant, id: tenantId },
+      domain: createdDomain,
+      members: [{ ...updatedMembership, phoneNumber: createdPerson.phoneNumber }],
+      whatsappAccount: linkedWhatsAppAccount,
+    });
+
+    const result = await assignTenantMemberRoles(
+      { tenantId, membershipId, roles: ["admin", "volunteer", "admin"] },
+      actor,
+    );
+
+    expect(client.query).toHaveBeenNthCalledWith(1, "BEGIN");
+    expect(getTenantMembershipByTenantAndIdForSuperAdmin).toHaveBeenCalledWith(
+      { tenantId, membershipId },
+      client,
+    );
+    expect(replaceTenantMembershipRolesForSuperAdmin).toHaveBeenCalledWith(
+      { tenantId, membershipId, roles: ["admin", "volunteer"] },
+      client,
+    );
+    expect(createAuditLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: "super_admin",
+        actorId: "super-admin-1",
+        tenantId,
+        action: "tenant_member.roles_assigned",
+        targetType: "tenant_membership",
+        targetId: membershipId,
+        metadata: {
+          assignedRoles: ["volunteer"],
+          removedRoles: ["priest"],
+          roles: ["admin", "volunteer"],
+        },
+      }),
+      client,
+    );
+    expect(getTenantDetailForSuperAdmin).toHaveBeenCalledWith(tenantId, client);
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(result.members[0]).toMatchObject({ id: membershipId, tenantId, roles: ["admin", "volunteer"] });
+  });
+
+  it("returns a stable not-found error for cross-tenant or inactive memberships without role writes", async () => {
+    vi.mocked(getTenantMembershipByTenantAndIdForSuperAdmin).mockResolvedValueOnce(null);
+
+    await expect(
+      assignTenantMemberRoles({ tenantId, membershipId, roles: ["admin"] }, actor),
+    ).rejects.toMatchObject({ status: 404, code: "MEMBER_NOT_FOUND" });
+
+    expect(replaceTenantMembershipRolesForSuperAdmin).not.toHaveBeenCalled();
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("returns validation errors before opening a transaction for unknown role codes", async () => {
+    await expect(
+      assignTenantMemberRoles({ tenantId, membershipId, roles: ["owner" as never] }, actor),
+    ).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+
+    expect(getPool).not.toHaveBeenCalled();
+    expect(replaceTenantMembershipRolesForSuperAdmin).not.toHaveBeenCalled();
+  });
+
+  it("rejects inactive database role definitions before replacement or audit writes", async () => {
+    vi.mocked(listActiveRoleCodesForSuperAdmin).mockResolvedValueOnce(["admin"]);
+
+    await expect(
+      assignTenantMemberRoles({ tenantId, membershipId, roles: ["admin", "priest"] }, actor),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION_ERROR",
+      errors: [{ path: ["roles"], message: "Inactive role code: priest" }],
+    });
+
+    expect(listActiveRoleCodesForSuperAdmin).toHaveBeenCalledWith(["admin", "priest"], client);
+    expect(replaceTenantMembershipRolesForSuperAdmin).not.toHaveBeenCalled();
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+  });
+
+  it("rolls back when audit logging fails after role replacement", async () => {
+    vi.mocked(createAuditLogEntry).mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(
+      assignTenantMemberRoles({ tenantId, membershipId, roles: ["admin", "volunteer"] }, actor),
+    ).rejects.toMatchObject({ status: 500, code: "ROLE_ASSIGNMENT_FAILED" });
+
+    expect(replaceTenantMembershipRolesForSuperAdmin).toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it("requires a super-admin actor for role assignment", async () => {
+    await expect(
+      assignTenantMemberRoles(
+        { tenantId, membershipId, roles: ["admin"] },
+        { ...actor, type: "tenant_member" } as never,
+      ),
+    ).rejects.toMatchObject({ status: 500, code: "ROLE_ASSIGNMENT_FAILED" });
+
+    expect(getTenantMembershipByTenantAndIdForSuperAdmin).not.toHaveBeenCalled();
   });
 });

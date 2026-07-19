@@ -1,4 +1,5 @@
 import { getPool } from "./pool";
+import type { QueryClient } from "./query-client";
 import type { RoleCode, RoleDefinition } from "@/types/db";
 
 interface RoleDefinitionRow {
@@ -128,6 +129,23 @@ export async function listRoleDefinitionsForSuperAdmin(): Promise<RoleDefinition
 
   assertCompleteV0RoleCatalog(roles);
   return roles;
+}
+
+export async function listActiveRoleCodesForSuperAdmin(
+  roleCodes: RoleCode[],
+  client: QueryClient = getPool(),
+): Promise<RoleCode[]> {
+  const uniqueRoleCodes = Array.from(new Set(roleCodes));
+  if (uniqueRoleCodes.length === 0) return [];
+
+  const { rows } = await client.query<{ code: RoleCode }>(
+    `SELECT code
+     FROM role_definitions
+     WHERE active = true AND code = ANY($1::text[])`,
+    [uniqueRoleCodes],
+  );
+
+  return rows.map((row) => row.code);
 }
 
 function assertCompleteV0RoleCatalog(roles: RoleDefinition[]): void {

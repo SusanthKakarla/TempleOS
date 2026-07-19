@@ -3,6 +3,8 @@ import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import {
   assignTenantMembershipRolesForProvisioning,
+  getTenantMembershipByTenantAndIdForSuperAdmin,
+  replaceTenantMembershipRolesForSuperAdmin,
   findActiveTenantMembershipByPersonAndTenant,
   getTenantMembershipById,
 } from "./tenant-memberships";
@@ -87,5 +89,105 @@ describe("tenant memberships repository", () => {
         { query },
       ),
     ).rejects.toThrow("Provisioning role assignment incomplete.");
+  });
+
+  it("gets an active membership by tenant and id for super-admin scoped mutations", async () => {
+    query.mockResolvedValueOnce({ rows: [row] });
+
+    const result = await getTenantMembershipByTenantAndIdForSuperAdmin(
+      { tenantId: "tenant-1", membershipId: "membership-1" },
+      { query },
+    );
+
+    expect(result?.tenantId).toBe("tenant-1");
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE tm.tenant_id = $1 AND tm.id = $2 AND tm.status = 'active'"),
+      ["tenant-1", "membership-1"],
+    );
+  });
+
+  it("returns null for cross-tenant super-admin membership targets", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      getTenantMembershipByTenantAndIdForSuperAdmin(
+        { tenantId: "tenant-1", membershipId: "membership-from-tenant-2" },
+        { query },
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("replaces one membership's roles with active role definitions only", async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: "membership-1" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 2 })
+      .mockResolvedValueOnce({ rows: [{ ...row, role_codes: ["admin", "volunteer"] }] });
+
+    const result = await replaceTenantMembershipRolesForSuperAdmin(
+      { tenantId: "tenant-1", membershipId: "membership-1", roles: ["admin", "volunteer"] },
+      { query },
+    );
+
+    expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining("FOR UPDATE"), [
+      "tenant-1",
+      "membership-1",
+    ]);
+    expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining("DELETE FROM tenant_membership_roles"), [
+      "membership-1",
+    ]);
+    expect(query).toHaveBeenNthCalledWith(3, expect.stringContaining("WHERE active = true AND code = ANY($2::text[])"), [
+      "membership-1",
+      ["admin", "volunteer"],
+    ]);
+    expect(result.roles).toEqual(["admin", "volunteer"]);
+  });
+
+  it("does not replace roles when the membership is inactive or outside the tenant", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      replaceTenantMembershipRolesForSuperAdmin(
+        { tenantId: "tenant-1", membershipId: "membership-from-tenant-2", roles: ["admin"] },
+        { query },
+      ),
+    ).rejects.toThrow("Super-admin role assignment target is not active in the requested tenant.");
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("FOR UPDATE"), [
+      "tenant-1",
+      "membership-from-tenant-2",
+    ]);
+  });
+
+  it("fails replacement when a requested role is inactive or missing", async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: "membership-1" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{ ...row, role_codes: ["admin"] }] });
+
+    await expect(
+      replaceTenantMembershipRolesForSuperAdmin(
+        { tenantId: "tenant-1", membershipId: "membership-1", roles: ["admin", "priest"] },
+        { query },
+      ),
+    ).rejects.toThrow("Super-admin role assignment incomplete.");
+  });
+
+  it("treats duplicate replacement role codes as idempotent", async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: "membership-1" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{ ...row, role_codes: ["admin"] }] });
+
+    const result = await replaceTenantMembershipRolesForSuperAdmin(
+      { tenantId: "tenant-1", membershipId: "membership-1", roles: ["admin", "admin"] },
+      { query },
+    );
+
+    expect(query).toHaveBeenNthCalledWith(3, expect.any(String), ["membership-1", ["admin"]]);
+    expect(result.roles).toEqual(["admin"]);
   });
 });

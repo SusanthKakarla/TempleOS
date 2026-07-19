@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getPool } from "@/lib/db/pool";
-import { V0_ROLE_DEFINITIONS } from "@/lib/db/role-definitions";
+import { listActiveRoleCodesForSuperAdmin, V0_ROLE_DEFINITIONS } from "@/lib/db/role-definitions";
 import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
+  getTenantMembershipByTenantAndIdForSuperAdmin,
+  replaceTenantMembershipRolesForSuperAdmin,
 } from "@/lib/db/tenant-memberships";
 import {
   createTenantForSuperAdmin,
@@ -87,6 +89,12 @@ export interface UpdateProvisionedTempleInput {
   }>;
 }
 
+export interface AssignTenantMemberRolesInput {
+  tenantId: string;
+  membershipId: string;
+  roles: RoleCode[];
+}
+
 export interface ProvisionTempleValidationIssue {
   path: string[];
   message: string;
@@ -103,6 +111,15 @@ export type ProvisionTempleValidationResult =
 
 export type UpdateProvisionedTempleValidationResult =
   | { ok: true; data: UpdateProvisionedTempleInput }
+  | {
+      ok: false;
+      status: 400;
+      code: "VALIDATION_ERROR";
+      errors: ProvisionTempleValidationIssue[];
+    };
+
+export type AssignTenantMemberRolesValidationResult =
+  | { ok: true; data: AssignTenantMemberRolesInput }
   | {
       ok: false;
       status: 400;
@@ -131,6 +148,18 @@ export class UpdateProvisionedTempleError extends Error {
   ) {
     super(message);
     this.name = "UpdateProvisionedTempleError";
+  }
+}
+
+export class AssignTenantMemberRolesError extends Error {
+  constructor(
+    message: string,
+    public readonly status: 400 | 404 | 500,
+    public readonly code: "VALIDATION_ERROR" | "MEMBER_NOT_FOUND" | "ROLE_ASSIGNMENT_FAILED",
+    public readonly errors: ProvisionTempleValidationIssue[] = [],
+  ) {
+    super(message);
+    this.name = "AssignTenantMemberRolesError";
   }
 }
 
@@ -187,6 +216,14 @@ const rawUpdateProvisionedTempleSchema = z.object({
     .optional(),
 });
 
+const rawAssignTenantMemberRolesSchema = z
+  .object({
+    roles: z.array(z.string(), "Roles are required."),
+  })
+  .strict();
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidationResult {
   const parsed = rawProvisionTempleSchema.safeParse(raw);
   if (!parsed.success) {
@@ -242,7 +279,10 @@ export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidati
       )
     : null;
 
-  const roles = normalizeRoleCodes(parsed.data.firstMember.roles, issues);
+  const roles = normalizeRoleCodes(parsed.data.firstMember.roles, issues, {
+    path: ["firstMember", "roles"],
+    requireAdmin: true,
+  });
 
   if (issues.length > 0 || !tenantSlug || !subdomain || !hostname || !firstMemberPhone) {
     return validationError(issues);
@@ -321,6 +361,46 @@ export function parseUpdateProvisionedTempleInput(
     data: {
       tenantId,
       tenant: safeTenant,
+    },
+  };
+}
+
+export function parseAssignTenantMemberRolesInput(
+  raw: unknown,
+  tenantId: string,
+  membershipId: string,
+): AssignTenantMemberRolesValidationResult {
+  const issues: ProvisionTempleValidationIssue[] = [];
+  if (!uuidPattern.test(tenantId)) {
+    issues.push({ path: ["tenantId"], message: "Invalid tenant ID." });
+  }
+  if (!uuidPattern.test(membershipId)) {
+    issues.push({ path: ["membershipId"], message: "Invalid member ID." });
+  }
+
+  const parsed = rawAssignTenantMemberRolesSchema.safeParse(raw);
+  if (!parsed.success) {
+    issues.push(
+      ...parsed.error.issues.map((issue) => ({
+        path: issue.path.length > 0 ? issue.path.map(String) : ["roles"],
+        message: issue.message,
+      })),
+    );
+  }
+
+  const roles = parsed.success
+    ? normalizeRoleCodes(parsed.data.roles, issues, { path: ["roles"], requireAdmin: false })
+    : [];
+  if (issues.length > 0 || !parsed.success) {
+    return validationError(issues);
+  }
+
+  return {
+    ok: true,
+    data: {
+      tenantId,
+      membershipId,
+      roles,
     },
   };
 }
@@ -487,6 +567,114 @@ export async function updateProvisionedTemple(
   }
 }
 
+export async function assignTenantMemberRoles(
+  input: AssignTenantMemberRolesInput,
+  actor: ProvisionTempleActor,
+): Promise<SuperAdminTenantDetail> {
+  const parsed = parseAssignTenantMemberRolesInput(
+    { roles: input.roles },
+    input.tenantId,
+    input.membershipId,
+  );
+  if (!parsed.ok) {
+    throw new AssignTenantMemberRolesError(
+      "Role assignment input is invalid.",
+      400,
+      "VALIDATION_ERROR",
+      parsed.errors,
+    );
+  }
+
+  if (actor.type !== "super_admin" || !actor.superAdminId) {
+    throw new AssignTenantMemberRolesError(
+      "Super admin actor is required for role assignment.",
+      500,
+      "ROLE_ASSIGNMENT_FAILED",
+    );
+  }
+
+  const canonicalInput = parsed.data;
+  const client = await getPool().connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const currentMembership = await getTenantMembershipByTenantAndIdForSuperAdmin(
+      {
+        tenantId: canonicalInput.tenantId,
+        membershipId: canonicalInput.membershipId,
+      },
+      client,
+    );
+    if (!currentMembership) {
+      throw new AssignTenantMemberRolesError("Member not found.", 404, "MEMBER_NOT_FOUND");
+    }
+
+    const activeRoleCodes = new Set(
+      await listActiveRoleCodesForSuperAdmin(canonicalInput.roles, client),
+    );
+    const inactiveRoles = canonicalInput.roles.filter((role) => !activeRoleCodes.has(role));
+    if (inactiveRoles.length > 0) {
+      throw new AssignTenantMemberRolesError(
+        "Role assignment input is invalid.",
+        400,
+        "VALIDATION_ERROR",
+        inactiveRoles.map((role) => ({
+          path: ["roles"],
+          message: `Inactive role code: ${role}`,
+        })),
+      );
+    }
+
+    const updatedMembership = await replaceTenantMembershipRolesForSuperAdmin(
+      {
+        tenantId: canonicalInput.tenantId,
+        membershipId: canonicalInput.membershipId,
+        roles: canonicalInput.roles,
+      },
+      client,
+    );
+    const previousRoles = new Set(currentMembership.roles);
+    const nextRoles = new Set(updatedMembership.roles);
+    const assignedRoles = updatedMembership.roles.filter((role) => !previousRoles.has(role));
+    const removedRoles = currentMembership.roles.filter((role) => !nextRoles.has(role));
+
+    await createAuditLogEntry(
+      {
+        actorType: "super_admin",
+        actorId: actor.superAdminId,
+        tenantId: canonicalInput.tenantId,
+        action: "tenant_member.roles_assigned",
+        targetType: "tenant_membership",
+        targetId: canonicalInput.membershipId,
+        metadata: {
+          assignedRoles,
+          removedRoles,
+          roles: updatedMembership.roles,
+        },
+      },
+      client,
+    );
+
+    const detail = await getTenantDetailForSuperAdmin(canonicalInput.tenantId, client);
+    if (!detail) {
+      throw new AssignTenantMemberRolesError("Member not found.", 404, "MEMBER_NOT_FOUND");
+    }
+
+    await client.query("COMMIT");
+    return detail;
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original stable role-assignment error for callers.
+    }
+    throw toAssignTenantMemberRolesError(err);
+  } finally {
+    client.release();
+  }
+}
+
 type SafeProvisionedTenantField = keyof UpdateProvisionedTempleInput["tenant"];
 
 const safeProvisionedTenantFields: SafeProvisionedTenantField[] = [
@@ -592,22 +780,23 @@ function normalizeRequiredPhone(
 function normalizeRoleCodes(
   rawRoles: string[],
   issues: ProvisionTempleValidationIssue[],
+  options: { path: string[]; requireAdmin: boolean },
 ): RoleCode[] {
   const roles: RoleCode[] = [];
   for (const role of rawRoles) {
     if (!isRoleCode(role)) {
-      issues.push({ path: ["firstMember", "roles"], message: `Unknown role code: ${role}` });
+      issues.push({ path: options.path, message: `Unknown role code: ${role}` });
       continue;
     }
     if (!ACTIVE_V0_ROLE_CODES.has(role)) {
-      issues.push({ path: ["firstMember", "roles"], message: `Inactive role code: ${role}` });
+      issues.push({ path: options.path, message: `Inactive role code: ${role}` });
       continue;
     }
     if (!roles.includes(role)) roles.push(role);
   }
 
-  if (!roles.includes("admin")) {
-    issues.push({ path: ["firstMember", "roles"], message: "First member roles must include admin." });
+  if (options.requireAdmin && !roles.includes("admin")) {
+    issues.push({ path: options.path, message: "First member roles must include admin." });
   }
 
   return roles;
@@ -642,6 +831,15 @@ function toProvisionTempleError(err: unknown): ProvisionTempleError {
 function toUpdateProvisionedTempleError(err: unknown): UpdateProvisionedTempleError {
   if (err instanceof UpdateProvisionedTempleError) return err;
   return new UpdateProvisionedTempleError("Temple update failed.", 500, "TEMPLE_UPDATE_FAILED");
+}
+
+function toAssignTenantMemberRolesError(err: unknown): AssignTenantMemberRolesError {
+  if (err instanceof AssignTenantMemberRolesError) return err;
+  return new AssignTenantMemberRolesError(
+    "Role assignment failed.",
+    500,
+    "ROLE_ASSIGNMENT_FAILED",
+  );
 }
 
 function isUniqueViolation(err: unknown): boolean {

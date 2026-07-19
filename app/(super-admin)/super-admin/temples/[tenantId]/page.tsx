@@ -21,21 +21,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
+import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
+import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
-import type { RoleCode } from "@/types/db";
 import { requireSuperAdminPage } from "../../require-super-admin";
 
 interface TempleDetailPageProps {
   params: Promise<{ tenantId: string }>;
 }
-
-const roleLabels: Record<RoleCode, string> = {
-  admin: "Admin",
-  priest: "Priest",
-  committee_member: "Committee",
-  volunteer: "Volunteer",
-  devotee: "Devotee",
-};
 
 export default async function SuperAdminTempleDetailPage({ params }: TempleDetailPageProps) {
   const { tenantId } = await params;
@@ -45,6 +38,7 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
   if (!temple) {
     notFound();
   }
+  const roles = (await listRoleDefinitionsForSuperAdmin()).filter((role) => role.active);
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
@@ -155,17 +149,18 @@ export default async function SuperAdminTempleDetailPage({ params }: TempleDetai
                     </TableCell>
                     <TableCell>{member.phoneNumber}</TableCell>
                     <TableCell>
-                      <div className="flex min-w-56 flex-wrap gap-1">
+                      <div className="mb-3 flex min-w-56 flex-wrap gap-1">
                         {member.roles.length > 0 ? (
                           member.roles.map((role) => (
                             <Badge key={role} variant={role === "admin" ? "secondary" : "outline"}>
-                              {roleLabels[role]}
+                              {roles.find((item) => item.code === role)?.displayName ?? role}
                             </Badge>
                           ))
                         ) : (
                           <Badge variant="outline">No roles</Badge>
                         )}
                       </div>
+                      <MemberRoleEditor tenantId={temple.tenant.id} member={member} roles={roles} />
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatTimestamp(member.updatedAt)}

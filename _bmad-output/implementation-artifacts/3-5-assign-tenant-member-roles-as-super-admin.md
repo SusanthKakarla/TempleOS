@@ -6,7 +6,7 @@ story_generation_note: "Created from bmad-create-story through Amelia for explic
 
 # Story 3.5: Assign Tenant Member Roles As Super Admin
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,51 +26,58 @@ so that first setup and support corrections can be handled centrally.
 
 ## Tasks / Subtasks
 
-- [ ] Add validated role-assignment service input and stable errors. (AC: 1, 3, 5)
-  - [ ] Extend `lib/provisioning/temples.ts` with `parseAssignTenantMemberRolesInput()` or equivalent, accepting only `{ roles: RoleCode[] }` plus server-derived `tenantId` and `membershipId`.
-  - [ ] Add `AssignTenantMemberRolesError` with stable statuses/codes for validation, not found, conflict, and generic failure.
-  - [ ] Reject malformed UUIDs, invalid JSON, missing `roles`, duplicate role codes if the product chooses that as invalid, unknown role codes, and inactive role definitions before any assignment write.
-  - [ ] Keep allowed roles to active V0 `RoleCode` values from `role_definitions`; display labels must never authorize or validate a request.
+- [x] Add validated role-assignment service input and stable errors. (AC: 1, 3, 5)
+  - [x] Extend `lib/provisioning/temples.ts` with `parseAssignTenantMemberRolesInput()` or equivalent, accepting only `{ roles: RoleCode[] }` plus server-derived `tenantId` and `membershipId`.
+  - [x] Add `AssignTenantMemberRolesError` with stable statuses/codes for validation, not found, conflict, and generic failure.
+  - [x] Reject malformed UUIDs, invalid JSON, missing `roles`, duplicate role codes if the product chooses that as invalid, unknown role codes, and inactive role definitions before any assignment write.
+  - [x] Keep allowed roles to active V0 `RoleCode` values from `role_definitions`; display labels must never authorize or validate a request.
 
-- [ ] Implement transactional role replacement behind the canonical service boundary. (AC: 1, 2, 3, 5)
-  - [ ] Add `assignTenantMemberRoles(input, actor)` to `lib/provisioning/temples.ts`.
-  - [ ] Require `actor.type === "super_admin"` and `actor.superAdminId`; tenant-member actors must be rejected even if they have `admin`.
-  - [ ] Open one `pg` transaction client in the service, not in the route.
-  - [ ] Load the target active membership by both `tenantId` and `membershipId`; missing, inactive, or cross-tenant memberships return `404`/stable not-found without leaking another tenant.
-  - [ ] Replace `tenant_membership_roles` for that one `membershipId` only; do not update roles by `personId`.
-  - [ ] Verify every requested active role was assigned before commit; if not, rollback and return validation/failure without partial role state.
-  - [ ] Write `audit_log` in the same transaction with action such as `tenant_member.roles_assigned`, `actorType: "super_admin"`, `actorId`, `tenantId`, `targetType: "tenant_membership"`, `targetId: membershipId`, and metadata containing `assignedRoles` and `removedRoles`.
-  - [ ] Reload and return `getTenantDetailForSuperAdmin(tenantId, client)` or an explicit membership result whose `tenantId` is visible in the response.
+- [x] Implement transactional role replacement behind the canonical service boundary. (AC: 1, 2, 3, 5)
+  - [x] Add `assignTenantMemberRoles(input, actor)` to `lib/provisioning/temples.ts`.
+  - [x] Require `actor.type === "super_admin"` and `actor.superAdminId`; tenant-member actors must be rejected even if they have `admin`.
+  - [x] Open one `pg` transaction client in the service, not in the route.
+  - [x] Load the target active membership by both `tenantId` and `membershipId`; missing, inactive, or cross-tenant memberships return `404`/stable not-found without leaking another tenant.
+  - [x] Replace `tenant_membership_roles` for that one `membershipId` only; do not update roles by `personId`.
+  - [x] Verify every requested active role was assigned before commit; if not, rollback and return validation/failure without partial role state.
+  - [x] Write `audit_log` in the same transaction with action such as `tenant_member.roles_assigned`, `actorType: "super_admin"`, `actorId`, `tenantId`, `targetType: "tenant_membership"`, `targetId: membershipId`, and metadata containing `assignedRoles` and `removedRoles`.
+  - [x] Reload and return `getTenantDetailForSuperAdmin(tenantId, client)` or an explicit membership result whose `tenantId` is visible in the response.
 
-- [ ] Extend repository helpers without creating tenant-dashboard shortcuts. (AC: 1, 2, 3)
-  - [ ] Extend `lib/db/tenant-memberships.ts` with super-admin-safe helpers such as `getTenantMembershipByTenantAndId()` and `replaceTenantMembershipRolesForSuperAdmin()` or service-private repository operations.
-  - [ ] Preserve `assignTenantMembershipRolesForProvisioning()` for provisioning; do not broaden it into a generic route helper unless it remains safe for provisioning semantics.
-  - [ ] Cover cross-tenant safety: a membership ID from Tenant B must not be found or changed when the route path uses Tenant A.
-  - [ ] Add the Epic 2 deferred duplicate-conflict test in this scope. The expected behavior should be idempotent replacement or a stable conflict mapping, but never partial assignment.
+- [x] Extend repository helpers without creating tenant-dashboard shortcuts. (AC: 1, 2, 3)
+  - [x] Extend `lib/db/tenant-memberships.ts` with super-admin-safe helpers such as `getTenantMembershipByTenantAndId()` and `replaceTenantMembershipRolesForSuperAdmin()` or service-private repository operations.
+  - [x] Preserve `assignTenantMembershipRolesForProvisioning()` for provisioning; do not broaden it into a generic route helper unless it remains safe for provisioning semantics.
+  - [x] Cover cross-tenant safety: a membership ID from Tenant B must not be found or changed when the route path uses Tenant A.
+  - [x] Add the Epic 2 deferred duplicate-conflict test in this scope. The expected behavior should be idempotent replacement or a stable conflict mapping, but never partial assignment.
 
-- [ ] Add the protected Super Admin roles route. (AC: 1, 3, 4, 5)
-  - [ ] Add `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.ts` with `PUT`.
-  - [ ] Authenticate with `requireSuperAdmin()` before parsing the body, matching existing Super Admin route discipline.
-  - [ ] Reuse the tenant-session cookie check from existing Super Admin routes so tenant-admin-only callers receive `403` and unauthenticated callers receive `401`.
-  - [ ] Validate route params as UUIDs and return leak-safe `404` for malformed or missing targets.
-  - [ ] Return stable JSON responses: success `{ temple }` or `{ member }`, `400 VALIDATION_ERROR`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 MEMBER_NOT_FOUND`, and leak-safe `500 ROLE_ASSIGNMENT_FAILED`.
-  - [ ] Do not accept `tenantId`, `personId`, `displayName`, capability sets, custom role codes, role labels, audit fields, or actor IDs from the request body.
+- [x] Add the protected Super Admin roles route. (AC: 1, 3, 4, 5)
+  - [x] Add `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.ts` with `PUT`.
+  - [x] Authenticate with `requireSuperAdmin()` before parsing the body, matching existing Super Admin route discipline.
+  - [x] Reuse the tenant-session cookie check from existing Super Admin routes so tenant-admin-only callers receive `403` and unauthenticated callers receive `401`.
+  - [x] Validate route params as UUIDs and return leak-safe `404` for malformed or missing targets.
+  - [x] Return stable JSON responses: success `{ temple }` or `{ member }`, `400 VALIDATION_ERROR`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 MEMBER_NOT_FOUND`, and leak-safe `500 ROLE_ASSIGNMENT_FAILED`.
+  - [x] Do not accept `tenantId`, `personId`, `displayName`, capability sets, custom role codes, role labels, audit fields, or actor IDs from the request body.
 
-- [ ] Add visible Super Admin UI for member role correction. (AC: 1, 2, 3, 5)
-  - [ ] Update `app/(super-admin)/super-admin/temples/[tenantId]/page.tsx` or a focused component under `features/super-admin/` so each active member can edit roles from the existing detail page.
-  - [ ] Load the fixed V0 role catalog from the existing protected role API or server-side equivalent; show only active allowed roles.
-  - [ ] Use checkboxes/toggles or a compact multi-select pattern; include saving, saved, validation-error, and failed states without layout shift.
-  - [ ] Make the target tenant/member context visible during save, especially after success.
-  - [ ] Refresh the temple detail after success so changed roles are visible and live tenant authorization can observe the next guarded request.
-  - [ ] Do not add member creation, membership deactivation, tenant-local custom role creation, capability editing, WhatsApp management, impersonation, deletion, transfer, billing, public onboarding, or data export.
+- [x] Add visible Super Admin UI for member role correction. (AC: 1, 2, 3, 5)
+  - [x] Update `app/(super-admin)/super-admin/temples/[tenantId]/page.tsx` or a focused component under `features/super-admin/` so each active member can edit roles from the existing detail page.
+  - [x] Load the fixed V0 role catalog from the existing protected role API or server-side equivalent; show only active allowed roles.
+  - [x] Use checkboxes/toggles or a compact multi-select pattern; include saving, saved, validation-error, and failed states without layout shift.
+  - [x] Make the target tenant/member context visible during save, especially after success.
+  - [x] Refresh the temple detail after success so changed roles are visible and live tenant authorization can observe the next guarded request.
+  - [x] Do not add member creation, membership deactivation, tenant-local custom role creation, capability editing, WhatsApp management, impersonation, deletion, transfer, billing, public onboarding, or data export.
 
-- [ ] Verify Story 3.5. (AC: 1, 2, 3, 4, 5)
-  - [ ] Add focused service tests in `lib/provisioning/temples.test.ts` for success, cross-tenant miss, inactive/unknown role rejection, rollback on audit failure, and actor rejection.
-  - [ ] Add focused repository tests in `lib/db/tenant-memberships.test.ts` for active role validation/replacement and cross-tenant targeting.
-  - [ ] Add route tests in `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.test.ts` for `200`, `400`, `401`, `403`, `404`, and leak-safe `500`.
-  - [ ] Update `app/api/super-admin/auth-boundary.test.ts` so tenant dashboard code cannot import super-admin member-role helpers and the new route stays under `app/api/super-admin/**`.
-  - [ ] Add page/component tests only if existing test patterns support them; otherwise keep route/service/static tests as the acceptance gate.
-  - [ ] Run focused tests, then `npm run test`, `npm run typecheck`, `npm run lint`, and `git diff --check`.
+- [x] Verify Story 3.5. (AC: 1, 2, 3, 4, 5)
+  - [x] Add focused service tests in `lib/provisioning/temples.test.ts` for success, cross-tenant miss, inactive/unknown role rejection, rollback on audit failure, and actor rejection.
+  - [x] Add focused repository tests in `lib/db/tenant-memberships.test.ts` for active role validation/replacement and cross-tenant targeting.
+  - [x] Add route tests in `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.test.ts` for `200`, `400`, `401`, `403`, `404`, and leak-safe `500`.
+  - [x] Update `app/api/super-admin/auth-boundary.test.ts` so tenant dashboard code cannot import super-admin member-role helpers and the new route stays under `app/api/super-admin/**`.
+  - [x] Add page/component tests only if existing test patterns support them; otherwise keep route/service/static tests as the acceptance gate.
+  - [x] Run focused tests, then `npm run test`, `npm run typecheck`, `npm run lint`, and `git diff --check`.
+
+### Review Findings
+
+- [x] [Review][Patch] Reject extra role-assignment body fields [lib/provisioning/temples.ts:219]
+- [x] [Review][Patch] Validate active DB role definitions before replacement writes [lib/provisioning/temples.ts:611]
+- [x] [Review][Patch] Return leak-safe not-found for malformed route IDs [app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.ts:43]
+- [x] [Review][Patch] Guard role replacement by tenant and active membership at the write boundary [lib/db/tenant-memberships.ts:127]
 
 ## Dev Notes
 
@@ -219,6 +226,37 @@ GPT-5 Codex
 
 ### Debug Log References
 
+- RED: `npm run test -- lib/provisioning/temples.test.ts lib/db/tenant-memberships.test.ts 'app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.test.ts' features/super-admin/member-role-editor-helpers.test.ts app/api/super-admin/auth-boundary.test.ts` failed with missing repository helpers, service exports, route file, and UI helper file.
+- Focused GREEN: `npm run test -- lib/provisioning/temples.test.ts lib/db/tenant-memberships.test.ts 'app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.test.ts' features/super-admin/member-role-editor-helpers.test.ts app/api/super-admin/auth-boundary.test.ts` - passed, 5 files / 65 tests.
+- Typecheck cleanup: `npm run typecheck` initially failed on readonly/string role fixture types in `lib/provisioning/temples.test.ts`; fixed with explicit `TenantMembershipWithRoles` fixtures.
+- Full regression: `npm run test` - passed, 46 files / 362 tests.
+- Final verification: `npm run typecheck` - passed.
+- Final verification: `npm run lint` - passed.
+- Final verification: `git diff --check` - passed.
+
 ### Completion Notes List
 
+- Added tenant-scoped super-admin member role replacement through `assignTenantMemberRoles()` in `lib/provisioning/temples.ts`, including validation, stable errors, transaction handling, audit metadata, and rollback on audit/write failures.
+- Added repository helpers in `lib/db/tenant-memberships.ts` for active `tenantId + membershipId` lookup and role replacement against active role definitions only.
+- Added protected `PUT /api/super-admin/temples/[tenantId]/members/[membershipId]/roles` with stable `400`/`401`/`403`/`404`/`500` responses and auth-before-body parsing.
+- Added visible Super Admin member role editing on the temple detail page with active V0 role checkboxes, save/error/saved states, duplicate-submit guard, and refresh after success.
+- Added focused repository, service, route, UI-helper, and static-boundary coverage for cross-tenant isolation, invalid roles, audit rollback, and tenant-admin denial.
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/3-5-assign-tenant-member-roles-as-super-admin.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `app/(super-admin)/super-admin/temples/[tenantId]/page.tsx`
+- `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.test.ts`
+- `app/api/super-admin/temples/[tenantId]/members/[membershipId]/roles/route.ts`
+- `features/super-admin/member-role-editor-helpers.test.ts`
+- `features/super-admin/member-role-editor-helpers.ts`
+- `features/super-admin/member-role-editor.tsx`
+- `lib/db/tenant-memberships.test.ts`
+- `lib/db/tenant-memberships.ts`
+- `lib/provisioning/temples.test.ts`
+- `lib/provisioning/temples.ts`
+
+### Change Log
+
+- 2026-07-19: Implemented Story 3.5 super-admin tenant member role assignment and moved story to review.
