@@ -25,6 +25,16 @@ describe("Story 1.2 production bootstrap scripts", () => {
     expect(pkg.scripts["seed:super-admin"]).toBe("node scripts/seed-super-admin.mjs");
   });
 
+  it("exposes a narrow stale Firebase binding reset command", () => {
+    const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
+    const source = read("scripts/clear-person-firebase-uid.mts");
+
+    expect(pkg.scripts["auth:clear-firebase"]).toBe("tsx scripts/clear-person-firebase-uid.mts");
+    expect(source).toContain("clearPersonFirebaseUidByPhone");
+    expect(source).toContain("--phone");
+    expect(source).not.toMatch(/tenant_memberships|tenant_membership_roles|super_admins/i);
+  });
+
   it("keeps production seed paths off admin_users and getPilotTenant", () => {
     for (const file of ["scripts/seed.mts", "scripts/seed-super-admin.mjs"]) {
       const source = read(file);

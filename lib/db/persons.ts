@@ -82,6 +82,21 @@ export async function bindPersonFirebaseUid(personId: string, firebaseUid: strin
   }
 }
 
+export async function clearPersonFirebaseUidByPhone(phoneNumber: string): Promise<Person | null> {
+  const normalized = normalizePhoneNumber(phoneNumber);
+  if (!normalized) return null;
+
+  const { rows } = await getPool().query<PersonRow>(
+    `UPDATE persons
+     SET firebase_uid = NULL,
+         updated_at = now()
+     WHERE phone_number = $1
+     RETURNING *`,
+    [normalized],
+  );
+  return rows[0] ? mapPerson(rows[0]) : null;
+}
+
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
 }

@@ -377,7 +377,7 @@ describe("identity and session isolation guardrails", () => {
     expect(getActiveTenantDomainByHostname).not.toHaveBeenCalled();
     expect(setSessionCookie).not.toHaveBeenCalled();
     expect(devLog).toHaveBeenCalledWith(
-      "TEMPLEOS_LOCAL_TENANT_HOST is not allowed in production tenant sign-in.",
+      "TEMPLEOS_LOCAL_TENANT_HOST is ignored in production tenant sign-in.",
     );
   });
 

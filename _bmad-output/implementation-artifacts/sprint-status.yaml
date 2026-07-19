@@ -1,5 +1,5 @@
 # generated: 2026-07-18T17:32:34+0530
-# last_updated: 2026-07-19T10:02:20+0530
+# last_updated: 2026-07-19T23:23:58+0530
 # project: templeOS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -42,7 +42,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18T17:32:34+0530
-last_updated: 2026-07-19T10:02:20+0530
+last_updated: 2026-07-19T23:23:58+0530
 project: templeOS
 project_key: NOKEY
 tracking_system: file-system
@@ -56,6 +56,7 @@ development_status:
   1-4-tenant-login-resolves-membership-by-subdomain: done
   1-5-enforce-role-based-tenant-dashboard-access: done
   1-6-identity-and-session-isolation-tests: done
+  1-7-unify-firebase-auth-identity-binding: review
   epic-1-retrospective: optional
   epic-2: in-progress
   2-1-define-canonical-provisioning-contract: done

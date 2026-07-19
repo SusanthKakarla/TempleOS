@@ -40,6 +40,7 @@ vi.mock("next/headers", () => ({
 
 const superAdmin = {
   id: "super-admin-1",
+  personId: "person-1",
   phoneNumber: "+14155552671",
   displayName: "Platform Admin",
   firebaseUid: "firebase-1",

@@ -14,6 +14,7 @@ vi.mock("./pool", () => ({
 
 const row = {
   id: "super-admin-1",
+  person_id: "person-1",
   phone_number: "+14155552671",
   display_name: "Platform Admin",
   firebase_uid: null,
@@ -41,6 +42,7 @@ describe("super-admin bootstrap repository", () => {
 
     expect(result).toEqual({
       id: "super-admin-1",
+      personId: "person-1",
       phoneNumber: "+14155552671",
       displayName: "Platform Admin",
       firebaseUid: null,
@@ -51,22 +53,23 @@ describe("super-admin bootstrap repository", () => {
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining("SELECT * FROM super_admins WHERE active = true"),
     );
-    expect(query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO super_admins"), [
-      "+14155552671",
-      "Platform Admin",
-    ]);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO super_admins"),
+      ["+14155552671", "Platform Admin"],
+    );
   });
 
-  it("is idempotent by normalized phone and does not touch tenant tables", async () => {
+  it("is idempotent by normalized phone, links a person, and does not touch tenant tables", async () => {
     await upsertFirstSuperAdmin({
       phoneNumber: "+1 415 555 2671",
       displayName: "Platform Admin",
     });
 
     const sql = String(query.mock.calls[1][0]);
+    expect(sql).toContain("INSERT INTO persons");
     expect(sql).toContain("ON CONFLICT (phone_number)");
-    expect(sql).toContain("DO UPDATE SET");
-    expect(sql).not.toMatch(/persons|tenant_memberships|tenant_membership_roles/i);
+    expect(sql).toContain("person_id");
+    expect(sql).not.toMatch(/tenant_memberships|tenant_membership_roles/i);
   });
 
   it("rejects a different active existing super admin", async () => {
@@ -97,8 +100,9 @@ describe("super-admin bootstrap repository", () => {
     const result = await findActiveSuperAdminByPhone("+1 415 555 2671");
 
     expect(result?.id).toBe("super-admin-1");
+    expect(result?.personId).toBe("person-1");
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("WHERE phone_number = $1 AND active = true"),
+      expect.stringContaining("JOIN persons p ON p.id = sa.person_id"),
       ["+14155552671"],
     );
   });
@@ -118,21 +122,24 @@ describe("super-admin bootstrap repository", () => {
 
     expect(result?.phoneNumber).toBe("+14155552671");
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("SELECT * FROM super_admins WHERE id = $1 LIMIT 1"),
+      expect.stringContaining("JOIN persons p ON p.id = sa.person_id"),
       ["super-admin-1"],
     );
   });
 
-  it("binds Firebase uid only when empty or already matched", async () => {
+  it("binds Firebase uid on the linked person only when empty or already matched", async () => {
     query.mockReset();
     query.mockResolvedValueOnce({ rows: [{ id: "super-admin-1" }], rowCount: 1 });
 
     await expect(bindSuperAdminFirebaseUid("super-admin-1", "firebase-1")).resolves.toBe(true);
 
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("firebase_uid IS NULL OR firebase_uid = $2"),
+      expect.stringContaining("p.firebase_uid IS NULL OR p.firebase_uid = $2"),
       ["super-admin-1", "firebase-1"],
     );
+    expect(String(query.mock.calls[0][0])).toContain("UPDATE persons");
+    expect(String(query.mock.calls[0][0])).toContain("FROM super_admins");
+    expect(String(query.mock.calls[0][0])).not.toContain("UPDATE super_admins");
     expect(String(query.mock.calls[0][0])).toContain("NOT EXISTS");
   });
 

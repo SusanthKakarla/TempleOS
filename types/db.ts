@@ -41,6 +41,7 @@ export interface AuditLogEntry {
 
 export interface SuperAdmin {
   id: string;
+  personId: string;
   phoneNumber: string;
   displayName: string;
   firebaseUid: string | null;

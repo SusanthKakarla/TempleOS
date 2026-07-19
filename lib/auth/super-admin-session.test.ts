@@ -81,6 +81,7 @@ describe("super-admin session token", () => {
 
     vi.mocked(getSuperAdminById).mockResolvedValueOnce({
       id: "super-admin-1",
+      personId: "person-1",
       phoneNumber: "+919876543210",
       displayName: "Platform Admin",
       firebaseUid: "firebase-1",

@@ -12,7 +12,8 @@
     "migrate": "tsx scripts/migrate.mts",
     "seed": "tsx scripts/seed.mts",
     "provision:temple": "tsx scripts/provision-temple.mts",
-    "seed:super-admin": "node scripts/seed-super-admin.mjs"
+    "seed:super-admin": "node scripts/seed-super-admin.mjs",
+    "auth:clear-firebase": "tsx scripts/clear-person-firebase-uid.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

@@ -63,13 +63,26 @@ async function upsertFirstSuperAdmin(pool, input) {
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO super_admins (phone_number, display_name, active)
-     VALUES ($1, $2, true)
-     ON CONFLICT (phone_number)
-     DO UPDATE SET display_name = EXCLUDED.display_name,
-                   active = true,
-                   updated_at = now()
-     RETURNING *`,
+    `WITH person_row AS (
+       INSERT INTO persons (phone_number, display_name)
+       VALUES ($1, $2)
+       ON CONFLICT (phone_number)
+       DO UPDATE SET phone_number = EXCLUDED.phone_number
+       RETURNING id
+     ),
+     super_admin_row AS (
+       INSERT INTO super_admins (phone_number, display_name, person_id, active)
+       SELECT $1, $2, person_row.id, true
+       FROM person_row
+       ON CONFLICT (phone_number)
+       DO UPDATE SET display_name = EXCLUDED.display_name,
+                     person_id = EXCLUDED.person_id,
+                     active = true,
+                     updated_at = now()
+       RETURNING *
+     )
+     SELECT *
+     FROM super_admin_row`,
     [phoneNumber, displayName],
   );
   return rows[0];

@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { bindPersonFirebaseUid, findPersonByPhone, getPersonById } from "./persons";
+import {
+  bindPersonFirebaseUid,
+  clearPersonFirebaseUidByPhone,
+  findPersonByPhone,
+  getPersonById,
+} from "./persons";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -73,5 +78,22 @@ describe("persons repository", () => {
     query.mockRejectedValueOnce({ code: "23505" });
 
     await expect(bindPersonFirebaseUid("person-1", "firebase-2")).resolves.toBe(false);
+  });
+
+  it("clears a stale Firebase uid for one normalized phone number", async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ ...row, firebase_uid: null }],
+      rowCount: 1,
+    });
+
+    await expect(clearPersonFirebaseUidByPhone("+1 415 555 2671")).resolves.toMatchObject({
+      id: "person-1",
+      firebaseUid: null,
+    });
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("SET firebase_uid = NULL"),
+      ["+14155552671"],
+    );
   });
 });

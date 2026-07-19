@@ -52,6 +52,13 @@ describe("forward identity reset schema", () => {
     expect(initialSchema).toMatch(
       /CREATE UNIQUE INDEX idx_persons_firebase_uid_unique ON persons\(firebase_uid\) WHERE firebase_uid IS NOT NULL;/,
     );
+    expect(migrationChain).toMatch(/ADD COLUMN person_id UUID/);
+    expect(migrationChain).toMatch(/super_admins_person_id_unique UNIQUE \(person_id\)/);
+    expect(migrationChain).toMatch(
+      /super_admins_person_id_fkey FOREIGN KEY \(person_id\) REFERENCES persons\(id\)/,
+    );
+    expect(migrationChain).toMatch(/conflicting Firebase UID/);
+    expect(migrationChain).toMatch(/DROP COLUMN firebase_uid/);
     expect(initialSchema).toMatch(/hostname TEXT NOT NULL UNIQUE CHECK/);
     expect(initialSchema).toMatch(/length\(hostname\) <= 253/);
     expect(initialSchema).toMatch(/hostname = lower\(hostname\)/);

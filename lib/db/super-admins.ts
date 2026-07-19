@@ -4,6 +4,7 @@ import type { SuperAdmin } from "@/types/db";
 
 interface SuperAdminRow {
   id: string;
+  person_id: string;
   phone_number: string;
   display_name: string;
   firebase_uid: string | null;
@@ -15,6 +16,7 @@ interface SuperAdminRow {
 function mapSuperAdmin(row: SuperAdminRow): SuperAdmin {
   return {
     id: row.id,
+    personId: row.person_id,
     phoneNumber: row.phone_number,
     displayName: row.display_name,
     firebaseUid: row.firebase_uid,
@@ -44,13 +46,34 @@ export async function upsertFirstSuperAdmin(input: {
   }
 
   const { rows } = await getPool().query<SuperAdminRow>(
-    `INSERT INTO super_admins (phone_number, display_name, active)
-     VALUES ($1, $2, true)
-     ON CONFLICT (phone_number)
-     DO UPDATE SET display_name = EXCLUDED.display_name,
-                   active = true,
-                   updated_at = now()
-     RETURNING *`,
+    `WITH person_row AS (
+       INSERT INTO persons (phone_number, display_name)
+       VALUES ($1, $2)
+       ON CONFLICT (phone_number)
+       DO UPDATE SET phone_number = EXCLUDED.phone_number
+       RETURNING id
+     ),
+     super_admin_row AS (
+       INSERT INTO super_admins (phone_number, display_name, person_id, active)
+       SELECT $1, $2, person_row.id, true
+       FROM person_row
+       ON CONFLICT (phone_number)
+       DO UPDATE SET display_name = EXCLUDED.display_name,
+                     person_id = EXCLUDED.person_id,
+                     active = true,
+                     updated_at = now()
+       RETURNING *
+     )
+     SELECT sa.id,
+            sa.person_id,
+            sa.phone_number,
+            sa.display_name,
+            p.firebase_uid,
+            sa.active,
+            sa.created_at,
+            sa.updated_at
+     FROM super_admin_row sa
+     JOIN persons p ON p.id = sa.person_id`,
     [phoneNumber, displayName],
   );
   return mapSuperAdmin(rows[0]);
@@ -61,7 +84,18 @@ export async function findActiveSuperAdminByPhone(phoneNumberInput: string): Pro
   if (!phoneNumber) return null;
 
   const { rows } = await getPool().query<SuperAdminRow>(
-    "SELECT * FROM super_admins WHERE phone_number = $1 AND active = true LIMIT 1",
+    `SELECT sa.id,
+            sa.person_id,
+            sa.phone_number,
+            sa.display_name,
+            p.firebase_uid,
+            sa.active,
+            sa.created_at,
+            sa.updated_at
+     FROM super_admins sa
+     JOIN persons p ON p.id = sa.person_id
+     WHERE sa.phone_number = $1 AND sa.active = true
+     LIMIT 1`,
     [phoneNumber],
   );
   return rows[0] ? mapSuperAdmin(rows[0]) : null;
@@ -69,7 +103,18 @@ export async function findActiveSuperAdminByPhone(phoneNumberInput: string): Pro
 
 export async function getSuperAdminById(id: string): Promise<SuperAdmin | null> {
   const { rows } = await getPool().query<SuperAdminRow>(
-    "SELECT * FROM super_admins WHERE id = $1 LIMIT 1",
+    `SELECT sa.id,
+            sa.person_id,
+            sa.phone_number,
+            sa.display_name,
+            p.firebase_uid,
+            sa.active,
+            sa.created_at,
+            sa.updated_at
+     FROM super_admins sa
+     JOIN persons p ON p.id = sa.person_id
+     WHERE sa.id = $1
+     LIMIT 1`,
     [id],
   );
   return rows[0] ? mapSuperAdmin(rows[0]) : null;
@@ -79,22 +124,32 @@ export async function bindSuperAdminFirebaseUid(
   superAdminId: string,
   firebaseUid: string,
 ): Promise<boolean> {
-  const result = await getPool().query<{ id: string }>(
-    `UPDATE super_admins
-     SET firebase_uid = $2,
-         updated_at = now()
-     WHERE id = $1
-       AND active = true
-       AND (firebase_uid IS NULL OR firebase_uid = $2)
-       AND NOT EXISTS (
-         SELECT 1
-         FROM super_admins existing
-         WHERE existing.firebase_uid = $2
-           AND existing.id <> $1
-           AND existing.active = true
-       )
-     RETURNING id`,
-    [superAdminId, firebaseUid],
-  );
-  return (result.rowCount ?? result.rows.length) > 0;
+  try {
+    const result = await getPool().query<{ id: string }>(
+      `UPDATE persons p
+       SET firebase_uid = $2,
+           updated_at = now()
+       FROM super_admins sa
+       WHERE sa.id = $1
+         AND sa.active = true
+         AND sa.person_id = p.id
+         AND (p.firebase_uid IS NULL OR p.firebase_uid = $2)
+         AND NOT EXISTS (
+           SELECT 1
+           FROM persons existing
+           WHERE existing.firebase_uid = $2
+             AND existing.id <> p.id
+         )
+       RETURNING p.id`,
+      [superAdminId, firebaseUid],
+    );
+    return (result.rowCount ?? result.rows.length) > 0;
+  } catch (err) {
+    if (isUniqueViolation(err)) return false;
+    throw err;
+  }
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
 }
