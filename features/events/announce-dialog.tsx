@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
+import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Megaphone } from "lucide-react";
 import type { Event } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { fadeInUp } from "@/lib/motion";
 
 type Phase = "confirm" | "sending" | "done";
 
@@ -100,31 +102,43 @@ export function AnnounceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {phase !== "done" && (
-          <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-medium">{event.title}</p>
-            <p className="text-muted-foreground">
-              {recipientCount === null
-                ? t("checkingRecipients")
-                : t("recipientCount", { count: recipientCount })}
-            </p>
-          </div>
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={phase}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
+            transition={{ duration: 0.15 }}
+            className="space-y-4"
+          >
+            {phase !== "done" && (
+              <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                <p className="font-medium">{event.title}</p>
+                <p className="text-muted-foreground">
+                  {recipientCount === null
+                    ? t("checkingRecipients")
+                    : t("recipientCount", { count: recipientCount })}
+                </p>
+              </div>
+            )}
 
-        {phase === "sending" && <Progress value={progress} />}
+            {phase === "sending" && <Progress value={progress} />}
 
-        {phase === "done" && result && (
-          <div className="flex flex-col items-center gap-2 py-4 text-center">
-            <CheckCircle2 className="size-10 text-emerald" />
-            <p className="text-sm">
-              <span className="font-semibold text-emerald">{t("sentResult", { count: result.sent })}</span>
-              {result.failed > 0 && (
-                <span className="text-destructive"> &middot; {t("failedResult", { count: result.failed })}</span>
-              )}
-              {result.total === 0 && ` — ${t("noRecipients")}`}
-            </p>
-          </div>
-        )}
+            {phase === "done" && result && (
+              <div className="flex flex-col items-center gap-2 py-4 text-center">
+                <CheckCircle2 className="size-10 text-emerald" />
+                <p className="text-sm">
+                  <span className="font-semibold text-emerald">{t("sentResult", { count: result.sent })}</span>
+                  {result.failed > 0 && (
+                    <span className="text-destructive"> &middot; {t("failedResult", { count: result.failed })}</span>
+                  )}
+                  {result.total === 0 && ` — ${t("noRecipients")}`}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 

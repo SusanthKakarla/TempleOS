@@ -19,6 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
 import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
@@ -46,6 +49,7 @@ export default async function SuperAdminTempleDetailPage({
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
+      <AmbientBackground />
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="space-y-4">
           <Button
@@ -82,7 +86,7 @@ export default async function SuperAdminTempleDetailPage({
         </header>
 
         <section className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-md border bg-background p-4">
+          <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Landmark className="size-4 text-muted-foreground" />
               Tenant Details
@@ -106,7 +110,7 @@ export default async function SuperAdminTempleDetailPage({
             </dl>
           </div>
 
-          <div className="rounded-md border bg-background p-4">
+          <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Globe2 className="size-4 text-muted-foreground" />
               Domain
@@ -138,7 +142,7 @@ export default async function SuperAdminTempleDetailPage({
 
         <TempleDetailEditForm tenant={temple.tenant} />
 
-        <section className="rounded-md border bg-background">
+        <TableShell>
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
             <div>
               <h2 className="text-base font-semibold tracking-normal">
@@ -152,12 +156,11 @@ export default async function SuperAdminTempleDetailPage({
             <Badge variant="secondary">{temple.members.length} active</Badge>
           </div>
           {temple.members.length === 0 ? (
-            <div className="px-4 py-10">
-              <EmptyPanel
-                icon={<UserRound className="size-5" />}
-                label="No active members"
-              />
-            </div>
+            <EmptyState
+              icon={<UserRound className="size-6" />}
+              title="No active members"
+              className="rounded-none border-none py-10"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -212,7 +215,7 @@ export default async function SuperAdminTempleDetailPage({
               </TableBody>
             </Table>
           )}
-        </section>
+        </TableShell>
       </div>
     </main>
   );

@@ -1,5 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { History } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { formatDateTime } from "@/lib/date";
 import type { AuditLogEntry, SupportedLanguage } from "@/types/db";
 
@@ -22,15 +25,11 @@ export async function ActivityLogTable({
   }
 
   if (entries.length === 0) {
-    return (
-      <div className="glass-card flex flex-col items-center gap-2 rounded-2xl py-16 text-center">
-        <p className="text-sm text-muted-foreground">{t("empty")}</p>
-      </div>
-    );
+    return <EmptyState icon={<History className="size-6" />} title={t("empty")} />;
   }
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl">
+    <TableShell>
       <Table>
         <TableHeader>
           <TableRow>
@@ -51,6 +50,6 @@ export async function ActivityLogTable({
           ))}
         </TableBody>
       </Table>
-    </div>
+    </TableShell>
   );
 }

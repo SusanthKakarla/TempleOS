@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { springSnappy } from "@/lib/motion";
 
 export const NAV_ITEMS = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard, gradient: "gradient-saffron-gold" },
@@ -89,7 +90,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   );
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5 px-1">
           <div className="gradient-saffron-gold flex size-8 shrink-0 items-center justify-center rounded-lg text-saffron-foreground shadow-sm">
@@ -114,7 +115,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       <motion.div
                         layoutId="sidebar-active-indicator"
                         className="absolute inset-y-1 left-0 w-1 rounded-full bg-saffron"
-                        transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                        transition={springSnappy}
                       />
                     )}
                     <SidebarMenuButton

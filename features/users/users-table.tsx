@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { History, Upload, UserPlus, Users as UsersIcon } from "lucide-react";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import type { RoleCode, SupportedLanguage } from "@/types/db";
@@ -16,18 +17,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDate } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { UsersSearchInput } from "./users-search-input";
 import { InviteUserDialog } from "./invite-user-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { UserActivityPanel } from "./user-activity-panel";
+
+const MotionTableRow = motion.create(TableRow);
 
 function getInitials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
@@ -172,15 +177,24 @@ export function UsersTable({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {members.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <div className="gradient-blue-purple flex size-14 items-center justify-center rounded-2xl shadow-sm">
-            <UsersIcon className="size-6 text-white" />
-          </div>
-          <p className="text-sm font-medium">{t("emptyState.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
-        </div>
+        <EmptyState
+          icon={<UsersIcon className="size-6" />}
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
+          action={
+            <InviteUserDialog
+              trigger={
+                <Button className="gap-1.5">
+                  <UserPlus className="size-4" />
+                  {t("inviteButton")}
+                </Button>
+              }
+              onInvited={refresh}
+            />
+          }
+        />
       ) : (
-        <div className="glass-card overflow-hidden rounded-2xl">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -200,9 +214,9 @@ export function UsersTable({
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {members.map((member) => (
-                <TableRow key={member.id}>
+                <MotionTableRow key={member.id} variants={rowFadeIn}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(member.id)}
@@ -272,11 +286,11 @@ export function UsersTable({
                       }
                     />
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
     </div>
   );

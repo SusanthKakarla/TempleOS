@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
 import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDateTime, formatTime } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventCard } from "./event-card";
 import { AnnounceDialog } from "./announce-dialog";
+
+const MotionTableRow = motion.create(TableRow);
 
 const STATUS_BADGE_VARIANT: Record<EventStatus, "default" | "secondary" | "destructive"> = {
   published: "default",
@@ -148,30 +153,46 @@ export function EventsTable({ events }: { events: Event[] }) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {events.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <CalendarDays className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">{t("emptyState.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
-        </div>
-      ) : view === "card" ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              pending={pendingId === event.id}
+        <EmptyState
+          icon={<CalendarDays className="size-6" />}
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
+          action={
+            <EventFormDialog
+              mode="create"
+              trigger={
+                <Button className="gap-1.5">
+                  <PlusCircle className="size-4" />
+                  {t("createButton")}
+                </Button>
+              }
               onSaved={refresh}
-              onTogglePublish={handleTogglePublish}
-              onCancel={handleCancel}
-              onReopen={handleReopen}
-              onDelete={handleDelete}
             />
+          }
+        />
+      ) : view === "card" ? (
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={staggerContainer()}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {events.map((event) => (
+            <motion.div key={event.id} variants={rowFadeIn}>
+              <EventCard
+                event={event}
+                pending={pendingId === event.id}
+                onSaved={refresh}
+                onTogglePublish={handleTogglePublish}
+                onCancel={handleCancel}
+                onReopen={handleReopen}
+                onDelete={handleDelete}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
-        <div className="rounded-xl border bg-background">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -189,9 +210,9 @@ export function EventsTable({ events }: { events: Event[] }) {
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {events.map((event) => (
-                <TableRow key={event.id}>
+                <MotionTableRow key={event.id} variants={rowFadeIn}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(event.id)}
@@ -275,11 +296,11 @@ export function EventsTable({ events }: { events: Event[] }) {
                       {tCommon("delete")}
                     </Button>
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
 
       <EventFormDialog

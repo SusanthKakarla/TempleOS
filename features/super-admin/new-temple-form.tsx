@@ -94,7 +94,7 @@ export function NewTempleForm() {
           </p>
         )}
 
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Landmark className="size-4 text-primary" />
@@ -152,7 +152,7 @@ export function NewTempleForm() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe2 className="size-4 text-primary" />
@@ -177,7 +177,7 @@ export function NewTempleForm() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <UserRound className="size-4 text-primary" />
@@ -231,7 +231,7 @@ export function NewTempleForm() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <ShieldCheck className="size-4 text-primary" />
@@ -275,7 +275,7 @@ export function NewTempleForm() {
 
       <aside className="space-y-4">
         {created ? (
-          <Card>
+          <Card className="glass-card rounded-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <CheckCircle2 className="size-4 text-emerald-600" />
@@ -295,7 +295,7 @@ export function NewTempleForm() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="glass-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg">Provisioning Summary</CardTitle>
               <CardDescription>Created temple details will appear here after the API succeeds.</CardDescription>

@@ -44,7 +44,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
         {t("backToDevotees")}
       </Link>
 
-      <Card className="gap-4 p-5">
+      <Card className="glass-card gap-4 rounded-2xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="size-12">

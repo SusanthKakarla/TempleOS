@@ -206,4 +206,52 @@
     border: 1px solid color-mix(in oklch, var(--foreground) 6%, transparent);
     box-shadow: 0 4px 24px -4px color-mix(in oklch, var(--foreground) 12%, transparent);
   }
+
+  /* Modal/popup surfaces — stronger opacity than .glass-panel so content stays legible over arbitrary pages */
+  .glass-dialog {
+    background: color-mix(in oklch, var(--popover) 85%, var(--warm-ivory) 15%);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 40px -8px color-mix(in oklch, var(--foreground) 20%, transparent);
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+  .skeleton-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in oklch, var(--foreground) 8%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blob-drift {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(4%, 6%) scale(1.08);
+    }
+    66% {
+      transform: translate(-3%, -4%) scale(0.96);
+    }
+  }
+  .blob-drift {
+    animation: blob-drift 26s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer,
+  .blob-drift {
+    animation: none;
+  }
 }

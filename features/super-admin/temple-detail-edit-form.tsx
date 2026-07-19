@@ -88,7 +88,7 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-md border bg-background p-4">
+    <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4">
       <div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-normal">Edit Temple Details</h2>

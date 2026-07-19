@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatInr } from "@/lib/currency";
+import { springSoft } from "@/lib/motion";
 import { useCountUp } from "./use-count-up";
 
 interface MetricCardProps {
@@ -71,7 +72,7 @@ export function MetricCard({
   return (
     <motion.div
       whileHover={{ y: -3 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      transition={springSoft}
       className="h-full"
     >
       <Card

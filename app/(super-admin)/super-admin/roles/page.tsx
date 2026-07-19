@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import type { RoleCode, RoleDefinition } from "@/types/db";
@@ -43,6 +45,7 @@ export default async function SuperAdminRolesPage() {
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
+      <AmbientBackground />
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="space-y-4">
           <Button
@@ -100,7 +103,7 @@ export default async function SuperAdminRolesPage() {
           />
         </section>
 
-        <section className="rounded-md border bg-background">
+        <TableShell>
           <div className="border-b px-4 py-3">
             <h2 className="text-base font-semibold tracking-normal">
               V0 roles
@@ -151,7 +154,7 @@ export default async function SuperAdminRolesPage() {
               ))}
             </TableBody>
           </Table>
-        </section>
+        </TableShell>
       </div>
     </main>
   );
@@ -184,7 +187,7 @@ function SummaryPanel({
   value: string;
 }) {
   return (
-    <div className="rounded-md border bg-background p-4">
+    <div className="glass-card rounded-2xl p-4">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         {icon}
         {label}

@@ -17,6 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
 import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { requireSuperAdminPage } from "./require-super-admin";
@@ -27,6 +30,7 @@ export default async function SuperAdminPage() {
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
+      <AmbientBackground />
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
@@ -56,24 +60,20 @@ export default async function SuperAdminPage() {
         </header>
 
         {temples.length === 0 ? (
-          <section className="flex min-h-80 flex-col items-center justify-center rounded-md border border-dashed bg-background px-6 py-12 text-center">
-            <Landmark className="mb-4 size-10 text-muted-foreground" />
-            <h2 className="text-lg font-semibold tracking-normal">
-              No temples provisioned
-            </h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Create the first temple to assign its subdomain and first member.
-            </p>
-            <Button
-              className="mt-6"
-              render={<Link href="/super-admin/temples/new" />}
-            >
-              <Plus className="size-4" />
-              New Temple
-            </Button>
-          </section>
+          <EmptyState
+            icon={<Landmark className="size-6" />}
+            title="No temples provisioned"
+            description="Create the first temple to assign its subdomain and first member."
+            className="min-h-80"
+            action={
+              <Button render={<Link href="/super-admin/temples/new" />}>
+                <Plus className="size-4" />
+                New Temple
+              </Button>
+            }
+          />
         ) : (
-          <section className="rounded-md border bg-background">
+          <TableShell>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -146,7 +146,7 @@ export default async function SuperAdminPage() {
                 ))}
               </TableBody>
             </Table>
-          </section>
+          </TableShell>
         )}
       </div>
     </main>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 import { HandCoins, Plus } from "lucide-react";
 import type { Devotee, Donation, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -10,16 +11,19 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "@/components/empty-state";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
+
+const MotionTableRow = motion.create(TableRow);
 
 export function DevoteeDonationsCard({
   devotee,
@@ -66,7 +70,7 @@ export function DevoteeDonationsCard({
   }
 
   return (
-    <Card className="gap-4 p-5">
+    <Card className="glass-card gap-4 rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-heading text-lg font-semibold">{t("title")}</h2>
@@ -96,12 +100,7 @@ export function DevoteeDonationsCard({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {donations.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
-          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-            <HandCoins className="size-5 text-muted-foreground" />
-          </div>
-          <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
-        </div>
+        <EmptyState icon={<HandCoins className="size-5" />} title={t("emptyState")} className="py-10" />
       ) : (
         <div className="rounded-xl border">
           <Table>
@@ -114,9 +113,9 @@ export function DevoteeDonationsCard({
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {donations.map((donation) => (
-                <TableRow key={donation.id}>
+                <MotionTableRow key={donation.id} variants={rowFadeIn}>
                   <TableCell className="font-medium tabular-nums">{formatInr(donation.amount)}</TableCell>
                   <TableCell>{donation.purpose}</TableCell>
                   <TableCell>
@@ -145,9 +144,9 @@ export function DevoteeDonationsCard({
                       {tCommon("delete")}
                     </Button>
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
         </div>
       )}

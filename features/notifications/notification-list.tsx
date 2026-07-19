@@ -4,13 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { BellRing, CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
 import type { EventNotificationDeliveryStatus, SupportedLanguage } from "@/types/db";
 import type { EventNotificationListItem } from "@/lib/db/event-notifications";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { formatDateTime } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
+
+const MotionTableRow = motion.create(TableRow);
 
 const STATUS_BADGE_VARIANT: Record<EventNotificationDeliveryStatus, "default" | "secondary" | "destructive"> = {
   sent: "default",
@@ -84,15 +90,13 @@ export function NotificationList({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <BellRing className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">{t("emptyState.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
-        </div>
+        <EmptyState
+          icon={<BellRing className="size-6" />}
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
+        />
       ) : (
-        <div className="rounded-xl border bg-background">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -103,9 +107,9 @@ export function NotificationList({
                 <TableHead>{t("columns.sent")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {notifications.map((n) => (
-                <TableRow key={n.id}>
+                <MotionTableRow key={n.id} variants={rowFadeIn}>
                   <TableCell className="font-medium">{n.eventTitle}</TableCell>
                   <TableCell>{n.devoteeName}</TableCell>
                   <TableCell>
@@ -125,11 +129,11 @@ export function NotificationList({
                   <TableCell className="text-sm text-muted-foreground">
                     {n.sentAt ? formatDateTime(n.sentAt, locale) : "—"}
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
     </div>
   );

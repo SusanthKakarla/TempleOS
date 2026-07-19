@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
@@ -213,7 +214,8 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-sm">
+      <AmbientBackground />
+      <Card className="glass-card w-full max-w-sm rounded-2xl">
         <CardHeader>
           <CardTitle>Super Admin</CardTitle>
           <CardDescription>

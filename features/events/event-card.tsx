@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatDateTime, formatTime } from "@/lib/date";
+import { springSoft } from "@/lib/motion";
 import { EventFormDialog } from "./event-form-dialog";
 import { AnnounceDialog } from "./announce-dialog";
 
@@ -48,8 +49,8 @@ export function EventCard({
   const t = useTranslations("events");
   const tCommon = useTranslations("common");
   return (
-    <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-      <Card className="h-full gap-3 overflow-hidden py-0">
+    <motion.div whileHover={{ y: -3 }} transition={springSoft}>
+      <Card className="glass-card h-full gap-3 overflow-hidden rounded-2xl py-0">
         <div className="gradient-maroon-orange h-1.5 w-full" />
         <CardHeader className="pt-4">
           <div className="flex items-start justify-between gap-2">

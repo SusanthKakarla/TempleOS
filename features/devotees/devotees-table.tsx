@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,16 +14,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDate } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { DevoteeFormDialog } from "./devotee-form-dialog";
 import { DevoteesSearchInput } from "./devotees-search-input";
+
+const MotionTableRow = motion.create(TableRow);
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -107,15 +112,25 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {devotees.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <Users className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">{t("emptyState.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
-        </div>
+        <EmptyState
+          icon={<Users className="size-6" />}
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
+          action={
+            <DevoteeFormDialog
+              mode="create"
+              trigger={
+                <Button className="gap-1.5">
+                  <UserPlus className="size-4" />
+                  {t("addButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          }
+        />
       ) : (
-        <div className="rounded-xl border bg-background">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -135,9 +150,9 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {devotees.map((devotee) => (
-                <TableRow key={devotee.id}>
+                <MotionTableRow key={devotee.id} variants={rowFadeIn}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(devotee.id)}
@@ -187,11 +202,11 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
                       {tCommon("delete")}
                     </Button>
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
 
       <DevoteeFormDialog

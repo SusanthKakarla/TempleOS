@@ -20,6 +20,7 @@ import {
   listRecentMessages,
 } from "@/lib/db/whatsapp-messages";
 import { MetricCard } from "@/features/dashboard/metric-card";
+import { bucketEventsPerDay } from "@/lib/dashboard-sparklines";
 import { UpcomingEventsWidget } from "@/features/dashboard/upcoming-events-widget";
 import { RecentDevoteesWidget } from "@/features/dashboard/recent-devotees-widget";
 import { RecentMessagesWidget } from "@/features/dashboard/recent-messages-widget";
@@ -62,6 +63,8 @@ export default async function DashboardHomePage() {
     listRecentMessages(session.tenantId, 5),
   ]);
 
+  const eventsPerDay = bucketEventsPerDay(upcomingEventsList);
+
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
@@ -86,6 +89,7 @@ export default async function DashboardHomePage() {
           value={upcomingEvents}
           icon={<CalendarDays className="size-4.5" />}
           gradient="gradient-saffron-gold"
+          sparkline={eventsPerDay}
         />
         <MetricCard
           label={t("metrics.totalDevotees")}

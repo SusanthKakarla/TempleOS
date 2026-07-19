@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { HandCoins, Plus } from "lucide-react";
 import type { Devotee, DonationWithDonor, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -12,18 +13,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableShell } from "@/components/table-shell";
+import { EmptyState } from "@/components/empty-state";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
+import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { ExportMenu } from "@/features/export/export-menu";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
 import { DonationsSearchInput } from "./donations-search-input";
+
+const MotionTableRow = motion.create(TableRow);
 
 export function DonationsTable({
   donations,
@@ -148,15 +153,26 @@ export function DonationsTable({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {donations.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-background py-16 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <HandCoins className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">{t("emptyState.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("emptyState.description")}</p>
-        </div>
+        <EmptyState
+          icon={<HandCoins className="size-6" />}
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
+          action={
+            <DonationFormDialog
+              mode="create"
+              devotees={devotees}
+              trigger={
+                <Button className="gap-1.5">
+                  <Plus className="size-4" />
+                  {t("addButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          }
+        />
       ) : (
-        <div className="rounded-xl border bg-background">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -175,9 +191,9 @@ export function DonationsTable({
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {donations.map((donation) => (
-                <TableRow key={donation.id}>
+                <MotionTableRow key={donation.id} variants={rowFadeIn}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(donation.id)}
@@ -221,11 +237,11 @@ export function DonationsTable({
                       {tCommon("delete")}
                     </Button>
                   </TableCell>
-                </TableRow>
+                </MotionTableRow>
               ))}
-            </TableBody>
+            </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
 
       <DonationFormDialog
