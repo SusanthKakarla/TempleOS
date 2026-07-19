@@ -188,6 +188,27 @@ describe("tenant auth session route", () => {
     expect(setSessionCookie).not.toHaveBeenCalled();
   });
 
+  it("returns temple not found for valid tenant hostnames without an active domain row", async () => {
+    vi.mocked(verifyFirebaseIdToken).mockResolvedValue({
+      uid: "firebase-1",
+      phone_number: "+1 415 555 2671",
+    } as Awaited<ReturnType<typeof verifyFirebaseIdToken>>);
+    vi.mocked(getActiveTenantDomainByHostname).mockResolvedValue(null);
+
+    const res = await POST(
+      request({ idToken: "token-1" }, "https://missing.trytempleos.com/api/auth/session") as never,
+    );
+
+    await expect(res.json()).resolves.toEqual({
+      error: "Temple does not exist.",
+      code: "TEMPLE_NOT_FOUND",
+    });
+    expect(res.status).toBe(404);
+    expect(getActiveTenantDomainByHostname).toHaveBeenCalledWith("missing.trytempleos.com");
+    expect(findPersonByPhone).not.toHaveBeenCalled();
+    expect(setSessionCookie).not.toHaveBeenCalled();
+  });
+
   it("allows a local tenant host override outside production", async () => {
     vi.stubEnv("TEMPLEOS_LOCAL_TENANT_HOST", "svtemple.trytempleos.com");
     vi.mocked(verifyFirebaseIdToken).mockResolvedValue({

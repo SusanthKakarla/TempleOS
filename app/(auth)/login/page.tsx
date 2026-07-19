@@ -30,6 +30,8 @@ export default function LoginPage() {
   const [fullPhone, setFullPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [tenantContextLoading, setTenantContextLoading] = useState(true);
+  const [tenantContextError, setTenantContextError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sendBlocked, setSendBlocked] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
@@ -56,7 +58,30 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function verifyTenantContext() {
+      try {
+        const response = await fetch("/api/auth/tenant-context", { method: "GET" });
+        if (!response.ok) {
+          const body = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? "Unable to verify this temple subdomain.");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTenantContextError(err instanceof Error ? err.message : "Unable to verify this temple subdomain.");
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantContextLoading(false);
+        }
+      }
+    }
+
+    void verifyTenantContext();
+
     return () => {
+      cancelled = true;
       devLog("Unmounting login page, clearing reCAPTCHA verifier");
       if (sendBlockedTimeoutRef.current) {
         clearTimeout(sendBlockedTimeoutRef.current);
@@ -87,7 +112,7 @@ export default function LoginPage() {
 
   async function handleSendOtp(event: FormEvent) {
     event.preventDefault();
-    if (sendingOtpRef.current || sendBlocked) return;
+    if (sendingOtpRef.current || sendBlocked || tenantContextLoading || tenantContextError) return;
     sendingOtpRef.current = true;
     setError(null);
 
@@ -207,9 +232,21 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || sendBlocked}>
-                {loading ? "Sending..." : sendBlocked ? "Wait before retrying" : "Send code"}
+              {(tenantContextError || error) && (
+                <p className="text-sm text-destructive">{tenantContextError ?? error}</p>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || sendBlocked || tenantContextLoading || Boolean(tenantContextError)}
+              >
+                {tenantContextLoading
+                  ? "Checking temple..."
+                  : loading
+                    ? "Sending..."
+                    : sendBlocked
+                      ? "Wait before retrying"
+                      : "Send code"}
               </Button>
             </form>
           ) : (

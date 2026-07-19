@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
+import { resolveTenantHost } from "@/lib/auth/tenant-host";
 import { getActiveTenantDomainByHostname } from "@/lib/db/tenant-domains";
 import { bindPersonFirebaseUid, findPersonByPhone } from "@/lib/db/persons";
 import { findActiveTenantMembershipByPersonAndTenant } from "@/lib/db/tenant-memberships";
 import { verifyFirebaseIdToken } from "@/lib/firebase/admin";
 import { devLog } from "@/lib/firebase/errors";
-import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
 
 const bodySchema = z.object({ idToken: z.string().min(1) });
-const localTenantHostEnv = "TEMPLEOS_LOCAL_TENANT_HOST";
 
 export async function POST(req: NextRequest) {
   const json = await req.json().catch(() => null);
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
   const domain = await getActiveTenantDomainByHostname(tenantHost);
   if (!domain) {
     devLog("Tenant sign-in rejected: unknown or inactive tenant host", tenantHost);
-    return invalidTenantContext();
+    return unknownTenant();
   }
 
   const person = await findPersonByPhone(phoneNumber);
@@ -102,33 +101,6 @@ export async function DELETE() {
   return NextResponse.json({ ok: true });
 }
 
-function resolveTenantHost(req: NextRequest): string | null {
-  const override = process.env[localTenantHostEnv]?.trim();
-  if (override) {
-    if (process.env.NODE_ENV === "production") {
-      devLog(`${localTenantHostEnv} is ignored in production tenant sign-in.`);
-    } else {
-      return normalizeTenantHostname(override);
-    }
-  }
-
-  const nextUrlHostname = (req as { nextUrl?: { hostname?: string } }).nextUrl?.hostname;
-  const requestHost =
-    firstHeaderHost(req.headers.get("x-forwarded-host")) ||
-    firstHeaderHost(req.headers.get("host")) ||
-    nextUrlHostname ||
-    "";
-  const normalized = normalizeTenantHostname(requestHost);
-  if (!normalized || isGenericTenantHostname(normalized)) return null;
-  return normalized;
-}
-
-function firstHeaderHost(value: string | null): string | null {
-  const first = value?.split(",")[0]?.trim();
-  if (!first) return null;
-  return first.split(":")[0] || null;
-}
-
 function invalidTenantContext(): NextResponse {
   return NextResponse.json(
     {
@@ -136,5 +108,15 @@ function invalidTenantContext(): NextResponse {
       code: "INVALID_TENANT_CONTEXT",
     },
     { status: 400 },
+  );
+}
+
+function unknownTenant(): NextResponse {
+  return NextResponse.json(
+    {
+      error: "Temple does not exist.",
+      code: "TEMPLE_NOT_FOUND",
+    },
+    { status: 404 },
   );
 }
