@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [tenantContextLoading, setTenantContextLoading] = useState(true);
   const [tenantContextError, setTenantContextError] = useState<string | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sendBlocked, setSendBlocked] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
@@ -63,9 +64,15 @@ export default function LoginPage() {
     async function verifyTenantContext() {
       try {
         const response = await fetch("/api/auth/tenant-context", { method: "GET" });
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          tenant?: { name?: string };
+        };
         if (!response.ok) {
-          const body = (await response.json().catch(() => ({}))) as { error?: string };
           throw new Error(body.error ?? "Unable to verify this temple subdomain.");
+        }
+        if (!cancelled) {
+          setTenantName(body.tenant?.name?.trim() || null);
         }
       } catch (err) {
         if (!cancelled) {
@@ -207,7 +214,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>TempleOS Admin</CardTitle>
+          <CardTitle>{tenantName ?? "TempleOS Admin"}</CardTitle>
           <CardDescription>
             {step === "phone"
               ? "Enter your phone number to receive a login code."

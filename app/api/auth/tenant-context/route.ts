@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveTenantHost } from "@/lib/auth/tenant-host";
 import { getActiveTenantDomainByHostname } from "@/lib/db/tenant-domains";
+import { getTenantById } from "@/lib/db/tenants";
 import { devLog } from "@/lib/firebase/errors";
 
 export async function GET(req: NextRequest) {
@@ -28,5 +29,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, hostname: domain.hostname });
+  const tenant = await getTenantById(domain.tenantId);
+  if (!tenant) {
+    devLog("Tenant context check rejected: domain has no tenant", domain.id, domain.tenantId);
+    return NextResponse.json(
+      {
+        error: "Temple does not exist.",
+        code: "TEMPLE_NOT_FOUND",
+      },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    hostname: domain.hostname,
+    tenant: {
+      name: tenant.name,
+    },
+  });
 }
