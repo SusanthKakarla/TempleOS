@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, Plus } from "lucide-react";
-import type { TempleSpecialDay } from "@/types/db";
+import type { SupportedLanguage, TempleSpecialDay } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,37 +16,43 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDate as formatDateLocalized } from "@/lib/date";
 import { SpecialDayFormDialog } from "./special-day-form-dialog";
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: SupportedLanguage): string {
   // "YYYY-MM-DD" — construct as UTC noon to avoid local-timezone rollback.
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-IN", { dateStyle: "medium" });
+  return formatDateLocalized(new Date(`${iso}T12:00:00Z`), locale);
 }
 
-function formatTime(value: string | null): string {
+function formatTime(value: string | null, amLabel: string, pmLabel: string): string {
   if (!value) return "—";
   const [hourStr, minuteStr] = value.split(":");
   const hour24 = Number(hourStr);
-  const period = hour24 >= 12 ? "PM" : "AM";
+  const period = hour24 >= 12 ? pmLabel : amLabel;
   const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
   return `${hour12}:${minuteStr} ${period}`;
 }
 
-function formatTimings(specialDay: TempleSpecialDay): string {
-  if (specialDay.isClosed) return "Closed";
+function formatTimings(specialDay: TempleSpecialDay, t: ReturnType<typeof useTranslations>): string {
+  if (specialDay.isClosed) return t("closedBadge");
+  const am = t("am");
+  const pm = t("pm");
   const morning =
     specialDay.morningOpen && specialDay.morningClose
-      ? `${formatTime(specialDay.morningOpen)} - ${formatTime(specialDay.morningClose)}`
+      ? `${formatTime(specialDay.morningOpen, am, pm)} - ${formatTime(specialDay.morningClose, am, pm)}`
       : null;
   const evening =
     specialDay.eveningOpen && specialDay.eveningClose
-      ? `${formatTime(specialDay.eveningOpen)} - ${formatTime(specialDay.eveningClose)}`
+      ? `${formatTime(specialDay.eveningOpen, am, pm)} - ${formatTime(specialDay.eveningClose, am, pm)}`
       : null;
-  return [morning, evening].filter(Boolean).join(" · ") || "Regular hours";
+  return [morning, evening].filter(Boolean).join(" · ") || t("regularHours");
 }
 
 export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDay[] }) {
   const router = useRouter();
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("chatbotSettings.specialDaysTable");
+  const tCommon = useTranslations("chatbotSettings.common");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,36 +61,36 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
   }
 
   async function handleDelete(specialDay: TempleSpecialDay) {
-    if (!window.confirm(`Delete the "${specialDay.occasion}" entry? This cannot be undone.`)) return;
+    if (!window.confirm(t("deleteConfirm", { occasion: specialDay.occasion }))) return;
     setError(null);
     setPendingId(specialDay.id);
     try {
       const response = await fetch(`/api/temple-special-days/${specialDay.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete special day");
+        throw new Error(body.error ?? t("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete special day");
+      setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setPendingId(null);
     }
   }
 
   return (
-    <Card>
+    <Card className="glass-card overflow-hidden rounded-2xl">
       <CardHeader className="flex-row items-center justify-between">
         <div>
-          <CardTitle>Special Day Timings</CardTitle>
-          <CardDescription>Overrides regular hours on festival days or closures.</CardDescription>
+          <CardTitle>{t("cardTitle")}</CardTitle>
+          <CardDescription>{t("cardDescription")}</CardDescription>
         </div>
         <SpecialDayFormDialog
           mode="create"
           trigger={
             <Button size="sm" className="gap-1.5">
               <Plus className="size-4" />
-              Add special day
+              {t("addButton")}
             </Button>
           }
           onSaved={refresh}
@@ -96,29 +103,29 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
             <div className="flex size-12 items-center justify-center rounded-full bg-muted">
               <CalendarDays className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">No special days added yet.</p>
+            <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
           </div>
         ) : (
           <div className="rounded-xl border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Occasion</TableHead>
-                  <TableHead>Timings</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("columns.date")}</TableHead>
+                  <TableHead>{t("columns.occasion")}</TableHead>
+                  <TableHead>{t("columns.timings")}</TableHead>
+                  <TableHead className="text-right">{t("columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {specialDays.map((specialDay) => (
                   <TableRow key={specialDay.id}>
-                    <TableCell>{formatDate(specialDay.date)}</TableCell>
+                    <TableCell>{formatDate(specialDay.date, locale)}</TableCell>
                     <TableCell>{specialDay.occasion}</TableCell>
                     <TableCell>
                       {specialDay.isClosed ? (
-                        <Badge variant="destructive">Closed</Badge>
+                        <Badge variant="destructive">{t("closedBadge")}</Badge>
                       ) : (
-                        formatTimings(specialDay)
+                        formatTimings(specialDay, t)
                       )}
                     </TableCell>
                     <TableCell className="flex justify-end gap-2">
@@ -127,7 +134,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                         specialDay={specialDay}
                         trigger={
                           <Button variant="outline" size="sm" disabled={pendingId === specialDay.id}>
-                            Edit
+                            {tCommon("edit")}
                           </Button>
                         }
                         onSaved={refresh}
@@ -138,7 +145,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                         disabled={pendingId === specialDay.id}
                         onClick={() => handleDelete(specialDay)}
                       >
-                        Delete
+                        {tCommon("delete")}
                       </Button>
                     </TableCell>
                   </TableRow>

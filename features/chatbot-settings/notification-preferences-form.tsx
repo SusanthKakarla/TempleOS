@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
 import type { Tenant } from "@/types/db";
@@ -10,30 +11,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 interface ToggleRow {
   key: "notifyOnNewEvent" | "notifyOnEventUpdated" | "notifyOnEventCancelled";
-  label: string;
-  description: string;
+  rowKey: "newEvent" | "eventUpdated" | "eventCancelled";
 }
 
 const ROWS: ToggleRow[] = [
-  {
-    key: "notifyOnNewEvent",
-    label: "New event published",
-    description: "Notify opted-in devotees automatically when an event is published.",
-  },
-  {
-    key: "notifyOnEventUpdated",
-    label: "Event details updated",
-    description: "Notify devotees when a published event's date, time, location, title, or description changes.",
-  },
-  {
-    key: "notifyOnEventCancelled",
-    label: "Event cancelled",
-    description: "Notify devotees automatically when an event is cancelled.",
-  },
+  { key: "notifyOnNewEvent", rowKey: "newEvent" },
+  { key: "notifyOnEventUpdated", rowKey: "eventUpdated" },
+  { key: "notifyOnEventCancelled", rowKey: "eventCancelled" },
 ];
 
 export function NotificationPreferencesForm({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
+  const tForm = useTranslations("chatbotSettings.notificationPreferencesForm");
   const [values, setValues] = useState({
     notifyOnNewEvent: tenant.notifyOnNewEvent,
     notifyOnEventUpdated: tenant.notifyOnEventUpdated,
@@ -53,35 +42,32 @@ export function NotificationPreferencesForm({ tenant }: { tenant: Tenant }) {
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save notification preferences");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
       router.refresh();
     } catch (err) {
       setValues(previous);
-      toast.error(err instanceof Error ? err.message : "Failed to save notification preferences");
+      toast.error(err instanceof Error ? err.message : tForm("errorFallback"));
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Card>
+    <Card className="glass-card overflow-hidden rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="size-4.5 text-saffron" />
-          Event Notification Preferences
+          {tForm("cardTitle")}
         </CardTitle>
-        <CardDescription>
-          Automatically message opted-in devotees on WhatsApp when events change. Devotees can opt out
-          individually from their profile.
-        </CardDescription>
+        <CardDescription>{tForm("cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {ROWS.map((row) => (
           <div key={row.key} className="flex items-center justify-between rounded-lg border p-3">
             <div>
-              <p className="text-sm font-medium">{row.label}</p>
-              <p className="text-xs text-muted-foreground">{row.description}</p>
+              <p className="text-sm font-medium">{tForm(`rows.${row.rowKey}.label`)}</p>
+              <p className="text-xs text-muted-foreground">{tForm(`rows.${row.rowKey}.description`)}</p>
             </div>
             <Switch
               checked={values[row.key]}

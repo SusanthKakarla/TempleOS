@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TempleInfoForm } from "./temple-info-form";
@@ -24,14 +25,15 @@ export function ChatbotSettingsTabs({
   faqs: TempleFaq[];
   socialLinks: TempleSocialLink[];
 }) {
+  const t = useTranslations("chatbotSettings.tabs");
   return (
     <Tabs defaultValue="info" className="gap-4">
-      <TabsList className="w-full sm:w-fit">
-        <TabsTrigger value="info">Temple Info</TabsTrigger>
-        <TabsTrigger value="timings">Timings</TabsTrigger>
-        <TabsTrigger value="sevas">Sevas</TabsTrigger>
-        <TabsTrigger value="contact">Contact &amp; Social</TabsTrigger>
-        <TabsTrigger value="faq">FAQ</TabsTrigger>
+      <TabsList variant="line" className="w-full sm:w-fit">
+        <TabsTrigger value="info">{t("info")}</TabsTrigger>
+        <TabsTrigger value="timings">{t("timings")}</TabsTrigger>
+        <TabsTrigger value="sevas">{t("sevas")}</TabsTrigger>
+        <TabsTrigger value="contact">{t("contact")}</TabsTrigger>
+        <TabsTrigger value="faq">{t("faq")}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="info" className="space-y-4">

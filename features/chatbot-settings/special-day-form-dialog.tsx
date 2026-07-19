@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import { CalendarDays, Sparkles } from "lucide-react";
 import type { TempleSpecialDay } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ interface SpecialDayFormDialogProps {
 }
 
 export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: SpecialDayFormDialogProps) {
+  const t = useTranslations("chatbotSettings");
+  const tForm = useTranslations("chatbotSettings.specialDayFormDialog");
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(specialDay?.date ?? "");
   const [occasion, setOccasion] = useState(specialDay?.occasion ?? "");
@@ -75,13 +78,13 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save special day");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
 
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save special day");
+      setError(err instanceof Error ? err.message : tForm("errorFallback"));
     } finally {
       setSubmitting(false);
     }
@@ -98,15 +101,13 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add special day" : "Edit special day"}</DialogTitle>
-          <DialogDescription>
-            Overrides the regular timings for a specific date, e.g. a festival.
-          </DialogDescription>
+          <DialogTitle>{mode === "create" ? tForm("titleCreate") : tForm("titleEdit")}</DialogTitle>
+          <DialogDescription>{tForm("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="special-day-date">Date</Label>
+              <Label htmlFor="special-day-date">{tForm("fields.date")}</Label>
               <div className="relative">
                 <CalendarDays className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -120,7 +121,7 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="special-day-occasion">Occasion</Label>
+              <Label htmlFor="special-day-occasion">{tForm("fields.occasion")}</Label>
               <div className="relative">
                 <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -136,8 +137,8 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
-              <p className="text-sm font-medium">Temple closed this day</p>
-              <p className="text-xs text-muted-foreground">Skips the timings below entirely.</p>
+              <p className="text-sm font-medium">{tForm("closedToggle.label")}</p>
+              <p className="text-xs text-muted-foreground">{tForm("closedToggle.description")}</p>
             </div>
             <Switch checked={isClosed} onCheckedChange={setIsClosed} />
           </div>
@@ -146,7 +147,7 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="special-morning-open">Morning open</Label>
+                  <Label htmlFor="special-morning-open">{t("timingsForm.fields.morningOpen")}</Label>
                   <Input
                     id="special-morning-open"
                     type="time"
@@ -155,7 +156,7 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="special-morning-close">Morning close</Label>
+                  <Label htmlFor="special-morning-close">{t("timingsForm.fields.morningClose")}</Label>
                   <Input
                     id="special-morning-close"
                     type="time"
@@ -166,7 +167,7 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="special-evening-open">Evening open</Label>
+                  <Label htmlFor="special-evening-open">{t("timingsForm.fields.eveningOpen")}</Label>
                   <Input
                     id="special-evening-open"
                     type="time"
@@ -175,7 +176,7 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="special-evening-close">Evening close</Label>
+                  <Label htmlFor="special-evening-close">{t("timingsForm.fields.eveningClose")}</Label>
                   <Input
                     id="special-evening-close"
                     type="time"
@@ -184,16 +185,14 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
                   />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Leave a pair blank to keep the regular hours for that slot.
-              </p>
+              <p className="text-xs text-muted-foreground">{tForm("helperText")}</p>
             </>
           )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

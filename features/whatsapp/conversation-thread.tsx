@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { WhatsAppMessage } from "@/types/db";
+import { useLocale, useTranslations } from "next-intl";
+import type { SupportedLanguage, WhatsAppMessage } from "@/types/db";
 import { Button } from "@/components/ui/button";
+import { formatDate, isToday, isYesterday } from "@/lib/date";
+import { groupMessagesByDay } from "./group-messages-by-day";
 import { MessageBubble } from "./message-bubble";
 
 const PAGE_SIZE = 50;
+
+function describeDay(iso: string, locale: SupportedLanguage, todayLabel: string, yesterdayLabel: string): string {
+  const date = new Date(iso);
+  if (isToday(date)) return todayLabel;
+  if (isYesterday(date)) return yesterdayLabel;
+  return formatDate(date, locale, "d MMMM yyyy");
+}
 
 export function ConversationThread({
   devoteeId,
@@ -21,6 +31,8 @@ export function ConversationThread({
   const [hasMore, setHasMore] = useState(initialMessages.length >= PAGE_SIZE);
   const bottomRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("whatsappActivity.thread");
 
   useEffect(() => {
     if (!didInitialScroll.current) {
@@ -45,20 +57,33 @@ export function ConversationThread({
     }
   }
 
+  const grouped = groupMessagesByDay(messages);
+
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4">
       {hasMore && (
         <div className="mb-3 flex justify-center">
           <Button variant="outline" size="sm" onClick={loadOlder} disabled={loadingMore}>
-            {loadingMore ? "Loading…" : "Load older messages"}
+            {loadingMore ? t("loadingMessages") : t("loadOlderMessages")}
           </Button>
         </div>
       )}
       <div className="flex flex-1 flex-col justify-end gap-3">
-        {messages.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground">No messages yet.</p>
+        {grouped.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground">{t("noMessagesYet")}</p>
         ) : (
-          messages.map((message) => <MessageBubble key={message.id} message={message} />)
+          grouped.map(({ message, showSeparator }) => (
+            <div key={message.id} className="flex flex-col gap-3">
+              {showSeparator && (
+                <div className="flex justify-center">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                    {describeDay(message.createdAt, locale, t("today"), t("yesterday"))}
+                  </span>
+                </div>
+              )}
+              <MessageBubble message={message} />
+            </div>
+          ))
         )}
         <div ref={bottomRef} />
       </div>

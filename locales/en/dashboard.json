@@ -56,5 +56,287 @@
       "createEvent": "Create event",
       "addDevotee": "Add devotee"
     }
+  },
+  "export": {
+    "moduleLabels": {
+      "events": "events",
+      "devotees": "devotees",
+      "donations": "donations",
+      "conversations": "conversations"
+    },
+    "dialogTitle": "Export {module}",
+    "dialogDescription": "Choose what to export and a format.",
+    "tabs": {
+      "all": "All",
+      "filtered": "Filtered",
+      "selected": "Selected ({count})"
+    },
+    "formats": {
+      "excel": "Excel (.xlsx)",
+      "csv": "CSV (.csv)",
+      "pdf": "PDF (.pdf)"
+    },
+    "preparing": "Preparing…",
+    "exportButton": "Export"
+  },
+  "whatsappActivity": {
+    "pageHeader": {
+      "title": "Conversations",
+      "subtitle": "Every devotee's WhatsApp messages in one thread, with unread tracking and search."
+    },
+    "stats": {
+      "conversations": "Conversations",
+      "unread": "Unread",
+      "todaysMessages": "Today's Messages",
+      "repliesSentToday": "Replies Sent Today",
+      "activeDevotees": "Active Devotees (7d)",
+      "newViaWhatsapp": "New via WhatsApp",
+      "avgBotResponse": "Avg. Bot Response (s)"
+    },
+    "emptyStates": {
+      "selectConversation": {
+        "title": "Select a conversation",
+        "description": "Choose a devotee from the list to view their full WhatsApp message history."
+      },
+      "noConversations": {
+        "title": "No conversations",
+        "description": "Conversations appear here once devotees message the temple WhatsApp number."
+      }
+    },
+    "list": {
+      "conversationCount": "{count, plural, one {# conversation} other {# conversations}}",
+      "searchPlaceholder": "Search name, phone, or message...",
+      "filters": {
+        "unread": "Unread",
+        "today": "Today",
+        "thisWeek": "This week",
+        "english": "English",
+        "telugu": "Telugu",
+        "donors": "Donors",
+        "optedIn": "Opted-in"
+      }
+    },
+    "listItem": {
+      "youPrefix": "You: ",
+      "noMessagesYet": "No messages yet",
+      "yesterday": "Yesterday"
+    },
+    "header": {
+      "viewProfile": "View Profile",
+      "events": "Events",
+      "export": "Export",
+      "optedIn": "Opted in",
+      "notOptedIn": "Not opted in",
+      "donor": "Donor"
+    },
+    "detailsStrip": {
+      "devoteeSince": "Devotee since",
+      "totalDonated": "Total donated",
+      "lastInteraction": "Last interaction:",
+      "interactionLabels": {
+        "menu": "Viewed menu",
+        "viewed_events": "Viewed events",
+        "requested_contact": "Requested contact",
+        "viewed_timings": "Viewed timings",
+        "viewed_history": "Viewed history",
+        "viewed_sevas": "Viewed sevas",
+        "viewed_faq": "Viewed FAQ",
+        "viewed_donation_info": "Viewed donation info",
+        "viewed_help": "Viewed help",
+        "selected_language": "Selected language",
+        "requested_language_change": "Requested language change",
+        "unknown": "Unrecognized message"
+      }
+    },
+    "thread": {
+      "loadOlderMessages": "Load older messages",
+      "loadingMessages": "Loading…",
+      "noMessagesYet": "No messages yet.",
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "messageBubble": {
+      "buttons": "Buttons",
+      "list": "List"
+    }
+  },
+  "chatbotSettings": {
+    "pageHeader": {
+      "title": "WhatsApp Chatbot Settings",
+      "subtitle": "Everything here is read live by the WhatsApp chatbot — changes take effect immediately, no deployment needed."
+    },
+    "tabs": {
+      "info": "Temple Info",
+      "timings": "Timings",
+      "sevas": "Sevas",
+      "contact": "Contact & Social",
+      "faq": "FAQ"
+    },
+    "common": {
+      "save": "Save",
+      "saving": "Saving...",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "days": {
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    },
+    "templeInfoForm": {
+      "cardTitle": "Temple Info",
+      "cardDescription": "Shown to devotees in the WhatsApp chatbot's menu and replies.",
+      "fields": {
+        "name": "Temple name",
+        "welcomeMessage": "Welcome message",
+        "welcomeMessagePlaceholder": "Namaste! Welcome to our temple.",
+        "description": "Description",
+        "history": "History",
+        "donationInfo": "Donation info",
+        "donationInfoPlaceholder": "How devotees can contribute (bank details, UPI ID, in-person, etc.)"
+      },
+      "successToast": "Temple info saved",
+      "errorFallback": "Failed to save temple info"
+    },
+    "notificationPreferencesForm": {
+      "cardTitle": "Event Notification Preferences",
+      "cardDescription": "Automatically message opted-in devotees on WhatsApp when events change. Devotees can opt out individually from their profile.",
+      "rows": {
+        "newEvent": {
+          "label": "New event published",
+          "description": "Notify opted-in devotees automatically when an event is published."
+        },
+        "eventUpdated": {
+          "label": "Event details updated",
+          "description": "Notify devotees when a published event's date, time, location, title, or description changes."
+        },
+        "eventCancelled": {
+          "label": "Event cancelled",
+          "description": "Notify devotees automatically when an event is cancelled."
+        }
+      },
+      "errorFallback": "Failed to save notification preferences"
+    },
+    "timingsForm": {
+      "cardTitle": "Regular Temple Timings",
+      "cardDescription": "Used by the WhatsApp chatbot when there's no special-day override for today.",
+      "fields": {
+        "morningOpen": "Morning open",
+        "morningClose": "Morning close",
+        "eveningOpen": "Evening open",
+        "eveningClose": "Evening close"
+      },
+      "successToast": "Temple timings saved",
+      "errorFallback": "Failed to save timings"
+    },
+    "contactForm": {
+      "cardTitle": "Temple Contact Details",
+      "cardDescription": "Shared with devotees who ask for contact info on WhatsApp.",
+      "fields": {
+        "phone": "Phone",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "email": "Email",
+        "emailPlaceholder": "office@temple.org",
+        "address": "Address",
+        "mapsLink": "Google Maps link",
+        "mapsLinkPlaceholder": "https://maps.app.goo.gl/..."
+      },
+      "successToast": "Contact details saved",
+      "errorFallback": "Failed to save contact details"
+    },
+    "specialDaysTable": {
+      "cardTitle": "Special Day Timings",
+      "cardDescription": "Overrides regular hours on festival days or closures.",
+      "addButton": "Add special day",
+      "emptyState": "No special days added yet.",
+      "columns": { "date": "Date", "occasion": "Occasion", "timings": "Timings", "actions": "Actions" },
+      "closedBadge": "Closed",
+      "regularHours": "Regular hours",
+      "am": "AM",
+      "pm": "PM",
+      "deleteConfirm": "Delete the \"{occasion}\" entry? This cannot be undone.",
+      "deleteError": "Failed to delete special day"
+    },
+    "specialDayFormDialog": {
+      "titleCreate": "Add special day",
+      "titleEdit": "Edit special day",
+      "description": "Overrides the regular timings for a specific date, e.g. a festival.",
+      "fields": { "date": "Date", "occasion": "Occasion" },
+      "closedToggle": { "label": "Temple closed this day", "description": "Skips the timings below entirely." },
+      "helperText": "Leave a pair blank to keep the regular hours for that slot.",
+      "errorFallback": "Failed to save special day"
+    },
+    "sevasTable": {
+      "cardTitle": "Temple Sevas",
+      "cardDescription": "Browsable in the WhatsApp chatbot's Sevas option. Booking isn't available yet.",
+      "addButton": "Add seva",
+      "emptyState": "No sevas added yet.",
+      "columns": {
+        "name": "Name",
+        "price": "Price",
+        "duration": "Duration",
+        "availableDays": "Available days",
+        "booking": "Booking",
+        "actions": "Actions"
+      },
+      "everyDay": "Every day",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
+      "deleteError": "Failed to delete seva"
+    },
+    "sevaFormDialog": {
+      "titleCreate": "Add seva",
+      "titleEdit": "Edit seva",
+      "description": "Listed in the WhatsApp chatbot's Sevas option. Booking isn't available yet — this is a catalog only.",
+      "fields": {
+        "name": "Name",
+        "description": "Description",
+        "price": "Price (₹, optional)",
+        "duration": "Duration (optional)",
+        "durationPlaceholder": "30 minutes"
+      },
+      "availableDays": { "label": "Available days", "helper": "Leave all unselected if available every day." },
+      "bookingEnabled": {
+        "label": "Booking enabled",
+        "description": "Reserved for a future booking flow — has no effect yet."
+      },
+      "priceError": "Enter a valid price",
+      "errorFallback": "Failed to save seva"
+    },
+    "socialLinksForm": {
+      "cardTitle": "Social Links",
+      "cardDescription": "Shown alongside contact details in the WhatsApp chatbot.",
+      "platforms": {
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "youtube": "YouTube",
+        "twitter": "Twitter / X",
+        "website": "Website",
+        "other": "Other"
+      },
+      "linkSaved": "{platform} link saved",
+      "linkSaveError": "Failed to save {platform} link",
+      "linkClearError": "Failed to clear {platform} link"
+    },
+    "faqsTable": {
+      "cardTitle": "FAQ",
+      "cardDescription": "Answered by the WhatsApp chatbot's FAQ option (first 5 shown).",
+      "addButton": "Add FAQ",
+      "emptyState": "No FAQs added yet.",
+      "deleteConfirm": "Delete this FAQ? This cannot be undone.",
+      "deleteError": "Failed to delete FAQ"
+    },
+    "faqFormDialog": {
+      "titleCreate": "Add FAQ",
+      "titleEdit": "Edit FAQ",
+      "description": "Answered by the WhatsApp chatbot's FAQ option.",
+      "fields": { "question": "Question", "answer": "Answer" },
+      "errorFallback": "Failed to save FAQ"
+    }
   }
 }

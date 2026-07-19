@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import { IndianRupee } from "lucide-react";
 import type { DayOfWeek, TempleSeva } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -19,15 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
-const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
-  { value: "monday", label: "Mon" },
-  { value: "tuesday", label: "Tue" },
-  { value: "wednesday", label: "Wed" },
-  { value: "thursday", label: "Thu" },
-  { value: "friday", label: "Fri" },
-  { value: "saturday", label: "Sat" },
-  { value: "sunday", label: "Sun" },
-];
+const DAY_OPTIONS: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 interface SevaFormDialogProps {
   mode: "create" | "edit";
@@ -37,6 +30,8 @@ interface SevaFormDialogProps {
 }
 
 export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogProps) {
+  const t = useTranslations("chatbotSettings");
+  const tForm = useTranslations("chatbotSettings.sevaFormDialog");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(seva?.name ?? "");
   const [description, setDescription] = useState(seva?.description ?? "");
@@ -67,7 +62,7 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
 
     const priceNumber = price === "" ? null : Number(price);
     if (price !== "" && (Number.isNaN(priceNumber) || (priceNumber ?? 0) < 0)) {
-      setError("Enter a valid price");
+      setError(tForm("priceError"));
       return;
     }
 
@@ -90,13 +85,13 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save seva");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
 
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save seva");
+      setError(err instanceof Error ? err.message : tForm("errorFallback"));
     } finally {
       setSubmitting(false);
     }
@@ -113,19 +108,16 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add seva" : "Edit seva"}</DialogTitle>
-          <DialogDescription>
-            Listed in the WhatsApp chatbot&apos;s Sevas option. Booking isn&apos;t available yet — this is a
-            catalog only.
-          </DialogDescription>
+          <DialogTitle>{mode === "create" ? tForm("titleCreate") : tForm("titleEdit")}</DialogTitle>
+          <DialogDescription>{tForm("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="seva-name">Name</Label>
+            <Label htmlFor="seva-name">{tForm("fields.name")}</Label>
             <Input id="seva-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="seva-description">Description</Label>
+            <Label htmlFor="seva-description">{tForm("fields.description")}</Label>
             <Textarea
               id="seva-description"
               value={description ?? ""}
@@ -135,7 +127,7 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="seva-price">Price (₹, optional)</Label>
+              <Label htmlFor="seva-price">{tForm("fields.price")}</Label>
               <div className="relative">
                 <IndianRupee className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -150,10 +142,10 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="seva-duration">Duration (optional)</Label>
+              <Label htmlFor="seva-duration">{tForm("fields.duration")}</Label>
               <Input
                 id="seva-duration"
-                placeholder="30 minutes"
+                placeholder={tForm("fields.durationPlaceholder")}
                 value={duration ?? ""}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -161,15 +153,15 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
           </div>
 
           <div className="space-y-2">
-            <Label>Available days</Label>
+            <Label>{tForm("availableDays.label")}</Label>
             <div className="flex flex-wrap gap-1.5">
               {DAY_OPTIONS.map((day) => {
-                const selected = availableDays.includes(day.value);
+                const selected = availableDays.includes(day);
                 return (
                   <button
-                    key={day.value}
+                    key={day}
                     type="button"
-                    onClick={() => toggleDay(day.value)}
+                    onClick={() => toggleDay(day)}
                     className={cn(
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       selected
@@ -177,20 +169,18 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
                         : "border-input bg-transparent text-muted-foreground hover:bg-muted",
                     )}
                   >
-                    {day.label}
+                    {t(`days.${day}`)}
                   </button>
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground">Leave all unselected if available every day.</p>
+            <p className="text-xs text-muted-foreground">{tForm("availableDays.helper")}</p>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
-              <p className="text-sm font-medium">Booking enabled</p>
-              <p className="text-xs text-muted-foreground">
-                Reserved for a future booking flow — has no effect yet.
-              </p>
+              <p className="text-sm font-medium">{tForm("bookingEnabled.label")}</p>
+              <p className="text-xs text-muted-foreground">{tForm("bookingEnabled.description")}</p>
             </div>
             <Switch checked={bookingEnabled} onCheckedChange={setBookingEnabled} />
           </div>
@@ -198,7 +188,7 @@ export function SevaFormDialog({ mode, seva, trigger, onSaved }: SevaFormDialogP
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

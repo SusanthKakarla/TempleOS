@@ -2,19 +2,24 @@
 
 import { Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useDebouncedSearchParam } from "@/hooks/use-debounced-search-param";
 import { cn } from "@/lib/utils";
 
-const TOGGLE_FILTERS: { param: string; value: string; label: string }[] = [
-  { param: "unread", value: "true", label: "Unread" },
-  { param: "period", value: "today", label: "Today" },
-  { param: "period", value: "week", label: "This week" },
-  { param: "language", value: "en", label: "English" },
-  { param: "language", value: "te", label: "Telugu" },
-  { param: "donors", value: "true", label: "Donors" },
-  { param: "optedIn", value: "true", label: "Opted-in" },
+const TOGGLE_FILTERS: {
+  param: string;
+  value: string;
+  labelKey: "unread" | "today" | "thisWeek" | "english" | "telugu" | "donors" | "optedIn";
+}[] = [
+  { param: "unread", value: "true", labelKey: "unread" },
+  { param: "period", value: "today", labelKey: "today" },
+  { param: "period", value: "week", labelKey: "thisWeek" },
+  { param: "language", value: "en", labelKey: "english" },
+  { param: "language", value: "te", labelKey: "telugu" },
+  { param: "donors", value: "true", labelKey: "donors" },
+  { param: "optedIn", value: "true", labelKey: "optedIn" },
 ];
 
 export function ConversationSearchFilterBar() {
@@ -22,6 +27,7 @@ export function ConversationSearchFilterBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [query, setQuery] = useDebouncedSearchParam("search", pathname);
+  const t = useTranslations("whatsappActivity.list");
 
   function toggleFilter(param: string, value: string) {
     const params = new URLSearchParams(searchParams);
@@ -39,23 +45,26 @@ export function ConversationSearchFilterBar() {
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search name, phone, or message..."
+          placeholder={t("searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-9"
         />
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {TOGGLE_FILTERS.map(({ param, value, label }) => {
+        {TOGGLE_FILTERS.map(({ param, value, labelKey }) => {
           const isActive = searchParams.get(param) === value;
           return (
             <Badge
               key={`${param}-${value}`}
               variant={isActive ? "default" : "outline"}
-              className={cn("cursor-pointer select-none", !isActive && "text-muted-foreground")}
+              className={cn(
+                "cursor-pointer select-none transition-all",
+                isActive ? "shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
               onClick={() => toggleFilter(param, value)}
             >
-              {label}
+              {t(`filters.${labelKey}`)}
             </Badge>
           );
         })}

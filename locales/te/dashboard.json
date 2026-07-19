@@ -56,5 +56,287 @@
       "createEvent": "కార్యక్రమాన్ని సృష్టించండి",
       "addDevotee": "భక్తుడిని జోడించండి"
     }
+  },
+  "export": {
+    "moduleLabels": {
+      "events": "events",
+      "devotees": "devotees",
+      "donations": "donations",
+      "conversations": "సంభాషణలు"
+    },
+    "dialogTitle": "{module} ఎగుమతి చేయండి",
+    "dialogDescription": "ఏమి ఎగుమతి చేయాలో మరియు ఫార్మాట్‌ను ఎంచుకోండి.",
+    "tabs": {
+      "all": "అన్నీ",
+      "filtered": "ఫిల్టర్ చేసినవి",
+      "selected": "ఎంచుకున్నవి ({count})"
+    },
+    "formats": {
+      "excel": "Excel (.xlsx)",
+      "csv": "CSV (.csv)",
+      "pdf": "PDF (.pdf)"
+    },
+    "preparing": "సిద్ధమవుతోంది…",
+    "exportButton": "ఎగుమతి"
+  },
+  "whatsappActivity": {
+    "pageHeader": {
+      "title": "సంభాషణలు",
+      "subtitle": "ప్రతి భక్తుని వాట్సాప్ సందేశాలు ఒకే థ్రెడ్‌లో, చదవని గుర్తింపు మరియు శోధనతో."
+    },
+    "stats": {
+      "conversations": "సంభాషణలు",
+      "unread": "చదవనివి",
+      "todaysMessages": "ఈరోజు సందేశాలు",
+      "repliesSentToday": "ఈరోజు పంపిన రిప్లైలు",
+      "activeDevotees": "సక్రియ భక్తులు (7 రోజులు)",
+      "newViaWhatsapp": "వాట్సాప్ ద్వారా కొత్తవారు",
+      "avgBotResponse": "సగటు బాట్ స్పందన (సె)"
+    },
+    "emptyStates": {
+      "selectConversation": {
+        "title": "సంభాషణను ఎంచుకోండి",
+        "description": "పూర్తి వాట్సాప్ సందేశ చరిత్రను చూడటానికి జాబితా నుండి ఒక భక్తుడిని ఎంచుకోండి."
+      },
+      "noConversations": {
+        "title": "సంభాషణలు లేవు",
+        "description": "భక్తులు ఆలయ వాట్సాప్ నంబర్‌కు సందేశం పంపిన తర్వాత సంభాషణలు ఇక్కడ కనిపిస్తాయి."
+      }
+    },
+    "list": {
+      "conversationCount": "{count, plural, one {# సంభాషణ} other {# సంభాషణలు}}",
+      "searchPlaceholder": "పేరు, ఫోన్ లేదా సందేశం ద్వారా వెతకండి...",
+      "filters": {
+        "unread": "చదవనివి",
+        "today": "ఈరోజు",
+        "thisWeek": "ఈ వారం",
+        "english": "ఇంగ్లీష్",
+        "telugu": "తెలుగు",
+        "donors": "దాతలు",
+        "optedIn": "చేరినవారు"
+      }
+    },
+    "listItem": {
+      "youPrefix": "మీరు: ",
+      "noMessagesYet": "ఇంకా సందేశాలు లేవు",
+      "yesterday": "నిన్న"
+    },
+    "header": {
+      "viewProfile": "ప్రొఫైల్ చూడండి",
+      "events": "కార్యక్రమాలు",
+      "export": "ఎగుమతి",
+      "optedIn": "చేరారు",
+      "notOptedIn": "చేరలేదు",
+      "donor": "దాత"
+    },
+    "detailsStrip": {
+      "devoteeSince": "భక్తుడిగా చేరిన తేదీ",
+      "totalDonated": "మొత్తం విరాళం",
+      "lastInteraction": "చివరి పరస్పర చర్య:",
+      "interactionLabels": {
+        "menu": "మెనూ చూశారు",
+        "viewed_events": "కార్యక్రమాలు చూశారు",
+        "requested_contact": "సంప్రదింపు కోరారు",
+        "viewed_timings": "వేళలు చూశారు",
+        "viewed_history": "చరిత్ర చూశారు",
+        "viewed_sevas": "సేవలు చూశారు",
+        "viewed_faq": "ప్రశ్నలు చూశారు",
+        "viewed_donation_info": "విరాళ సమాచారం చూశారు",
+        "viewed_help": "సహాయం చూశారు",
+        "selected_language": "భాష ఎంచుకున్నారు",
+        "requested_language_change": "భాష మార్పు కోరారు",
+        "unknown": "గుర్తించని సందేశం"
+      }
+    },
+    "thread": {
+      "loadOlderMessages": "పాత సందేశాలను లోడ్ చేయండి",
+      "loadingMessages": "లోడ్ అవుతోంది…",
+      "noMessagesYet": "ఇంకా సందేశాలు లేవు.",
+      "today": "ఈరోజు",
+      "yesterday": "నిన్న"
+    },
+    "messageBubble": {
+      "buttons": "బటన్‌లు",
+      "list": "జాబితా"
+    }
+  },
+  "chatbotSettings": {
+    "pageHeader": {
+      "title": "వాట్సాప్ చాట్‌బాట్ సెట్టింగులు",
+      "subtitle": "ఇక్కడ ఉన్నదంతా వాట్సాప్ చాట్‌బాట్ ప్రత్యక్షంగా చదువుతుంది — మార్పులు వెంటనే అమలవుతాయి, డిప్లాయ్‌మెంట్ అవసరం లేదు."
+    },
+    "tabs": {
+      "info": "దేవాలయ సమాచారం",
+      "timings": "వేళలు",
+      "sevas": "సేవలు",
+      "contact": "సంప్రదింపు & సోషల్",
+      "faq": "ప్రశ్నలు"
+    },
+    "common": {
+      "save": "సేవ్ చేయండి",
+      "saving": "సేవ్ అవుతోంది...",
+      "edit": "సవరించండి",
+      "delete": "తొలగించండి"
+    },
+    "days": {
+      "monday": "సోమ",
+      "tuesday": "మంగళ",
+      "wednesday": "బుధ",
+      "thursday": "గురు",
+      "friday": "శుక్ర",
+      "saturday": "శని",
+      "sunday": "ఆది"
+    },
+    "templeInfoForm": {
+      "cardTitle": "దేవాలయ సమాచారం",
+      "cardDescription": "భక్తులకు వాట్సాప్ చాట్‌బాట్ మెనూ మరియు రిప్లైలలో చూపబడుతుంది.",
+      "fields": {
+        "name": "దేవాలయ పేరు",
+        "welcomeMessage": "స్వాగత సందేశం",
+        "welcomeMessagePlaceholder": "నమస్తే! మా దేవాలయానికి స్వాగతం.",
+        "description": "వివరణ",
+        "history": "చరిత్ర",
+        "donationInfo": "విరాళ సమాచారం",
+        "donationInfoPlaceholder": "భక్తులు ఎలా విరాళం అందించవచ్చు (బ్యాంక్ వివరాలు, UPI ID, స్వయంగా, మొదలైనవి)"
+      },
+      "successToast": "దేవాలయ సమాచారం సేవ్ చేయబడింది",
+      "errorFallback": "దేవాలయ సమాచారాన్ని సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "notificationPreferencesForm": {
+      "cardTitle": "కార్యక్రమ నోటిఫికేషన్ ప్రాధాన్యతలు",
+      "cardDescription": "కార్యక్రమాలు మారినప్పుడు చేరిన భక్తులకు వాట్సాప్‌లో స్వయంచాలకంగా సందేశం పంపండి. భక్తులు తమ ప్రొఫైల్ నుండి విడివిడిగా ఆప్ట్-అవుట్ చేయవచ్చు.",
+      "rows": {
+        "newEvent": {
+          "label": "కొత్త కార్యక్రమం ప్రచురించబడింది",
+          "description": "కార్యక్రమం ప్రచురించినప్పుడు చేరిన భక్తులకు స్వయంచాలకంగా తెలియజేయండి."
+        },
+        "eventUpdated": {
+          "label": "కార్యక్రమ వివరాలు నవీకరించబడ్డాయి",
+          "description": "ప్రచురించిన కార్యక్రమం తేదీ, సమయం, స్థలం, శీర్షిక లేదా వివరణ మారినప్పుడు భక్తులకు తెలియజేయండి."
+        },
+        "eventCancelled": {
+          "label": "కార్యక్రమం రద్దు చేయబడింది",
+          "description": "కార్యక్రమం రద్దయినప్పుడు భక్తులకు స్వయంచాలకంగా తెలియజేయండి."
+        }
+      },
+      "errorFallback": "నోటిఫికేషన్ ప్రాధాన్యతలను సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "timingsForm": {
+      "cardTitle": "సాధారణ దేవాలయ వేళలు",
+      "cardDescription": "ఈరోజు కోసం ప్రత్యేక-దిన మార్పు లేనప్పుడు వాట్సాప్ చాట్‌బాట్ దీన్ని ఉపయోగిస్తుంది.",
+      "fields": {
+        "morningOpen": "ఉదయం తెరిచే సమయం",
+        "morningClose": "ఉదయం మూసే సమయం",
+        "eveningOpen": "సాయంత్రం తెరిచే సమయం",
+        "eveningClose": "సాయంత్రం మూసే సమయం"
+      },
+      "successToast": "దేవాలయ వేళలు సేవ్ చేయబడ్డాయి",
+      "errorFallback": "వేళలను సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "contactForm": {
+      "cardTitle": "దేవాలయ సంప్రదింపు వివరాలు",
+      "cardDescription": "వాట్సాప్‌లో సంప్రదింపు సమాచారం అడిగే భక్తులతో పంచుకోబడుతుంది.",
+      "fields": {
+        "phone": "ఫోన్",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "email": "ఇమెయిల్",
+        "emailPlaceholder": "office@temple.org",
+        "address": "చిరునామా",
+        "mapsLink": "గూగుల్ మ్యాప్స్ లింక్",
+        "mapsLinkPlaceholder": "https://maps.app.goo.gl/..."
+      },
+      "successToast": "సంప్రదింపు వివరాలు సేవ్ చేయబడ్డాయి",
+      "errorFallback": "సంప్రదింపు వివరాలను సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "specialDaysTable": {
+      "cardTitle": "ప్రత్యేక దిన వేళలు",
+      "cardDescription": "పండుగ దినాలు లేదా మూసివేతలలో సాధారణ వేళలను భర్తీ చేస్తుంది.",
+      "addButton": "ప్రత్యేక దినం జోడించండి",
+      "emptyState": "ఇంకా ప్రత్యేక దినాలు జోడించలేదు.",
+      "columns": { "date": "తేదీ", "occasion": "సందర్భం", "timings": "వేళలు", "actions": "చర్యలు" },
+      "closedBadge": "మూసివేయబడింది",
+      "regularHours": "సాధారణ వేళలు",
+      "am": "AM",
+      "pm": "PM",
+      "deleteConfirm": "\"{occasion}\" ఎంట్రీని తొలగించాలా? దీన్ని రద్దు చేయలేరు.",
+      "deleteError": "ప్రత్యేక దినాన్ని తొలగించడంలో విఫలమైంది"
+    },
+    "specialDayFormDialog": {
+      "titleCreate": "ప్రత్యేక దినం జోడించండి",
+      "titleEdit": "ప్రత్యేక దినాన్ని సవరించండి",
+      "description": "ఒక నిర్దిష్ట తేదీ కోసం సాధారణ వేళలను భర్తీ చేస్తుంది, ఉదా. ఒక పండుగ.",
+      "fields": { "date": "తేదీ", "occasion": "సందర్భం" },
+      "closedToggle": { "label": "ఈ రోజు దేవాలయం మూసివేయబడింది", "description": "క్రింద ఉన్న వేళలను పూర్తిగా దాటవేస్తుంది." },
+      "helperText": "ఆ స్లాట్ కోసం సాధారణ వేళలను ఉంచడానికి జతను ఖాళీగా వదలండి.",
+      "errorFallback": "ప్రత్యేక దినాన్ని సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "sevasTable": {
+      "cardTitle": "దేవాలయ సేవలు",
+      "cardDescription": "వాట్సాప్ చాట్‌బాట్ సేవల ఎంపికలో బ్రౌజ్ చేయవచ్చు. బుకింగ్ ఇంకా అందుబాటులో లేదు.",
+      "addButton": "సేవ జోడించండి",
+      "emptyState": "ఇంకా సేవలు జోడించలేదు.",
+      "columns": {
+        "name": "పేరు",
+        "price": "ధర",
+        "duration": "వ్యవధి",
+        "availableDays": "అందుబాటులో ఉన్న రోజులు",
+        "booking": "బుకింగ్",
+        "actions": "చర్యలు"
+      },
+      "everyDay": "ప్రతిరోజు",
+      "enabled": "ప్రారంభించబడింది",
+      "disabled": "నిలిపివేయబడింది",
+      "deleteConfirm": "\"{name}\" తొలగించాలా? దీన్ని రద్దు చేయలేరు.",
+      "deleteError": "సేవను తొలగించడంలో విఫలమైంది"
+    },
+    "sevaFormDialog": {
+      "titleCreate": "సేవ జోడించండి",
+      "titleEdit": "సేవను సవరించండి",
+      "description": "వాట్సాప్ చాట్‌బాట్ సేవల ఎంపికలో జాబితా చేయబడింది. బుకింగ్ ఇంకా అందుబాటులో లేదు — ఇది కేవలం జాబితా మాత్రమే.",
+      "fields": {
+        "name": "పేరు",
+        "description": "వివరణ",
+        "price": "ధర (₹, ఐచ్ఛికం)",
+        "duration": "వ్యవధి (ఐచ్ఛికం)",
+        "durationPlaceholder": "30 నిమిషాలు"
+      },
+      "availableDays": { "label": "అందుబాటులో ఉన్న రోజులు", "helper": "ప్రతిరోజూ అందుబాటులో ఉంటే అన్నింటినీ ఎంపిక చేయకుండా వదిలేయండి." },
+      "bookingEnabled": {
+        "label": "బుకింగ్ ప్రారంభించబడింది",
+        "description": "భవిష్యత్ బుకింగ్ ఫ్లో కోసం రిజర్వ్ చేయబడింది — ఇంకా ఎలాంటి ప్రభావం లేదు."
+      },
+      "priceError": "సరైన ధరను నమోదు చేయండి",
+      "errorFallback": "సేవను సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "socialLinksForm": {
+      "cardTitle": "సోషల్ లింక్‌లు",
+      "cardDescription": "వాట్సాప్ చాట్‌బాట్‌లో సంప్రదింపు వివరాలతో పాటు చూపబడుతుంది.",
+      "platforms": {
+        "facebook": "ఫేస్‌బుక్",
+        "instagram": "ఇన్‌స్టాగ్రామ్",
+        "youtube": "యూట్యూబ్",
+        "twitter": "ట్విట్టర్ / X",
+        "website": "వెబ్‌సైట్",
+        "other": "ఇతర"
+      },
+      "linkSaved": "{platform} లింక్ సేవ్ చేయబడింది",
+      "linkSaveError": "{platform} లింక్‌ను సేవ్ చేయడంలో విఫలమైంది",
+      "linkClearError": "{platform} లింక్‌ను క్లియర్ చేయడంలో విఫలమైంది"
+    },
+    "faqsTable": {
+      "cardTitle": "ప్రశ్నలు",
+      "cardDescription": "వాట్సాప్ చాట్‌బాట్ ప్రశ్నల ఎంపిక ద్వారా సమాధానం ఇవ్వబడుతుంది (మొదటి 5 చూపబడతాయి).",
+      "addButton": "ప్రశ్న జోడించండి",
+      "emptyState": "ఇంకా ప్రశ్నలు జోడించలేదు.",
+      "deleteConfirm": "ఈ ప్రశ్నను తొలగించాలా? దీన్ని రద్దు చేయలేరు.",
+      "deleteError": "ప్రశ్నను తొలగించడంలో విఫలమైంది"
+    },
+    "faqFormDialog": {
+      "titleCreate": "ప్రశ్న జోడించండి",
+      "titleEdit": "ప్రశ్నను సవరించండి",
+      "description": "వాట్సాప్ చాట్‌బాట్ ప్రశ్నల ఎంపిక ద్వారా సమాధానం ఇవ్వబడుతుంది.",
+      "fields": { "question": "ప్రశ్న", "answer": "సమాధానం" },
+      "errorFallback": "ప్రశ్నను సేవ్ చేయడంలో విఫలమైంది"
+    }
   }
 }

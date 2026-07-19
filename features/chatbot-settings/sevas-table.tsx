@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { HandCoins, Plus } from "lucide-react";
 import type { TempleSeva } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,19 @@ import {
 import { formatInr } from "@/lib/currency";
 import { SevaFormDialog } from "./seva-form-dialog";
 
-function formatDays(days: TempleSeva["availableDays"]): string {
-  if (days.length === 0) return "Every day";
-  return days.map((day) => day.slice(0, 3)).join(", ");
+function formatDays(
+  days: TempleSeva["availableDays"],
+  t: ReturnType<typeof useTranslations>,
+  everyDayLabel: string,
+): string {
+  if (days.length === 0) return everyDayLabel;
+  return days.map((day) => t(`days.${day}`)).join(", ");
 }
 
 export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
   const router = useRouter();
+  const t = useTranslations("chatbotSettings");
+  const tForm = useTranslations("chatbotSettings.sevasTable");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,38 +40,36 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
   }
 
   async function handleDelete(seva: TempleSeva) {
-    if (!window.confirm(`Delete "${seva.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(tForm("deleteConfirm", { name: seva.name }))) return;
     setError(null);
     setPendingId(seva.id);
     try {
       const response = await fetch(`/api/temple-sevas/${seva.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete seva");
+        throw new Error(body.error ?? tForm("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete seva");
+      setError(err instanceof Error ? err.message : tForm("deleteError"));
     } finally {
       setPendingId(null);
     }
   }
 
   return (
-    <Card>
+    <Card className="glass-card overflow-hidden rounded-2xl">
       <CardHeader className="flex-row items-center justify-between">
         <div>
-          <CardTitle>Temple Sevas</CardTitle>
-          <CardDescription>
-            Browsable in the WhatsApp chatbot&apos;s Sevas option. Booking isn&apos;t available yet.
-          </CardDescription>
+          <CardTitle>{tForm("cardTitle")}</CardTitle>
+          <CardDescription>{tForm("cardDescription")}</CardDescription>
         </div>
         <SevaFormDialog
           mode="create"
           trigger={
             <Button size="sm" className="gap-1.5">
               <Plus className="size-4" />
-              Add seva
+              {tForm("addButton")}
             </Button>
           }
           onSaved={refresh}
@@ -77,19 +82,19 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
             <div className="flex size-12 items-center justify-center rounded-full bg-muted">
               <HandCoins className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">No sevas added yet.</p>
+            <p className="text-sm text-muted-foreground">{tForm("emptyState")}</p>
           </div>
         ) : (
           <div className="rounded-xl border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Available days</TableHead>
-                  <TableHead>Booking</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{tForm("columns.name")}</TableHead>
+                  <TableHead>{tForm("columns.price")}</TableHead>
+                  <TableHead>{tForm("columns.duration")}</TableHead>
+                  <TableHead>{tForm("columns.availableDays")}</TableHead>
+                  <TableHead>{tForm("columns.booking")}</TableHead>
+                  <TableHead className="text-right">{tForm("columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,10 +110,10 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                     </TableCell>
                     <TableCell>{seva.price ? formatInr(seva.price) : "—"}</TableCell>
                     <TableCell>{seva.duration ?? "—"}</TableCell>
-                    <TableCell>{formatDays(seva.availableDays)}</TableCell>
+                    <TableCell>{formatDays(seva.availableDays, t, tForm("everyDay"))}</TableCell>
                     <TableCell>
                       <Badge variant={seva.bookingEnabled ? "default" : "secondary"}>
-                        {seva.bookingEnabled ? "Enabled" : "Disabled"}
+                        {seva.bookingEnabled ? tForm("enabled") : tForm("disabled")}
                       </Badge>
                     </TableCell>
                     <TableCell className="flex justify-end gap-2">
@@ -117,7 +122,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                         seva={seva}
                         trigger={
                           <Button variant="outline" size="sm" disabled={pendingId === seva.id}>
-                            Edit
+                            {t("common.edit")}
                           </Button>
                         }
                         onSaved={refresh}
@@ -128,7 +133,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                         disabled={pendingId === seva.id}
                         onClick={() => handleDelete(seva)}
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     </TableCell>
                   </TableRow>

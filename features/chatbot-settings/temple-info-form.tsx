@@ -2,16 +2,19 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
+  const t = useTranslations("chatbotSettings");
+  const tForm = useTranslations("chatbotSettings.templeInfoForm");
   const [name, setName] = useState(tenant.name);
   const [welcomeMessage, setWelcomeMessage] = useState(tenant.welcomeMessage ?? "");
   const [description, setDescription] = useState(tenant.description ?? "");
@@ -32,12 +35,12 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save temple info");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
-      toast.success("Temple info saved");
+      toast.success(tForm("successToast"));
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save temple info";
+      const message = err instanceof Error ? err.message : tForm("errorFallback");
       setError(message);
       toast.error(message);
     } finally {
@@ -46,31 +49,29 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <Card>
+    <Card className="glass-card overflow-hidden rounded-2xl">
       <CardHeader>
-        <CardTitle>Temple Info</CardTitle>
-        <CardDescription>
-          Shown to devotees in the WhatsApp chatbot&apos;s menu and replies.
-        </CardDescription>
+        <CardTitle>{tForm("cardTitle")}</CardTitle>
+        <CardDescription>{tForm("cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="temple-info-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="temple-name">Temple name</Label>
+            <Label htmlFor="temple-name">{tForm("fields.name")}</Label>
             <Input id="temple-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="welcome-message">Welcome message</Label>
+            <Label htmlFor="welcome-message">{tForm("fields.welcomeMessage")}</Label>
             <Textarea
               id="welcome-message"
-              placeholder="Namaste! Welcome to our temple."
+              placeholder={tForm("fields.welcomeMessagePlaceholder")}
               value={welcomeMessage}
               onChange={(e) => setWelcomeMessage(e.target.value)}
               rows={2}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{tForm("fields.description")}</Label>
             <Textarea
               id="description"
               value={description}
@@ -79,25 +80,27 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="history">History</Label>
+            <Label htmlFor="history">{tForm("fields.history")}</Label>
             <Textarea id="history" value={history} onChange={(e) => setHistory(e.target.value)} rows={4} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="donation-info">Donation info</Label>
+            <Label htmlFor="donation-info">{tForm("fields.donationInfo")}</Label>
             <Textarea
               id="donation-info"
-              placeholder="How devotees can contribute (bank details, UPI ID, in-person, etc.)"
+              placeholder={tForm("fields.donationInfoPlaceholder")}
               value={donationInfo}
               onChange={(e) => setDonationInfo(e.target.value)}
               rows={4}
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : "Save"}
-          </Button>
         </form>
       </CardContent>
+      <CardFooter>
+        <Button type="submit" form="temple-info-form" disabled={submitting}>
+          {submitting ? t("common.saving") : t("common.save")}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

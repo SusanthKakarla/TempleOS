@@ -7,7 +7,7 @@ export default function WhatsAppActivityLoading() {
         <Skeleton className="h-8 w-full max-w-xs" />
         <Skeleton className="h-8 w-56" />
       </div>
-      <div className="space-y-3 rounded-xl border bg-background p-4">
+      <div className="glass-panel space-y-3 rounded-2xl p-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className={`flex flex-col gap-1 ${i % 2 === 0 ? "items-start" : "items-end"}`}>
             <Skeleton className="h-3 w-32" />

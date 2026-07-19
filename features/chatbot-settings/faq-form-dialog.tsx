@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
+import { useTranslations } from "next-intl";
 import type { TempleFaq } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,8 @@ interface FaqFormDialogProps {
 }
 
 export function FaqFormDialog({ mode, faq, trigger, onSaved }: FaqFormDialogProps) {
+  const t = useTranslations("chatbotSettings");
+  const tForm = useTranslations("chatbotSettings.faqFormDialog");
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState(faq?.question ?? "");
   const [answer, setAnswer] = useState(faq?.answer ?? "");
@@ -50,13 +53,13 @@ export function FaqFormDialog({ mode, faq, trigger, onSaved }: FaqFormDialogProp
 
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to save FAQ");
+        throw new Error(body.error ?? tForm("errorFallback"));
       }
 
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save FAQ");
+      setError(err instanceof Error ? err.message : tForm("errorFallback"));
     } finally {
       setSubmitting(false);
     }
@@ -73,12 +76,12 @@ export function FaqFormDialog({ mode, faq, trigger, onSaved }: FaqFormDialogProp
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add FAQ" : "Edit FAQ"}</DialogTitle>
-          <DialogDescription>Answered by the WhatsApp chatbot&apos;s FAQ option.</DialogDescription>
+          <DialogTitle>{mode === "create" ? tForm("titleCreate") : tForm("titleEdit")}</DialogTitle>
+          <DialogDescription>{tForm("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="faq-question">Question</Label>
+            <Label htmlFor="faq-question">{tForm("fields.question")}</Label>
             <Textarea
               id="faq-question"
               value={question}
@@ -88,7 +91,7 @@ export function FaqFormDialog({ mode, faq, trigger, onSaved }: FaqFormDialogProp
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="faq-answer">Answer</Label>
+            <Label htmlFor="faq-answer">{tForm("fields.answer")}</Label>
             <Textarea
               id="faq-answer"
               value={answer}
@@ -100,7 +103,7 @@ export function FaqFormDialog({ mode, faq, trigger, onSaved }: FaqFormDialogProp
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

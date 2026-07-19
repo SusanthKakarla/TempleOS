@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { HelpCircle, Plus } from "lucide-react";
 import type { TempleFaq } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { FaqFormDialog } from "./faq-form-dialog";
 
 export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
   const router = useRouter();
+  const t = useTranslations("chatbotSettings.common");
+  const tForm = useTranslations("chatbotSettings.faqsTable");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,36 +21,36 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
   }
 
   async function handleDelete(faq: TempleFaq) {
-    if (!window.confirm(`Delete this FAQ? This cannot be undone.`)) return;
+    if (!window.confirm(tForm("deleteConfirm"))) return;
     setError(null);
     setPendingId(faq.id);
     try {
       const response = await fetch(`/api/temple-faqs/${faq.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete FAQ");
+        throw new Error(body.error ?? tForm("deleteError"));
       }
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete FAQ");
+      setError(err instanceof Error ? err.message : tForm("deleteError"));
     } finally {
       setPendingId(null);
     }
   }
 
   return (
-    <Card>
+    <Card className="glass-card overflow-hidden rounded-2xl">
       <CardHeader className="flex-row items-center justify-between">
         <div>
-          <CardTitle>FAQ</CardTitle>
-          <CardDescription>Answered by the WhatsApp chatbot&apos;s FAQ option (first 5 shown).</CardDescription>
+          <CardTitle>{tForm("cardTitle")}</CardTitle>
+          <CardDescription>{tForm("cardDescription")}</CardDescription>
         </div>
         <FaqFormDialog
           mode="create"
           trigger={
             <Button size="sm" className="gap-1.5">
               <Plus className="size-4" />
-              Add FAQ
+              {tForm("addButton")}
             </Button>
           }
           onSaved={refresh}
@@ -60,7 +63,7 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
             <div className="flex size-12 items-center justify-center rounded-full bg-muted">
               <HelpCircle className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">No FAQs added yet.</p>
+            <p className="text-sm text-muted-foreground">{tForm("emptyState")}</p>
           </div>
         ) : (
           <div className="divide-y rounded-xl border">
@@ -76,7 +79,7 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
                     faq={faq}
                     trigger={
                       <Button variant="outline" size="sm" disabled={pendingId === faq.id}>
-                        Edit
+                        {t("edit")}
                       </Button>
                     }
                     onSaved={refresh}
@@ -87,7 +90,7 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
                     disabled={pendingId === faq.id}
                     onClick={() => handleDelete(faq)}
                   >
-                    Delete
+                    {t("delete")}
                   </Button>
                 </div>
               </div>
