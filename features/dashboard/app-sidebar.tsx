@@ -7,12 +7,14 @@ import { motion } from "framer-motion";
 import {
   BellRing,
   CalendarDays,
+  ChevronRight,
   LayoutDashboard,
   Landmark,
   MessageCircle,
   Receipt,
   Settings2,
   ShieldCheck,
+  UserCog,
   Users,
 } from "lucide-react";
 import {
@@ -25,7 +27,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
@@ -65,10 +71,22 @@ const SUPER_ADMIN_NAV_ITEM = {
   gradient: "bg-royal-blue",
 } as const;
 
+const USER_MANAGEMENT_NAV_ITEM = {
+  icon: UserCog,
+  gradient: "gradient-blue-purple",
+  children: [
+    { href: "/dashboard/users", labelKey: "users" as const },
+    { href: "/dashboard/roles", labelKey: "rolesAndPermissions" as const },
+  ],
+} as const;
+
 export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const navItems = isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS;
+  const userManagementActive = USER_MANAGEMENT_NAV_ITEM.children.some((child) =>
+    pathname?.startsWith(child.href),
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -118,6 +136,44 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   </SidebarMenuItem>
                 );
               })}
+              <Collapsible defaultOpen={userManagementActive}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger
+                    render={
+                      <SidebarMenuButton
+                        isActive={userManagementActive}
+                        tooltip={t("userManagement")}
+                        className="group/nav-item h-10 gap-3"
+                      >
+                        <span
+                          className={cn(
+                            "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110",
+                            USER_MANAGEMENT_NAV_ITEM.gradient,
+                          )}
+                        >
+                          <UserCog className="size-3.5" />
+                        </span>
+                        <span className="font-medium">{t("userManagement")}</span>
+                        <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-panel-open/nav-item:rotate-90" />
+                      </SidebarMenuButton>
+                    }
+                  />
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {USER_MANAGEMENT_NAV_ITEM.children.map((child) => {
+                        const isActive = pathname?.startsWith(child.href);
+                        return (
+                          <SidebarMenuSubItem key={child.href}>
+                            <SidebarMenuSubButton isActive={isActive} render={<Link href={child.href} />}>
+                              <span>{t(child.labelKey)}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

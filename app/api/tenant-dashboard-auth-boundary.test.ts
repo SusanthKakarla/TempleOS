@@ -19,6 +19,15 @@ const tenantDashboardApiRoutes = [
   "app/api/temple-faqs/route.ts",
   "app/api/temple-faqs/[id]/route.ts",
   "app/api/temple-social-links/[platform]/route.ts",
+  "app/api/users/route.ts",
+  "app/api/users/[membershipId]/roles/route.ts",
+  "app/api/users/[membershipId]/status/route.ts",
+  "app/api/users/[membershipId]/activity/route.ts",
+  "app/api/users/export/route.ts",
+  "app/api/users/import/preview/route.ts",
+  "app/api/users/import/commit/route.ts",
+  "app/api/users/import/template/route.ts",
+  "app/api/audit-log/route.ts",
 ];
 
 const tenantDashboardAuthBoundaryFiles = [
@@ -36,6 +45,10 @@ const tenantDashboardPages = [
   "app/(dashboard)/dashboard/donations/page.tsx",
   "app/(dashboard)/dashboard/whatsapp-activity/page.tsx",
   "app/(dashboard)/dashboard/chatbot-settings/page.tsx",
+  "app/(dashboard)/dashboard/users/page.tsx",
+  "app/(dashboard)/dashboard/users/import/page.tsx",
+  "app/(dashboard)/dashboard/users/activity/page.tsx",
+  "app/(dashboard)/dashboard/roles/page.tsx",
 ];
 
 describe("tenant dashboard API authorization boundary", () => {

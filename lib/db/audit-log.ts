@@ -58,3 +58,34 @@ export async function createAuditLogEntry(
   );
   return mapAuditLogEntry(rows[0]);
 }
+
+export interface ListAuditLogEntriesFilters {
+  targetId?: string;
+  targetType?: string;
+  limit?: number;
+}
+
+export async function listAuditLogEntriesForTenant(
+  tenantId: string,
+  filters: ListAuditLogEntriesFilters = {},
+  client: QueryClient = getPool(),
+): Promise<AuditLogEntry[]> {
+  const conditions = ["tenant_id = $1"];
+  const params: unknown[] = [tenantId];
+
+  if (filters.targetId) {
+    params.push(filters.targetId);
+    conditions.push(`target_id = $${params.length}`);
+  }
+  if (filters.targetType) {
+    params.push(filters.targetType);
+    conditions.push(`target_type = $${params.length}`);
+  }
+
+  params.push(filters.limit ?? 50);
+  const { rows } = await client.query<AuditLogRow>(
+    `SELECT * FROM audit_log WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC LIMIT $${params.length}`,
+    params,
+  );
+  return rows.map(mapAuditLogEntry);
+}

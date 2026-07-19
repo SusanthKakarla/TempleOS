@@ -42,6 +42,7 @@ function membership(
     displayName: `Member ${tenantId}`,
     status: "active",
     preferredUiLanguage: null,
+    lastSignedInAt: null,
     roles,
     createdAt: "2026-07-18T00:00:00.000Z",
     updatedAt: "2026-07-18T00:00:00.000Z",
@@ -199,6 +200,7 @@ describe("identity and session isolation guardrails", () => {
     vi.doMock("@/lib/db/persons", () => ({ bindPersonFirebaseUid, findPersonByPhone }));
     vi.doMock("@/lib/db/tenant-memberships", () => ({
       findActiveTenantMembershipByPersonAndTenant,
+      touchLastSignedIn: vi.fn(),
     }));
     vi.doMock("@/lib/firebase/errors", () => ({ devLog: vi.fn() }));
     vi.doMock("@/lib/i18n/locale", () => ({ setLocaleCookie: vi.fn() }));
@@ -346,6 +348,7 @@ describe("identity and session isolation guardrails", () => {
     vi.doMock("@/lib/db/persons", () => ({ bindPersonFirebaseUid, findPersonByPhone }));
     vi.doMock("@/lib/db/tenant-memberships", () => ({
       findActiveTenantMembershipByPersonAndTenant,
+      touchLastSignedIn: vi.fn(),
     }));
     vi.doMock("@/lib/firebase/errors", () => ({ devLog }));
     vi.doMock("@/lib/i18n/locale", () => ({ setLocaleCookie: vi.fn() }));

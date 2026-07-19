@@ -98,6 +98,7 @@ export interface TenantMembership {
   displayName: string;
   status: TenantMembershipStatus;
   preferredUiLanguage: SupportedLanguage | null;
+  lastSignedInAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

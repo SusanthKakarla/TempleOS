@@ -16,7 +16,10 @@
     "conversations": "Conversations",
     "notifications": "Notifications",
     "chatbotSettings": "Chatbot Settings",
-    "admins": "Admins"
+    "admins": "Admins",
+    "userManagement": "User Management",
+    "users": "Users",
+    "rolesAndPermissions": "Roles & Permissions"
   },
   "topbar": {
     "accountMenu": "Account menu",
@@ -71,7 +74,8 @@
       "events": "events",
       "devotees": "devotees",
       "donations": "donations",
-      "conversations": "conversations"
+      "conversations": "conversations",
+      "users": "users"
     },
     "dialogTitle": "Export {module}",
     "dialogDescription": "Choose what to export and a format.",
@@ -561,6 +565,127 @@
         "dateRequired": "Donation date is required"
       },
       "errorFallback": "Failed to save donation"
+    }
+  },
+  "userManagement": {
+    "pageHeader": {
+      "title": "Users",
+      "subtitle": "Invite temple staff and manage who has dashboard access."
+    },
+    "inviteButton": "Invite User",
+    "importButton": "Import",
+    "searchPlaceholder": "Search by name or phone...",
+    "filters": { "allRoles": "All roles", "allStatuses": "All statuses" },
+    "columns": {
+      "name": "Name",
+      "phone": "Phone",
+      "role": "Current Role",
+      "status": "Status",
+      "joined": "Joined Date",
+      "lastLogin": "Last Login",
+      "actions": "Actions"
+    },
+    "selectAll": "Select all users",
+    "selectRow": "Select {name}",
+    "status": { "enabled": "Enabled", "disabled": "Disabled", "never": "Never" },
+    "roleNames": {
+      "admin": "Admin",
+      "priest": "Priest",
+      "committee_member": "Committee Member",
+      "volunteer": "Volunteer",
+      "devotee": "Devotee"
+    },
+    "emptyState": { "title": "No users found", "description": "Invite your first team member to get started." },
+    "confirmDisable": "Disable \"{name}\"? They will no longer be able to sign in.",
+    "confirmEnable": "Enable \"{name}\"?",
+    "disableError": "Failed to disable user",
+    "enableError": "Failed to enable user",
+    "inviteDialog": {
+      "title": "Invite User",
+      "description": "They'll be able to sign in immediately with this phone number.",
+      "fields": { "name": "Name", "phone": "Phone number", "phonePlaceholder": "+91XXXXXXXXXX", "roles": "Assign Role" },
+      "rolesHelper": "Select at least one role.",
+      "errorFallback": "Failed to invite user"
+    },
+    "changeRoleDialog": {
+      "title": "Change Role",
+      "description": "Update the roles assigned to {name}.",
+      "confirm": "Change {name}'s role?",
+      "errorFallback": "Failed to change role"
+    },
+    "activityPanel": { "title": "Role History", "empty": "No activity yet." },
+    "activityLog": {
+      "pageTitle": "Activity Log",
+      "subtitle": "Every invite, role change, and status change across your team.",
+      "backToUsers": "Back to users",
+      "empty": "No activity yet.",
+      "columns": { "action": "Action", "user": "User", "changedBy": "Changed By", "timestamp": "Timestamp" },
+      "actionLabels": {
+        "tenant_member.invited": "User invited",
+        "tenant_member.roles_changed": "Role changed",
+        "tenant_member.enabled": "User enabled",
+        "tenant_member.disabled": "User disabled"
+      }
+    },
+    "importWizard": {
+      "pageHeader": {
+        "title": "Import Users",
+        "subtitle": "Upload a CSV or Excel file to invite users in bulk. Review and fix any issues before importing."
+      },
+      "upload": {
+        "title": "Upload a .csv or .xlsx file",
+        "description": "Needs \"Name\", \"Phone\", and \"Roles\" columns at minimum.",
+        "uploadButton": "Upload file",
+        "reading": "Reading file…",
+        "downloadTemplate": "Download template"
+      },
+      "statusLabels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "duplicate_in_file": "Duplicate (in file)",
+        "duplicate_in_db": "Duplicate (existing)",
+        "empty": "Empty row"
+      },
+      "countChips": { "total": "Total", "valid": "Valid", "invalid": "Invalid", "skipped": "Skipped" },
+      "tabs": { "all": "All rows", "problems": "Only issues" },
+      "startOver": "Start over",
+      "importRows": "{count, plural, one {Import # valid row} other {Import # valid rows}}",
+      "columns": { "row": "Row", "name": "Name", "phone": "Phone", "roles": "Roles", "status": "Status", "issues": "Issues" },
+      "importing": { "title": "Inviting users…", "description": "This may take a moment for larger files." },
+      "done": {
+        "imported": "{count} invited",
+        "skipped": "{count} skipped",
+        "failed": "{count} failed",
+        "rowError": "Row {row}: {message}",
+        "importAnother": "Import another file",
+        "viewUsers": "View users"
+      },
+      "backToUsers": "Back to users",
+      "readError": "Failed to read file",
+      "importError": "Import failed"
+    }
+  },
+  "rolesAndPermissions": {
+    "pageHeader": {
+      "title": "Roles & Permissions",
+      "subtitle": "Platform-defined roles. You can assign or revoke roles, but not create, rename, delete, or edit them."
+    },
+    "readOnlyBadge": "Fixed",
+    "permissionCount": "{count, plural, one {# permission} other {# permissions}}",
+    "assignedUsers": "{count, plural, one {# user} other {# users}}",
+    "noPermissions": "No dashboard permission",
+    "capabilities": {
+      "dashboardAccess": "Dashboard access",
+      "manageTenantMembers": "Member management",
+      "manageTenantRoles": "Role assignment",
+      "identityMarker": "Identity marker",
+      "tenantRelationshipMarker": "Tenant relationship"
+    },
+    "roleDetailDialog": {
+      "capabilitiesTitle": "Capabilities",
+      "restrictionsTitle": "Restrictions",
+      "restrictionsText": "Roles are defined by the platform. Temple admins can assign or revoke this role, but cannot rename it, delete it, or change what it can do.",
+      "usersTitle": "Users with this role"
     }
   },
   "notifications": {

@@ -168,6 +168,7 @@ const createdMembership: TenantMembershipWithRoles = {
   displayName: "Temple Admin",
   status: "active" as const,
   preferredUiLanguage: null,
+  lastSignedInAt: null,
   roles: ["admin", "priest"],
   createdAt: "2026-07-18T00:00:00.000Z",
   updatedAt: "2026-07-18T00:00:00.000Z",

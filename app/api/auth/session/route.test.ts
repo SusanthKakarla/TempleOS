@@ -33,6 +33,7 @@ vi.mock("@/lib/db/persons", () => ({
 
 vi.mock("@/lib/db/tenant-memberships", () => ({
   findActiveTenantMembershipByPersonAndTenant: vi.fn(),
+  touchLastSignedIn: vi.fn(),
 }));
 
 vi.mock("@/lib/firebase/errors", () => ({
@@ -65,6 +66,7 @@ const membership: TenantMembershipWithRoles = {
   displayName: "Tenant Member",
   status: "active",
   preferredUiLanguage: null,
+  lastSignedInAt: null,
   roles: ["admin", "priest"],
   createdAt: "2026-07-18T00:00:00.000Z",
   updatedAt: "2026-07-18T00:00:00.000Z",

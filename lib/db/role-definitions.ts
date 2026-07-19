@@ -148,6 +148,22 @@ export async function listActiveRoleCodesForSuperAdmin(
   return rows.map((row) => row.code);
 }
 
+export async function countActiveMembersByRole(
+  tenantId: string,
+  client: QueryClient = getPool(),
+): Promise<Partial<Record<RoleCode, number>>> {
+  const { rows } = await client.query<{ code: RoleCode; member_count: string }>(
+    `SELECT rd.code, count(*) AS member_count
+     FROM tenant_membership_roles tmr
+     JOIN tenant_memberships tm ON tm.id = tmr.membership_id
+     JOIN role_definitions rd ON rd.id = tmr.role_definition_id
+     WHERE tm.tenant_id = $1 AND tm.status = 'active'
+     GROUP BY rd.code`,
+    [tenantId],
+  );
+  return Object.fromEntries(rows.map((row) => [row.code, Number(row.member_count)]));
+}
+
 function assertCompleteV0RoleCatalog(roles: RoleDefinition[]): void {
   const expectedCodes = V0_ROLE_DEFINITIONS.map((role) => role.code);
   const actualCodes = roles.map((role) => role.code);

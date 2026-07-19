@@ -16,7 +16,10 @@
     "conversations": "సంభాషణలు",
     "notifications": "నోటిఫికేషన్‌లు",
     "chatbotSettings": "చాట్‌బాట్ సెట్టింగులు",
-    "admins": "నిర్వాహకులు"
+    "admins": "నిర్వాహకులు",
+    "userManagement": "వినియోగదారుల నిర్వహణ",
+    "users": "వినియోగదారులు",
+    "rolesAndPermissions": "పాత్రలు & అనుమతులు"
   },
   "topbar": {
     "accountMenu": "ఖాతా మెనూ",
@@ -71,7 +74,8 @@
       "events": "events",
       "devotees": "devotees",
       "donations": "donations",
-      "conversations": "సంభాషణలు"
+      "conversations": "సంభాషణలు",
+      "users": "వినియోగదారులు"
     },
     "dialogTitle": "{module} ఎగుమతి చేయండి",
     "dialogDescription": "ఏమి ఎగుమతి చేయాలో మరియు ఫార్మాట్‌ను ఎంచుకోండి.",
@@ -567,6 +571,135 @@
         "dateRequired": "విరాళ తేదీ అవసరం"
       },
       "errorFallback": "విరాళాన్ని సేవ్ చేయడంలో విఫలమైంది"
+    }
+  },
+  "userManagement": {
+    "pageHeader": {
+      "title": "వినియోగదారులు",
+      "subtitle": "ఆలయ సిబ్బందిని ఆహ్వానించి డాష్‌బోర్డ్ యాక్సెస్ ఉన్నవారిని నిర్వహించండి."
+    },
+    "inviteButton": "వినియోగదారుని ఆహ్వానించండి",
+    "importButton": "దిగుమతి",
+    "searchPlaceholder": "పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
+    "filters": { "allRoles": "అన్ని పాత్రలు", "allStatuses": "అన్ని స్థితులు" },
+    "columns": {
+      "name": "పేరు",
+      "phone": "ఫోన్",
+      "role": "ప్రస్తుత పాత్ర",
+      "status": "స్థితి",
+      "joined": "చేరిన తేదీ",
+      "lastLogin": "చివరి లాగిన్",
+      "actions": "చర్యలు"
+    },
+    "selectAll": "అన్ని వినియోగదారులను ఎంచుకోండి",
+    "selectRow": "{name} ఎంచుకోండి",
+    "status": { "enabled": "ప్రారంభించబడింది", "disabled": "నిలిపివేయబడింది", "never": "ఎప్పుడూ లేదు" },
+    "roleNames": {
+      "admin": "అడ్మిన్",
+      "priest": "పూజారి",
+      "committee_member": "కమిటీ సభ్యుడు",
+      "volunteer": "వాలంటీర్",
+      "devotee": "భక్తుడు"
+    },
+    "emptyState": {
+      "title": "వినియోగదారులు కనుగొనబడలేదు",
+      "description": "ప్రారంభించడానికి మీ మొదటి బృంద సభ్యుడిని ఆహ్వానించండి."
+    },
+    "confirmDisable": "\"{name}\" నిలిపివేయాలా? వారు ఇక సైన్ ఇన్ చేయలేరు.",
+    "confirmEnable": "\"{name}\" ప్రారంభించాలా?",
+    "disableError": "వినియోగదారుని నిలిపివేయడంలో విఫలమైంది",
+    "enableError": "వినియోగదారుని ప్రారంభించడంలో విఫలమైంది",
+    "inviteDialog": {
+      "title": "వినియోగదారుని ఆహ్వానించండి",
+      "description": "ఈ ఫోన్ నంబర్‌తో వారు వెంటనే సైన్ ఇన్ చేయగలరు.",
+      "fields": {
+        "name": "పేరు",
+        "phone": "ఫోన్ నంబర్",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "roles": "పాత్ర కేటాయించండి"
+      },
+      "rolesHelper": "కనీసం ఒక పాత్రను ఎంచుకోండి.",
+      "errorFallback": "వినియోగదారుని ఆహ్వానించడంలో విఫలమైంది"
+    },
+    "changeRoleDialog": {
+      "title": "పాత్ర మార్చండి",
+      "description": "{name} కు కేటాయించిన పాత్రలను నవీకరించండి.",
+      "confirm": "{name} పాత్రను మార్చాలా?",
+      "errorFallback": "పాత్రను మార్చడంలో విఫలమైంది"
+    },
+    "activityPanel": { "title": "పాత్ర చరిత్ర", "empty": "ఇంకా కార్యకలాపం లేదు." },
+    "activityLog": {
+      "pageTitle": "కార్యకలాపాల చరిత్ర",
+      "subtitle": "మీ బృందంలో ప్రతి ఆహ్వానం, పాత్ర మార్పు మరియు స్థితి మార్పు.",
+      "backToUsers": "వినియోగదారులకు తిరిగి వెళ్లండి",
+      "empty": "ఇంకా కార్యకలాపం లేదు.",
+      "columns": { "action": "చర్య", "user": "వినియోగదారు", "changedBy": "ఎవరు మార్చారు", "timestamp": "సమయం" },
+      "actionLabels": {
+        "tenant_member.invited": "వినియోగదారుని ఆహ్వానించారు",
+        "tenant_member.roles_changed": "పాత్ర మార్చబడింది",
+        "tenant_member.enabled": "వినియోగదారుని ప్రారంభించారు",
+        "tenant_member.disabled": "వినియోగదారుని నిలిపివేశారు"
+      }
+    },
+    "importWizard": {
+      "pageHeader": {
+        "title": "వినియోగదారులను దిగుమతి చేయండి",
+        "subtitle": "వినియోగదారులను పెద్ద మొత్తంలో ఆహ్వానించడానికి CSV లేదా Excel ఫైల్‌ను అప్‌లోడ్ చేయండి. దిగుమతి చేయడానికి ముందు సమస్యలను సమీక్షించి సరిచేయండి."
+      },
+      "upload": {
+        "title": ".csv లేదా .xlsx ఫైల్‌ను అప్‌లోడ్ చేయండి",
+        "description": "కనీసం “Name”, “Phone”, మరియు “Roles” కాలమ్‌లు అవసరం.",
+        "uploadButton": "ఫైల్ అప్‌లోడ్ చేయండి",
+        "reading": "ఫైల్ చదువుతోంది…",
+        "downloadTemplate": "టెంప్లేట్ డౌన్‌లోడ్ చేయండి"
+      },
+      "statusLabels": {
+        "valid": "సరైనది",
+        "invalid": "చెల్లనిది",
+        "duplicate_in_file": "నకిలీ (ఫైల్‌లో)",
+        "duplicate_in_db": "నకిలీ (ఇప్పటికే ఉంది)",
+        "empty": "ఖాళీ వరుస"
+      },
+      "countChips": { "total": "మొత్తం", "valid": "సరైనవి", "invalid": "చెల్లనివి", "skipped": "దాటవేయబడ్డాయి" },
+      "tabs": { "all": "అన్ని వరుసలు", "problems": "సమస్యలు మాత్రమే" },
+      "startOver": "మళ్లీ మొదలు పెట్టండి",
+      "importRows": "{count, plural, one {# సరైన వరుసను దిగుమతి చేయండి} other {# సరైన వరుసలను దిగుమతి చేయండి}}",
+      "columns": { "row": "వరుస", "name": "పేరు", "phone": "ఫోన్", "roles": "పాత్రలు", "status": "స్థితి", "issues": "సమస్యలు" },
+      "importing": { "title": "వినియోగదారులను ఆహ్వానిస్తోంది…", "description": "పెద్ద ఫైళ్లకు కొంత సమయం పట్టవచ్చు." },
+      "done": {
+        "imported": "{count} ఆహ్వానించబడ్డారు",
+        "skipped": "{count} దాటవేయబడ్డారు",
+        "failed": "{count} విఫలమయ్యారు",
+        "rowError": "వరుస {row}: {message}",
+        "importAnother": "మరో ఫైల్‌ను దిగుమతి చేయండి",
+        "viewUsers": "వినియోగదారులను చూడండి"
+      },
+      "backToUsers": "వినియోగదారులకు తిరిగి వెళ్లండి",
+      "readError": "ఫైల్ చదవడంలో విఫలమైంది",
+      "importError": "దిగుమతి విఫలమైంది"
+    }
+  },
+  "rolesAndPermissions": {
+    "pageHeader": {
+      "title": "పాత్రలు & అనుమతులు",
+      "subtitle": "ప్లాట్‌ఫారమ్ నిర్వచించిన పాత్రలు. మీరు పాత్రలను కేటాయించవచ్చు లేదా తొలగించవచ్చు, కానీ వాటిని సృష్టించలేరు, పేరు మార్చలేరు, తొలగించలేరు లేదా సవరించలేరు."
+    },
+    "readOnlyBadge": "స్థిరం",
+    "permissionCount": "{count, plural, one {# అనుమతి} other {# అనుమతులు}}",
+    "assignedUsers": "{count, plural, one {# వినియోగదారు} other {# వినియోగదారులు}}",
+    "noPermissions": "డాష్‌బోర్డ్ అనుమతి లేదు",
+    "capabilities": {
+      "dashboardAccess": "డాష్‌బోర్డ్ యాక్సెస్",
+      "manageTenantMembers": "సభ్యుల నిర్వహణ",
+      "manageTenantRoles": "పాత్ర కేటాయింపు",
+      "identityMarker": "గుర్తింపు గుర్తు",
+      "tenantRelationshipMarker": "ఆలయ సంబంధం"
+    },
+    "roleDetailDialog": {
+      "capabilitiesTitle": "సామర్థ్యాలు",
+      "restrictionsTitle": "పరిమితులు",
+      "restrictionsText": "పాత్రలు ప్లాట్‌ఫారమ్ ద్వారా నిర్వచించబడ్డాయి. ఆలయ అడ్మిన్‌లు ఈ పాత్రను కేటాయించవచ్చు లేదా తొలగించవచ్చు, కానీ దాని పేరు మార్చలేరు, తొలగించలేరు లేదా అది ఏమి చేయగలదో మార్చలేరు.",
+      "usersTitle": "ఈ పాత్ర ఉన్న వినియోగదారులు"
     }
   },
   "notifications": {

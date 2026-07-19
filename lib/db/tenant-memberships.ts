@@ -14,6 +14,7 @@ interface TenantMembershipRow {
   display_name: string;
   status: TenantMembership["status"];
   preferred_ui_language: SupportedLanguage | null;
+  last_signed_in_at: Date | null;
   role_codes: string[] | null;
   created_at: Date;
   updated_at: Date;
@@ -27,6 +28,7 @@ function mapTenantMembership(row: TenantMembershipRow): TenantMembershipWithRole
     displayName: row.display_name,
     status: row.status,
     preferredUiLanguage: row.preferred_ui_language,
+    lastSignedInAt: row.last_signed_in_at?.toISOString() ?? null,
     roles: (row.role_codes ?? []).filter(isRoleCode),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -183,4 +185,182 @@ export async function updateTenantMembershipLocale(
     `UPDATE tenant_memberships SET preferred_ui_language = $1 WHERE id = $2`,
     [locale, membershipId],
   );
+}
+
+export interface TenantMembershipListItem extends TenantMembershipWithRoles {
+  phoneNumber: string;
+}
+
+interface TenantMembershipListRow extends TenantMembershipRow {
+  phone_number: string;
+}
+
+function mapTenantMembershipListItem(row: TenantMembershipListRow): TenantMembershipListItem {
+  return { ...mapTenantMembership(row), phoneNumber: row.phone_number };
+}
+
+export interface ListTenantMembershipsFilters {
+  search?: string;
+  status?: TenantMembership["status"];
+  role?: RoleCode;
+}
+
+export async function listTenantMembershipsForTenant(
+  tenantId: string,
+  filters: ListTenantMembershipsFilters = {},
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem[]> {
+  const conditions = ["tm.tenant_id = $1"];
+  const params: unknown[] = [tenantId];
+
+  if (filters.status) {
+    params.push(filters.status);
+    conditions.push(`tm.status = $${params.length}`);
+  }
+  if (filters.search) {
+    params.push(`%${filters.search}%`);
+    conditions.push(`(tm.display_name ILIKE $${params.length} OR p.phone_number ILIKE $${params.length})`);
+  }
+  if (filters.role) {
+    params.push(filters.role);
+    conditions.push(
+      `EXISTS (
+        SELECT 1 FROM tenant_membership_roles tmr2
+        JOIN role_definitions rd2 ON rd2.id = tmr2.role_definition_id AND rd2.active = true
+        WHERE tmr2.membership_id = tm.id AND rd2.code = $${params.length}
+      )`,
+    );
+  }
+
+  const { rows } = await client.query<TenantMembershipListRow>(
+    `SELECT tm.*, p.phone_number,
+            COALESCE(
+              array_agg(rd.code ORDER BY rd.code) FILTER (WHERE rd.code IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS role_codes
+     FROM tenant_memberships tm
+     INNER JOIN persons p ON p.id = tm.person_id
+     LEFT JOIN tenant_membership_roles tmr ON tmr.membership_id = tm.id
+     LEFT JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.active = true
+     WHERE ${conditions.join(" AND ")}
+     GROUP BY tm.id, p.phone_number
+     ORDER BY lower(tm.display_name) ASC`,
+    params,
+  );
+  return rows.map(mapTenantMembershipListItem);
+}
+
+export async function listTenantMembershipsByIds(
+  tenantId: string,
+  ids: string[],
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await client.query<TenantMembershipListRow>(
+    `SELECT tm.*, p.phone_number,
+            COALESCE(
+              array_agg(rd.code ORDER BY rd.code) FILTER (WHERE rd.code IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS role_codes
+     FROM tenant_memberships tm
+     INNER JOIN persons p ON p.id = tm.person_id
+     LEFT JOIN tenant_membership_roles tmr ON tmr.membership_id = tm.id
+     LEFT JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.active = true
+     WHERE tm.tenant_id = $1 AND tm.id = ANY($2::uuid[])
+     GROUP BY tm.id, p.phone_number
+     ORDER BY lower(tm.display_name) ASC`,
+    [tenantId, ids],
+  );
+  return rows.map(mapTenantMembershipListItem);
+}
+
+/** User import — checks a batch of normalized phone numbers against existing ACTIVE members of this tenant only (persons are legitimately shared cross-tenant, so this is scoped, not global). */
+export async function listActiveMemberPhonesForTenant(
+  tenantId: string,
+  phones: string[],
+  client: QueryClient = getPool(),
+): Promise<Set<string>> {
+  if (phones.length === 0) return new Set();
+  const { rows } = await client.query<{ phone_number: string }>(
+    `SELECT p.phone_number
+     FROM tenant_memberships tm
+     JOIN persons p ON p.id = tm.person_id
+     WHERE tm.tenant_id = $1 AND tm.status = 'active' AND p.phone_number = ANY($2::text[])`,
+    [tenantId, phones],
+  );
+  return new Set(rows.map((row) => row.phone_number));
+}
+
+export async function touchLastSignedIn(
+  membershipId: string,
+  client: QueryClient = getPool(),
+): Promise<void> {
+  await client.query(`UPDATE tenant_memberships SET last_signed_in_at = now() WHERE id = $1`, [
+    membershipId,
+  ]);
+}
+
+async function setTenantMembershipStatusInternal(
+  tenantId: string,
+  membershipId: string,
+  status: TenantMembership["status"],
+  client: QueryClient,
+): Promise<TenantMembershipListItem | null> {
+  const { rows: lockedRows } = await client.query<{ id: string }>(
+    `SELECT id FROM tenant_memberships WHERE tenant_id = $1 AND id = $2 FOR UPDATE`,
+    [tenantId, membershipId],
+  );
+  if (!lockedRows[0]) return null;
+
+  await client.query(`UPDATE tenant_memberships SET status = $1, updated_at = now() WHERE id = $2`, [
+    status,
+    membershipId,
+  ]);
+
+  const { rows } = await client.query<TenantMembershipListRow>(
+    `SELECT tm.*, p.phone_number,
+            COALESCE(
+              array_agg(rd.code ORDER BY rd.code) FILTER (WHERE rd.code IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS role_codes
+     FROM tenant_memberships tm
+     INNER JOIN persons p ON p.id = tm.person_id
+     LEFT JOIN tenant_membership_roles tmr ON tmr.membership_id = tm.id
+     LEFT JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.active = true
+     WHERE tm.id = $1
+     GROUP BY tm.id, p.phone_number
+     LIMIT 1`,
+    [membershipId],
+  );
+  return rows[0] ? mapTenantMembershipListItem(rows[0]) : null;
+}
+
+/** No-ops (returns the current row unchanged) if the membership is already at the target status. */
+export async function deactivateTenantMembership(
+  tenantId: string,
+  membershipId: string,
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem | null> {
+  return setTenantMembershipStatusInternal(tenantId, membershipId, "inactive", client);
+}
+
+export async function reactivateTenantMembership(
+  tenantId: string,
+  membershipId: string,
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem | null> {
+  return setTenantMembershipStatusInternal(tenantId, membershipId, "active", client);
+}
+
+/**
+ * Tenant-scoped alias of replaceTenantMembershipRolesForSuperAdmin — that function is already
+ * scoped by its own tenantId param (the "ForSuperAdmin" suffix is a naming artifact from its
+ * original caller, not an auth boundary), but a distinct name avoids misleading tenant-admin
+ * call sites.
+ */
+export async function replaceTenantMembershipRoles(
+  input: { tenantId: string; membershipId: string; roles: RoleCode[] },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles> {
+  return replaceTenantMembershipRolesForSuperAdmin(input, client);
 }

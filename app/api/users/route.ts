@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
+import {
+  inviteTenantMember,
+  parseInviteTenantMemberInput,
+  TenantMemberActionError,
+} from "@/lib/provisioning/tenant-members";
+import { isRoleCode, type TenantMembershipStatus } from "@/types/db";
+
+export async function GET(req: NextRequest) {
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
+  }
+  const { session } = auth;
+
+  const params = req.nextUrl.searchParams;
+  const statusParam = params.get("status");
+  const roleParam = params.get("role");
+
+  const members = await listTenantMembershipsForTenant(session.tenantId, {
+    search: params.get("search") ?? undefined,
+    status: statusParam === "active" || statusParam === "inactive" ? (statusParam as TenantMembershipStatus) : undefined,
+    role: roleParam && isRoleCode(roleParam) ? roleParam : undefined,
+  });
+
+  return NextResponse.json({ members });
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
+  }
+  const { session } = auth;
+
+  const json = await req.json().catch(() => null);
+  const parsed = parseInviteTenantMemberInput(json);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.errors[0]?.message ?? "Invalid input", errors: parsed.errors },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const member = await inviteTenantMember(parsed.data, {
+      type: "tenant_member",
+      tenantId: session.tenantId,
+      membershipId: session.membershipId,
+    });
+    return NextResponse.json({ member }, { status: 201 });
+  } catch (err) {
+    if (err instanceof TenantMemberActionError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+    }
+    return NextResponse.json({ error: "Failed to invite user" }, { status: 500 });
+  }
+}
