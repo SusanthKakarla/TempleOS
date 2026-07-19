@@ -106,17 +106,27 @@ function resolveTenantHost(req: NextRequest): string | null {
   const override = process.env[localTenantHostEnv]?.trim();
   if (override) {
     if (process.env.NODE_ENV === "production") {
-      devLog(`${localTenantHostEnv} is not allowed in production tenant sign-in.`);
-      return null;
+      devLog(`${localTenantHostEnv} is ignored in production tenant sign-in.`);
+    } else {
+      return normalizeTenantHostname(override);
     }
-    return normalizeTenantHostname(override);
   }
 
   const nextUrlHostname = (req as { nextUrl?: { hostname?: string } }).nextUrl?.hostname;
-  const requestHost = nextUrlHostname || req.headers.get("host")?.split(":")[0] || "";
+  const requestHost =
+    firstHeaderHost(req.headers.get("x-forwarded-host")) ||
+    firstHeaderHost(req.headers.get("host")) ||
+    nextUrlHostname ||
+    "";
   const normalized = normalizeTenantHostname(requestHost);
   if (!normalized || isGenericTenantHostname(normalized)) return null;
   return normalized;
+}
+
+function firstHeaderHost(value: string | null): string | null {
+  const first = value?.split(",")[0]?.trim();
+  if (!first) return null;
+  return first.split(":")[0] || null;
 }
 
 function invalidTenantContext(): NextResponse {

@@ -72,6 +72,26 @@ function request(body: unknown, url = "https://svtemple.trytempleos.com/api/auth
   });
 }
 
+function forwardedRequest(
+  body: unknown,
+  input: {
+    url?: string;
+    host?: string;
+    forwardedHost?: string;
+  },
+): Request {
+  const url = input.url ?? "https://internal.example.com/api/auth/session";
+  const headers = new Headers({ "Content-Type": "application/json" });
+  if (input.host) headers.set("host", input.host);
+  if (input.forwardedHost) headers.set("x-forwarded-host", input.forwardedHost);
+
+  return new Request(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+
 describe("tenant auth session route", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
@@ -185,22 +205,52 @@ describe("tenant auth session route", () => {
     expect(getActiveTenantDomainByHostname).toHaveBeenCalledWith("svtemple.trytempleos.com");
   });
 
-  it("rejects a local tenant host override in production", async () => {
+  it("ignores a local tenant host override in production and uses the request hostname", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("TEMPLEOS_LOCAL_TENANT_HOST", "svtemple.trytempleos.com");
+    vi.stubEnv("TEMPLEOS_LOCAL_TENANT_HOST", "local-only.trytempleos.com");
     vi.mocked(verifyFirebaseIdToken).mockResolvedValue({
       uid: "firebase-1",
       phone_number: "+1 415 555 2671",
     } as Awaited<ReturnType<typeof verifyFirebaseIdToken>>);
+    vi.mocked(getActiveTenantDomainByHostname).mockResolvedValue(domain);
+    vi.mocked(findPersonByPhone).mockResolvedValue(person);
+    vi.mocked(bindPersonFirebaseUid).mockResolvedValue(true);
+    vi.mocked(findActiveTenantMembershipByPersonAndTenant).mockResolvedValue(membership);
 
     const res = await POST(request({ idToken: "token-1" }) as never);
 
-    await expect(res.json()).resolves.toMatchObject({ code: "INVALID_TENANT_CONTEXT" });
-    expect(res.status).toBe(400);
-    expect(getActiveTenantDomainByHostname).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(getActiveTenantDomainByHostname).toHaveBeenCalledWith("svtemple.trytempleos.com");
     expect(devLog).toHaveBeenCalledWith(
-      "TEMPLEOS_LOCAL_TENANT_HOST is not allowed in production tenant sign-in.",
+      "TEMPLEOS_LOCAL_TENANT_HOST is ignored in production tenant sign-in.",
     );
+  });
+
+  it("uses x-forwarded-host before internal hostnames for proxied wildcard domains", async () => {
+    vi.mocked(verifyFirebaseIdToken).mockResolvedValue({
+      uid: "firebase-1",
+      phone_number: "+1 415 555 2671",
+    } as Awaited<ReturnType<typeof verifyFirebaseIdToken>>);
+    vi.mocked(getActiveTenantDomainByHostname).mockResolvedValue({
+      ...domain,
+      hostname: "woop.trytempleos.com",
+    });
+    vi.mocked(findPersonByPhone).mockResolvedValue(person);
+    vi.mocked(bindPersonFirebaseUid).mockResolvedValue(true);
+    vi.mocked(findActiveTenantMembershipByPersonAndTenant).mockResolvedValue(membership);
+
+    const res = await POST(
+      forwardedRequest(
+        { idToken: "token-1" },
+        {
+          host: "templeos-production.internal",
+          forwardedHost: "woop.trytempleos.com",
+        },
+      ) as never,
+    );
+
+    expect(res.status).toBe(200);
+    expect(getActiveTenantDomainByHostname).toHaveBeenCalledWith("woop.trytempleos.com");
   });
 
   it("denies missing person, missing membership, and Firebase uid mismatch without setting a cookie", async () => {
