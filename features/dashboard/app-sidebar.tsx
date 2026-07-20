@@ -93,7 +93,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5 px-1">
-          <div className="gradient-saffron-gold flex size-8 shrink-0 items-center justify-center rounded-lg text-saffron-foreground shadow-sm">
+          <div className="gradient-ocean-blue flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-foreground shadow-sm">
             <Landmark className="size-4.5" />
           </div>
           <span className="font-heading text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
@@ -114,7 +114,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     {isActive && (
                       <motion.div
                         layoutId="sidebar-active-indicator"
-                        className="absolute inset-y-1 left-0 w-1 rounded-full bg-saffron"
+                        className="absolute inset-y-1 left-0 w-1 rounded-full bg-primary"
                         transition={springSnappy}
                       />
                     )}

@@ -70,8 +70,8 @@
   --card-foreground: oklch(0.22 0.02 30);
   --popover: oklch(1 0.005 85);
   --popover-foreground: oklch(0.22 0.02 30);
-  --primary: oklch(0.72 0.19 45);
-  --primary-foreground: oklch(0.16 0.02 35);
+  --primary: oklch(0.58 0.16 224);
+  --primary-foreground: oklch(0.99 0.01 220);
   --secondary: oklch(0.93 0.05 85);
   --secondary-foreground: oklch(0.35 0.08 50);
   --muted: oklch(0.96 0.015 75);
@@ -81,8 +81,8 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.9 0.02 70);
   --input: oklch(0.9 0.02 70);
-  --ring: oklch(0.72 0.19 45);
-  --chart-1: oklch(0.72 0.19 45);
+  --ring: oklch(0.58 0.16 224);
+  --chart-1: oklch(0.58 0.16 224);
   --chart-2: oklch(0.8 0.16 85);
   --chart-3: oklch(0.55 0.22 260);
   --chart-4: oklch(0.7 0.15 160);
@@ -90,12 +90,12 @@
   --radius: 0.75rem;
   --sidebar: oklch(0.97 0.015 75);
   --sidebar-foreground: oklch(0.22 0.02 30);
-  --sidebar-primary: oklch(0.72 0.19 45);
-  --sidebar-primary-foreground: oklch(0.16 0.02 35);
+  --sidebar-primary: oklch(0.58 0.16 224);
+  --sidebar-primary-foreground: oklch(0.99 0.01 220);
   --sidebar-accent: oklch(0.93 0.04 75);
   --sidebar-accent-foreground: oklch(0.3 0.05 40);
   --sidebar-border: oklch(0.9 0.02 70);
-  --sidebar-ring: oklch(0.72 0.19 45);
+  --sidebar-ring: oklch(0.58 0.16 224);
 
   /* Temple palette */
   --saffron: oklch(0.72 0.19 45);
@@ -120,8 +120,8 @@
   --card-foreground: oklch(0.96 0.01 75);
   --popover: oklch(0.22 0.018 35);
   --popover-foreground: oklch(0.96 0.01 75);
-  --primary: oklch(0.72 0.19 45);
-  --primary-foreground: oklch(0.16 0.02 35);
+  --primary: oklch(0.66 0.15 224);
+  --primary-foreground: oklch(0.16 0.03 224);
   --secondary: oklch(0.3 0.04 55);
   --secondary-foreground: oklch(0.9 0.05 85);
   --muted: oklch(0.27 0.02 40);
@@ -131,20 +131,20 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.19 45);
-  --chart-1: oklch(0.72 0.19 45);
+  --ring: oklch(0.66 0.15 224);
+  --chart-1: oklch(0.66 0.15 224);
   --chart-2: oklch(0.8 0.16 85);
   --chart-3: oklch(0.62 0.2 260);
   --chart-4: oklch(0.7 0.15 160);
   --chart-5: oklch(0.6 0.14 20);
   --sidebar: oklch(0.2 0.018 35);
   --sidebar-foreground: oklch(0.96 0.01 75);
-  --sidebar-primary: oklch(0.72 0.19 45);
-  --sidebar-primary-foreground: oklch(0.16 0.02 35);
+  --sidebar-primary: oklch(0.66 0.15 224);
+  --sidebar-primary-foreground: oklch(0.16 0.03 224);
   --sidebar-accent: oklch(0.28 0.025 45);
   --sidebar-accent-foreground: oklch(0.94 0.02 75);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.19 45);
+  --sidebar-ring: oklch(0.66 0.15 224);
 
   /* Temple palette (brightened for dark-mode contrast) */
   --saffron: oklch(0.72 0.19 45);
@@ -190,6 +190,9 @@
   }
   .gradient-green-emerald {
     background-image: linear-gradient(135deg, oklch(0.75 0.14 145), var(--emerald));
+  }
+  .gradient-ocean-blue {
+    background-image: linear-gradient(135deg, var(--primary), oklch(0.72 0.13 200));
   }
 
   /* Large translucent surfaces (conversation panes) */
