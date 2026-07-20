@@ -8,6 +8,7 @@ import { listDonationsByDevotee } from "@/lib/db/donations";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { FadeIn } from "@/components/fade-in";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
@@ -44,6 +45,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
         {t("backToDevotees")}
       </Link>
 
+      <FadeIn>
       <Card className="glass-card gap-4 rounded-2xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -117,6 +119,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
           </div>
         )}
       </Card>
+      </FadeIn>
 
       <DevoteeDonationsCard devotee={devotee} donations={donations} />
     </div>

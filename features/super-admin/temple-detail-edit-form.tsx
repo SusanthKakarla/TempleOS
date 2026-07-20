@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tenant } from "@/types/db";
 import {
@@ -112,30 +112,29 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
       )}
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <FieldError label="Temple name" id="edit-temple-name" error={errors.fieldErrors.name}>
-          <Input
-            id="edit-temple-name"
-            value={form.name}
-            onChange={(event) => updateField("name", event.target.value)}
-            required
-          />
-        </FieldError>
-        <FieldError label="Contact phone" id="edit-contact-phone" error={errors.fieldErrors.defaultContactPhone}>
-          <Input
-            id="edit-contact-phone"
-            value={form.defaultContactPhone}
-            onChange={(event) => updateField("defaultContactPhone", event.target.value)}
-            placeholder="+1 415 555 2671"
-          />
-        </FieldError>
-        <FieldError label="Timezone" id="edit-timezone" error={errors.fieldErrors.timezone}>
-          <Input
-            id="edit-timezone"
-            value={form.timezone}
-            onChange={(event) => updateField("timezone", event.target.value)}
-            required
-          />
-        </FieldError>
+        <FloatingLabelInput
+          id="edit-temple-name"
+          label="Temple name"
+          error={errors.fieldErrors.name}
+          value={form.name}
+          onChange={(event) => updateField("name", event.target.value)}
+          required
+        />
+        <FloatingLabelInput
+          id="edit-contact-phone"
+          label="Contact phone"
+          error={errors.fieldErrors.defaultContactPhone}
+          value={form.defaultContactPhone}
+          onChange={(event) => updateField("defaultContactPhone", event.target.value)}
+        />
+        <FloatingLabelInput
+          id="edit-timezone"
+          label="Timezone"
+          error={errors.fieldErrors.timezone}
+          value={form.timezone}
+          onChange={(event) => updateField("timezone", event.target.value)}
+          required
+        />
         <FieldError label="Address" id="edit-address" error={errors.fieldErrors.address} className="md:col-span-2">
           <Textarea
             id="edit-address"

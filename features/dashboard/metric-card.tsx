@@ -77,7 +77,7 @@ export function MetricCard({
     >
       <Card
         className={cn(
-          "glass-card h-full gap-3 overflow-hidden rounded-3xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl",
+          "glass-card group h-full gap-3 overflow-hidden rounded-3xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl",
           className,
         )}
       >
@@ -85,7 +85,7 @@ export function MetricCard({
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background",
+              "flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
               gradient,
             )}
           >

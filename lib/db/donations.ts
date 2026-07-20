@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import { getPool } from "./pool";
 import type { Donation, DonationSummary, DonationWithDonor, PaymentMethod } from "@/types/db";
+import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 interface DonationRow {
   id: string;
@@ -203,41 +204,82 @@ export interface ListDonationsFilter {
   devoteeId?: string;
   dateFrom?: string;
   dateTo?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "date" | "amount" | "donor";
+  dir?: "asc" | "desc";
 }
 
+const DONATION_SORT_COLUMNS: Record<NonNullable<ListDonationsFilter["sort"]>, string> = {
+  date: "d.donated_at",
+  amount: "d.amount",
+  donor: "dev.display_name",
+};
+
+function buildDonationConditions(filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo">) {
+  const conditions = ["d.tenant_id = $1"];
+  const params: unknown[] = [];
+
+  if (filter.search && filter.search.trim()) {
+    params.push(`%${filter.search.trim()}%`);
+    conditions.push(`(dev.display_name ILIKE $${params.length + 1} OR dev.whatsapp_phone ILIKE $${params.length + 1})`);
+  }
+  if (filter.devoteeId) {
+    params.push(filter.devoteeId);
+    conditions.push(`d.devotee_id = $${params.length + 1}`);
+  }
+  if (filter.dateFrom) {
+    params.push(filter.dateFrom);
+    conditions.push(`d.donated_at >= $${params.length + 1}`);
+  }
+  if (filter.dateTo) {
+    params.push(filter.dateTo);
+    conditions.push(`d.donated_at <= $${params.length + 1}`);
+  }
+  return { conditions, params };
+}
+
+/** `page`/`pageSize` are optional — omitted, this returns the full unpaginated result (existing callers rely on this). */
 export async function listDonations(
   tenantId: string,
   filter: ListDonationsFilter = {},
 ): Promise<DonationWithDonor[]> {
-  const conditions = ["d.tenant_id = $1"];
-  const params: unknown[] = [tenantId];
+  const { conditions, params: filterParams } = buildDonationConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
 
-  if (filter.search && filter.search.trim()) {
-    params.push(`%${filter.search.trim()}%`);
-    conditions.push(`(dev.display_name ILIKE $${params.length} OR dev.whatsapp_phone ILIKE $${params.length})`);
-  }
-  if (filter.devoteeId) {
-    params.push(filter.devoteeId);
-    conditions.push(`d.devotee_id = $${params.length}`);
-  }
-  if (filter.dateFrom) {
-    params.push(filter.dateFrom);
-    conditions.push(`d.donated_at >= $${params.length}`);
-  }
-  if (filter.dateTo) {
-    params.push(filter.dateTo);
-    conditions.push(`d.donated_at <= $${params.length}`);
-  }
+  const sortColumn = filter.sort ? DONATION_SORT_COLUMNS[filter.sort] : "d.donated_at";
+  const dir = filter.dir === "asc" ? "ASC" : "DESC";
 
-  const { rows } = await getPool().query<DonationWithDonorRow>(
-    `SELECT d.*, dev.display_name AS donor_name, dev.whatsapp_phone AS donor_phone
+  let query = `SELECT d.*, dev.display_name AS donor_name, dev.whatsapp_phone AS donor_phone
      FROM donations d
      JOIN devotees dev ON dev.id = d.devotee_id
      WHERE ${conditions.join(" AND ")}
-     ORDER BY d.donated_at DESC`,
+     ORDER BY ${sortColumn} ${dir}`;
+
+  if (filter.page !== undefined) {
+    const pageSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.push(pageSize, computeOffset(filter.page, pageSize));
+    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+
+  const { rows } = await getPool().query<DonationWithDonorRow>(query, params);
+  return rows.map(mapDonationWithDonor);
+}
+
+export async function countDonationsFiltered(
+  tenantId: string,
+  filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo"> = {},
+): Promise<number> {
+  const { conditions, params: filterParams } = buildDonationConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count
+     FROM donations d
+     JOIN devotees dev ON dev.id = d.devotee_id
+     WHERE ${conditions.join(" AND ")}`,
     params,
   );
-  return rows.map(mapDonationWithDonor);
+  return Number(rows[0]?.count ?? 0);
 }
 
 /** "Export Selected" — fetch exactly the rows an admin picked in the table. */
@@ -283,4 +325,22 @@ export async function getDonationSummary(tenantId: string): Promise<DonationSumm
     donorCount: Number(row.donor_count),
     donationCount: Number(row.donation_count),
   };
+}
+
+export interface DonationsPerDayRow {
+  date: string;
+  total: string;
+}
+
+/** Day-bucketed donation totals for the dashboard trend chart. Read-only aggregation, no new write path. */
+export async function getDonationsPerDay(tenantId: string, days = 30): Promise<DonationsPerDayRow[]> {
+  const { rows } = await getPool().query<{ day: Date; total: string }>(
+    `SELECT date_trunc('day', donated_at) AS day, SUM(amount) AS total
+     FROM donations
+     WHERE tenant_id = $1 AND donated_at >= now() - ($2 || ' days')::interval
+     GROUP BY day
+     ORDER BY day ASC`,
+    [tenantId, days],
+  );
+  return rows.map((row) => ({ date: row.day.toISOString(), total: row.total }));
 }

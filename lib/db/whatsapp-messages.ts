@@ -166,3 +166,31 @@ export async function countFailedMessages(tenantId: string): Promise<number> {
   );
   return Number(rows[0].count);
 }
+
+export interface MessagesPerDayRow {
+  date: string;
+  inbound: number;
+  outbound: number;
+}
+
+/** Day-bucketed inbound/outbound message counts for the dashboard trend chart. Read-only aggregation, no new write path. */
+export async function getMessagesPerDay(tenantId: string, days = 30): Promise<MessagesPerDayRow[]> {
+  const { rows } = await getPool().query<{ day: Date; direction: MessageDirection; count: string }>(
+    `SELECT date_trunc('day', created_at) AS day, direction, count(*) AS count
+     FROM whatsapp_messages
+     WHERE tenant_id = $1 AND created_at >= now() - ($2 || ' days')::interval
+     GROUP BY day, direction
+     ORDER BY day ASC`,
+    [tenantId, days],
+  );
+
+  const byDay = new Map<string, MessagesPerDayRow>();
+  for (const row of rows) {
+    const key = row.day.toISOString();
+    const entry = byDay.get(key) ?? { date: key, inbound: 0, outbound: 0 };
+    if (row.direction === "inbound") entry.inbound = Number(row.count);
+    else entry.outbound = Number(row.count);
+    byDay.set(key, entry);
+  }
+  return Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date));
+}

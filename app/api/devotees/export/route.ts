@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   const search = req.nextUrl.searchParams.get("search") ?? undefined;
-  const devotees = await listDevotees(session.tenantId, search);
+  const devotees = await listDevotees(session.tenantId, { search });
 
   const file = await buildExportFile(formatParam.data as ExportFormat, DEVOTEE_EXPORT_COLUMNS, devotees, {
     title: "Devotees",

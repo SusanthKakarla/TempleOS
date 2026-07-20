@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { mergeSearchParam } from "@/lib/url-params";
 
 /**
  * Owns local input state and debounces writes to a single URL search param,
@@ -21,9 +22,7 @@ export function useDebouncedSearchParam(
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      if (value.trim()) params.set(paramName, value.trim());
-      else params.delete(paramName);
+      const params = mergeSearchParam(searchParams, paramName, value.trim() || null);
       router.replace(`${pathname}?${params.toString()}`);
     }, delayMs);
     return () => clearTimeout(timeout);

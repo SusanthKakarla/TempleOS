@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { SortableTableHead } from "@/components/sortable-table-head";
+import { PaginationControls } from "@/components/pagination-controls";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -34,7 +36,16 @@ function getInitials(name: string): string {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
+interface DevoteesTableProps {
+  devotees: Devotee[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  sort?: "name" | "phone" | "firstSeen";
+  dir: "asc" | "desc";
+}
+
+export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir }: DevoteesTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
@@ -141,12 +152,30 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
                     aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>{t("columns.name")}</TableHead>
-                <TableHead>{t("columns.phone")}</TableHead>
+                <SortableTableHead
+                  column="name"
+                  label={t("columns.name")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/devotees"
+                />
+                <SortableTableHead
+                  column="phone"
+                  label={t("columns.phone")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/devotees"
+                />
                 <TableHead>{t("columns.whatsapp")}</TableHead>
                 <TableHead>{t("columns.birthStar")}</TableHead>
                 <TableHead>{t("columns.gothram")}</TableHead>
-                <TableHead>{t("columns.firstSeen")}</TableHead>
+                <SortableTableHead
+                  column="firstSeen"
+                  label={t("columns.firstSeen")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/devotees"
+                />
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -206,6 +235,7 @@ export function DevoteesTable({ devotees }: { devotees: Devotee[] }) {
               ))}
             </motion.tbody>
           </Table>
+          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/devotees" />
         </TableShell>
       )}
 

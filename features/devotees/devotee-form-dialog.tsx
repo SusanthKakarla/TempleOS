@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Switch } from "@/components/ui/switch";
 
 interface DevoteeFormDialogProps {
@@ -99,33 +100,22 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
           <DialogDescription>{mode === "create" ? t("createDescription") : t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="displayName">{t("fields.name")}</Label>
-            <div className="relative">
-              <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="whatsappPhone">{t("fields.phoneNumber")}</Label>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="whatsappPhone"
-                placeholder={t("fields.phonePlaceholder")}
-                value={whatsappPhone}
-                onChange={(e) => setWhatsappPhone(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="displayName"
+            label={t("fields.name")}
+            icon={<User />}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+          />
+          <FloatingLabelInput
+            id="whatsappPhone"
+            label={t("fields.phoneNumber")}
+            icon={<Phone />}
+            value={whatsappPhone}
+            onChange={(e) => setWhatsappPhone(e.target.value)}
+            required
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">{t("fields.dateOfBirth")}</Label>
@@ -140,31 +130,21 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFo
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="birthStar">{t("fields.birthStar")}</Label>
-              <div className="relative">
-                <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="birthStar"
-                  value={birthStar}
-                  onChange={(e) => setBirthStar(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
+            <FloatingLabelInput
+              id="birthStar"
+              label={t("fields.birthStar")}
+              icon={<Sparkles />}
+              value={birthStar}
+              onChange={(e) => setBirthStar(e.target.value)}
+            />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="ancestralLineage">{t("fields.gothram")}</Label>
-            <div className="relative">
-              <Users className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="ancestralLineage"
-                value={ancestralLineage}
-                onChange={(e) => setAncestralLineage(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="ancestralLineage"
+            label={t("fields.gothram")}
+            icon={<Users />}
+            value={ancestralLineage}
+            onChange={(e) => setAncestralLineage(e.target.value)}
+          />
           {mode === "edit" && (
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex items-center gap-2">

@@ -60,10 +60,10 @@ export function RolesGrid({
               role={role}
               assignedCount={assignedCount}
               trigger={
-                <Card className="glass-card h-full cursor-pointer overflow-hidden rounded-3xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl">
+                <Card className="glass-card group h-full cursor-pointer overflow-hidden rounded-3xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl">
                   <CardHeader className="flex-row items-start justify-between gap-2 p-0">
                     <span
-                      className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background ${ROLE_GRADIENT[role.code]}`}
+                      className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${ROLE_GRADIENT[role.code]}`}
                     >
                       <Icon className="size-5" />
                     </span>

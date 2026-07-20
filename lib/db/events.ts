@@ -1,5 +1,6 @@
 import { getPool } from "./pool";
 import type { Event, EventStatus } from "@/types/db";
+import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 interface EventRow {
   id: string;
@@ -31,26 +32,66 @@ function mapEvent(row: EventRow): Event {
   };
 }
 
-export async function listEvents(
-  tenantId: string,
-  filter: { status?: EventStatus; upcomingOnly?: boolean } = {},
-): Promise<Event[]> {
+export interface ListEventsFilter {
+  status?: EventStatus;
+  upcomingOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+  sort?: "date" | "title" | "status";
+  dir?: "asc" | "desc";
+}
+
+const EVENT_SORT_COLUMNS: Record<NonNullable<ListEventsFilter["sort"]>, string> = {
+  date: "starts_at",
+  title: "title",
+  status: "status",
+};
+
+function buildEventConditions(filter: Pick<ListEventsFilter, "status" | "upcomingOnly">) {
   const conditions = ["tenant_id = $1"];
-  const params: unknown[] = [tenantId];
+  const params: unknown[] = [];
 
   if (filter.status) {
     params.push(filter.status);
-    conditions.push(`status = $${params.length}`);
+    conditions.push(`status = $${params.length + 1}`);
   }
   if (filter.upcomingOnly) {
     conditions.push("starts_at >= now()");
   }
+  return { conditions, params };
+}
 
-  const { rows } = await getPool().query<EventRow>(
-    `SELECT * FROM events WHERE ${conditions.join(" AND ")} ORDER BY starts_at ASC`,
+/** `page`/`pageSize` are optional — omitted, this returns the full unpaginated result (existing callers rely on this). */
+export async function listEvents(tenantId: string, filter: ListEventsFilter = {}): Promise<Event[]> {
+  const { conditions, params: filterParams } = buildEventConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
+
+  const sortColumn = filter.sort ? EVENT_SORT_COLUMNS[filter.sort] : "starts_at";
+  const dir = filter.dir === "desc" ? "DESC" : "ASC";
+
+  let query = `SELECT * FROM events WHERE ${conditions.join(" AND ")} ORDER BY ${sortColumn} ${dir}`;
+
+  if (filter.page !== undefined) {
+    const pageSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.push(pageSize, computeOffset(filter.page, pageSize));
+    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+
+  const { rows } = await getPool().query<EventRow>(query, params);
+  return rows.map(mapEvent);
+}
+
+export async function countEventsFiltered(
+  tenantId: string,
+  filter: Pick<ListEventsFilter, "status" | "upcomingOnly"> = {},
+): Promise<number> {
+  const { conditions, params: filterParams } = buildEventConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM events WHERE ${conditions.join(" AND ")}`,
     params,
   );
-  return rows.map(mapEvent);
+  return Number(rows[0]?.count ?? 0);
 }
 
 /** "Export Selected" — fetch exactly the rows an admin picked in the table. */

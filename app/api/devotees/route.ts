@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const { session } = auth;
 
   const search = req.nextUrl.searchParams.get("search") ?? undefined;
-  const devotees = await listDevotees(session.tenantId, search);
+  const devotees = await listDevotees(session.tenantId, { search });
   return NextResponse.json({ devotees });
 }
 

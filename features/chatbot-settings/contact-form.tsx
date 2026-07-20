@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { Mail, MapPin, Phone, Link as LinkIcon } from "lucide-react";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ContactForm({ tenant }: { tenant: Tenant }) {
@@ -55,58 +54,35 @@ export function ContactForm({ tenant }: { tenant: Tenant }) {
       </CardHeader>
       <CardContent>
         <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="contact-phone">{tForm("fields.phone")}</Label>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="contact-phone"
-                placeholder={tForm("fields.phonePlaceholder")}
-                value={defaultContactPhone}
-                onChange={(e) => setDefaultContactPhone(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact-email">{tForm("fields.email")}</Label>
-            <div className="relative">
-              <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="contact-email"
-                type="email"
-                placeholder={tForm("fields.emailPlaceholder")}
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact-address">{tForm("fields.address")}</Label>
-            <div className="relative">
-              <MapPin className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="contact-address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact-maps">{tForm("fields.mapsLink")}</Label>
-            <div className="relative">
-              <LinkIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="contact-maps"
-                placeholder={tForm("fields.mapsLinkPlaceholder")}
-                value={googleMapsLink}
-                onChange={(e) => setGoogleMapsLink(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="contact-phone"
+            label={tForm("fields.phone")}
+            icon={<Phone />}
+            value={defaultContactPhone}
+            onChange={(e) => setDefaultContactPhone(e.target.value)}
+          />
+          <FloatingLabelInput
+            id="contact-email"
+            label={tForm("fields.email")}
+            icon={<Mail />}
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+          />
+          <FloatingLabelInput
+            id="contact-address"
+            label={tForm("fields.address")}
+            icon={<MapPin />}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+          <FloatingLabelInput
+            id="contact-maps"
+            label={tForm("fields.mapsLink")}
+            icon={<LinkIcon />}
+            value={googleMapsLink}
+            onChange={(e) => setGoogleMapsLink(e.target.value)}
+          />
           {error && <p className="text-sm text-destructive">{error}</p>}
         </form>
       </CardContent>

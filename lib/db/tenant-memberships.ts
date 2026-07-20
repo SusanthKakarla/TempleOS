@@ -2,6 +2,7 @@ import { cache } from "react";
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
 import { isRoleCode, type RoleCode, type SupportedLanguage, type TenantMembership } from "@/types/db";
+import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 export interface TenantMembershipWithRoles extends TenantMembership {
   roles: RoleCode[];
@@ -203,23 +204,29 @@ export interface ListTenantMembershipsFilters {
   search?: string;
   status?: TenantMembership["status"];
   role?: RoleCode;
+  page?: number;
+  pageSize?: number;
+  sort?: "name" | "status" | "lastSignIn";
+  dir?: "asc" | "desc";
 }
 
-export async function listTenantMembershipsForTenant(
-  tenantId: string,
-  filters: ListTenantMembershipsFilters = {},
-  client: QueryClient = getPool(),
-): Promise<TenantMembershipListItem[]> {
+const MEMBERSHIP_SORT_COLUMNS: Record<NonNullable<ListTenantMembershipsFilters["sort"]>, string> = {
+  name: "lower(tm.display_name)",
+  status: "tm.status",
+  lastSignIn: "tm.last_signed_in_at",
+};
+
+function buildMembershipConditions(filters: Pick<ListTenantMembershipsFilters, "search" | "status" | "role">) {
   const conditions = ["tm.tenant_id = $1"];
-  const params: unknown[] = [tenantId];
+  const params: unknown[] = [];
 
   if (filters.status) {
     params.push(filters.status);
-    conditions.push(`tm.status = $${params.length}`);
+    conditions.push(`tm.status = $${params.length + 1}`);
   }
   if (filters.search) {
     params.push(`%${filters.search}%`);
-    conditions.push(`(tm.display_name ILIKE $${params.length} OR p.phone_number ILIKE $${params.length})`);
+    conditions.push(`(tm.display_name ILIKE $${params.length + 1} OR p.phone_number ILIKE $${params.length + 1})`);
   }
   if (filters.role) {
     params.push(filters.role);
@@ -227,13 +234,26 @@ export async function listTenantMembershipsForTenant(
       `EXISTS (
         SELECT 1 FROM tenant_membership_roles tmr2
         JOIN role_definitions rd2 ON rd2.id = tmr2.role_definition_id AND rd2.active = true
-        WHERE tmr2.membership_id = tm.id AND rd2.code = $${params.length}
+        WHERE tmr2.membership_id = tm.id AND rd2.code = $${params.length + 1}
       )`,
     );
   }
+  return { conditions, params };
+}
 
-  const { rows } = await client.query<TenantMembershipListRow>(
-    `SELECT tm.*, p.phone_number,
+/** `page`/`pageSize` are optional — omitted, this returns the full unpaginated result (existing callers rely on this). */
+export async function listTenantMembershipsForTenant(
+  tenantId: string,
+  filters: ListTenantMembershipsFilters = {},
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem[]> {
+  const { conditions, params: filterParams } = buildMembershipConditions(filters);
+  const params: unknown[] = [tenantId, ...filterParams];
+
+  const sortColumn = filters.sort ? MEMBERSHIP_SORT_COLUMNS[filters.sort] : "lower(tm.display_name)";
+  const dir = filters.dir === "desc" ? "DESC" : "ASC";
+
+  let query = `SELECT tm.*, p.phone_number,
             COALESCE(
               array_agg(rd.code ORDER BY rd.code) FILTER (WHERE rd.code IS NOT NULL),
               ARRAY[]::text[]
@@ -244,10 +264,33 @@ export async function listTenantMembershipsForTenant(
      LEFT JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.active = true
      WHERE ${conditions.join(" AND ")}
      GROUP BY tm.id, p.phone_number
-     ORDER BY lower(tm.display_name) ASC`,
+     ORDER BY ${sortColumn} ${dir}`;
+
+  if (filters.page !== undefined) {
+    const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.push(pageSize, computeOffset(filters.page, pageSize));
+    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+
+  const { rows } = await client.query<TenantMembershipListRow>(query, params);
+  return rows.map(mapTenantMembershipListItem);
+}
+
+export async function countTenantMembershipsFiltered(
+  tenantId: string,
+  filters: Pick<ListTenantMembershipsFilters, "search" | "status" | "role"> = {},
+  client: QueryClient = getPool(),
+): Promise<number> {
+  const { conditions, params: filterParams } = buildMembershipConditions(filters);
+  const params: unknown[] = [tenantId, ...filterParams];
+  const { rows } = await client.query<{ count: string }>(
+    `SELECT count(DISTINCT tm.id) AS count
+     FROM tenant_memberships tm
+     INNER JOIN persons p ON p.id = tm.person_id
+     WHERE ${conditions.join(" AND ")}`,
     params,
   );
-  return rows.map(mapTenantMembershipListItem);
+  return Number(rows[0]?.count ?? 0);
 }
 
 export async function listTenantMembershipsByIds(

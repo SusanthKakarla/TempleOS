@@ -1,5 +1,6 @@
 import { getPool } from "./pool";
 import type { Devotee, SupportedLanguage } from "@/types/db";
+import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 interface DevoteeRow {
   id: string;
@@ -45,22 +46,58 @@ function mapDevotee(row: DevoteeRow): Devotee {
   };
 }
 
-export async function listDevotees(tenantId: string, search?: string): Promise<Devotee[]> {
+export interface ListDevoteesOptions {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "name" | "phone" | "firstSeen";
+  dir?: "asc" | "desc";
+}
+
+const DEVOTEE_SORT_COLUMNS: Record<NonNullable<ListDevoteesOptions["sort"]>, string> = {
+  name: "display_name",
+  phone: "whatsapp_phone",
+  firstSeen: "first_seen_at",
+};
+
+function buildDevoteeConditions(search?: string): { conditions: string[]; params: unknown[] } {
+  const conditions = ["tenant_id = $1"];
+  const params: unknown[] = [];
   if (search && search.trim()) {
-    const { rows } = await getPool().query<DevoteeRow>(
-      `SELECT * FROM devotees
-       WHERE tenant_id = $1 AND (display_name ILIKE $2 OR whatsapp_phone ILIKE $2)
-       ORDER BY display_name ASC`,
-      [tenantId, `%${search.trim()}%`],
-    );
-    return rows.map(mapDevotee);
+    params.push(`%${search.trim()}%`);
+    conditions.push(`(display_name ILIKE $${params.length + 1} OR whatsapp_phone ILIKE $${params.length + 1})`);
+  }
+  return { conditions, params };
+}
+
+/** `page`/`pageSize` are optional — omitted, this returns the full unpaginated result (existing callers rely on this). */
+export async function listDevotees(tenantId: string, opts: ListDevoteesOptions = {}): Promise<Devotee[]> {
+  const { conditions, params: filterParams } = buildDevoteeConditions(opts.search);
+  const params: unknown[] = [tenantId, ...filterParams];
+
+  const sortColumn = opts.sort ? DEVOTEE_SORT_COLUMNS[opts.sort] : "display_name";
+  const dir = opts.dir === "desc" ? "DESC" : "ASC";
+
+  let query = `SELECT * FROM devotees WHERE ${conditions.join(" AND ")} ORDER BY ${sortColumn} ${dir}`;
+
+  if (opts.page !== undefined) {
+    const pageSize = opts.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.push(pageSize, computeOffset(opts.page, pageSize));
+    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
   }
 
-  const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 ORDER BY display_name ASC",
-    [tenantId],
-  );
+  const { rows } = await getPool().query<DevoteeRow>(query, params);
   return rows.map(mapDevotee);
+}
+
+export async function countDevoteesFiltered(tenantId: string, opts: { search?: string } = {}): Promise<number> {
+  const { conditions, params: filterParams } = buildDevoteeConditions(opts.search);
+  const params: unknown[] = [tenantId, ...filterParams];
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM devotees WHERE ${conditions.join(" AND ")}`,
+    params,
+  );
+  return Number(rows[0]?.count ?? 0);
 }
 
 /** "Export Selected" — fetch exactly the rows an admin picked in the table. */

@@ -67,6 +67,12 @@
       "title": "Quick Actions",
       "createEvent": "Create event",
       "addDevotee": "Add devotee"
+    },
+    "charts": {
+      "donationsTrend": "Donations (Last 30 Days)",
+      "messagesTrend": "WhatsApp Messages (Last 30 Days)",
+      "inbound": "Received",
+      "outbound": "Sent"
     }
   },
   "export": {

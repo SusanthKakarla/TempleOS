@@ -6,8 +6,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -56,10 +56,13 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
       </CardHeader>
       <CardContent>
         <form id="temple-info-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="temple-name">{tForm("fields.name")}</Label>
-            <Input id="temple-name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
+          <FloatingLabelInput
+            id="temple-name"
+            label={tForm("fields.name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
           <div className="space-y-2">
             <Label htmlFor="welcome-message">{tForm("fields.welcomeMessage")}</Label>
             <Textarea

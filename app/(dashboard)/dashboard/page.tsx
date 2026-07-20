@@ -13,18 +13,24 @@ import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
 import { countDevotees, countOptedInDevotees, listRecentDevotees } from "@/lib/db/devotees";
-import { getDonationSummary } from "@/lib/db/donations";
+import { getDonationSummary, getDonationsPerDay } from "@/lib/db/donations";
 import {
   countFailedMessages,
   countMessagesByDirection,
   listRecentMessages,
+  getMessagesPerDay,
 } from "@/lib/db/whatsapp-messages";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { bucketEventsPerDay } from "@/lib/dashboard-sparklines";
+import { zeroFillDays } from "@/lib/dashboard-timeseries";
+import { DonationsChart } from "@/features/dashboard/donations-chart";
+import { MessagesChart } from "@/features/dashboard/messages-chart";
 import { UpcomingEventsWidget } from "@/features/dashboard/upcoming-events-widget";
 import { RecentDevoteesWidget } from "@/features/dashboard/recent-devotees-widget";
 import { RecentMessagesWidget } from "@/features/dashboard/recent-messages-widget";
 import { QuickActions } from "@/features/dashboard/quick-actions";
+
+const CHART_DAYS = 30;
 
 function greetingKey(): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
   const hour = new Date().getHours();
@@ -49,6 +55,8 @@ export default async function DashboardHomePage() {
     upcomingEventsList,
     recentDevotees,
     recentMessages,
+    donationsPerDayRaw,
+    messagesPerDayRaw,
   ] = await Promise.all([
     getTenantById(session.tenantId),
     countUpcomingPublishedEvents(session.tenantId),
@@ -61,9 +69,17 @@ export default async function DashboardHomePage() {
     listEvents(session.tenantId, { status: "published", upcomingOnly: true }),
     listRecentDevotees(session.tenantId, 5),
     listRecentMessages(session.tenantId, 5),
+    getDonationsPerDay(session.tenantId, CHART_DAYS),
+    getMessagesPerDay(session.tenantId, CHART_DAYS),
   ]);
 
   const eventsPerDay = bucketEventsPerDay(upcomingEventsList);
+  const donationsPerDay = zeroFillDays(
+    donationsPerDayRaw.map((row) => ({ date: row.date, total: Number(row.total) })),
+    CHART_DAYS,
+    { total: 0 },
+  );
+  const messagesPerDay = zeroFillDays(messagesPerDayRaw, CHART_DAYS, { inbound: 0, outbound: 0 });
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -134,6 +150,11 @@ export default async function DashboardHomePage() {
           icon={<AlertTriangle className="size-4.5" />}
           gradient="bg-destructive"
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <DonationsChart data={donationsPerDay} />
+        <MessagesChart data={messagesPerDay} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

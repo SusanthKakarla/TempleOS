@@ -29,10 +29,10 @@ export async function RecentMessagesWidget({ messages }: { messages: WhatsAppMes
           messages.map((message) => (
             <div
               key={message.id}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-200 hover:bg-accent"
+              className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-200 hover:bg-accent"
             >
               <span
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-sm ${
+                className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${
                   message.direction === "inbound" ? "gradient-green-emerald" : "gradient-blue-purple"
                 }`}
               >

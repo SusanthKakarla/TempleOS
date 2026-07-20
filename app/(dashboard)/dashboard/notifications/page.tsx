@@ -1,23 +1,43 @@
 import { getTranslations } from "next-intl/server";
 import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
-import { getEventNotificationSummary, listRecentEventNotifications } from "@/lib/db/event-notifications";
+import {
+  getEventNotificationSummary,
+  listRecentEventNotifications,
+  countEventNotificationsFiltered,
+  type ListRecentEventNotificationsOptions,
+} from "@/lib/db/event-notifications";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
+import { parsePageParam } from "@/lib/pagination";
+
+const NOTIFICATIONS_PAGE_SIZE = 50;
 
 interface PageProps {
-  searchParams: Promise<{ eventId?: string }>;
+  searchParams: Promise<{ eventId?: string; page?: string; sort?: string; dir?: string }>;
 }
+
+const SORT_VALUES: ListRecentEventNotificationsOptions["sort"][] = ["date", "status"];
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("notifications");
 
-  const { eventId } = await searchParams;
+  const { eventId, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const sort = SORT_VALUES.find((value) => value === sortParam);
+  const dir = dirParam === "asc" ? "asc" : "desc";
 
-  const [summary, notifications] = await Promise.all([
+  const [summary, notifications, totalCount] = await Promise.all([
     getEventNotificationSummary(session.tenantId),
-    listRecentEventNotifications(session.tenantId, { eventId, limit: 50 }),
+    listRecentEventNotifications(session.tenantId, {
+      eventId,
+      page,
+      pageSize: NOTIFICATIONS_PAGE_SIZE,
+      sort,
+      dir,
+    }),
+    countEventNotificationsFiltered(session.tenantId, { eventId }),
   ]);
 
   const successRate =
@@ -60,7 +80,15 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
         />
       </div>
 
-      <NotificationList notifications={notifications} eventId={eventId} />
+      <NotificationList
+        notifications={notifications}
+        eventId={eventId}
+        page={page}
+        pageSize={NOTIFICATIONS_PAGE_SIZE}
+        totalCount={totalCount}
+        sort={sort}
+        dir={dir}
+      />
     </div>
   );
 }

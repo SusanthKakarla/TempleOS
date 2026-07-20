@@ -14,8 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatDateTime } from "@/lib/date";
@@ -112,19 +112,14 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
           <DialogDescription>{mode === "create" ? t("createDescription") : t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">{t("fields.title")}</Label>
-            <div className="relative">
-              <Type className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="title"
+            label={t("fields.title")}
+            icon={<Type />}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
           <div className="space-y-2">
             <Label htmlFor="description">{t("fields.description")}</Label>
             <Textarea
@@ -134,18 +129,13 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
               rows={3}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">{t("fields.location")}</Label>
-            <div className="relative">
-              <MapPin className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="location"
+            label={t("fields.location")}
+            icon={<MapPin />}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
           <div className="space-y-4">
             <DateTimeField id="startsAt" label={t("fields.start")} value={startsAt} onChange={setStartsAt} required />
             <DateTimeField id="endsAt" label={t("fields.end")} value={endsAt} onChange={setEndsAt} />

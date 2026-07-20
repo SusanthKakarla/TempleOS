@@ -24,9 +24,12 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { SortableTableHead } from "@/components/sortable-table-head";
+import { PaginationControls } from "@/components/pagination-controls";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
+import { mergeSearchParam } from "@/lib/url-params";
 import { UsersSearchInput } from "./users-search-input";
 import { InviteUserDialog } from "./invite-user-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
@@ -38,13 +41,25 @@ function getInitials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
+interface UsersTableProps {
+  members: TenantMembershipListItem[];
+  currentMembershipId: string;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  sort?: "name" | "status" | "lastSignIn";
+  dir: "asc" | "desc";
+}
+
 export function UsersTable({
   members,
   currentMembershipId,
-}: {
-  members: TenantMembershipListItem[];
-  currentMembershipId: string;
-}) {
+  page,
+  pageSize,
+  totalCount,
+  sort,
+  dir,
+}: UsersTableProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,9 +82,7 @@ export function UsersTable({
   }
 
   function updateFilter(key: "status" | "role", value: string) {
-    const params = new URLSearchParams(searchParams);
-    if (value === "all") params.delete(key);
-    else params.set(key, value);
+    const params = mergeSearchParam(searchParams, key, value === "all" ? null : value);
     router.replace(`${pathname}?${params.toString()}`);
   }
 
@@ -205,12 +218,30 @@ export function UsersTable({
                     aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>{t("columns.name")}</TableHead>
+                <SortableTableHead
+                  column="name"
+                  label={t("columns.name")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/users"
+                />
                 <TableHead>{t("columns.phone")}</TableHead>
                 <TableHead>{t("columns.role")}</TableHead>
-                <TableHead>{t("columns.status")}</TableHead>
+                <SortableTableHead
+                  column="status"
+                  label={t("columns.status")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/users"
+                />
                 <TableHead>{t("columns.joined")}</TableHead>
-                <TableHead>{t("columns.lastLogin")}</TableHead>
+                <SortableTableHead
+                  column="lastSignIn"
+                  label={t("columns.lastLogin")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/users"
+                />
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -290,6 +321,7 @@ export function UsersTable({
               ))}
             </motion.tbody>
           </Table>
+          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/users" />
         </TableShell>
       )}
     </div>

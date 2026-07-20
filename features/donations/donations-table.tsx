@@ -20,9 +20,12 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { SortableTableHead } from "@/components/sortable-table-head";
+import { PaginationControls } from "@/components/pagination-controls";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
+import { mergeSearchParam } from "@/lib/url-params";
 import { ExportMenu } from "@/features/export/export-menu";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
@@ -30,13 +33,17 @@ import { DonationsSearchInput } from "./donations-search-input";
 
 const MotionTableRow = motion.create(TableRow);
 
-export function DonationsTable({
-  donations,
-  devotees,
-}: {
+interface DonationsTableProps {
   donations: DonationWithDonor[];
   devotees: Devotee[];
-}) {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  sort?: "date" | "amount" | "donor";
+  dir: "asc" | "desc";
+}
+
+export function DonationsTable({ donations, devotees, page, pageSize, totalCount, sort, dir }: DonationsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
@@ -64,11 +71,8 @@ export function DonationsTable({
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      if (dateFrom) params.set("dateFrom", dateFrom);
-      else params.delete("dateFrom");
-      if (dateTo) params.set("dateTo", dateTo);
-      else params.delete("dateTo");
+      let params = mergeSearchParam(searchParams, "dateFrom", dateFrom || null);
+      params = mergeSearchParam(params, "dateTo", dateTo || null);
       router.replace(`/dashboard/donations?${params.toString()}`);
     }, 300);
     return () => clearTimeout(timeout);
@@ -183,11 +187,29 @@ export function DonationsTable({
                     aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>{t("columns.donor")}</TableHead>
-                <TableHead>{t("columns.amount")}</TableHead>
+                <SortableTableHead
+                  column="donor"
+                  label={t("columns.donor")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/donations"
+                />
+                <SortableTableHead
+                  column="amount"
+                  label={t("columns.amount")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/donations"
+                />
                 <TableHead>{t("columns.purpose")}</TableHead>
                 <TableHead>{t("columns.method")}</TableHead>
-                <TableHead>{t("columns.date")}</TableHead>
+                <SortableTableHead
+                  column="date"
+                  label={t("columns.date")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/donations"
+                />
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -241,6 +263,7 @@ export function DonationsTable({
               ))}
             </motion.tbody>
           </Table>
+          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/donations" />
         </TableShell>
       )}
 

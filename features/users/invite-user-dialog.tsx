@@ -13,8 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { ROLE_CODES, type RoleCode } from "@/types/db";
 
 export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement; onInvited: () => void }) {
@@ -82,33 +82,22 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
           <DialogDescription>{tDialog("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="invite-name">{tDialog("fields.name")}</Label>
-            <div className="relative">
-              <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="invite-name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="invite-phone">{tDialog("fields.phone")}</Label>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="invite-phone"
-                placeholder={tDialog("fields.phonePlaceholder")}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-          </div>
+          <FloatingLabelInput
+            id="invite-name"
+            label={tDialog("fields.name")}
+            icon={<User />}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+          />
+          <FloatingLabelInput
+            id="invite-phone"
+            label={tDialog("fields.phone")}
+            icon={<Phone />}
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            required
+          />
           <div className="space-y-2">
             <Label>{tDialog("fields.roles")}</Label>
             <div className="flex flex-wrap gap-2">

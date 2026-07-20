@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useResolvedTheme } from "@/lib/use-resolved-theme";
 
 const STORAGE_KEY = "theme";
 
@@ -20,8 +21,11 @@ function toggleTheme() {
 }
 
 export function ThemeToggle() {
+  const resolvedTheme = useResolvedTheme();
+  const label = resolvedTheme === "dark" ? "Switch to Ocean Light" : "Switch to Ocean Dark";
+
   return (
-    <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggleTheme}>
+    <Button variant="ghost" size="icon" aria-label={label} title={label} onClick={toggleTheme}>
       <Sun className="size-4 dark:hidden" />
       <Moon className="hidden size-4 dark:block" />
     </Button>

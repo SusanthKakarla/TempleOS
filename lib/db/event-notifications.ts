@@ -4,6 +4,7 @@ import type {
   EventNotificationDeliveryStatus,
   EventNotificationType,
 } from "@/types/db";
+import { computeOffset } from "@/lib/pagination";
 
 interface EventNotificationRow {
   id: string;
@@ -171,9 +172,24 @@ export interface EventNotificationListItem extends EventNotification {
   devoteeName: string;
 }
 
+export interface ListRecentEventNotificationsOptions {
+  eventId?: string;
+  /** Legacy fixed-window param — a plain LIMIT with no OFFSET. Superseded by `page`/`pageSize` when `page` is set. */
+  limit?: number;
+  page?: number;
+  pageSize?: number;
+  sort?: "date" | "status";
+  dir?: "asc" | "desc";
+}
+
+const NOTIFICATION_SORT_COLUMNS: Record<NonNullable<ListRecentEventNotificationsOptions["sort"]>, string> = {
+  date: "n.created_at",
+  status: "n.delivery_status",
+};
+
 export async function listRecentEventNotifications(
   tenantId: string,
-  opts: { eventId?: string; limit?: number } = {},
+  opts: ListRecentEventNotificationsOptions = {},
 ): Promise<EventNotificationListItem[]> {
   const conditions = ["n.tenant_id = $1"];
   const params: unknown[] = [tenantId];
@@ -182,16 +198,28 @@ export async function listRecentEventNotifications(
     params.push(opts.eventId);
     conditions.push(`n.event_id = $${params.length}`);
   }
-  params.push(opts.limit ?? 50);
 
-  const { rows } = await getPool().query<EventNotificationRow & { event_title: string; devotee_name: string }>(
-    `SELECT n.*, e.title AS event_title, d.display_name AS devotee_name
+  const sortColumn = opts.sort ? NOTIFICATION_SORT_COLUMNS[opts.sort] : "n.created_at";
+  const dir = opts.dir === "asc" ? "ASC" : "DESC";
+
+  let query = `SELECT n.*, e.title AS event_title, d.display_name AS devotee_name
      FROM event_notifications n
      JOIN events e ON e.id = n.event_id
      JOIN devotees d ON d.id = n.devotee_id
      WHERE ${conditions.join(" AND ")}
-     ORDER BY n.created_at DESC
-     LIMIT $${params.length}`,
+     ORDER BY ${sortColumn} ${dir}`;
+
+  if (opts.page !== undefined) {
+    const pageSize = opts.pageSize ?? 50;
+    params.push(pageSize, computeOffset(opts.page, pageSize));
+    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  } else {
+    params.push(opts.limit ?? 50);
+    query += ` LIMIT $${params.length}`;
+  }
+
+  const { rows } = await getPool().query<EventNotificationRow & { event_title: string; devotee_name: string }>(
+    query,
     params,
   );
   return rows.map((row) => ({
@@ -199,6 +227,23 @@ export async function listRecentEventNotifications(
     eventTitle: row.event_title,
     devoteeName: row.devotee_name,
   }));
+}
+
+export async function countEventNotificationsFiltered(
+  tenantId: string,
+  opts: { eventId?: string } = {},
+): Promise<number> {
+  const conditions = ["tenant_id = $1"];
+  const params: unknown[] = [tenantId];
+  if (opts.eventId) {
+    params.push(opts.eventId);
+    conditions.push(`event_id = $${params.length}`);
+  }
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM event_notifications WHERE ${conditions.join(" AND ")}`,
+    params,
+  );
+  return Number(rows[0]?.count ?? 0);
 }
 
 export async function listEventNotificationsForEvent(

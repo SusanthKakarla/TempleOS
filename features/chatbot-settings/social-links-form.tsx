@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Globe, Link as LinkIcon } from "lucide-react";
 import type { SocialPlatform, TempleSocialLink } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // lucide-react no longer ships trademarked brand/logo icons, so every
@@ -77,11 +77,12 @@ function SocialLinkRow({
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
         <Icon className="size-4 text-muted-foreground" />
       </div>
-      <Input
-        placeholder={`https://${platform}.com/...`}
+      <FloatingLabelInput
+        id={`social-link-${platform}`}
+        label={label}
+        wrapperClassName="flex-1"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        className="flex-1"
       />
       <Button type="button" variant="outline" size="sm" onClick={handleSave} disabled={submitting}>
         {submitting ? savingLabel : saveLabel}

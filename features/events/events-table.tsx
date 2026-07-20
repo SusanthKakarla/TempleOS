@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { SortableTableHead } from "@/components/sortable-table-head";
+import { PaginationControls } from "@/components/pagination-controls";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDateTime, formatTime } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -42,7 +44,16 @@ function formatEventTime(event: Event, locale: SupportedLanguage): string {
   return `${startLabel} - ${endLabel}`;
 }
 
-export function EventsTable({ events }: { events: Event[] }) {
+interface EventsTableProps {
+  events: Event[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  sort?: "date" | "title" | "status";
+  dir: "asc" | "desc";
+}
+
+export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: EventsTableProps) {
   const router = useRouter();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("events");
@@ -203,10 +214,28 @@ export function EventsTable({ events }: { events: Event[] }) {
                     aria-label={t("selectAll")}
                   />
                 </TableHead>
-                <TableHead>{t("columns.title")}</TableHead>
-                <TableHead>{t("columns.when")}</TableHead>
+                <SortableTableHead
+                  column="title"
+                  label={t("columns.title")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/events"
+                />
+                <SortableTableHead
+                  column="date"
+                  label={t("columns.when")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/events"
+                />
                 <TableHead>{t("columns.location")}</TableHead>
-                <TableHead>{t("columns.status")}</TableHead>
+                <SortableTableHead
+                  column="status"
+                  label={t("columns.status")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/events"
+                />
                 <TableHead className="text-right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -300,6 +329,12 @@ export function EventsTable({ events }: { events: Event[] }) {
               ))}
             </motion.tbody>
           </Table>
+        </TableShell>
+      )}
+
+      {events.length > 0 && (
+        <TableShell>
+          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/events" />
         </TableShell>
       )}
 

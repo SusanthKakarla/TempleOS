@@ -126,7 +126,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     >
                       <span
                         className={cn(
-                          "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110",
+                          "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110 group-hover/nav-item:rotate-6",
                           item.gradient,
                         )}
                       >
@@ -148,7 +148,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       >
                         <span
                           className={cn(
-                            "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110",
+                            "flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-sm transition-transform duration-200 group-hover/nav-item:scale-110 group-hover/nav-item:rotate-6",
                             USER_MANAGEMENT_NAV_ITEM.gradient,
                           )}
                         >

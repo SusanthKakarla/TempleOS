@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { SortableTableHead } from "@/components/sortable-table-head";
+import { PaginationControls } from "@/components/pagination-controls";
 import { formatDateTime } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 
@@ -33,13 +35,25 @@ function StatusIcon({ status }: { status: EventNotificationDeliveryStatus }) {
   return <Clock className="size-3.5 text-muted-foreground" />;
 }
 
+interface NotificationListProps {
+  notifications: EventNotificationListItem[];
+  eventId?: string;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  sort?: "date" | "status";
+  dir: "asc" | "desc";
+}
+
 export function NotificationList({
   notifications,
   eventId,
-}: {
-  notifications: EventNotificationListItem[];
-  eventId?: string;
-}) {
+  page,
+  pageSize,
+  totalCount,
+  sort,
+  dir,
+}: NotificationListProps) {
   const router = useRouter();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("notifications.list");
@@ -103,8 +117,20 @@ export function NotificationList({
                 <TableHead>{t("columns.event")}</TableHead>
                 <TableHead>{t("columns.devotee")}</TableHead>
                 <TableHead>{t("columns.type")}</TableHead>
-                <TableHead>{t("columns.status")}</TableHead>
-                <TableHead>{t("columns.sent")}</TableHead>
+                <SortableTableHead
+                  column="status"
+                  label={t("columns.status")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/notifications"
+                />
+                <SortableTableHead
+                  column="date"
+                  label={t("columns.sent")}
+                  currentSort={sort}
+                  currentDir={dir}
+                  pathname="/dashboard/notifications"
+                />
               </TableRow>
             </TableHeader>
             <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
@@ -133,6 +159,12 @@ export function NotificationList({
               ))}
             </motion.tbody>
           </Table>
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            pathname="/dashboard/notifications"
+          />
         </TableShell>
       )}
     </div>
