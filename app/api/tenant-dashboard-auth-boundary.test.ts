@@ -28,6 +28,8 @@ const tenantDashboardApiRoutes = [
   "app/api/users/import/commit/route.ts",
   "app/api/users/import/template/route.ts",
   "app/api/audit-log/route.ts",
+  "app/api/whatsapp/connect/callback/route.ts",
+  "app/api/whatsapp/disconnect/route.ts",
 ];
 
 const tenantDashboardAuthBoundaryFiles = [

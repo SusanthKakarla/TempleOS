@@ -119,8 +119,14 @@ export interface WhatsAppAccount {
   phoneNumber: string;
   metaPhoneNumberId: string;
   metaBusinessAccountId: string;
+  // Populated by Embedded Signup's Graph API lookups; null for
+  // manually/operator-linked accounts that never made those calls.
+  businessName: string | null;
+  phoneVerificationStatus: string | null;
+  webhookSubscribed: boolean;
   status: WhatsAppAccountStatus;
   connectedAt: string | null;
+  disconnectedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

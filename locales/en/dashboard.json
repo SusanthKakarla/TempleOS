@@ -184,6 +184,34 @@
       "title": "WhatsApp Chatbot Settings",
       "subtitle": "Everything here is read live by the WhatsApp chatbot — changes take effect immediately, no deployment needed."
     },
+    "whatsappConnection": {
+      "cardTitle": "WhatsApp Business Connection",
+      "cardDescription": "Connect your temple's own WhatsApp Business Account so the chatbot can send and receive messages.",
+      "connectButton": "Connect WhatsApp",
+      "reconnectButton": "Reconnect",
+      "disconnectButton": "Disconnect",
+      "disconnectConfirm": "Disconnect WhatsApp Business? Devotees will stop receiving messages until you reconnect.",
+      "connecting": "Connecting...",
+      "disconnecting": "Disconnecting...",
+      "statusNotConnected": "Not Connected",
+      "statusConnected": "Connected",
+      "notConnectedState": "No WhatsApp Business Account connected yet.",
+      "fields": {
+        "businessName": "Business Name",
+        "phoneNumber": "Phone Number",
+        "wabaId": "WhatsApp Business Account ID",
+        "connectedAt": "Connected On",
+        "phoneStatus": "Phone Number Status",
+        "webhookStatus": "Webhook Status"
+      },
+      "webhookSubscribed": "Subscribed",
+      "webhookNotSubscribed": "Not subscribed",
+      "connectSuccess": "WhatsApp Business connected",
+      "disconnectSuccess": "WhatsApp Business disconnected",
+      "connectError": "Failed to connect WhatsApp Business",
+      "disconnectError": "Failed to disconnect WhatsApp Business",
+      "sdkLoadError": "Failed to load Meta's connection tool. Please retry."
+    },
     "tabs": {
       "info": "Temple Info",
       "timings": "Timings",

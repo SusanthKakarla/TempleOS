@@ -66,8 +66,12 @@ interface WhatsAppAccountRow {
   phone_number: string;
   meta_phone_number_id: string;
   meta_business_account_id: string;
+  business_name: string | null;
+  phone_verification_status: string | null;
+  webhook_subscribed: boolean;
   status: WhatsAppAccount["status"];
   connected_at: Date | null;
+  disconnected_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -176,8 +180,12 @@ function mapWhatsAppAccount(row: WhatsAppAccountRow): WhatsAppAccount {
     phoneNumber: row.phone_number,
     metaPhoneNumberId: row.meta_phone_number_id,
     metaBusinessAccountId: row.meta_business_account_id,
+    businessName: row.business_name,
+    phoneVerificationStatus: row.phone_verification_status,
+    webhookSubscribed: row.webhook_subscribed,
     status: row.status,
     connectedAt: row.connected_at ? row.connected_at.toISOString() : null,
+    disconnectedAt: row.disconnected_at ? row.disconnected_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };

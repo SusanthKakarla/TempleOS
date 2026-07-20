@@ -29,11 +29,11 @@ export interface InteractiveListSection {
 
 /** Shared send path for every message type — credential check, fetch, response parsing. */
 async function sendMessage(
+  phoneNumberId: string,
   toPhone: string,
   messageFields: Record<string, unknown>,
 ): Promise<SendMessageResult> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!accessToken || !phoneNumberId) {
     return {
       success: false,
@@ -83,17 +83,18 @@ async function sendMessage(
 }
 
 /** Sends a plain text message via the Meta WhatsApp Cloud API. */
-export function sendTextMessage(toPhone: string, body: string): Promise<SendMessageResult> {
-  return sendMessage(toPhone, { type: "text", text: { body } });
+export function sendTextMessage(phoneNumberId: string, toPhone: string, body: string): Promise<SendMessageResult> {
+  return sendMessage(phoneNumberId, toPhone, { type: "text", text: { body } });
 }
 
 /** Sends up to 3 tappable reply buttons (e.g. the language picker). */
 export function sendButtonMessage(
+  phoneNumberId: string,
   toPhone: string,
   bodyText: string,
   buttons: InteractiveButton[],
 ): Promise<SendMessageResult> {
-  return sendMessage(toPhone, {
+  return sendMessage(phoneNumberId, toPhone, {
     type: "interactive",
     interactive: {
       type: "button",
@@ -107,12 +108,13 @@ export function sendButtonMessage(
 
 /** Sends a tappable list (up to 10 rows total across sections — the main menu). */
 export function sendListMessage(
+  phoneNumberId: string,
   toPhone: string,
   bodyText: string,
   buttonLabel: string,
   sections: InteractiveListSection[],
 ): Promise<SendMessageResult> {
-  return sendMessage(toPhone, {
+  return sendMessage(phoneNumberId, toPhone, {
     type: "interactive",
     interactive: {
       type: "list",

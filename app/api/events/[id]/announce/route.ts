@@ -51,7 +51,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     // default to English for broadcast announcements — there's no live
     // conversation here to gate on a language picker first.
     const message = buildAnnouncementMessage(tenant, event, devotee.preferredLanguage ?? "en");
-    const result = await sendTextMessage(devotee.whatsappPhone, message);
+    const result = await sendTextMessage(whatsappAccount.metaPhoneNumberId, devotee.whatsappPhone, message);
     await logWhatsAppMessage(session.tenantId, {
       devoteeId: devotee.id,
       direction: "outbound",

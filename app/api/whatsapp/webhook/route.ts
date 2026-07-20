@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { SupportedLanguage, WhatsAppMessageType } from "@/types/db";
+import type { SupportedLanguage, WhatsAppAccount, WhatsAppMessageType } from "@/types/db";
 import { getWhatsAppAccountByPhoneNumberId } from "@/lib/db/whatsapp-accounts";
 import { getTenantById } from "@/lib/db/tenants";
 import { upsertDevoteeFromWhatsApp, updateDevoteePreferredLanguage } from "@/lib/db/devotees";
@@ -69,12 +69,14 @@ export async function GET(req: NextRequest) {
 }
 
 async function handleInboundMessage(
-  tenantId: string,
-  templeWhatsAppPhone: string,
+  account: WhatsAppAccount,
   message: InboundMessage,
   contactName: string | undefined,
 ) {
   if (!message.from) return;
+
+  const tenantId = account.tenantId;
+  const templeWhatsAppPhone = account.phoneNumber;
 
   const devoteePhone = normalizeWhatsAppId(message.from);
   const interactiveReplyId = message.interactive?.button_reply?.id ?? message.interactive?.list_reply?.id;
@@ -115,21 +117,21 @@ async function handleInboundMessage(
     const lang: SupportedLanguage = command === "select_language_en" ? "en" : "te";
     await updateDevoteePreferredLanguage(tenantId, devotee.id, lang);
     const menu = buildMenuMessage(tenant, lang);
-    sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
+    sendResult = await sendListMessage(account.metaPhoneNumberId, devoteePhone, menu.body, menu.buttonLabel, menu.sections);
     loggedBody = menu.body;
     messageType = "list";
   } else if (command === "change_language" || devotee.preferredLanguage === null) {
     // First-time devotees must choose a language before anything else, even
     // if their very first message was a concrete command like "events".
     const picker = buildLanguagePickerMessage();
-    sendResult = await sendButtonMessage(devoteePhone, picker.body, picker.buttons);
+    sendResult = await sendButtonMessage(account.metaPhoneNumberId, devoteePhone, picker.body, picker.buttons);
     loggedBody = picker.body;
     messageType = "button";
   } else {
     const lang = devotee.preferredLanguage;
     if (command === "menu") {
       const menu = buildMenuMessage(tenant, lang);
-      sendResult = await sendListMessage(devoteePhone, menu.body, menu.buttonLabel, menu.sections);
+      sendResult = await sendListMessage(account.metaPhoneNumberId, devoteePhone, menu.body, menu.buttonLabel, menu.sections);
       loggedBody = menu.body;
       messageType = "list";
     } else {
@@ -160,7 +162,7 @@ async function handleInboundMessage(
       } else {
         replyText = buildUnknownMessage(lang);
       }
-      sendResult = await sendTextMessage(devoteePhone, replyText);
+      sendResult = await sendTextMessage(account.metaPhoneNumberId, devoteePhone, replyText);
       loggedBody = replyText;
     }
   }
@@ -196,7 +198,7 @@ export async function POST(req: NextRequest) {
       for (const message of messages) {
         const contactName = value?.contacts?.find((c) => c.wa_id === message.from)?.profile?.name;
         try {
-          await handleInboundMessage(account.tenantId, account.phoneNumber, message, contactName);
+          await handleInboundMessage(account, message, contactName);
         } catch (err) {
           // One malformed/failed message should not fail the whole webhook
           // delivery (Meta retries the entire payload on non-2xx).

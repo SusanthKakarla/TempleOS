@@ -180,8 +180,12 @@ const linkedWhatsAppAccount = {
   phoneNumber: "+919876543210",
   metaPhoneNumberId: "123456789",
   metaBusinessAccountId: "987654321",
+  businessName: null,
+  phoneVerificationStatus: null,
+  webhookSubscribed: false,
   status: "connected" as const,
   connectedAt: "2026-07-18T00:00:00.000Z",
+  disconnectedAt: null,
   createdAt: "2026-07-18T00:00:00.000Z",
   updatedAt: "2026-07-18T00:00:00.000Z",
 };

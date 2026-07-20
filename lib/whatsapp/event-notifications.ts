@@ -40,7 +40,12 @@ async function processOneEventNotification(id: string): Promise<void> {
 
   const lang = devotee.preferredLanguage ?? "en";
   const message = buildEventNotificationMessage(claimed.notificationType, tenant, event, lang);
-  const result = await sendButtonMessage(devotee.whatsappPhone, message.body, message.buttons);
+  const result = await sendButtonMessage(
+    whatsappAccount.metaPhoneNumberId,
+    devotee.whatsappPhone,
+    message.body,
+    message.buttons,
+  );
   const logged = await logWhatsAppMessage(claimed.tenantId, {
     devoteeId: devotee.id,
     direction: "outbound",
