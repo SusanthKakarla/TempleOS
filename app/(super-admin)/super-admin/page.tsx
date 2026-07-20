@@ -5,6 +5,7 @@ import {
   Landmark,
   Plus,
   ShieldCheck,
+  UserCog,
   UsersRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,13 @@ export default async function SuperAdminPage() {
             >
               <ShieldCheck className="size-4" />
               Role Catalog
+            </Button>
+            <Button
+              variant="outline"
+              render={<Link href="/super-admin/admins" />}
+            >
+              <UserCog className="size-4" />
+              Platform Admins
             </Button>
             <SuperAdminSignOutButton />
             <Button render={<Link href="/super-admin/temples/new" />}>
