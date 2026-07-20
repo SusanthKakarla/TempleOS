@@ -171,7 +171,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
   }
   h1, h2, h3 {
     @apply font-heading;
@@ -198,6 +198,7 @@
   /* Large translucent surfaces (conversation panes) */
   .glass-panel {
     background: color-mix(in oklch, var(--card) 55%, transparent);
+    -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
     border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
   }
@@ -205,6 +206,7 @@
   /* Elevated cards (metric cards, settings cards) */
   .glass-card {
     background: color-mix(in oklch, var(--warm-ivory) 70%, var(--card) 30%);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border: 1px solid color-mix(in oklch, var(--foreground) 6%, transparent);
     box-shadow: 0 4px 24px -4px color-mix(in oklch, var(--foreground) 12%, transparent);
@@ -213,6 +215,7 @@
   /* Modal/popup surfaces — stronger opacity than .glass-panel so content stays legible over arbitrary pages */
   .glass-dialog {
     background: color-mix(in oklch, var(--popover) 85%, var(--warm-ivory) 15%);
+    -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     box-shadow: 0 12px 40px -8px color-mix(in oklch, var(--foreground) 20%, transparent);
   }
@@ -284,10 +287,7 @@
   .btn-ripple-span {
     animation: none;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 }
