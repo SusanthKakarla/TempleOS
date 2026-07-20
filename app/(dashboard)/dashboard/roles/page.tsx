@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { listRoleDefinitionsForSuperAdmin, countActiveMembersByRole } from "@/lib/db/role-definitions";
 import { RolesGrid } from "@/features/users/roles-grid";
+import { PageHeader } from "@/components/page-header";
 
 export default async function RolesPage() {
   const session = await requireDashboardAdmin();
@@ -13,11 +14,8 @@ export default async function RolesPage() {
   ]);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <RolesGrid roles={roles} counts={counts} />
     </div>
   );

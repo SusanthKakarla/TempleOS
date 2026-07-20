@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { CountryCode } from "libphonenumber-js";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { motion, MotionConfig } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +20,7 @@ import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
+import { fadeInUp, springSoft } from "@/lib/motion";
 
 type Step = "phone" | "otp";
 
@@ -215,78 +217,88 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <AmbientBackground />
-      <Card className="glass-card w-full max-w-sm rounded-2xl">
-        <CardHeader>
-          <CardTitle>Super Admin</CardTitle>
-          <CardDescription>
-            {step === "phone"
-              ? "Enter your phone number to receive a login code."
-              : `Enter the code sent to ${fullPhone}.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === "phone" ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone number</Label>
-                <div className="flex gap-2">
-                  <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="98765 43210"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    className="flex-1"
-                    required
-                  />
-                </div>
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || sendBlocked}>
-                {loading ? "Sending..." : sendBlocked ? "Wait before retrying" : "Send code"}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">Verification code</Label>
-                <Input
-                  id="otp"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={otp}
-                  onChange={(event) => setOtp(event.target.value)}
-                  required
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {statusMessage && <p className="text-sm text-muted-foreground">{statusMessage}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & sign in"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleResendOtp}
-                disabled={loading || sendBlocked}
-              >
-                {sendBlocked ? "Wait before retrying" : "Request a new code"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={handleUseDifferentNumber}
-              >
-                Use a different number
-              </Button>
-            </form>
-          )}
-          <div ref={recaptchaContainerRef} />
-        </CardContent>
-      </Card>
+      <MotionConfig reducedMotion="user">
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          animate="show"
+          transition={springSoft}
+          className="w-full max-w-md"
+        >
+          <Card className="glass-card rounded-2xl">
+            <CardHeader className="gap-2 pb-2">
+              <CardTitle className="text-2xl font-semibold">Super Admin</CardTitle>
+              <CardDescription className="text-base">
+                {step === "phone"
+                  ? "Enter your phone number to receive a login code."
+                  : `Enter the code sent to ${fullPhone}.`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {step === "phone" ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone number</Label>
+                    <div className="flex gap-2">
+                      <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="98765 43210"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        className="flex-1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  <Button type="submit" className="w-full" disabled={loading || sendBlocked}>
+                    {loading ? "Sending..." : sendBlocked ? "Wait before retrying" : "Send code"}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp">Verification code</Label>
+                    <Input
+                      id="otp"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={otp}
+                      onChange={(event) => setOtp(event.target.value)}
+                      required
+                    />
+                  </div>
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {statusMessage && <p className="text-sm text-muted-foreground">{statusMessage}</p>}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Verifying..." : "Verify & sign in"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleResendOtp}
+                    disabled={loading || sendBlocked}
+                  >
+                    {sendBlocked ? "Wait before retrying" : "Request a new code"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={handleUseDifferentNumber}
+                  >
+                    Use a different number
+                  </Button>
+                </form>
+              )}
+              <div ref={recaptchaContainerRef} />
+            </CardContent>
+          </Card>
+        </motion.div>
+      </MotionConfig>
     </main>
   );
 }

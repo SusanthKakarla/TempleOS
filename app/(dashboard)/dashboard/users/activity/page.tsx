@@ -5,6 +5,7 @@ import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { listAuditLogEntriesForTenant } from "@/lib/db/audit-log";
 import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { ActivityLogTable } from "@/features/users/activity-log-table";
+import { PageHeader } from "@/components/page-header";
 
 export default async function UsersActivityPage() {
   const session = await requireDashboardAdmin();
@@ -18,7 +19,7 @@ export default async function UsersActivityPage() {
   const memberNames = Object.fromEntries(members.map((m) => [m.id, m.displayName]));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Link
         href="/dashboard/users"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -26,10 +27,7 @@ export default async function UsersActivityPage() {
         <ArrowLeft className="size-4" />
         {t("backToUsers")}
       </Link>
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{t("pageTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      <PageHeader title={t("pageTitle")} subtitle={t("subtitle")} />
       <ActivityLogTable entries={entries} memberNames={memberNames} />
     </div>
   );

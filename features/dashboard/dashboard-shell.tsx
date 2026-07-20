@@ -17,14 +17,16 @@ export function DashboardShell({
       <SidebarProvider>
         <AmbientBackground />
         <AppSidebar isSuperAdmin={false} />
-        <SidebarInset>
+        <SidebarInset className="h-svh overflow-hidden">
           <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />
-          <main className="flex-1 bg-muted/20 p-4 sm:p-6">
-            <div className="mx-auto w-full max-w-400">{children}</div>
-          </main>
-          <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
-            TempleOS &middot; Pilot
-          </footer>
+          <div className="flex-1 overflow-y-auto bg-muted/20">
+            <div className="p-4 sm:p-6">
+              <div className="mx-auto w-full max-w-400">{children}</div>
+            </div>
+            <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
+              TempleOS &middot; Pilot
+            </footer>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </MotionProvider>

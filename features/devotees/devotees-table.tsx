@@ -23,6 +23,7 @@ import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
+import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -88,35 +89,35 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/devotees/import" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-            <Upload className="size-4" />
-            {t("importButton")}
-          </Link>
-          <ExportMenu
-            exportUrl="/api/devotees/export"
-            filterParams={searchParams}
-            selectedIds={selectedIds}
-            moduleLabel="devotees"
-          />
-          <DevoteeFormDialog
-            mode="create"
-            trigger={
-              <Button className="hidden gap-1.5 sm:inline-flex">
-                <UserPlus className="size-4" />
-                {t("addButton")}
-              </Button>
-            }
-            onSaved={refresh}
-          />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t("pageHeader.title")}
+        subtitle={t("pageHeader.subtitle")}
+        actions={
+          <>
+            <Link href="/dashboard/devotees/import" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
+              <Upload className="size-4" />
+              {t("importButton")}
+            </Link>
+            <ExportMenu
+              exportUrl="/api/devotees/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="devotees"
+            />
+            <DevoteeFormDialog
+              mode="create"
+              trigger={
+                <Button className="hidden gap-1.5 sm:inline-flex">
+                  <UserPlus className="size-4" />
+                  {t("addButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
+        }
+      />
 
       <DevoteesSearchInput />
 

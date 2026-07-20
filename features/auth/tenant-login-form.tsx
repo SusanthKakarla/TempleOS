@@ -4,9 +4,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { CountryCode } from "libphonenumber-js";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { motion, MotionConfig } from "framer-motion";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
+import { fadeInUp, springSoft } from "@/lib/motion";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
@@ -219,74 +221,84 @@ export function TenantLoginForm() {
   }
 
   return (
-    <Card className="glass-card w-full max-w-sm rounded-2xl">
-      <CardHeader>
-        <CardTitle>{tenantName ?? "TempleOS Admin"}</CardTitle>
-        <CardDescription>
-          {step === "phone"
-            ? "Enter your phone number to receive a login code."
-            : `Enter the code sent to ${fullPhone}.`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {step === "phone" ? (
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div className="flex gap-2">
-              <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
-              <FloatingLabelInput
-                id="phone"
-                label="Phone number"
-                type="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                wrapperClassName="flex-1"
-                required
-              />
-            </div>
-            {(tenantContextError || error) && (
-              <p className="text-sm text-destructive">{tenantContextError ?? error}</p>
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="show"
+        transition={springSoft}
+        className="w-full max-w-md"
+      >
+        <Card className="glass-card rounded-2xl">
+          <CardHeader className="gap-2 pb-2">
+            <CardTitle className="text-2xl font-semibold">{tenantName ?? "TempleOS Admin"}</CardTitle>
+            <CardDescription className="text-base">
+              {step === "phone"
+                ? "Enter your phone number to receive a login code."
+                : `Enter the code sent to ${fullPhone}.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {step === "phone" ? (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
+                  <FloatingLabelInput
+                    id="phone"
+                    label="Phone number"
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    wrapperClassName="flex-1"
+                    required
+                  />
+                </div>
+                {(tenantContextError || error) && (
+                  <p className="text-sm text-destructive">{tenantContextError ?? error}</p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || sendBlocked || tenantContextLoading || Boolean(tenantContextError)}
+                >
+                  {tenantContextLoading
+                    ? "Checking temple..."
+                    : loading
+                      ? "Sending..."
+                      : sendBlocked
+                        ? "Wait before retrying"
+                        : "Send code"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <FloatingLabelInput
+                  id="otp"
+                  label="Verification code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value)}
+                  required
+                />
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify & sign in"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handleUseDifferentNumber}
+                >
+                  Use a different number
+                </Button>
+              </form>
             )}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || sendBlocked || tenantContextLoading || Boolean(tenantContextError)}
-            >
-              {tenantContextLoading
-                ? "Checking temple..."
-                : loading
-                  ? "Sending..."
-                  : sendBlocked
-                    ? "Wait before retrying"
-                    : "Send code"}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <FloatingLabelInput
-              id="otp"
-              label="Verification code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={otp}
-              onChange={(event) => setOtp(event.target.value)}
-              required
-            />
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Verifying..." : "Verify & sign in"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={handleUseDifferentNumber}
-            >
-              Use a different number
-            </Button>
-          </form>
-        )}
-        <div ref={recaptchaContainerRef} />
-      </CardContent>
-    </Card>
+            <div ref={recaptchaContainerRef} />
+          </CardContent>
+        </Card>
+      </motion.div>
+    </MotionConfig>
   );
 }

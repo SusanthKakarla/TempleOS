@@ -10,6 +10,7 @@ import {
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
 import { parsePageParam } from "@/lib/pagination";
+import { PageHeader } from "@/components/page-header";
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
@@ -47,10 +48,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
-      </div>
+      <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard

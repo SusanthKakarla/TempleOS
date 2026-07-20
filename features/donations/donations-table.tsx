@@ -22,6 +22,7 @@ import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
+import { PageHeader } from "@/components/page-header";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -108,32 +109,32 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportMenu
-            exportUrl="/api/donations/export"
-            filterParams={searchParams}
-            selectedIds={selectedIds}
-            moduleLabel="donations"
-          />
-          <DonationFormDialog
-            mode="create"
-            devotees={devotees}
-            trigger={
-              <Button className="hidden gap-1.5 sm:inline-flex">
-                <Plus className="size-4" />
-                {t("addButton")}
-              </Button>
-            }
-            onSaved={refresh}
-          />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t("pageHeader.title")}
+        subtitle={t("pageHeader.subtitle")}
+        actions={
+          <>
+            <ExportMenu
+              exportUrl="/api/donations/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="donations"
+            />
+            <DonationFormDialog
+              mode="create"
+              devotees={devotees}
+              trigger={
+                <Button className="hidden gap-1.5 sm:inline-flex">
+                  <Plus className="size-4" />
+                  {t("addButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <DonationsSearchInput />

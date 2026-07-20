@@ -77,7 +77,7 @@ export function MetricCard({
     >
       <Card
         className={cn(
-          "glass-card group h-full gap-3 overflow-hidden rounded-3xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl",
+          "glass-card group h-full gap-3 overflow-hidden rounded-2xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl",
           className,
         )}
       >

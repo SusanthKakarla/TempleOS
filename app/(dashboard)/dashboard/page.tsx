@@ -21,6 +21,7 @@ import {
   getMessagesPerDay,
 } from "@/lib/db/whatsapp-messages";
 import { MetricCard } from "@/features/dashboard/metric-card";
+import { PageHeader } from "@/components/page-header";
 import { bucketEventsPerDay } from "@/lib/dashboard-sparklines";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
@@ -90,14 +91,10 @@ export default async function DashboardHomePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">
-          {t("namaste")} {tenant ? `— ${tenant.name}` : ""}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("todayIs", { greeting: t(greetingKey()), date: today })}
-        </p>
-      </div>
+      <PageHeader
+        title={`${t("namaste")} ${tenant ? `— ${tenant.name}` : ""}`}
+        subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard

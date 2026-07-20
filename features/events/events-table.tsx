@@ -22,6 +22,7 @@ import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
+import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDateTime, formatTime } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -128,38 +129,38 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("pageHeader.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")}>
-            <TabsList>
-              <TabsTrigger value="table">
-                <Rows3 className="size-3.5" />
-                {t("viewTabs.table")}
-              </TabsTrigger>
-              <TabsTrigger value="card">
-                <LayoutGrid className="size-3.5" />
-                {t("viewTabs.card")}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <ExportMenu exportUrl="/api/events/export" selectedIds={selectedIds} moduleLabel="events" />
-          <EventFormDialog
-            mode="create"
-            trigger={
-              <Button className="hidden gap-1.5 sm:inline-flex">
-                <PlusCircle className="size-4" />
-                {t("createButton")}
-              </Button>
-            }
-            onSaved={refresh}
-          />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t("pageHeader.title")}
+        subtitle={t("pageHeader.subtitle")}
+        actions={
+          <>
+            <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")}>
+              <TabsList>
+                <TabsTrigger value="table">
+                  <Rows3 className="size-3.5" />
+                  {t("viewTabs.table")}
+                </TabsTrigger>
+                <TabsTrigger value="card">
+                  <LayoutGrid className="size-3.5" />
+                  {t("viewTabs.card")}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <ExportMenu exportUrl="/api/events/export" selectedIds={selectedIds} moduleLabel="events" />
+            <EventFormDialog
+              mode="create"
+              trigger={
+                <Button className="hidden gap-1.5 sm:inline-flex">
+                  <PlusCircle className="size-4" />
+                  {t("createButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
+        }
+      />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
