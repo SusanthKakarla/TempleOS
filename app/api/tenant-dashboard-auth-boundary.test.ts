@@ -29,6 +29,7 @@ const tenantDashboardApiRoutes = [
   "app/api/users/import/template/route.ts",
   "app/api/audit-log/route.ts",
   "app/api/whatsapp/connect/callback/route.ts",
+  "app/api/whatsapp/connect/start/route.ts",
   "app/api/whatsapp/disconnect/route.ts",
 ];
 

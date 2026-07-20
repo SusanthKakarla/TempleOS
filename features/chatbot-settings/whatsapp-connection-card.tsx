@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { CheckCircle2, MessageCircle, RefreshCw, XCircle } from "lucide-react";
@@ -11,118 +11,39 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/date";
 
-declare global {
-  interface Window {
-    FB?: {
-      init: (params: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
-      login: (
-        callback: (response: { authResponse?: { code?: string }; status?: string }) => void,
-        options: Record<string, unknown>,
-      ) => void;
-    };
-  }
-}
-
-const FACEBOOK_SDK_SRC = "https://connect.facebook.net/en_US/sdk.js";
-const FACEBOOK_MESSAGE_ORIGIN = "https://www.facebook.com";
-const FACEBOOK_SDK_VERSION = "v25.0";
-const FINISH_EVENTS = new Set([
-  "FINISH",
-  "FINISH_ONLY_WABA",
-  "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING",
-  "FINISH_OBO_MIGRATION",
-  "FINISH_GRANT_ONLY_API_ACCESS",
-]);
-
-interface EmbeddedSignupData {
+interface ConnectResult {
+  code: string;
   wabaId: string;
   phoneNumberId: string;
 }
 
-function loadFacebookSdk(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.FB) {
-      resolve();
-      return;
-    }
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${FACEBOOK_SDK_SRC}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load Meta SDK")));
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = FACEBOOK_SDK_SRC;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Meta SDK"));
-    document.body.appendChild(script);
-  });
+interface WhatsAppConnectionCardProps {
+  account: WhatsAppAccount | null;
+  initialConnectResult: ConnectResult | null;
+  initialCancelled: boolean;
 }
 
-export function WhatsAppConnectionCard({ account }: { account: WhatsAppAccount | null }) {
+export function WhatsAppConnectionCard({
+  account,
+  initialConnectResult,
+  initialCancelled,
+}: WhatsAppConnectionCardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("chatbotSettings.whatsappConnection");
-  const [pending, setPending] = useState<"connect" | "disconnect" | null>(null);
-  const signupDataRef = useRef<EmbeddedSignupData | null>(null);
-  const signupCodeRef = useRef<string | null>(null);
-  const submittedRef = useRef(false);
+  const [pending, setPending] = useState<"connect" | "disconnect" | "finishing" | null>(
+    initialConnectResult ? "finishing" : null,
+  );
+  const handledInitialResultRef = useRef(false);
 
   const isConnected = account !== null && account.status === "connected";
 
-  useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.origin !== FACEBOOK_MESSAGE_ORIGIN) return;
-      let data: unknown;
-      try {
-        data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-      } catch {
-        return;
-      }
-      if (
-        typeof data !== "object" ||
-        data === null ||
-        (data as { type?: unknown }).type !== "WA_EMBEDDED_SIGNUP"
-      ) {
-        return;
-      }
-      const payload = data as {
-        event?: string;
-        data?: { waba_id?: string; phone_number_id?: string; error_message?: string };
-      };
-      if (payload.event && FINISH_EVENTS.has(payload.event)) {
-        const wabaId = payload.data?.waba_id;
-        const phoneNumberId = payload.data?.phone_number_id;
-        if (wabaId && phoneNumberId) {
-          signupDataRef.current = { wabaId, phoneNumberId };
-          void maybeSubmit();
-        }
-      } else if (payload.event === "CANCEL") {
-        submittedRef.current = false;
-        signupDataRef.current = null;
-        signupCodeRef.current = null;
-        if (payload.data?.error_message) {
-          toast.error(payload.data.error_message);
-        }
-        setPending(null);
-      }
-    }
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- maybeSubmit closes over refs only, stable across renders
-  }, []);
-
-  async function maybeSubmit() {
-    if (submittedRef.current) return;
-    if (!signupDataRef.current || !signupCodeRef.current) return;
-    submittedRef.current = true;
-
-    const { wabaId, phoneNumberId } = signupDataRef.current;
-    const code = signupCodeRef.current;
-
+  async function submitConnectResult({ code, wabaId, phoneNumberId }: ConnectResult) {
+    // No setPending() here — the initial pending state is already "finishing"
+    // for this mount-triggered path (see useState above), so setting it again
+    // synchronously from the effect that calls this would trigger a
+    // react-hooks/set-state-in-effect lint violation for no behavioral benefit.
     try {
       const response = await fetch("/api/whatsapp/connect/callback", {
         method: "POST",
@@ -134,57 +55,41 @@ export function WhatsAppConnectionCard({ account }: { account: WhatsAppAccount |
         throw new Error(body.error ?? t("connectError"));
       }
       toast.success(t("connectSuccess"));
-      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("connectError"));
     } finally {
       setPending(null);
-      signupDataRef.current = null;
-      signupCodeRef.current = null;
-      submittedRef.current = false;
+      router.replace(pathname);
+      router.refresh();
     }
   }
 
+  useEffect(() => {
+    if (handledInitialResultRef.current) return;
+    handledInitialResultRef.current = true;
+
+    if (initialConnectResult) {
+      void submitConnectResult(initialConnectResult);
+    } else if (initialCancelled) {
+      toast.info(t("connectCancelled"));
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount against the props the page decoded server-side
+  }, []);
+
   async function handleConnect() {
-    const appId = process.env.NEXT_PUBLIC_WHATSAPP_APP_ID;
-    const configId = process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID;
-    if (!appId || !configId) {
-      toast.error(t("sdkLoadError"));
-      return;
-    }
-
     setPending("connect");
-    signupDataRef.current = null;
-    signupCodeRef.current = null;
-    submittedRef.current = false;
-
     try {
-      await loadFacebookSdk();
-      window.FB?.init({ appId, autoLogAppEvents: true, xfbml: true, version: FACEBOOK_SDK_VERSION });
-    } catch {
-      toast.error(t("sdkLoadError"));
+      const response = await fetch("/api/whatsapp/connect/start", { method: "POST" });
+      const body = (await response.json().catch(() => ({}))) as { onboardingUrl?: string; error?: string };
+      if (!response.ok || !body.onboardingUrl) {
+        throw new Error(body.error ?? t("sdkLoadError"));
+      }
+      window.location.href = body.onboardingUrl;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("sdkLoadError"));
       setPending(null);
-      return;
     }
-
-    window.FB?.login(
-      (response) => {
-        const code = response.authResponse?.code;
-        if (!code || response.status !== "connected") {
-          // User closed the popup or declined — not an error, just reset.
-          setPending(null);
-          return;
-        }
-        signupCodeRef.current = code;
-        void maybeSubmit();
-      },
-      {
-        config_id: configId,
-        response_type: "code",
-        override_default_response_type: true,
-        extras: { setup: {} },
-      },
-    );
   }
 
   async function handleDisconnect() {

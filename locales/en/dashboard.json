@@ -209,6 +209,7 @@
       "connectSuccess": "WhatsApp Business connected",
       "disconnectSuccess": "WhatsApp Business disconnected",
       "connectError": "Failed to connect WhatsApp Business",
+      "connectCancelled": "WhatsApp connection cancelled",
       "disconnectError": "Failed to disconnect WhatsApp Business",
       "sdkLoadError": "Failed to load Meta's connection tool. Please retry."
     },
