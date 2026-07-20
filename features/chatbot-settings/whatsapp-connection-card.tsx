@@ -14,7 +14,7 @@ import { formatDate } from "@/lib/date";
 declare global {
   interface Window {
     FB?: {
-      init: (params: { appId: string; version: string }) => void;
+      init: (params: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
       login: (
         callback: (response: { authResponse?: { code?: string }; status?: string }) => void,
         options: Record<string, unknown>,
@@ -25,6 +25,14 @@ declare global {
 
 const FACEBOOK_SDK_SRC = "https://connect.facebook.net/en_US/sdk.js";
 const FACEBOOK_MESSAGE_ORIGIN = "https://www.facebook.com";
+const FACEBOOK_SDK_VERSION = "v25.0";
+const FINISH_EVENTS = new Set([
+  "FINISH",
+  "FINISH_ONLY_WABA",
+  "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING",
+  "FINISH_OBO_MIGRATION",
+  "FINISH_GRANT_ONLY_API_ACCESS",
+]);
 
 interface EmbeddedSignupData {
   wabaId: string;
@@ -80,14 +88,25 @@ export function WhatsAppConnectionCard({ account }: { account: WhatsAppAccount |
       ) {
         return;
       }
-      const payload = data as { event?: string; data?: { waba_id?: string; phone_number_id?: string } };
-      if (payload.event === "FINISH" || payload.event === "FINISH_ONLY_WABA") {
+      const payload = data as {
+        event?: string;
+        data?: { waba_id?: string; phone_number_id?: string; error_message?: string };
+      };
+      if (payload.event && FINISH_EVENTS.has(payload.event)) {
         const wabaId = payload.data?.waba_id;
         const phoneNumberId = payload.data?.phone_number_id;
         if (wabaId && phoneNumberId) {
           signupDataRef.current = { wabaId, phoneNumberId };
           void maybeSubmit();
         }
+      } else if (payload.event === "CANCEL") {
+        submittedRef.current = false;
+        signupDataRef.current = null;
+        signupCodeRef.current = null;
+        if (payload.data?.error_message) {
+          toast.error(payload.data.error_message);
+        }
+        setPending(null);
       }
     }
 
@@ -141,7 +160,7 @@ export function WhatsAppConnectionCard({ account }: { account: WhatsAppAccount |
 
     try {
       await loadFacebookSdk();
-      window.FB?.init({ appId, version: "v21.0" });
+      window.FB?.init({ appId, autoLogAppEvents: true, xfbml: true, version: FACEBOOK_SDK_VERSION });
     } catch {
       toast.error(t("sdkLoadError"));
       setPending(null);
@@ -163,7 +182,7 @@ export function WhatsAppConnectionCard({ account }: { account: WhatsAppAccount |
         config_id: configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { setup: {}, featureType: "", sessionInfoVersion: "3" },
+        extras: { setup: {} },
       },
     );
   }

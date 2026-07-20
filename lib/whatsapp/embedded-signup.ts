@@ -1,4 +1,4 @@
-const GRAPH_API_VERSION = "v21.0";
+const GRAPH_API_VERSION = "v25.0";
 
 interface GraphErrorResponse {
   error?: { message?: string };
