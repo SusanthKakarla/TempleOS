@@ -58,7 +58,7 @@ export function DateTimeField({
       <label htmlFor={id} className="text-sm leading-none font-medium">
         {label}
       </label>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Popover>
           <PopoverTrigger
             render={
@@ -77,7 +77,7 @@ export function DateTimeField({
             <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} autoFocus />
           </PopoverContent>
         </Popover>
-        <div className="relative w-32 shrink-0">
+        <div className="relative w-full shrink-0 sm:w-32">
           <ClockIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="time"

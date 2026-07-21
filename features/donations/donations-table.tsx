@@ -142,7 +142,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40"
+          className="w-full sm:w-40"
           aria-label={t("dateFromLabel")}
         />
         <span className="text-sm text-muted-foreground">{t("dateRangeSeparator")}</span>
@@ -150,7 +150,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="w-40"
+          className="w-full sm:w-40"
           aria-label={t("dateToLabel")}
         />
       </div>

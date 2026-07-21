@@ -4,9 +4,39 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/** Visual hint that a table has more columns off-screen — hidden once fully scrolled or when nothing overflows. */
+function useCanScrollRight(ref: React.RefObject<HTMLDivElement | null>) {
+  const [canScrollRight, setCanScrollRight] = React.useState(false)
+
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    function update() {
+      if (!el) return
+      setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 1)
+    }
+
+    update()
+    el.addEventListener("scroll", update)
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener("scroll", update)
+      observer.disconnect()
+    }
+  }, [ref])
+
+  return canScrollRight
+}
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const canScrollRight = useCanScrollRight(containerRef)
+
   return (
     <div
+      ref={containerRef}
       data-slot="table-container"
       className="relative w-full overflow-x-auto"
     >
@@ -15,6 +45,12 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />
+      {canScrollRight && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-background to-transparent"
+        />
+      )}
     </div>
   )
 }
