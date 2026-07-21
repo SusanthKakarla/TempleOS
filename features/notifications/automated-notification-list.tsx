@@ -25,7 +25,15 @@ function StatusIcon({ status }: { status: NotificationDeliveryStatus }) {
   return <Clock className="size-3.5 text-muted-foreground" />;
 }
 
-const CATEGORY_VALUES: NotificationCategory[] = ["birthday", "new_user", "devotee", "event", "announcement"];
+const CATEGORY_VALUES: NotificationCategory[] = [
+  "birthday",
+  "anniversary",
+  "new_user",
+  "devotee",
+  "family",
+  "event",
+  "announcement",
+];
 
 interface AutomatedNotificationListProps {
   notifications: NotificationListItem[];

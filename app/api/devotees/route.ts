@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
       dateOfBirth: parsed.data.dateOfBirth ?? null,
       birthStar: parsed.data.birthStar ?? null,
       ancestralLineage: parsed.data.ancestralLineage ?? null,
+      gender: parsed.data.gender ?? null,
+      maritalStatus: parsed.data.maritalStatus ?? null,
+      weddingAnniversary: parsed.data.weddingAnniversary ?? null,
     });
 
     // New-devotee alert to staff (see migrations/013_notification_engine.sql).
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
         language,
         templateVars: {
           devoteeName: devotee.displayName,
-          phoneNumber: devotee.whatsappPhone,
+          phoneNumber: devotee.whatsappPhone ?? "",
           addedBy: session.displayName,
           registrationTime: formatDateTime(devotee.createdAt, language),
         },

@@ -99,6 +99,66 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: "జన్మదిన రిమైండర్",
     body: "{{devoteeName}} ({{phoneNumber}}) కి ఈరోజు పుట్టినరోజు. ప్రత్యేక అర్చన లేదా జన్మదిన పూజను పరిగణించండి.",
   },
+  // Wedding anniversary wish — devotee, WhatsApp only (same reasoning as birthday_devotee).
+  {
+    notificationType: "anniversary_devotee",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "💍 Happy Wedding Anniversary, {{devoteeName}}!\n\n🙏 On behalf of {{templeName}}, we wish you a lifetime of love, harmony, and divine blessings together.\n\n🌸 Om Namah Shivaya 🌸",
+  },
+  {
+    notificationType: "anniversary_devotee",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "💍 వివాహ వార్షికోత్సవ శుభాకాంక్షలు {{devoteeName}}!\n\n🙏 {{templeName}} తరఫున మీకు జీవితకాల ప్రేమ, సామరస్యం మరియు దైవానుగ్రహం కలగాలని కోరుకుంటున్నాము.\n\n🌸 ఓం నమః శివాయ 🌸",
+  },
+  // Anniversary pooja reminder — priests.
+  {
+    notificationType: "anniversary_priest",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🔔 Anniversary Reminder\n\nToday is the wedding anniversary of:\n👤 {{devoteeName}}\n📞 {{phoneNumber}}\n💍 Anniversary\n\nYou may perform or recommend a special Anniversary Pooja.",
+  },
+  {
+    notificationType: "anniversary_priest",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🔔 వార్షికోత్సవ రిమైండర్\n\nఈరోజు వివాహ వార్షికోత్సవం:\n👤 {{devoteeName}}\n📞 {{phoneNumber}}\n💍 వార్షికోత్సవం\n\nమీరు ప్రత్యేక వార్షికోత్సవ పూజ నిర్వహించవచ్చు లేదా సూచించవచ్చు.",
+  },
+  {
+    notificationType: "anniversary_priest",
+    channel: "in_app",
+    language: "en",
+    title: "Anniversary Reminder",
+    body: "{{devoteeName}} ({{phoneNumber}}) has a wedding anniversary today. Consider a special Anniversary Pooja.",
+  },
+  {
+    notificationType: "anniversary_priest",
+    channel: "in_app",
+    language: "te",
+    title: "వార్షికోత్సవ రిమైండర్",
+    body: "{{devoteeName}} ({{phoneNumber}}) కి ఈరోజు వివాహ వార్షికోత్సవం. ప్రత్యేక వార్షికోత్సవ పూజను పరిగణించండి.",
+  },
+  // Family reminder — always to the family head, who is a devotee (WhatsApp-only
+  // recipient, same as birthday_devotee — devotees have no in-app dashboard access).
+  {
+    notificationType: "family_occasion_reminder",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "📢 Family Reminder\n\nTomorrow:\n{{occasionList}}\n\nfrom {{templeName}}",
+  },
+  {
+    notificationType: "family_occasion_reminder",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "📢 కుటుంబ రిమైండర్\n\nరేపు:\n{{occasionList}}\n\n{{templeName}} నుండి",
+  },
   // New user welcome — admin/priest/committee_member/volunteer.
   {
     notificationType: "user_welcome",

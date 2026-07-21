@@ -1,11 +1,11 @@
 import { getPool } from "./pool";
-import type { Devotee, SupportedLanguage } from "@/types/db";
+import type { Devotee, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
 import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 interface DevoteeRow {
   id: string;
   tenant_id: string;
-  whatsapp_phone: string;
+  whatsapp_phone: string | null;
   display_name: string;
   date_of_birth: string | null;
   birth_star: string | null;
@@ -19,6 +19,12 @@ interface DevoteeRow {
   total_donated_amount: string;
   last_donation_at: Date | null;
   event_notifications_enabled: boolean;
+  family_id: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  wedding_anniversary: string | null;
+  family_name: string | null;
+  relationship: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -41,9 +47,51 @@ function mapDevotee(row: DevoteeRow): Devotee {
     totalDonatedAmount: row.total_donated_amount,
     lastDonationAt: row.last_donation_at ? row.last_donation_at.toISOString() : null,
     eventNotificationsEnabled: row.event_notifications_enabled,
+    familyId: row.family_id,
+    gender: row.gender as Gender | null,
+    maritalStatus: row.marital_status as MaritalStatus | null,
+    weddingAnniversary: row.wedding_anniversary,
+    familyName: row.family_name,
+    relationship: row.relationship as RelationshipCode | null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
+}
+
+/**
+ * Every read joins devotee_families/family_members so `Devotee.familyName`/
+ * `relationship` are always populated — a devotee has at most one
+ * family_members row (UNIQUE(family_id, devotee_id) with family_id fixed per
+ * devotee), so this is a 1:1 join and never duplicates rows.
+ */
+const DEVOTEE_SELECT = `
+  SELECT d.*, df.family_name AS family_name, fm.relationship AS relationship
+  FROM devotees d
+  LEFT JOIN devotee_families df ON df.id = d.family_id
+  LEFT JOIN family_members fm ON fm.family_id = d.family_id AND fm.devotee_id = d.id
+`;
+
+/** `EXTRACT(MONTH/DAY FROM column) = EXTRACT(MONTH/DAY FROM tenant-local now)`. */
+function occasionTodayCondition(column: string, tzParamIndex: number): string {
+  return `(EXTRACT(MONTH FROM ${column}) = EXTRACT(MONTH FROM (now() AT TIME ZONE $${tzParamIndex}))
+    AND EXTRACT(DAY FROM ${column}) = EXTRACT(DAY FROM (now() AT TIME ZONE $${tzParamIndex})))`;
+}
+
+/**
+ * "This year's" and "next year's" occurrence of `column`'s month/day,
+ * checked against [today, today+6] in the tenant's timezone. Using each
+ * date's own day-offset-from-Jan-1 (rather than EXTRACT+make_date on the
+ * target year directly) means a Feb 29 birthday never crashes on a
+ * non-leap target year — it just rolls onto Mar 1, a common convention.
+ */
+function occasionThisWeekCondition(column: string, tzParamIndex: number): string {
+  const dayOffset = `(${column} - make_date(EXTRACT(YEAR FROM ${column})::int, 1, 1))`;
+  const todayDate = `date_trunc('day', now() AT TIME ZONE $${tzParamIndex})::date`;
+  const thisYear = `EXTRACT(YEAR FROM (now() AT TIME ZONE $${tzParamIndex}))::int`;
+  return `(
+    (make_date(${thisYear}, 1, 1) + ${dayOffset}) BETWEEN ${todayDate} AND ${todayDate} + 6
+    OR (make_date(${thisYear} + 1, 1, 1) + ${dayOffset}) BETWEEN ${todayDate} AND ${todayDate} + 6
+  )`;
 }
 
 export interface ListDevoteesOptions {
@@ -52,33 +100,63 @@ export interface ListDevoteesOptions {
   pageSize?: number;
   sort?: "name" | "phone" | "firstSeen";
   dir?: "asc" | "desc";
+  registrationType?: "individual" | "family";
+  isDonor?: boolean;
+  whatsappOptIn?: boolean;
+  /** "_week" variants need `timezone` set — silently ignored otherwise. */
+  occasion?: "birthday_today" | "birthday_week" | "anniversary_today" | "anniversary_week";
+  timezone?: string;
 }
 
 const DEVOTEE_SORT_COLUMNS: Record<NonNullable<ListDevoteesOptions["sort"]>, string> = {
-  name: "display_name",
-  phone: "whatsapp_phone",
-  firstSeen: "first_seen_at",
+  name: "d.display_name",
+  phone: "d.whatsapp_phone",
+  firstSeen: "d.first_seen_at",
 };
 
-function buildDevoteeConditions(search?: string): { conditions: string[]; params: unknown[] } {
-  const conditions = ["tenant_id = $1"];
+type DevoteeFilterOptions = Omit<ListDevoteesOptions, "page" | "pageSize" | "sort" | "dir">;
+
+function buildDevoteeConditions(opts: DevoteeFilterOptions = {}): { conditions: string[]; params: unknown[] } {
+  const conditions = ["d.tenant_id = $1"];
   const params: unknown[] = [];
-  if (search && search.trim()) {
-    params.push(`%${search.trim()}%`);
-    conditions.push(`(display_name ILIKE $${params.length + 1} OR whatsapp_phone ILIKE $${params.length + 1})`);
+
+  if (opts.search && opts.search.trim()) {
+    params.push(`%${opts.search.trim()}%`);
+    const idx = params.length + 1;
+    conditions.push(
+      `(d.display_name ILIKE $${idx} OR d.whatsapp_phone ILIKE $${idx} OR d.birth_star ILIKE $${idx} OR d.ancestral_lineage ILIKE $${idx} OR df.family_name ILIKE $${idx})`,
+    );
+  }
+  if (opts.registrationType === "individual") conditions.push("d.family_id IS NULL");
+  if (opts.registrationType === "family") conditions.push("d.family_id IS NOT NULL");
+  if (opts.isDonor !== undefined) {
+    params.push(opts.isDonor);
+    conditions.push(`d.is_donor = $${params.length + 1}`);
+  }
+  if (opts.whatsappOptIn !== undefined) {
+    params.push(opts.whatsappOptIn);
+    conditions.push(`d.whatsapp_opt_in_status = $${params.length + 1}`);
+  }
+  if (opts.occasion && opts.timezone) {
+    params.push(opts.timezone);
+    const tzIdx = params.length + 1;
+    if (opts.occasion === "birthday_today") conditions.push(occasionTodayCondition("d.date_of_birth", tzIdx));
+    if (opts.occasion === "anniversary_today") conditions.push(occasionTodayCondition("d.wedding_anniversary", tzIdx));
+    if (opts.occasion === "birthday_week") conditions.push(occasionThisWeekCondition("d.date_of_birth", tzIdx));
+    if (opts.occasion === "anniversary_week") conditions.push(occasionThisWeekCondition("d.wedding_anniversary", tzIdx));
   }
   return { conditions, params };
 }
 
 /** `page`/`pageSize` are optional — omitted, this returns the full unpaginated result (existing callers rely on this). */
 export async function listDevotees(tenantId: string, opts: ListDevoteesOptions = {}): Promise<Devotee[]> {
-  const { conditions, params: filterParams } = buildDevoteeConditions(opts.search);
+  const { conditions, params: filterParams } = buildDevoteeConditions(opts);
   const params: unknown[] = [tenantId, ...filterParams];
 
-  const sortColumn = opts.sort ? DEVOTEE_SORT_COLUMNS[opts.sort] : "display_name";
+  const sortColumn = opts.sort ? DEVOTEE_SORT_COLUMNS[opts.sort] : "d.display_name";
   const dir = opts.dir === "desc" ? "DESC" : "ASC";
 
-  let query = `SELECT * FROM devotees WHERE ${conditions.join(" AND ")} ORDER BY ${sortColumn} ${dir}`;
+  let query = `${DEVOTEE_SELECT} WHERE ${conditions.join(" AND ")} ORDER BY ${sortColumn} ${dir}`;
 
   if (opts.page !== undefined) {
     const pageSize = opts.pageSize ?? DEFAULT_PAGE_SIZE;
@@ -90,11 +168,13 @@ export async function listDevotees(tenantId: string, opts: ListDevoteesOptions =
   return rows.map(mapDevotee);
 }
 
-export async function countDevoteesFiltered(tenantId: string, opts: { search?: string } = {}): Promise<number> {
-  const { conditions, params: filterParams } = buildDevoteeConditions(opts.search);
+export async function countDevoteesFiltered(tenantId: string, opts: DevoteeFilterOptions = {}): Promise<number> {
+  const { conditions, params: filterParams } = buildDevoteeConditions(opts);
   const params: unknown[] = [tenantId, ...filterParams];
   const { rows } = await getPool().query<{ count: string }>(
-    `SELECT count(*) AS count FROM devotees WHERE ${conditions.join(" AND ")}`,
+    `SELECT count(*) AS count FROM devotees d
+     LEFT JOIN devotee_families df ON df.id = d.family_id
+     WHERE ${conditions.join(" AND ")}`,
     params,
   );
   return Number(rows[0]?.count ?? 0);
@@ -104,7 +184,7 @@ export async function countDevoteesFiltered(tenantId: string, opts: { search?: s
 export async function listDevoteesByIds(tenantId: string, ids: string[]): Promise<Devotee[]> {
   if (ids.length === 0) return [];
   const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 AND id = ANY($2::uuid[]) ORDER BY display_name ASC",
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.id = ANY($2::uuid[]) ORDER BY d.display_name ASC`,
     [tenantId, ids],
   );
   return rows.map(mapDevotee);
@@ -123,7 +203,7 @@ export async function listExistingPhones(tenantId: string, phones: string[]): Pr
 /** Dashboard "Recent Devotees" widget. */
 export async function listRecentDevotees(tenantId: string, limit = 5): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 ORDER BY first_seen_at DESC LIMIT $2",
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 ORDER BY d.first_seen_at DESC LIMIT $2`,
     [tenantId, limit],
   );
   return rows.map(mapDevotee);
@@ -132,9 +212,9 @@ export async function listRecentDevotees(tenantId: string, limit = 5): Promise<D
 /** Recipients for the event-reminder cron — same eligibility rule as enqueueEventNotifications. */
 export async function listDevoteesEligibleForEventReminders(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
-    `SELECT * FROM devotees
-     WHERE tenant_id = $1 AND whatsapp_opt_in_status = true AND event_notifications_enabled = true
-     ORDER BY display_name ASC`,
+    `${DEVOTEE_SELECT}
+     WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true AND d.event_notifications_enabled = true
+     ORDER BY d.display_name ASC`,
     [tenantId],
   );
   return rows.map(mapDevotee);
@@ -143,7 +223,7 @@ export async function listDevoteesEligibleForEventReminders(tenantId: string): P
 /** Recipients for "Send WhatsApp announcement" — only devotees who opted in via inbound WhatsApp. */
 export async function listOptedInDevotees(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 AND whatsapp_opt_in_status = true ORDER BY display_name ASC",
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true ORDER BY d.display_name ASC`,
     [tenantId],
   );
   return rows.map(mapDevotee);
@@ -157,12 +237,11 @@ export async function listOptedInDevotees(tenantId: string): Promise<Devotee[]> 
  */
 export async function listDevoteesWithBirthdayToday(tenantId: string, timezone: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
-    `SELECT d.* FROM devotees d
+    `${DEVOTEE_SELECT}
      WHERE d.tenant_id = $1
        AND d.whatsapp_opt_in_status = true
        AND d.date_of_birth IS NOT NULL
-       AND EXTRACT(MONTH FROM d.date_of_birth) = EXTRACT(MONTH FROM (now() AT TIME ZONE $2))
-       AND EXTRACT(DAY FROM d.date_of_birth) = EXTRACT(DAY FROM (now() AT TIME ZONE $2))
+       AND ${occasionTodayCondition("d.date_of_birth", 2)}
        AND NOT EXISTS (
          SELECT 1 FROM notifications n
          WHERE n.recipient_devotee_id = d.id
@@ -174,9 +253,88 @@ export async function listDevoteesWithBirthdayToday(tenantId: string, timezone: 
   return rows.map(mapDevotee);
 }
 
+/** Anniversary counterpart of listDevoteesWithBirthdayToday — identical shape, on wedding_anniversary. */
+export async function listDevoteesWithAnniversaryToday(tenantId: string, timezone: string): Promise<Devotee[]> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    `${DEVOTEE_SELECT}
+     WHERE d.tenant_id = $1
+       AND d.whatsapp_opt_in_status = true
+       AND d.wedding_anniversary IS NOT NULL
+       AND ${occasionTodayCondition("d.wedding_anniversary", 2)}
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.recipient_devotee_id = d.id
+           AND n.notification_type = 'anniversary_devotee'
+           AND n.created_at >= (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)
+       )`,
+    [tenantId, timezone],
+  );
+  return rows.map(mapDevotee);
+}
+
+export interface FamilyOccasionReminder {
+  familyId: string;
+  primaryDevoteeId: string;
+  primaryLanguage: SupportedLanguage | null;
+  occasions: { name: string; kind: "birthday" | "anniversary" }[];
+}
+
+/**
+ * Groups tomorrow's birthdays/anniversaries (tenant-local) by family, for
+ * app/api/cron/daily-birthday-check/route.ts's family-head reminder. Only
+ * families with a primary_devotee_id are eligible (nothing to notify
+ * otherwise); deduped per family per day the same way as the devotee-level
+ * checks above.
+ */
+export async function listFamilyOccasionRemindersDueTomorrow(
+  tenantId: string,
+  timezone: string,
+): Promise<FamilyOccasionReminder[]> {
+  const { rows } = await getPool().query<{
+    family_id: string;
+    primary_devotee_id: string;
+    primary_language: string | null;
+    occasions: { name: string; kind: "birthday" | "anniversary" }[];
+  }>(
+    `WITH tomorrow_occasions AS (
+       SELECT d.family_id, d.display_name AS name, 'birthday' AS kind
+       FROM devotees d
+       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.date_of_birth IS NOT NULL
+         AND EXTRACT(MONTH FROM d.date_of_birth) = EXTRACT(MONTH FROM ((now() AT TIME ZONE $2) + interval '1 day'))
+         AND EXTRACT(DAY FROM d.date_of_birth) = EXTRACT(DAY FROM ((now() AT TIME ZONE $2) + interval '1 day'))
+       UNION ALL
+       SELECT d.family_id, d.display_name, 'anniversary'
+       FROM devotees d
+       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.wedding_anniversary IS NOT NULL
+         AND EXTRACT(MONTH FROM d.wedding_anniversary) = EXTRACT(MONTH FROM ((now() AT TIME ZONE $2) + interval '1 day'))
+         AND EXTRACT(DAY FROM d.wedding_anniversary) = EXTRACT(DAY FROM ((now() AT TIME ZONE $2) + interval '1 day'))
+     )
+     SELECT df.id AS family_id, df.primary_devotee_id, pd.preferred_language AS primary_language,
+            jsonb_agg(jsonb_build_object('name', t.name, 'kind', t.kind) ORDER BY t.kind, t.name) AS occasions
+     FROM tomorrow_occasions t
+     JOIN devotee_families df ON df.id = t.family_id
+     JOIN devotees pd ON pd.id = df.primary_devotee_id
+     WHERE df.primary_devotee_id IS NOT NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.recipient_devotee_id = df.primary_devotee_id
+           AND n.notification_type = 'family_occasion_reminder'
+           AND n.created_at >= (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)
+       )
+     GROUP BY df.id, df.primary_devotee_id, pd.preferred_language`,
+    [tenantId, timezone],
+  );
+  return rows.map((row) => ({
+    familyId: row.family_id,
+    primaryDevoteeId: row.primary_devotee_id,
+    primaryLanguage: row.primary_language as SupportedLanguage | null,
+    occasions: row.occasions,
+  }));
+}
+
 export async function getDevoteeById(tenantId: string, devoteeId: string): Promise<Devotee | null> {
   const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 AND id = $2",
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.id = $2`,
     [tenantId, devoteeId],
   );
   return rows[0] ? mapDevotee(rows[0]) : null;
@@ -187,30 +345,42 @@ export async function getDevoteeByPhone(
   whatsappPhone: string,
 ): Promise<Devotee | null> {
   const { rows } = await getPool().query<DevoteeRow>(
-    "SELECT * FROM devotees WHERE tenant_id = $1 AND whatsapp_phone = $2",
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.whatsapp_phone = $2`,
     [tenantId, whatsappPhone],
   );
   return rows[0] ? mapDevotee(rows[0]) : null;
 }
 
 export interface CreateDevoteeInput {
-  whatsappPhone: string;
+  whatsappPhone: string | null;
   displayName: string;
   dateOfBirth: string | null;
   birthStar: string | null;
   ancestralLineage: string | null;
+  gender?: Gender | null;
+  maritalStatus?: MaritalStatus | null;
+  weddingAnniversary?: string | null;
+  /** Only ever set by lib/db/devotee-families.ts — never from the plain individual-devotee create path. */
+  familyId?: string | null;
 }
 
-/** Manually added devotees default to not opted in until they message the temple number. */
+/**
+ * Manually added devotees default to not opted in until they message the
+ * temple number. `family_name`/`relationship` are returned as literal NULLs
+ * here rather than re-querying — accurate for every caller: the plain
+ * individual-create path never sets familyId, and lib/db/devotee-families.ts
+ * (the only caller that does) builds its own richer result instead of
+ * relying on this return value.
+ */
 export async function createDevotee(
   tenantId: string,
   input: CreateDevoteeInput,
 ): Promise<Devotee> {
   const { rows } = await getPool().query<DevoteeRow>(
     `INSERT INTO devotees
-       (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status)
-     VALUES ($1, $2, $3, $4, $5, $6, false)
-     RETURNING *`,
+       (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
+     VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10)
+     RETURNING *, NULL::text AS family_name, NULL::text AS relationship`,
     [
       tenantId,
       input.whatsappPhone,
@@ -218,6 +388,10 @@ export async function createDevotee(
       input.dateOfBirth,
       input.birthStar,
       input.ancestralLineage,
+      input.gender ?? null,
+      input.maritalStatus ?? null,
+      input.weddingAnniversary ?? null,
+      input.familyId ?? null,
     ],
   );
   return mapDevotee(rows[0]);
@@ -232,7 +406,8 @@ export interface UpsertDevoteeFromWhatsAppInput {
 /**
  * Called from the inbound WhatsApp webhook. Auto-creates a new devotee opted
  * in, or reuses an existing one, refreshing last-seen/interaction without
- * touching a display name an admin may have already edited.
+ * touching a display name an admin may have already edited. Never touches
+ * family_id — a devotee created this way starts with no family, always.
  */
 export async function upsertDevoteeFromWhatsApp(
   tenantId: string,
@@ -251,7 +426,7 @@ export async function upsertDevoteeFromWhatsApp(
      RETURNING *`,
     [tenantId, input.whatsappPhone, input.displayName, input.lastInteractionType],
   );
-  return mapDevotee(rows[0]);
+  return await getDevoteeById(tenantId, rows[0].id) as Devotee;
 }
 
 /**
@@ -265,22 +440,25 @@ export async function updateDevoteePreferredLanguage(
   devoteeId: string,
   language: SupportedLanguage,
 ): Promise<Devotee | null> {
-  const { rows } = await getPool().query<DevoteeRow>(
+  const { rows } = await getPool().query<{ id: string }>(
     `UPDATE devotees SET preferred_language = $3, updated_at = now()
      WHERE tenant_id = $1 AND id = $2
-     RETURNING *`,
+     RETURNING id`,
     [tenantId, devoteeId, language],
   );
-  return rows[0] ? mapDevotee(rows[0]) : null;
+  return rows[0] ? getDevoteeById(tenantId, rows[0].id) : null;
 }
 
 export interface UpdateDevoteeInput {
-  whatsappPhone?: string;
+  whatsappPhone?: string | null;
   displayName?: string;
   dateOfBirth?: string | null;
   birthStar?: string | null;
   ancestralLineage?: string | null;
   eventNotificationsEnabled?: boolean;
+  gender?: Gender | null;
+  maritalStatus?: MaritalStatus | null;
+  weddingAnniversary?: string | null;
 }
 
 export async function updateDevotee(
@@ -288,20 +466,24 @@ export async function updateDevotee(
   devoteeId: string,
   input: UpdateDevoteeInput,
 ): Promise<Devotee | null> {
-  const { rows } = await getPool().query<DevoteeRow>(
+  const { rows } = await getPool().query<{ id: string }>(
     `UPDATE devotees
-     SET whatsapp_phone = COALESCE($3, whatsapp_phone),
-         display_name = COALESCE($4, display_name),
-         date_of_birth = CASE WHEN $5::boolean THEN $6 ELSE date_of_birth END,
-         birth_star = CASE WHEN $7::boolean THEN $8 ELSE birth_star END,
-         ancestral_lineage = CASE WHEN $9::boolean THEN $10 ELSE ancestral_lineage END,
-         event_notifications_enabled = COALESCE($11::boolean, event_notifications_enabled),
+     SET whatsapp_phone = CASE WHEN $3::boolean THEN $4 ELSE whatsapp_phone END,
+         display_name = COALESCE($5, display_name),
+         date_of_birth = CASE WHEN $6::boolean THEN $7 ELSE date_of_birth END,
+         birth_star = CASE WHEN $8::boolean THEN $9 ELSE birth_star END,
+         ancestral_lineage = CASE WHEN $10::boolean THEN $11 ELSE ancestral_lineage END,
+         event_notifications_enabled = COALESCE($12::boolean, event_notifications_enabled),
+         gender = CASE WHEN $13::boolean THEN $14 ELSE gender END,
+         marital_status = CASE WHEN $15::boolean THEN $16 ELSE marital_status END,
+         wedding_anniversary = CASE WHEN $17::boolean THEN $18 ELSE wedding_anniversary END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
-     RETURNING *`,
+     RETURNING id`,
     [
       tenantId,
       devoteeId,
+      "whatsappPhone" in input,
       input.whatsappPhone ?? null,
       input.displayName ?? null,
       "dateOfBirth" in input,
@@ -311,9 +493,15 @@ export async function updateDevotee(
       "ancestralLineage" in input,
       input.ancestralLineage ?? null,
       input.eventNotificationsEnabled ?? null,
+      "gender" in input,
+      input.gender ?? null,
+      "maritalStatus" in input,
+      input.maritalStatus ?? null,
+      "weddingAnniversary" in input,
+      input.weddingAnniversary ?? null,
     ],
   );
-  return rows[0] ? mapDevotee(rows[0]) : null;
+  return rows[0] ? getDevoteeById(tenantId, rows[0].id) : null;
 }
 
 /**
@@ -346,4 +534,30 @@ export async function countOptedInDevotees(tenantId: string): Promise<number> {
     [tenantId],
   );
   return Number(rows[0].count);
+}
+
+export async function countIndividualDevotees(tenantId: string): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>(
+    "SELECT count(*) FROM devotees WHERE tenant_id = $1 AND family_id IS NULL",
+    [tenantId],
+  );
+  return Number(rows[0].count);
+}
+
+export async function countBirthdaysThisWeek(tenantId: string, timezone: string): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM devotees d
+     WHERE d.tenant_id = $1 AND d.date_of_birth IS NOT NULL AND ${occasionThisWeekCondition("d.date_of_birth", 2)}`,
+    [tenantId, timezone],
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
+export async function countAnniversariesThisWeek(tenantId: string, timezone: string): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM devotees d
+     WHERE d.tenant_id = $1 AND d.wedding_anniversary IS NOT NULL AND ${occasionThisWeekCondition("d.wedding_anniversary", 2)}`,
+    [tenantId, timezone],
+  );
+  return Number(rows[0]?.count ?? 0);
 }

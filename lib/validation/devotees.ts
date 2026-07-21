@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from "@/types/db";
 
 const nullableTrimmedString = z
   .string()
@@ -7,7 +8,7 @@ const nullableTrimmedString = z
   .nullable()
   .optional();
 
-const dateOfBirthSchema = z
+export const dateOfBirthSchema = z
   .string()
   .transform((value) => value.trim())
   .transform((value) => (value.length === 0 ? null : value))
@@ -17,12 +18,18 @@ const dateOfBirthSchema = z
   .nullable()
   .optional();
 
+const genderSchema = z.enum(GENDER_OPTIONS).nullable().optional();
+const maritalStatusSchema = z.enum(MARITAL_STATUS_OPTIONS).nullable().optional();
+
 export const createDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required"),
   displayName: z.string().trim().min(1, "Name is required").max(200),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
+  gender: genderSchema,
+  maritalStatus: maritalStatusSchema,
+  weddingAnniversary: dateOfBirthSchema,
 });
 
 export const updateDevoteeSchema = z.object({
@@ -32,6 +39,9 @@ export const updateDevoteeSchema = z.object({
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
   eventNotificationsEnabled: z.boolean().optional(),
+  gender: genderSchema,
+  maritalStatus: maritalStatusSchema,
+  weddingAnniversary: dateOfBirthSchema,
 });
 
 export type CreateDevoteePayload = z.infer<typeof createDevoteeSchema>;

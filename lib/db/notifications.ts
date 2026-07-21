@@ -205,6 +205,8 @@ export interface NotificationCategoryCounts {
   devotee: number;
   event: number;
   announcement: number;
+  anniversary: number;
+  family: number;
 }
 
 /** Tenant-wide counts (any recipient) for the Notification Center's category tabs. */
@@ -213,11 +215,45 @@ export async function countNotificationsByCategory(tenantId: string): Promise<No
     `SELECT category, count(*) FROM notifications WHERE tenant_id = $1 GROUP BY category`,
     [tenantId],
   );
-  const counts: NotificationCategoryCounts = { birthday: 0, new_user: 0, devotee: 0, event: 0, announcement: 0 };
+  const counts: NotificationCategoryCounts = {
+    birthday: 0,
+    new_user: 0,
+    devotee: 0,
+    event: 0,
+    announcement: 0,
+    anniversary: 0,
+    family: 0,
+  };
   for (const row of rows) {
     counts[row.category] = Number(row.count);
   }
   return counts;
+}
+
+/** Dashboard "Scheduled Notifications" card — every notification still awaiting delivery, any category. */
+export async function countPendingNotifications(tenantId: string): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM notifications
+     WHERE tenant_id = $1 AND delivery_status IN ('pending', 'queued', 'retrying')`,
+    [tenantId],
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Devotee detail page's "Notification History" — devotees have no in-app center, so this is read-only. */
+export async function listNotificationsForDevotee(
+  tenantId: string,
+  devoteeId: string,
+  limit = 10,
+): Promise<Notification[]> {
+  const { rows } = await getPool().query<NotificationRow>(
+    `SELECT * FROM notifications
+     WHERE tenant_id = $1 AND recipient_devotee_id = $2
+     ORDER BY created_at DESC
+     LIMIT $3`,
+    [tenantId, devoteeId, limit],
+  );
+  return rows.map(mapNotification);
 }
 
 export async function countNotificationsFiltered(

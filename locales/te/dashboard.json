@@ -44,7 +44,12 @@
       "totalDonors": "మొత్తం దాతలు",
       "messagesReceived": "అందిన సందేశాలు",
       "messagesSent": "పంపిన సందేశాలు",
-      "failedSends": "విఫలమైన పంపకాలు"
+      "failedSends": "విఫలమైన పంపకాలు",
+      "totalFamilies": "మొత్తం కుటుంబాలు",
+      "individualDevotees": "వ్యక్తిగత భక్తులు",
+      "birthdaysThisWeek": "ఈ వారం పుట్టినరోజులు",
+      "anniversariesThisWeek": "ఈ వారం వార్షికోత్సవాలు",
+      "scheduledNotifications": "షెడ్యూల్ చేసిన నోటిఫికేషన్‌లు"
     },
     "upcomingEvents": {
       "title": "రాబోయే కార్యక్రమాలు",
@@ -456,11 +461,54 @@
     "columns": {
       "name": "పేరు",
       "phone": "ఫోన్",
+      "family": "కుటుంబం",
       "whatsapp": "వాట్సాప్",
       "birthStar": "జన్మ నక్షత్రం",
       "gothram": "గోత్రం",
       "firstSeen": "మొదట కనిపించినది",
       "actions": "చర్యలు"
+    },
+    "filters": {
+      "allRegistrationTypes": "అన్ని రకాలు",
+      "individual": "వ్యక్తిగతం",
+      "family": "కుటుంబం",
+      "allOccasions": "అన్ని సందర్భాలు",
+      "birthdayToday": "ఈరోజు పుట్టినరోజు",
+      "birthdayWeek": "ఈ వారం పుట్టినరోజు",
+      "anniversaryToday": "ఈరోజు వార్షికోత్సవం",
+      "anniversaryWeek": "ఈ వారం వార్షికోత్సవం",
+      "allDonorStatus": "అన్ని దాతలు",
+      "donor": "దాత",
+      "nonDonor": "దాత కాదు",
+      "allWhatsappStatus": "అన్ని వాట్సాప్ స్థితులు"
+    },
+    "relationshipNames": {
+      "head_of_family": "కుటుంబ పెద్ద",
+      "husband": "భర్త",
+      "wife": "భార్య",
+      "father": "తండ్రి",
+      "mother": "తల్లి",
+      "son": "కుమారుడు",
+      "daughter": "కుమార్తె",
+      "brother": "సోదరుడు",
+      "sister": "సోదరి",
+      "grandfather": "తాత",
+      "grandmother": "నానమ్మ/అమ్మమ్మ",
+      "grandson": "మనవడు",
+      "granddaughter": "మనవరాలు",
+      "uncle": "బాబాయి/మామయ్య",
+      "aunt": "అత్త/పిన్ని",
+      "other": "ఇతర"
+    },
+    "notificationTypeLabels": {
+      "birthday_devotee": "పుట్టినరోజు శుభాకాంక్షలు",
+      "birthday_priest": "పుట్టినరోజు పూజ రిమైండర్",
+      "user_welcome": "స్వాగత సందేశం",
+      "devotee_registered": "భక్తుడు నమోదు చేయబడ్డారు",
+      "event_reminder": "కార్యక్రమ రిమైండర్",
+      "anniversary_devotee": "వార్షికోత్సవ శుభాకాంక్షలు",
+      "anniversary_priest": "వార్షికోత్సవ పూజ రిమైండర్",
+      "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్"
     },
     "selectAll": "అన్ని భక్తులను ఎంచుకోండి",
     "selectRow": "{name} ఎంచుకోండి",
@@ -477,13 +525,31 @@
       "editTitle": "భక్తుడిని సవరించండి",
       "createDescription": "భక్తుడిని మాన్యువల్‌గా జోడించండి. వారు ఆలయ నంబర్‌కు సందేశం పంపే వరకు వాట్సాప్ ప్రకటనల కోసం చేరనట్లు గుర్తించబడతారు.",
       "editDescription": "ఈ భక్తుడి వివరాలను నవీకరించండి.",
+      "registrationType": {
+        "title": "మీరు ఎలా నమోదు చేయాలనుకుంటున్నారు?",
+        "description": "ఇది ఒకే భక్తుడా లేదా బహుళ సభ్యులతో కూడిన కుటుంబమా అని ఎంచుకోండి.",
+        "individual": "వ్యక్తిగత భక్తుడు",
+        "family": "కుటుంబం"
+      },
       "fields": {
         "name": "పేరు",
         "phoneNumber": "ఫోన్ నంబర్",
         "phonePlaceholder": "+91XXXXXXXXXX",
         "dateOfBirth": "పుట్టిన తేదీ (ఐచ్ఛికం)",
         "birthStar": "జన్మ నక్షత్రం (ఐచ్ఛికం)",
-        "gothram": "గోత్రం (ఐచ్ఛికం)"
+        "gothram": "గోత్రం (ఐచ్ఛికం)",
+        "gender": "లింగం (ఐచ్ఛికం)",
+        "genderPlaceholder": "లింగం ఎంచుకోండి",
+        "maritalStatus": "వైవాహిక స్థితి (ఐచ్ఛికం)",
+        "maritalStatusPlaceholder": "వైవాహిక స్థితిని ఎంచుకోండి",
+        "weddingAnniversary": "వివాహ వార్షికోత్సవం (ఐచ్ఛికం)"
+      },
+      "genderOptions": { "male": "పురుషుడు", "female": "స్త్రీ", "other": "ఇతర" },
+      "maritalStatusOptions": {
+        "single": "అవివాహిత",
+        "married": "వివాహిత",
+        "widowed": "వితంతువు",
+        "divorced": "విడాకులు తీసుకున్న"
       },
       "eventNotifications": {
         "label": "కార్యక్రమ నోటిఫికేషన్‌లు",
@@ -491,15 +557,85 @@
       },
       "errorFallback": "భక్తుడిని సేవ్ చేయడంలో విఫలమైంది"
     },
+    "familyForm": {
+      "pageHeader": {
+        "createTitle": "కుటుంబాన్ని జోడించండి",
+        "createSubtitle": "కుటుంబాన్ని మరియు దాని సభ్యులను వారి మధ్య సంబంధాలతో కలిపి నమోదు చేయండి.",
+        "editTitle": "కుటుంబాన్ని సవరించండి",
+        "editSubtitle": "కుటుంబ వివరాలను నవీకరించండి లేదా సభ్యులను జోడించండి, సవరించండి, తొలగించండి."
+      },
+      "familyDetails": "కుటుంబ వివరాలు",
+      "familyMembers": "కుటుంబ సభ్యులు",
+      "addMember": "సభ్యుడిని జోడించండి",
+      "removeMember": "సభ్యుడిని తొలగించండి",
+      "memberNumber": "సభ్యుడు {number}",
+      "fields": {
+        "familyName": "కుటుంబం పేరు",
+        "address": "చిరునామా (ఐచ్ఛికం)",
+        "city": "నగరం (ఐచ్ఛికం)",
+        "state": "రాష్ట్రం (ఐచ్ఛికం)",
+        "pincode": "పిన్ కోడ్ (ఐచ్ఛికం)",
+        "primaryLanguage": "ప్రధాన భాష (ఐచ్ఛికం)",
+        "primaryLanguagePlaceholder": "భాష ఎంచుకోండి",
+        "memberName": "పూర్తి పేరు",
+        "relationship": "సంబంధం",
+        "relationshipPlaceholder": "సంబంధాన్ని ఎంచుకోండి",
+        "gender": "లింగం (ఐచ్ఛికం)",
+        "genderPlaceholder": "లింగం ఎంచుకోండి",
+        "maritalStatus": "వైవాహిక స్థితి (ఐచ్ఛికం)",
+        "maritalStatusPlaceholder": "వైవాహిక స్థితిని ఎంచుకోండి",
+        "dateOfBirth": "పుట్టిన తేదీ (ఐచ్ఛికం)",
+        "weddingAnniversary": "వివాహ వార్షికోత్సవం (ఐచ్ఛికం)",
+        "birthStar": "జన్మ నక్షత్రం (ఐచ్ఛికం)",
+        "gothram": "గోత్రం (ఐచ్ఛికం)",
+        "mobileNumber": "మొబైల్ నంబర్ (ఐచ్ఛికం)",
+        "mobileNumberPlaceholder": "+91XXXXXXXXXX"
+      },
+      "genderOptions": { "male": "పురుషుడు", "female": "స్త్రీ", "other": "ఇతర" },
+      "maritalStatusOptions": {
+        "single": "అవివాహిత",
+        "married": "వివాహిత",
+        "widowed": "వితంతువు",
+        "divorced": "విడాకులు తీసుకున్న"
+      },
+      "languages": { "en": "ఇంగ్లీష్", "te": "తెలుగు" },
+      "errors": {
+        "relationshipRequired": "ప్రతి సభ్యుడికి సంబంధాన్ని ఎంచుకోండి.",
+        "exactlyOneHead": "ఖచ్చితంగా ఒక సభ్యుడు కుటుంబ పెద్దగా ఉండాలి."
+      },
+      "errorFallback": "కుటుంబాన్ని సేవ్ చేయడంలో విఫలమైంది",
+      "confirmDelete": "\"{name}\" తొలగించాలా? సభ్యులు వ్యక్తిగత భక్తులుగా మిగిలి ఉంటారు; కుటుంబ రికార్డు మాత్రమే తొలగించబడుతుంది.",
+      "deleteError": "కుటుంబాన్ని తొలగించడంలో విఫలమైంది",
+      "deleteFamily": "కుటుంబాన్ని తొలగించండి",
+      "backToDevotees": "భక్తులకు తిరిగి వెళ్లండి",
+      "saving": "సేవ్ చేస్తోంది…",
+      "createFamily": "కుటుంబాన్ని సృష్టించండి",
+      "saveChanges": "మార్పులను సేవ్ చేయండి"
+    },
     "detail": {
       "backToDevotees": "భక్తులకు తిరిగి వెళ్లండి",
+      "noPhone": "ఫోన్ నంబర్ లేదు",
       "dateOfBirth": "పుట్టిన తేదీ",
       "birthStar": "జన్మ నక్షత్రం",
       "gothram": "గోత్రం",
+      "gender": "లింగం",
+      "maritalStatus": "వైవాహిక స్థితి",
+      "weddingAnniversary": "వివాహ వార్షికోత్సవం",
       "donor": "దాత",
       "totalDonated": "మొత్తం విరాళం",
       "lastDonation": "చివరి విరాళం",
-      "firstSeen": "మొదట కనిపించినది"
+      "firstSeen": "మొదట కనిపించినది",
+      "familyInformation": "కుటుంబ సమాచారం",
+      "editFamily": "కుటుంబాన్ని సవరించండి",
+      "familyName": "కుటుంబం పేరు",
+      "members": "సభ్యులు",
+      "upcomingOccasions": "రాబోయే సందర్భాలు",
+      "birthday": "పుట్టినరోజు",
+      "anniversary": "వార్షికోత్సవం",
+      "today": "ఈరోజు",
+      "inDays": "{count, plural, one {# రోజులో} other {# రోజుల్లో}}",
+      "notificationHistory": "నోటిఫికేషన్ చరిత్ర",
+      "noNotifications": "ఇంకా నోటిఫికేషన్‌లు పంపబడలేదు."
     },
     "donationsCard": {
       "title": "విరాళాలు",
@@ -534,7 +670,15 @@
       "tabs": { "all": "అన్ని వరుసలు", "problems": "సమస్యలు మాత్రమే" },
       "startOver": "మళ్లీ మొదలు పెట్టండి",
       "importRows": "{count, plural, one {# సరైన వరుసను దిగుమతి చేయండి} other {# సరైన వరుసలను దిగుమతి చేయండి}}",
-      "columns": { "row": "వరుస", "name": "పేరు", "phone": "ఫోన్", "status": "స్థితి", "issues": "సమస్యలు" },
+      "columns": {
+        "row": "వరుస",
+        "name": "పేరు",
+        "phone": "ఫోన్",
+        "familyName": "కుటుంబం పేరు",
+        "relationship": "సంబంధం",
+        "status": "స్థితి",
+        "issues": "సమస్యలు"
+      },
       "importing": { "title": "భక్తులను దిగుమతి చేస్తోంది…", "description": "పెద్ద ఫైళ్లకు కొంత సమయం పట్టవచ్చు." },
       "done": {
         "imported": "{count} దిగుమతి చేయబడ్డాయి",
@@ -791,8 +935,10 @@
       "categories": {
         "all": "అన్నీ",
         "birthday": "పుట్టినరోజులు",
+        "anniversary": "వార్షికోత్సవాలు",
         "new_user": "కొత్త వినియోగదారులు",
         "devotee": "భక్తులు",
+        "family": "కుటుంబం",
         "event": "కార్యక్రమ రిమైండర్‌లు",
         "announcement": "ప్రకటనలు"
       },
@@ -808,7 +954,10 @@
         "birthday_priest": "జన్మదిన పూజ రిమైండర్",
         "user_welcome": "స్వాగత సందేశం",
         "devotee_registered": "కొత్త భక్తుడు చేర్చబడ్డారు",
-        "event_reminder": "కార్యక్రమ రిమైండర్"
+        "event_reminder": "కార్యక్రమ రిమైండర్",
+        "anniversary_devotee": "వార్షికోత్సవ శుభాకాంక్షలు",
+        "anniversary_priest": "వార్షికోత్సవ పూజ రిమైండర్",
+        "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్"
       },
       "channelLabels": { "in_app": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
       "emptyState": {

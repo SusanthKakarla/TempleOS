@@ -1,18 +1,32 @@
 import {
   AlertTriangle,
+  BellRing,
   CalendarDays,
+  CalendarHeart,
+  Cake,
   HandCoins,
   HeartHandshake,
   MessageCircle,
   Megaphone,
   Send,
+  User,
   Users,
+  UsersRound,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
-import { countDevotees, countOptedInDevotees, listRecentDevotees } from "@/lib/db/devotees";
+import {
+  countDevotees,
+  countOptedInDevotees,
+  listRecentDevotees,
+  countIndividualDevotees,
+  countBirthdaysThisWeek,
+  countAnniversariesThisWeek,
+} from "@/lib/db/devotees";
+import { countFamilies } from "@/lib/db/devotee-families";
+import { countPendingNotifications } from "@/lib/db/notifications";
 import { getDonationSummary, getDonationsPerDay } from "@/lib/db/donations";
 import {
   countFailedMessages,
@@ -58,6 +72,8 @@ export default async function DashboardHomePage() {
     recentMessages,
     donationsPerDayRaw,
     messagesPerDayRaw,
+    totalFamilies,
+    individualDevotees,
   ] = await Promise.all([
     getTenantById(session.tenantId),
     countUpcomingPublishedEvents(session.tenantId),
@@ -72,6 +88,15 @@ export default async function DashboardHomePage() {
     listRecentMessages(session.tenantId, 5),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
     getMessagesPerDay(session.tenantId, CHART_DAYS),
+    countFamilies(session.tenantId),
+    countIndividualDevotees(session.tenantId),
+  ]);
+
+  const tenantTimezone = tenant?.timezone ?? "Asia/Kolkata";
+  const [birthdaysThisWeek, anniversariesThisWeek, scheduledNotifications] = await Promise.all([
+    countBirthdaysThisWeek(session.tenantId, tenantTimezone),
+    countAnniversariesThisWeek(session.tenantId, tenantTimezone),
+    countPendingNotifications(session.tenantId),
   ]);
 
   const eventsPerDay = bucketEventsPerDay(upcomingEventsList);
@@ -146,6 +171,36 @@ export default async function DashboardHomePage() {
           value={failedSends}
           icon={<AlertTriangle className="size-4.5" />}
           gradient="bg-destructive"
+        />
+        <MetricCard
+          label={t("metrics.totalFamilies")}
+          value={totalFamilies}
+          icon={<UsersRound className="size-4.5" />}
+          gradient="gradient-blue-purple"
+        />
+        <MetricCard
+          label={t("metrics.individualDevotees")}
+          value={individualDevotees}
+          icon={<User className="size-4.5" />}
+          gradient="gradient-maroon-orange"
+        />
+        <MetricCard
+          label={t("metrics.birthdaysThisWeek")}
+          value={birthdaysThisWeek}
+          icon={<Cake className="size-4.5" />}
+          gradient="gradient-saffron-gold"
+        />
+        <MetricCard
+          label={t("metrics.anniversariesThisWeek")}
+          value={anniversariesThisWeek}
+          icon={<CalendarHeart className="size-4.5" />}
+          gradient="gradient-green-emerald"
+        />
+        <MetricCard
+          label={t("metrics.scheduledNotifications")}
+          value={scheduledNotifications}
+          icon={<BellRing className="size-4.5" />}
+          gradient="bg-royal-blue"
         />
       </div>
 

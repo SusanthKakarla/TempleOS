@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { listExistingPhones } from "@/lib/db/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
-import { validateImportRow, type PreviewRow, type RawImportRow } from "@/lib/validation/devotee-import";
+import { validateFamilyGroups, validateImportRow, type PreviewRow, type RawImportRow } from "@/lib/validation/devotee-import";
 
 const MAX_ROWS = 2000;
 
@@ -19,6 +19,24 @@ const HEADER_ALIASES: Record<string, keyof RawImportRow> = {
   gothram: "gothram",
   "gothram/ancestral lineage": "gothram",
   "ancestral lineage": "gothram",
+  "registration type": "registrationType",
+  "family name": "familyName",
+  relationship: "relationship",
+  gender: "gender",
+  "marital status": "maritalStatus",
+  "wedding anniversary": "anniversary",
+  "wedding anniversary (yyyy-mm-dd)": "anniversary",
+  anniversary: "anniversary",
+  "address (family only)": "address",
+  address: "address",
+  "city (family only)": "city",
+  city: "city",
+  "state (family only)": "state",
+  state: "state",
+  "pincode (family only)": "pincode",
+  pincode: "pincode",
+  "primary language (family only)": "primaryLanguage",
+  "primary language": "primaryLanguage",
 };
 
 /**
@@ -89,6 +107,17 @@ export async function POST(req: NextRequest) {
         dob: columnMap.dob ? row.getCell(columnMap.dob).value : null,
         birthStar: columnMap.birthStar ? row.getCell(columnMap.birthStar).value : null,
         gothram: columnMap.gothram ? row.getCell(columnMap.gothram).value : null,
+        registrationType: columnMap.registrationType ? row.getCell(columnMap.registrationType).value : null,
+        familyName: columnMap.familyName ? row.getCell(columnMap.familyName).value : null,
+        relationship: columnMap.relationship ? row.getCell(columnMap.relationship).value : null,
+        gender: columnMap.gender ? row.getCell(columnMap.gender).value : null,
+        maritalStatus: columnMap.maritalStatus ? row.getCell(columnMap.maritalStatus).value : null,
+        anniversary: columnMap.anniversary ? row.getCell(columnMap.anniversary).value : null,
+        address: columnMap.address ? row.getCell(columnMap.address).value : null,
+        city: columnMap.city ? row.getCell(columnMap.city).value : null,
+        state: columnMap.state ? row.getCell(columnMap.state).value : null,
+        pincode: columnMap.pincode ? row.getCell(columnMap.pincode).value : null,
+        primaryLanguage: columnMap.primaryLanguage ? row.getCell(columnMap.primaryLanguage).value : null,
       },
     });
   });
@@ -110,11 +139,12 @@ export async function POST(req: NextRequest) {
   const existingPhones = await listExistingPhones(session.tenantId, candidatePhones);
 
   const seenPhones = new Set<string>();
-  const rows: PreviewRow[] = rawRows.map(({ rowNumber, raw }) => {
+  const validatedRows: PreviewRow[] = rawRows.map(({ rowNumber, raw }) => {
     const result = validateImportRow(rowNumber, raw, seenPhones, existingPhones);
     if (result.normalizedPhone) seenPhones.add(result.normalizedPhone);
     return result;
   });
+  const rows = validateFamilyGroups(validatedRows);
 
   const totalRows = rows.length;
   const validCount = rows.filter((r) => r.status === "valid").length;

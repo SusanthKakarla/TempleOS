@@ -47,6 +47,10 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   let failed = 0;
 
   for (const devotee of recipients) {
+    // Opted-in devotees always have a phone (opt-in is only ever set by the
+    // inbound WhatsApp webhook, which requires one) — this guard is just to
+    // satisfy the nullable column type, not an expected runtime case.
+    if (!devotee.whatsappPhone) continue;
     // Devotees who haven't picked a language yet (preferredLanguage === null)
     // default to English for broadcast announcements — there's no live
     // conversation here to gate on a language picker first.

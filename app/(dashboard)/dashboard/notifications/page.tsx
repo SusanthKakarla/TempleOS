@@ -29,7 +29,15 @@ interface PageProps {
 }
 
 const SORT_VALUES: ListRecentEventNotificationsOptions["sort"][] = ["date", "status"];
-const CATEGORY_VALUES: NotificationCategory[] = ["birthday", "new_user", "devotee", "event", "announcement"];
+const CATEGORY_VALUES: NotificationCategory[] = [
+  "birthday",
+  "anniversary",
+  "new_user",
+  "devotee",
+  "family",
+  "event",
+  "announcement",
+];
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
   const session = await requireDashboardAdmin();

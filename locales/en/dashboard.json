@@ -44,7 +44,12 @@
       "totalDonors": "Total Donors",
       "messagesReceived": "Messages Received",
       "messagesSent": "Messages Sent",
-      "failedSends": "Failed Sends"
+      "failedSends": "Failed Sends",
+      "totalFamilies": "Total Families",
+      "individualDevotees": "Individual Devotees",
+      "birthdaysThisWeek": "Birthdays This Week",
+      "anniversariesThisWeek": "Anniversaries This Week",
+      "scheduledNotifications": "Scheduled Notifications"
     },
     "upcomingEvents": {
       "title": "Upcoming Events",
@@ -453,11 +458,54 @@
     "columns": {
       "name": "Name",
       "phone": "Phone",
+      "family": "Family",
       "whatsapp": "WhatsApp",
       "birthStar": "Birth star",
       "gothram": "Gothram",
       "firstSeen": "First seen",
       "actions": "Actions"
+    },
+    "filters": {
+      "allRegistrationTypes": "All types",
+      "individual": "Individual",
+      "family": "Family",
+      "allOccasions": "All occasions",
+      "birthdayToday": "Birthday today",
+      "birthdayWeek": "Birthday this week",
+      "anniversaryToday": "Anniversary today",
+      "anniversaryWeek": "Anniversary this week",
+      "allDonorStatus": "All donors",
+      "donor": "Donor",
+      "nonDonor": "Non-donor",
+      "allWhatsappStatus": "All WhatsApp status"
+    },
+    "relationshipNames": {
+      "head_of_family": "Head of Family",
+      "husband": "Husband",
+      "wife": "Wife",
+      "father": "Father",
+      "mother": "Mother",
+      "son": "Son",
+      "daughter": "Daughter",
+      "brother": "Brother",
+      "sister": "Sister",
+      "grandfather": "Grandfather",
+      "grandmother": "Grandmother",
+      "grandson": "Grandson",
+      "granddaughter": "Granddaughter",
+      "uncle": "Uncle",
+      "aunt": "Aunt",
+      "other": "Other"
+    },
+    "notificationTypeLabels": {
+      "birthday_devotee": "Birthday wish",
+      "birthday_priest": "Birthday pooja reminder",
+      "user_welcome": "Welcome message",
+      "devotee_registered": "Devotee registered",
+      "event_reminder": "Event reminder",
+      "anniversary_devotee": "Anniversary wish",
+      "anniversary_priest": "Anniversary pooja reminder",
+      "family_occasion_reminder": "Family occasion reminder"
     },
     "selectAll": "Select all devotees",
     "selectRow": "Select {name}",
@@ -474,13 +522,31 @@
       "editTitle": "Edit devotee",
       "createDescription": "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number.",
       "editDescription": "Update this devotee's details.",
+      "registrationType": {
+        "title": "How would you like to register?",
+        "description": "Choose whether this is a single devotee or a family with multiple members.",
+        "individual": "Individual Devotee",
+        "family": "Family"
+      },
       "fields": {
         "name": "Name",
         "phoneNumber": "Phone number",
         "phonePlaceholder": "+91XXXXXXXXXX",
         "dateOfBirth": "Date of birth (optional)",
         "birthStar": "Birth star / Nakshatram (optional)",
-        "gothram": "Gothram / Ancestral lineage (optional)"
+        "gothram": "Gothram / Ancestral lineage (optional)",
+        "gender": "Gender (optional)",
+        "genderPlaceholder": "Select gender",
+        "maritalStatus": "Marital status (optional)",
+        "maritalStatusPlaceholder": "Select marital status",
+        "weddingAnniversary": "Wedding anniversary (optional)"
+      },
+      "genderOptions": { "male": "Male", "female": "Female", "other": "Other" },
+      "maritalStatusOptions": {
+        "single": "Single",
+        "married": "Married",
+        "widowed": "Widowed",
+        "divorced": "Divorced"
       },
       "eventNotifications": {
         "label": "Event notifications",
@@ -488,15 +554,85 @@
       },
       "errorFallback": "Failed to save devotee"
     },
+    "familyForm": {
+      "pageHeader": {
+        "createTitle": "Add family",
+        "createSubtitle": "Register a family and its members together, with relationships between them.",
+        "editTitle": "Edit family",
+        "editSubtitle": "Update family details or add, edit, and remove members."
+      },
+      "familyDetails": "Family details",
+      "familyMembers": "Family members",
+      "addMember": "Add member",
+      "removeMember": "Remove member",
+      "memberNumber": "Member {number}",
+      "fields": {
+        "familyName": "Family name",
+        "address": "Address (optional)",
+        "city": "City (optional)",
+        "state": "State (optional)",
+        "pincode": "PIN code (optional)",
+        "primaryLanguage": "Primary language (optional)",
+        "primaryLanguagePlaceholder": "Select language",
+        "memberName": "Full name",
+        "relationship": "Relationship",
+        "relationshipPlaceholder": "Select relationship",
+        "gender": "Gender (optional)",
+        "genderPlaceholder": "Select gender",
+        "maritalStatus": "Marital status (optional)",
+        "maritalStatusPlaceholder": "Select marital status",
+        "dateOfBirth": "Date of birth (optional)",
+        "weddingAnniversary": "Wedding anniversary (optional)",
+        "birthStar": "Birth star / Nakshatram (optional)",
+        "gothram": "Gothram / Ancestral lineage (optional)",
+        "mobileNumber": "Mobile number (optional)",
+        "mobileNumberPlaceholder": "+91XXXXXXXXXX"
+      },
+      "genderOptions": { "male": "Male", "female": "Female", "other": "Other" },
+      "maritalStatusOptions": {
+        "single": "Single",
+        "married": "Married",
+        "widowed": "Widowed",
+        "divorced": "Divorced"
+      },
+      "languages": { "en": "English", "te": "Telugu" },
+      "errors": {
+        "relationshipRequired": "Select a relationship for every member.",
+        "exactlyOneHead": "Exactly one member must be the Head of Family."
+      },
+      "errorFallback": "Failed to save family",
+      "confirmDelete": "Delete \"{name}\"? Members remain as individual devotees; only the family record is removed.",
+      "deleteError": "Failed to delete family",
+      "deleteFamily": "Delete family",
+      "backToDevotees": "Back to devotees",
+      "saving": "Saving…",
+      "createFamily": "Create family",
+      "saveChanges": "Save changes"
+    },
     "detail": {
       "backToDevotees": "Back to devotees",
+      "noPhone": "No phone number",
       "dateOfBirth": "Date of birth",
       "birthStar": "Birth star",
       "gothram": "Gothram",
+      "gender": "Gender",
+      "maritalStatus": "Marital status",
+      "weddingAnniversary": "Wedding anniversary",
       "donor": "Donor",
       "totalDonated": "Total donated",
       "lastDonation": "Last donation",
-      "firstSeen": "First seen"
+      "firstSeen": "First seen",
+      "familyInformation": "Family information",
+      "editFamily": "Edit family",
+      "familyName": "Family name",
+      "members": "Members",
+      "upcomingOccasions": "Upcoming occasions",
+      "birthday": "Birthday",
+      "anniversary": "Anniversary",
+      "today": "Today",
+      "inDays": "in {count, plural, one {# day} other {# days}}",
+      "notificationHistory": "Notification history",
+      "noNotifications": "No notifications sent yet."
     },
     "donationsCard": {
       "title": "Donations",
@@ -531,7 +667,15 @@
       "tabs": { "all": "All rows", "problems": "Only issues" },
       "startOver": "Start over",
       "importRows": "{count, plural, one {Import # valid row} other {Import # valid rows}}",
-      "columns": { "row": "Row", "name": "Name", "phone": "Phone", "status": "Status", "issues": "Issues" },
+      "columns": {
+        "row": "Row",
+        "name": "Name",
+        "phone": "Phone",
+        "familyName": "Family Name",
+        "relationship": "Relationship",
+        "status": "Status",
+        "issues": "Issues"
+      },
       "importing": { "title": "Importing devotees…", "description": "This may take a moment for larger files." },
       "done": {
         "imported": "{count} imported",
@@ -777,8 +921,10 @@
       "categories": {
         "all": "All",
         "birthday": "Birthdays",
+        "anniversary": "Anniversaries",
         "new_user": "New Users",
         "devotee": "Devotees",
+        "family": "Family",
         "event": "Event Reminders",
         "announcement": "Announcements"
       },
@@ -794,7 +940,10 @@
         "birthday_priest": "Birthday pooja reminder",
         "user_welcome": "Welcome message",
         "devotee_registered": "New devotee added",
-        "event_reminder": "Event reminder"
+        "event_reminder": "Event reminder",
+        "anniversary_devotee": "Anniversary wish",
+        "anniversary_priest": "Anniversary pooja reminder",
+        "family_occasion_reminder": "Family occasion reminder"
       },
       "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
       "emptyState": {

@@ -37,6 +37,14 @@ async function processOneEventNotification(id: string): Promise<void> {
     await markEventNotificationFailed(claimed.id, claimed.attemptCount, "Referenced record no longer exists");
     return;
   }
+  // Event-notification recipients are always opted-in devotees, who always
+  // have a phone (opt-in is only ever set by the inbound WhatsApp webhook,
+  // which requires one) — this guard is just to satisfy the nullable
+  // column type, not an expected runtime case.
+  if (!devotee.whatsappPhone) {
+    await markEventNotificationFailed(claimed.id, claimed.attemptCount, "Recipient has no WhatsApp phone");
+    return;
+  }
 
   const lang = devotee.preferredLanguage ?? "en";
   const message = buildEventNotificationMessage(claimed.notificationType, tenant, event, lang);

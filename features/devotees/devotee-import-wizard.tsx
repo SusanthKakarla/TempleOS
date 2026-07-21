@@ -49,6 +49,7 @@ const STATUS_VARIANT: Record<PreviewRow["status"], "default" | "secondary" | "de
 export function DevoteeImportWizard() {
   const router = useRouter();
   const t = useTranslations("devotees.importWizard");
+  const tRelationship = useTranslations("devotees.relationshipNames");
   const [step, setStep] = useState<Step>("upload");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [result, setResult] = useState<CommitResponse | null>(null);
@@ -197,6 +198,8 @@ export function DevoteeImportWizard() {
                   <TableHead>{t("columns.row")}</TableHead>
                   <TableHead>{t("columns.name")}</TableHead>
                   <TableHead>{t("columns.phone")}</TableHead>
+                  <TableHead>{t("columns.familyName")}</TableHead>
+                  <TableHead>{t("columns.relationship")}</TableHead>
                   <TableHead>{t("columns.status")}</TableHead>
                   <TableHead>{t("columns.issues")}</TableHead>
                 </TableRow>
@@ -207,6 +210,8 @@ export function DevoteeImportWizard() {
                     <TableCell className="text-muted-foreground">{row.rowNumber}</TableCell>
                     <TableCell>{row.data.displayName || "—"}</TableCell>
                     <TableCell>{row.data.whatsappPhone || "—"}</TableCell>
+                    <TableCell>{row.data.familyName || "—"}</TableCell>
+                    <TableCell>{row.data.relationship ? tRelationship(row.data.relationship) : "—"}</TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[row.status]}>{t(`statusLabels.${row.status}`)}</Badge>
                     </TableCell>

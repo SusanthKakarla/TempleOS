@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateImportRow, type RawImportRow } from "./devotee-import";
+import { validateFamilyGroups, validateImportRow, type PreviewRow, type RawImportRow } from "./devotee-import";
 
 function row(overrides: Partial<RawImportRow> = {}): RawImportRow {
   return {
@@ -8,6 +8,17 @@ function row(overrides: Partial<RawImportRow> = {}): RawImportRow {
     dob: null,
     birthStar: null,
     gothram: null,
+    registrationType: null,
+    familyName: null,
+    relationship: null,
+    gender: null,
+    maritalStatus: null,
+    anniversary: null,
+    address: null,
+    city: null,
+    state: null,
+    pincode: null,
+    primaryLanguage: null,
     ...overrides,
   };
 }
@@ -81,5 +92,148 @@ describe("validateImportRow", () => {
     const result = validateImportRow(12, row({ birthStar: "  Ashwini  ", gothram: "" }), new Set(), new Set());
     expect(result.data.birthStar).toBe("Ashwini");
     expect(result.data.ancestralLineage).toBeNull();
+  });
+
+  it("does not require a phone number for a family member row", () => {
+    const result = validateImportRow(
+      13,
+      row({ phone: "", familyName: "Reddy Family", relationship: "Son" }),
+      new Set(),
+      new Set(),
+    );
+    expect(result.status).toBe("valid");
+    expect(result.data.registrationType).toBe("family");
+    expect(result.data.relationship).toBe("son");
+  });
+
+  it("requires a relationship when a family name is given", () => {
+    const result = validateImportRow(14, row({ familyName: "Reddy Family", relationship: "" }), new Set(), new Set());
+    expect(result.status).toBe("invalid");
+    expect(result.errors).toContain("Relationship is required when Family Name is set");
+  });
+
+  it("flags an unrecognized relationship", () => {
+    const result = validateImportRow(
+      15,
+      row({ familyName: "Reddy Family", relationship: "Neighbor" }),
+      new Set(),
+      new Set(),
+    );
+    expect(result.status).toBe("invalid");
+    expect(result.errors).toContain('Unknown relationship "Neighbor"');
+  });
+
+  it("normalizes a relationship with spaces to its snake_case code", () => {
+    const result = validateImportRow(
+      16,
+      row({ familyName: "Reddy Family", relationship: "Head of Family" }),
+      new Set(),
+      new Set(),
+    );
+    expect(result.data.relationship).toBe("head_of_family");
+  });
+
+  it("flags an unrecognized gender or marital status", () => {
+    const result = validateImportRow(17, row({ gender: "nonbinary-typo" }), new Set(), new Set());
+    expect(result.status).toBe("invalid");
+    expect(result.errors).toContain('Unknown gender "nonbinary-typo"');
+  });
+
+  it("parses a valid wedding anniversary date", () => {
+    const result = validateImportRow(18, row({ anniversary: "2000-02-14" }), new Set(), new Set());
+    expect(result.data.weddingAnniversary).toBe("2000-02-14");
+  });
+});
+
+describe("validateFamilyGroups", () => {
+  function validRow(rowNumber: number, overrides: Partial<PreviewRow["data"]> = {}): PreviewRow {
+    return {
+      rowNumber,
+      data: {
+        displayName: "Member",
+        whatsappPhone: "",
+        dateOfBirth: null,
+        birthStar: null,
+        ancestralLineage: null,
+        registrationType: "family",
+        familyName: "Reddy Family",
+        relationship: null,
+        gender: null,
+        maritalStatus: null,
+        weddingAnniversary: null,
+        address: null,
+        city: null,
+        state: null,
+        pincode: null,
+        primaryLanguage: null,
+        ...overrides,
+      },
+      normalizedPhone: null,
+      status: "valid",
+      errors: [],
+    };
+  }
+
+  it("leaves a group with exactly one Head of Family untouched", () => {
+    const rows = [
+      validRow(1, { relationship: "head_of_family" }),
+      validRow(2, { relationship: "wife" }),
+    ];
+    const result = validateFamilyGroups(rows);
+    expect(result).toEqual(rows);
+  });
+
+  it("invalidates every row in a group with zero Head of Family rows", () => {
+    const rows = [validRow(1, { relationship: "wife" }), validRow(2, { relationship: "son" })];
+    const result = validateFamilyGroups(rows);
+    expect(result.every((r) => r.status === "invalid")).toBe(true);
+    expect(result[0].errors).toContain('Family "Reddy Family" must have exactly one Head of Family');
+  });
+
+  it("invalidates every row in a group with more than one Head of Family", () => {
+    const rows = [
+      validRow(1, { relationship: "head_of_family" }),
+      validRow(2, { relationship: "head_of_family" }),
+    ];
+    const result = validateFamilyGroups(rows);
+    expect(result.every((r) => r.status === "invalid")).toBe(true);
+  });
+
+  it("groups family names case-insensitively and ignoring surrounding whitespace", () => {
+    const rows = [
+      validRow(1, { familyName: "Reddy Family", relationship: "head_of_family" }),
+      validRow(2, { familyName: "  reddy family  ", relationship: "wife" }),
+    ];
+    const result = validateFamilyGroups(rows);
+    expect(result.every((r) => r.status === "valid")).toBe(true);
+  });
+
+  it("does not touch rows outside any family group", () => {
+    const individualRow: PreviewRow = {
+      rowNumber: 1,
+      data: {
+        displayName: "Solo",
+        whatsappPhone: "+919876500000",
+        dateOfBirth: null,
+        birthStar: null,
+        ancestralLineage: null,
+        registrationType: "individual",
+        familyName: null,
+        relationship: null,
+        gender: null,
+        maritalStatus: null,
+        weddingAnniversary: null,
+        address: null,
+        city: null,
+        state: null,
+        pincode: null,
+        primaryLanguage: null,
+      },
+      normalizedPhone: "+919876500000",
+      status: "valid",
+      errors: [],
+    };
+    const result = validateFamilyGroups([individualRow]);
+    expect(result).toEqual([individualRow]);
   });
 });

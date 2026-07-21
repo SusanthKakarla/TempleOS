@@ -180,13 +180,16 @@ export interface EventNotification {
 
 export type NotificationChannel = "in_app" | "whatsapp";
 export type NotificationDeliveryStatus = EventNotificationDeliveryStatus;
-export type NotificationCategory = "birthday" | "new_user" | "devotee" | "event" | "announcement";
+export type NotificationCategory = "birthday" | "new_user" | "devotee" | "event" | "announcement" | "anniversary" | "family";
 export type NotificationType =
   | "birthday_devotee"
   | "birthday_priest"
   | "user_welcome"
   | "devotee_registered"
-  | "event_reminder";
+  | "event_reminder"
+  | "anniversary_devotee"
+  | "anniversary_priest"
+  | "family_occasion_reminder";
 
 export interface NotificationTemplate {
   id: string;
@@ -232,10 +235,43 @@ export interface NotificationPreference {
   updatedAt: string;
 }
 
+export const GENDER_OPTIONS = ["male", "female", "other"] as const;
+export type Gender = (typeof GENDER_OPTIONS)[number];
+
+export const MARITAL_STATUS_OPTIONS = ["single", "married", "widowed", "divorced"] as const;
+export type MaritalStatus = (typeof MARITAL_STATUS_OPTIONS)[number];
+
+// Plain strings (not a DB CHECK), same pattern as NotificationType, so new
+// relationships never need a migration — "other" is the catch-all today.
+export const RELATIONSHIP_CODES = [
+  "head_of_family",
+  "husband",
+  "wife",
+  "father",
+  "mother",
+  "son",
+  "daughter",
+  "brother",
+  "sister",
+  "grandfather",
+  "grandmother",
+  "grandson",
+  "granddaughter",
+  "uncle",
+  "aunt",
+  "other",
+] as const;
+export type RelationshipCode = (typeof RELATIONSHIP_CODES)[number];
+
+export function isRelationshipCode(value: unknown): value is RelationshipCode {
+  return typeof value === "string" && (RELATIONSHIP_CODES as readonly string[]).includes(value);
+}
+
 export interface Devotee {
   id: string;
   tenantId: string;
-  whatsappPhone: string;
+  // Nullable: family members may have no mobile number of their own.
+  whatsappPhone: string | null;
   displayName: string;
   dateOfBirth: string | null;
   birthStar: string | null;
@@ -256,8 +292,38 @@ export interface Devotee {
   // Devotee-level opt-out for automatic event notifications (see
   // migrations/007_event_notifications.sql) — independent of whatsappOptInStatus.
   eventNotificationsEnabled: boolean;
+  familyId: string | null;
+  gender: Gender | null;
+  maritalStatus: MaritalStatus | null;
+  weddingAnniversary: string | null;
+  // Derived via a LEFT JOIN in lib/db/devotees.ts — not stored redundantly.
+  familyName: string | null;
+  relationship: RelationshipCode | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DevoteeFamily {
+  id: string;
+  tenantId: string;
+  familyName: string;
+  primaryDevoteeId: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  primaryLanguage: SupportedLanguage | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FamilyMember {
+  id: string;
+  familyId: string;
+  devoteeId: string;
+  relationship: RelationshipCode;
+  isPrimary: boolean;
+  createdAt: string;
 }
 
 export type MessageDirection = "inbound" | "outbound";
