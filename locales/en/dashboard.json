@@ -23,6 +23,7 @@
   },
   "topbar": {
     "accountMenu": "Account menu",
+    "notificationPreferences": "Notification Preferences",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
     "language": "Language",
@@ -758,6 +759,52 @@
         "retrying": "retrying"
       },
       "resendError": "Failed to resend notifications"
+    },
+    "automated": {
+      "sectionTitle": "Automated notifications",
+      "categories": {
+        "all": "All",
+        "birthday": "Birthdays",
+        "new_user": "New Users",
+        "devotee": "Devotees",
+        "event": "Event Reminders",
+        "announcement": "Announcements"
+      },
+      "columns": {
+        "recipient": "Recipient",
+        "type": "Type",
+        "channel": "Channel",
+        "status": "Status",
+        "sent": "Sent"
+      },
+      "typeLabels": {
+        "birthday_devotee": "Birthday wish",
+        "birthday_priest": "Birthday pooja reminder",
+        "user_welcome": "Welcome message",
+        "devotee_registered": "New devotee added",
+        "event_reminder": "Event reminder"
+      },
+      "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
+      "emptyState": {
+        "title": "No automated notifications yet",
+        "description": "Birthdays, new users, new devotees, and event reminders will appear here automatically."
+      }
     }
+  },
+  "notificationPreferences": {
+    "pageHeader": {
+      "title": "Notification Preferences",
+      "subtitle": "Choose how you're notified for each automated notification type."
+    },
+    "cardTitle": "Your notification preferences",
+    "cardDescription": "Turn channels on or off per notification type. Changes save immediately.",
+    "types": {
+      "birthday_priest": "Birthday pooja reminders",
+      "user_welcome": "New user welcome",
+      "devotee_registered": "New devotee alerts",
+      "event_reminder": "Event reminders"
+    },
+    "channels": { "inApp": "In-app", "whatsapp": "WhatsApp" },
+    "saveError": "Failed to save preference"
   }
 }

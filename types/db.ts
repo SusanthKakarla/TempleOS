@@ -29,7 +29,7 @@ export interface Tenant {
 
 export interface AuditLogEntry {
   id: string;
-  actorType: "super_admin" | "tenant_member";
+  actorType: "super_admin" | "tenant_member" | "system";
   actorId: string;
   tenantId: string | null;
   action: string;
@@ -174,6 +174,60 @@ export interface EventNotification {
   deliveredAt: string | null; // reserved for a future Meta delivery-receipt webhook; unset in v1
   readAt: string | null; // reserved for future; unset in v1
   failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationChannel = "in_app" | "whatsapp";
+export type NotificationDeliveryStatus = EventNotificationDeliveryStatus;
+export type NotificationCategory = "birthday" | "new_user" | "devotee" | "event" | "announcement";
+export type NotificationType =
+  | "birthday_devotee"
+  | "birthday_priest"
+  | "user_welcome"
+  | "devotee_registered"
+  | "event_reminder";
+
+export interface NotificationTemplate {
+  id: string;
+  notificationType: NotificationType;
+  channel: NotificationChannel;
+  language: SupportedLanguage;
+  title: string | null;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notification {
+  id: string;
+  tenantId: string;
+  recipientPersonId: string | null;
+  recipientDevoteeId: string | null;
+  notificationType: NotificationType;
+  channel: NotificationChannel;
+  category: NotificationCategory;
+  title: string | null;
+  message: string;
+  language: SupportedLanguage;
+  metadata: Record<string, unknown>;
+  deliveryStatus: NotificationDeliveryStatus;
+  attemptCount: number;
+  nextAttemptAt: string;
+  sentAt: string | null;
+  deliveredAt: string | null;
+  readAt: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  personId: string;
+  notificationType: NotificationType;
+  inAppEnabled: boolean;
+  whatsappEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }

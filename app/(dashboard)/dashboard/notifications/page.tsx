@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import {
@@ -7,29 +7,50 @@ import {
   countEventNotificationsFiltered,
   type ListRecentEventNotificationsOptions,
 } from "@/lib/db/event-notifications";
+import { listRecentNotifications, countNotificationsFiltered } from "@/lib/db/notifications";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
+import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { parsePageParam } from "@/lib/pagination";
 import { PageHeader } from "@/components/page-header";
+import type { NotificationCategory, SupportedLanguage } from "@/types/db";
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
 interface PageProps {
-  searchParams: Promise<{ eventId?: string; page?: string; sort?: string; dir?: string }>;
+  searchParams: Promise<{
+    eventId?: string;
+    page?: string;
+    sort?: string;
+    dir?: string;
+    category?: string;
+    notifPage?: string;
+  }>;
 }
 
 const SORT_VALUES: ListRecentEventNotificationsOptions["sort"][] = ["date", "status"];
+const CATEGORY_VALUES: NotificationCategory[] = ["birthday", "new_user", "devotee", "event", "announcement"];
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("notifications");
+  const locale = (await getLocale()) as SupportedLanguage;
 
-  const { eventId, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
+  const {
+    eventId,
+    page: pageParam,
+    sort: sortParam,
+    dir: dirParam,
+    category: categoryParam,
+    notifPage: notifPageParam,
+  } = await searchParams;
   const page = parsePageParam(pageParam);
   const sort = SORT_VALUES.find((value) => value === sortParam);
   const dir = dirParam === "asc" ? "asc" : "desc";
+  const category = CATEGORY_VALUES.find((value) => value === categoryParam);
+  const notifPage = parsePageParam(notifPageParam);
 
-  const [summary, notifications, totalCount] = await Promise.all([
+  const [summary, notifications, totalCount, automatedNotifications, automatedTotalCount] = await Promise.all([
     getEventNotificationSummary(session.tenantId),
     listRecentEventNotifications(session.tenantId, {
       eventId,
@@ -39,6 +60,8 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
       dir,
     }),
     countEventNotificationsFiltered(session.tenantId, { eventId }),
+    listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: NOTIFICATIONS_PAGE_SIZE }),
+    countNotificationsFiltered(session.tenantId, { category }),
   ]);
 
   const successRate =
@@ -86,6 +109,15 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
         totalCount={totalCount}
         sort={sort}
         dir={dir}
+      />
+
+      <AutomatedNotificationList
+        notifications={automatedNotifications}
+        category={category}
+        page={notifPage}
+        pageSize={NOTIFICATIONS_PAGE_SIZE}
+        totalCount={automatedTotalCount}
+        locale={locale}
       />
     </div>
   );

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -95,6 +96,11 @@ export function DashboardTopbar({
               <p className="font-medium">{displayName}</p>
               <p className="text-xs font-normal text-muted-foreground">{phoneNumber}</p>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href="/dashboard/notification-preferences" />}>
+              <Bell />
+              {tTopbar("notificationPreferences")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
               <LogOut />

@@ -13,14 +13,16 @@ interface PaginationControlsProps {
   pageSize: number;
   totalCount: number;
   pathname: string;
+  /** Lets two independently-paginated lists coexist on the same page/URL. Defaults to "page". */
+  paramName?: string;
 }
 
-export function PaginationControls({ page, pageSize, totalCount, pathname }: PaginationControlsProps) {
+export function PaginationControls({ page, pageSize, totalCount, pathname, paramName = "page" }: PaginationControlsProps) {
   const searchParams = useSearchParams();
   const totalPages = computeTotalPages(totalCount, pageSize);
 
   function hrefForPage(target: number): string {
-    const next = mergeSearchParam(searchParams, "page", target > 1 ? String(target) : null);
+    const next = mergeSearchParam(searchParams, paramName, target > 1 ? String(target) : null);
     const qs = next.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }

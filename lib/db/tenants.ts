@@ -225,6 +225,19 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   return rows[0] ? mapTenant(rows[0]) : null;
 }
 
+/**
+ * NOT tenant-scoped by design — used only by the daily-birthday-check and
+ * event-reminder cron sweeps (app/api/cron/*), which run outside any admin
+ * session and must iterate every tenant to compute "today"/"tomorrow" in
+ * each tenant's own timezone.
+ */
+export async function listTenantIdsAndTimezones(): Promise<{ id: string; timezone: string }[]> {
+  const { rows } = await getPool().query<{ id: string; timezone: string }>(
+    "SELECT id, timezone FROM tenants",
+  );
+  return rows;
+}
+
 export async function listTenantsForSuperAdmin(): Promise<SuperAdminTenantSummary[]> {
   const { rows } = await getPool().query<SuperAdminTenantSummaryRow>(
     `SELECT t.id,

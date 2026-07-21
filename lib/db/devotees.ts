@@ -129,11 +129,47 @@ export async function listRecentDevotees(tenantId: string, limit = 5): Promise<D
   return rows.map(mapDevotee);
 }
 
+/** Recipients for the event-reminder cron — same eligibility rule as enqueueEventNotifications. */
+export async function listDevoteesEligibleForEventReminders(tenantId: string): Promise<Devotee[]> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    `SELECT * FROM devotees
+     WHERE tenant_id = $1 AND whatsapp_opt_in_status = true AND event_notifications_enabled = true
+     ORDER BY display_name ASC`,
+    [tenantId],
+  );
+  return rows.map(mapDevotee);
+}
+
 /** Recipients for "Send WhatsApp announcement" — only devotees who opted in via inbound WhatsApp. */
 export async function listOptedInDevotees(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
     "SELECT * FROM devotees WHERE tenant_id = $1 AND whatsapp_opt_in_status = true ORDER BY display_name ASC",
     [tenantId],
+  );
+  return rows.map(mapDevotee);
+}
+
+/**
+ * Used by app/api/cron/daily-birthday-check/route.ts. "Today" is computed in
+ * the tenant's own timezone, not server UTC. Dedups against notifications
+ * already created today so a cron re-run (or a delayed run) never
+ * double-sends the same devotee's birthday wish.
+ */
+export async function listDevoteesWithBirthdayToday(tenantId: string, timezone: string): Promise<Devotee[]> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    `SELECT d.* FROM devotees d
+     WHERE d.tenant_id = $1
+       AND d.whatsapp_opt_in_status = true
+       AND d.date_of_birth IS NOT NULL
+       AND EXTRACT(MONTH FROM d.date_of_birth) = EXTRACT(MONTH FROM (now() AT TIME ZONE $2))
+       AND EXTRACT(DAY FROM d.date_of_birth) = EXTRACT(DAY FROM (now() AT TIME ZONE $2))
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.recipient_devotee_id = d.id
+           AND n.notification_type = 'birthday_devotee'
+           AND n.created_at >= (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)
+       )`,
+    [tenantId, timezone],
   );
   return rows.map(mapDevotee);
 }

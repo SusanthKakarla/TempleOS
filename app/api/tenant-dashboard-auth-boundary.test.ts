@@ -31,6 +31,7 @@ const tenantDashboardApiRoutes = [
   "app/api/whatsapp/connect/callback/route.ts",
   "app/api/whatsapp/connect/start/route.ts",
   "app/api/whatsapp/disconnect/route.ts",
+  "app/api/notification-preferences/route.ts",
 ];
 
 const tenantDashboardAuthBoundaryFiles = [
@@ -52,6 +53,7 @@ const tenantDashboardPages = [
   "app/(dashboard)/dashboard/users/import/page.tsx",
   "app/(dashboard)/dashboard/users/activity/page.tsx",
   "app/(dashboard)/dashboard/roles/page.tsx",
+  "app/(dashboard)/dashboard/notification-preferences/page.tsx",
 ];
 
 describe("tenant dashboard API authorization boundary", () => {

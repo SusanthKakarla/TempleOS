@@ -104,6 +104,29 @@ export async function listEventsByIds(tenantId: string, ids: string[]): Promise<
   return rows.map(mapEvent);
 }
 
+/**
+ * Used by app/api/cron/event-reminders/route.ts. "Tomorrow" is computed in
+ * the tenant's own timezone. Dedups against an event_reminder notification
+ * already existing for this event (a reminder is only ever sent once per
+ * event, not once per day it remains "starting tomorrow").
+ */
+export async function listPublishedEventsStartingTomorrow(tenantId: string, timezone: string): Promise<Event[]> {
+  const { rows } = await getPool().query<EventRow>(
+    `SELECT e.* FROM events e
+     WHERE e.tenant_id = $1
+       AND e.status = 'published'
+       AND (e.starts_at AT TIME ZONE $2)::date = ((now() AT TIME ZONE $2) + interval '1 day')::date
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.tenant_id = e.tenant_id
+           AND n.notification_type = 'event_reminder'
+           AND n.metadata->>'eventId' = e.id::text
+       )`,
+    [tenantId, timezone],
+  );
+  return rows.map(mapEvent);
+}
+
 export async function getEventById(tenantId: string, eventId: string): Promise<Event | null> {
   const { rows } = await getPool().query<EventRow>(
     "SELECT * FROM events WHERE tenant_id = $1 AND id = $2",
