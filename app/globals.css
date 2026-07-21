@@ -16,10 +16,10 @@
   --color-gold-foreground: var(--gold-foreground);
   --color-maroon: var(--maroon);
   --color-maroon-foreground: var(--maroon-foreground);
-  --color-xanthous: var(--xanthous);
-  --color-xanthous-foreground: var(--xanthous-foreground);
-  --color-burgundy: var(--burgundy);
-  --color-burgundy-foreground: var(--burgundy-foreground);
+  --color-persian-green: var(--persian-green);
+  --color-persian-green-foreground: var(--persian-green-foreground);
+  --color-fire-red: var(--fire-red);
+  --color-fire-red-foreground: var(--fire-red-foreground);
   --color-emerald: var(--emerald);
   --color-emerald-foreground: var(--emerald-foreground);
   --color-royal-blue: var(--royal-blue);
@@ -68,45 +68,45 @@
 :root {
   --font-sans: var(--font-geist-sans), var(--font-noto-telugu);
   --font-heading: var(--font-playfair), var(--font-noto-telugu), serif;
-  --background: oklch(0.97 0.015 30);
-  --foreground: oklch(0.22 0.03 22);
-  --card: oklch(0.995 0.008 30);
-  --card-foreground: oklch(0.22 0.03 22);
-  --popover: oklch(0.995 0.008 30);
-  --popover-foreground: oklch(0.22 0.03 22);
-  --primary: oklch(0.815 0.152 78.7);
-  --primary-foreground: oklch(0.28 0.1 22.3);
-  --secondary: oklch(0.93 0.04 30);
-  --secondary-foreground: oklch(0.35 0.1 22);
-  --muted: oklch(0.95 0.02 30);
-  --muted-foreground: oklch(0.5 0.05 25);
-  --accent: oklch(0.94 0.03 30);
-  --accent-foreground: oklch(0.3 0.1 22);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.88 0.02 30);
-  --input: oklch(0.88 0.02 30);
-  --ring: oklch(0.7 0.15 78.7);
-  --chart-1: oklch(0.815 0.152 78.7);
-  --chart-2: oklch(0.8 0.16 85);
-  --chart-3: oklch(0.55 0.22 260);
-  --chart-4: oklch(0.7 0.15 160);
-  --chart-5: oklch(0.362 0.145 22.3);
+  --background: oklch(0.981 0.005 197.1);
+  --foreground: oklch(0.18 0.02 190);
+  --card: oklch(0.99 0.004 197);
+  --card-foreground: oklch(0.18 0.02 190);
+  --popover: oklch(0.99 0.004 197);
+  --popover-foreground: oklch(0.18 0.02 190);
+  --primary: oklch(0.5 0.102 184.8);
+  --primary-foreground: oklch(0.99 0.005 197);
+  --secondary: oklch(0.94 0.02 190);
+  --secondary-foreground: oklch(0.3 0.05 190);
+  --muted: oklch(0.95 0.015 190);
+  --muted-foreground: oklch(0.5 0.03 190);
+  --accent: oklch(0.93 0.03 184);
+  --accent-foreground: oklch(0.3 0.08 184);
+  --destructive: oklch(0.55 0.217 28.1);
+  --border: oklch(0.88 0.015 190);
+  --input: oklch(0.88 0.015 190);
+  --ring: oklch(0.637 0.102 184.8);
+  --chart-1: oklch(0.637 0.102 184.8);
+  --chart-2: oklch(0.65 0.13 155);
+  --chart-3: oklch(0.75 0.13 55);
+  --chart-4: oklch(0.589 0.217 28.1);
+  --chart-5: oklch(0.6 0.02 190);
   --radius: 0.75rem;
-  --sidebar: oklch(0.95 0.02 25);
-  --sidebar-foreground: oklch(0.25 0.05 22);
-  --sidebar-primary: oklch(0.815 0.152 78.7);
-  --sidebar-primary-foreground: oklch(0.28 0.1 22.3);
-  --sidebar-accent: oklch(0.815 0.152 78.7);
-  --sidebar-accent-foreground: oklch(0.362 0.145 22.3);
-  --sidebar-border: oklch(0.88 0.02 25);
-  --sidebar-ring: oklch(0.815 0.152 78.7);
+  --sidebar: oklch(0.97 0.01 190);
+  --sidebar-foreground: oklch(0.22 0.03 190);
+  --sidebar-primary: oklch(0.5 0.102 184.8);
+  --sidebar-primary-foreground: oklch(0.99 0.005 197);
+  --sidebar-accent: oklch(0.5 0.102 184.8);
+  --sidebar-accent-foreground: oklch(0.99 0.005 197);
+  --sidebar-border: oklch(0.88 0.015 190);
+  --sidebar-ring: oklch(0.637 0.102 184.8);
 
-  /* Temple palette */
+  /* Temple palette — decorative metric-card variety, independent of the core brand system */
   --saffron: oklch(0.72 0.19 45);
   --saffron-foreground: oklch(0.16 0.02 35);
   --gold: oklch(0.8 0.16 85);
   --gold-foreground: oklch(0.3 0.08 50);
-  --maroon: oklch(0.362 0.145 22.3);
+  --maroon: oklch(0.4 0.12 20);
   --maroon-foreground: oklch(0.99 0.01 85);
   --emerald: oklch(0.7 0.15 160);
   --emerald-foreground: oklch(0.16 0.03 160);
@@ -114,54 +114,56 @@
   --royal-blue-foreground: oklch(0.99 0.01 85);
   --olive: oklch(0.47 0.09 122);
   --olive-foreground: oklch(0.98 0.01 120);
-  --warm-ivory: oklch(0.98 0.02 30);
+  --warm-ivory: oklch(0.98 0.02 190);
 
-  /* Brand constants — Xanthous #F7B538 / Burgundy #780116 (verified OKLCH conversion) */
-  --xanthous: oklch(0.815 0.152 78.7);
-  --xanthous-foreground: oklch(0.362 0.145 22.3);
-  --burgundy: oklch(0.362 0.145 22.3);
-  --burgundy-foreground: oklch(0.99 0.01 85);
+  /* Brand constants — Persian Green #299F93 / Fire Red #E12B26 (verified OKLCH conversion).
+     Decorative/icon use only — --primary/--destructive above are deliberately darkened
+     variants of these same hues so button and text contrast clears WCAG AA. */
+  --persian-green: oklch(0.637 0.102 184.8);
+  --persian-green-foreground: oklch(0.99 0.005 197);
+  --fire-red: oklch(0.589 0.217 28.1);
+  --fire-red-foreground: oklch(0.99 0.005 197);
 }
 
 .dark {
-  --background: oklch(0.16 0.03 22);
-  --foreground: oklch(0.96 0.015 75);
-  --card: oklch(0.21 0.035 22);
-  --card-foreground: oklch(0.96 0.015 75);
-  --popover: oklch(0.21 0.035 22);
-  --popover-foreground: oklch(0.96 0.015 75);
-  --primary: oklch(0.815 0.152 78.7);
-  --primary-foreground: oklch(0.25 0.1 22);
-  --secondary: oklch(0.28 0.05 22);
-  --secondary-foreground: oklch(0.88 0.08 78);
-  --muted: oklch(0.25 0.03 22);
-  --muted-foreground: oklch(0.72 0.03 40);
-  --accent: oklch(0.28 0.04 22);
-  --accent-foreground: oklch(0.93 0.03 75);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0.02 22 / 12%);
-  --input: oklch(1 0.02 22 / 18%);
-  --ring: oklch(0.815 0.152 78.7);
-  --chart-1: oklch(0.815 0.152 78.7);
-  --chart-2: oklch(0.8 0.16 85);
-  --chart-3: oklch(0.62 0.2 260);
-  --chart-4: oklch(0.7 0.15 160);
-  --chart-5: oklch(0.6 0.14 22);
-  --sidebar: oklch(0.14 0.04 22);
-  --sidebar-foreground: oklch(0.96 0.01 75);
-  --sidebar-primary: oklch(0.815 0.152 78.7);
-  --sidebar-primary-foreground: oklch(0.25 0.1 22);
-  --sidebar-accent: oklch(0.815 0.152 78.7);
-  --sidebar-accent-foreground: oklch(0.25 0.1 22);
-  --sidebar-border: oklch(1 0.02 22 / 10%);
-  --sidebar-ring: oklch(0.815 0.152 78.7);
+  --background: oklch(0.15 0.02 190);
+  --foreground: oklch(0.95 0.01 190);
+  --card: oklch(0.19 0.025 190);
+  --card-foreground: oklch(0.95 0.01 190);
+  --popover: oklch(0.19 0.025 190);
+  --popover-foreground: oklch(0.95 0.01 190);
+  --primary: oklch(0.65 0.11 184.8);
+  --primary-foreground: oklch(0.16 0.03 190);
+  --secondary: oklch(0.26 0.03 190);
+  --secondary-foreground: oklch(0.88 0.06 184);
+  --muted: oklch(0.23 0.02 190);
+  --muted-foreground: oklch(0.7 0.03 190);
+  --accent: oklch(0.26 0.035 184);
+  --accent-foreground: oklch(0.92 0.03 184);
+  --destructive: oklch(0.65 0.2 28.1);
+  --border: oklch(1 0.02 190 / 12%);
+  --input: oklch(1 0.02 190 / 18%);
+  --ring: oklch(0.65 0.11 184.8);
+  --chart-1: oklch(0.65 0.11 184.8);
+  --chart-2: oklch(0.68 0.13 155);
+  --chart-3: oklch(0.75 0.13 55);
+  --chart-4: oklch(0.65 0.2 28.1);
+  --chart-5: oklch(0.6 0.02 190);
+  --sidebar: oklch(0.13 0.03 190);
+  --sidebar-foreground: oklch(0.95 0.01 190);
+  --sidebar-primary: oklch(0.65 0.11 184.8);
+  --sidebar-primary-foreground: oklch(0.16 0.03 190);
+  --sidebar-accent: oklch(0.65 0.11 184.8);
+  --sidebar-accent-foreground: oklch(0.16 0.03 190);
+  --sidebar-border: oklch(1 0.02 190 / 10%);
+  --sidebar-ring: oklch(0.65 0.11 184.8);
 
   /* Temple palette (brightened for dark-mode contrast) */
   --saffron: oklch(0.72 0.19 45);
   --saffron-foreground: oklch(0.16 0.02 35);
   --gold: oklch(0.78 0.15 85);
   --gold-foreground: oklch(0.2 0.04 50);
-  --maroon: oklch(0.5 0.14 22.3);
+  --maroon: oklch(0.58 0.15 20);
   --maroon-foreground: oklch(1 0.005 85);
   --emerald: oklch(0.72 0.16 160);
   --emerald-foreground: oklch(0.16 0.03 160);
@@ -170,13 +172,13 @@
   --olive: oklch(0.62 0.1 122);
   --olive-foreground: oklch(0.16 0.02 120);
   /* Translucent tint, not a literal ivory color — a literal warm-ivory would look wrong on a dark surface. */
-  --warm-ivory: oklch(1 0.03 30 / 6%);
+  --warm-ivory: oklch(1 0.03 190 / 6%);
 
   /* Brand constants stay vivid regardless of mode — only the foreground pairing shifts for contrast. */
-  --xanthous: oklch(0.815 0.152 78.7);
-  --xanthous-foreground: oklch(0.25 0.1 22);
-  --burgundy: oklch(0.362 0.145 22.3);
-  --burgundy-foreground: oklch(0.98 0.015 75);
+  --persian-green: oklch(0.65 0.11 184.8);
+  --persian-green-foreground: oklch(0.16 0.03 190);
+  --fire-red: oklch(0.65 0.2 28.1);
+  --fire-red-foreground: oklch(0.98 0.01 190);
 }
 
 /*
@@ -220,9 +222,9 @@ html[lang="te"] {
   .gradient-green-emerald {
     background-image: linear-gradient(135deg, oklch(0.75 0.14 145), var(--emerald));
   }
-  /* Xanthous gradient — name kept for the many existing call sites (Button's default variant, etc.); repointed from the old ocean-blue stops as part of the Burgundy/Xanthous redesign. */
+  /* Persian Green gradient — name kept for the many existing call sites (Button's default variant, etc.); repointed as part of the Persian Green/Fire Red/Sea Salt redesign. */
   .gradient-ocean-blue {
-    background-image: linear-gradient(135deg, var(--xanthous), oklch(0.72 0.17 55));
+    background-image: linear-gradient(135deg, var(--primary), oklch(0.68 0.11 175));
   }
 
   /* Large translucent surfaces (conversation panes) */
