@@ -1,4 +1,4 @@
-const GRAPH_API_VERSION = "v25.0";
+import { GRAPH_API_VERSION } from "./graph-api";
 
 interface GraphErrorResponse {
   error?: { message?: string };

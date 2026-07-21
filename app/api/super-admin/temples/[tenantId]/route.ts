@@ -98,6 +98,7 @@ function activeOperationTempleDetail(temple: SuperAdminTenantDetail) {
     tenant: temple.tenant,
     domain: temple.domain,
     members: temple.members,
+    whatsappAccount: temple.whatsappAccount,
   };
 }
 
