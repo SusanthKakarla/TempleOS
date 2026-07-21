@@ -35,7 +35,7 @@ function FloatingLabelInput({
         <Label
           htmlFor={id}
           className={cn(
-            "pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground transition-all duration-200",
+            "pointer-events-none absolute top-1/2 left-2.5 right-2.5 -translate-y-1/2 truncate text-sm text-muted-foreground transition-all duration-200",
             "peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-xs peer-focus:text-primary",
             "peer-[&:not(:placeholder-shown)]:top-2.5 peer-[&:not(:placeholder-shown)]:translate-y-0 peer-[&:not(:placeholder-shown)]:text-xs",
             icon && "left-9",

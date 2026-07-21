@@ -289,7 +289,7 @@ export function UsersTable({
                   <TableCell>
                     {member.lastSignedInAt ? formatDate(member.lastSignedInAt, locale) : t("status.never")}
                   </TableCell>
-                  <TableCell className="flex flex-wrap justify-end gap-2">
+                  <TableCell className="flex justify-end gap-2">
                     <ChangeRoleDialog
                       member={member}
                       trigger={
