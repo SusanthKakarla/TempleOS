@@ -52,7 +52,7 @@ export function CountryCodeSelect({
           <Button
             type="button"
             variant="outline"
-            className="h-8 shrink-0 gap-1.5 px-2.5"
+            className="h-12 shrink-0 gap-1.5 px-3"
             aria-label={`Country: ${selected.name}, dial code +${selected.dialCode}`}
           >
             <FlagIcon iso={selected.iso} className="h-3.5 w-5" />

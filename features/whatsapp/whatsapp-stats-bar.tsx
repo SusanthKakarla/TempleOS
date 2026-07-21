@@ -18,36 +18,42 @@ export async function WhatsAppStatsBar({ stats }: { stats: WhatsAppStats }) {
         value={stats.totalConversations}
         icon={<MessageCircle className="size-4.5" />}
         gradient="gradient-blue-purple"
+        compact
       />
       <MetricCard
         label={t("unread")}
         value={stats.unreadConversations}
         icon={<BellRing className="size-4.5" />}
         gradient="gradient-saffron-gold"
+        compact
       />
       <MetricCard
         label={t("todaysMessages")}
         value={stats.todaysMessages}
         icon={<Send className="size-4.5" />}
         gradient="gradient-green-emerald"
+        compact
       />
       <MetricCard
         label={t("repliesSentToday")}
         value={stats.repliesSentToday}
         icon={<Send className="size-4.5" />}
         gradient="gradient-maroon-orange"
+        compact
       />
       <MetricCard
         label={t("activeDevotees")}
         value={stats.activeDevotees}
         icon={<Users className="size-4.5" />}
         gradient="bg-royal-blue"
+        compact
       />
       <MetricCard
         label={t("newViaWhatsapp")}
         value={stats.newDevoteesFromWhatsApp}
         icon={<UserPlus className="size-4.5" />}
         gradient="gradient-blue-purple"
+        compact
       />
       {stats.avgBotResponseSeconds !== null && (
         <MetricCard
@@ -55,6 +61,7 @@ export async function WhatsAppStatsBar({ stats }: { stats: WhatsAppStats }) {
           value={formatDuration(stats.avgBotResponseSeconds)}
           icon={<Clock className="size-4.5" />}
           gradient="gradient-saffron-gold"
+          compact
         />
       )}
     </div>

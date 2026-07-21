@@ -25,6 +25,8 @@ interface MetricCardProps {
   /** Opt-in decorative sparkline. Purely ornamental, not a real chart. */
   sparkline?: number[];
   className?: string;
+  /** Smaller icon chip + padding for dense grids (e.g. 6-up stat bars) where the default size crowds the card. */
+  compact?: boolean;
 }
 
 function Sparkline({ values }: { values: number[] }) {
@@ -64,6 +66,7 @@ export function MetricCard({
   trend,
   sparkline,
   className,
+  compact = false,
 }: MetricCardProps) {
   const displayValue = useCountUp(value);
   const formatted =
@@ -77,7 +80,8 @@ export function MetricCard({
     >
       <Card
         className={cn(
-          "glass-card group h-full gap-3 overflow-hidden rounded-2xl p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl",
+          "glass-card group h-full gap-3 overflow-hidden rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-xl",
+          compact ? "p-4" : "p-5",
           className,
         )}
       >
@@ -85,7 +89,8 @@ export function MetricCard({
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+              "flex shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+              compact ? "size-8" : "size-10",
               gradient,
             )}
           >
