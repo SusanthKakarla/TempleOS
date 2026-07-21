@@ -1,11 +1,13 @@
 import { GRAPH_API_VERSION } from "./graph-api";
 
 interface GraphErrorResponse {
-  error?: { message?: string };
+  error?: { message?: string; type?: string; code?: number; error_subcode?: number; fbtrace_id?: string };
 }
 
 type GraphResult<T> = ({ success: true } & T) | { success: false; error: string };
-type SimpleGraphResult = { success: true } | { success: false; error: string };
+export type SimpleGraphResult =
+  | { success: true }
+  | { success: false; error: string; errorCode?: string };
 
 /**
  * Confirms the `code` Embedded Signup handed back to the client is a
@@ -106,21 +108,48 @@ export async function fetchPhoneNumberDetails(phoneNumberId: string): Promise<
 
 export async function subscribeWabaWebhooks(wabaId: string): Promise<SimpleGraphResult> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`;
+
+  console.log("[whatsapp:subscribe] Received subscribe request", {
+    wabaId,
+    accessTokenExists: Boolean(accessToken),
+    graphApiVersion: GRAPH_API_VERSION,
+    url,
+    method: "POST",
+  });
+
   if (!accessToken) {
+    console.error("[whatsapp:subscribe] Aborting — WHATSAPP_ACCESS_TOKEN is not set");
     return { success: false, error: "WhatsApp credentials are not configured" };
   }
 
   try {
-    const response = await fetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`,
-      { method: "POST", headers: { Authorization: `Bearer ${accessToken}` } },
-    );
-    const json = (await response.json().catch(() => ({}))) as GraphErrorResponse;
+    console.log(`[whatsapp:subscribe] Calling Graph API... POST /${wabaId}/subscribed_apps`);
+    const response = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${accessToken}` } });
+    const json = (await response.json().catch(() => ({}))) as GraphErrorResponse & { success?: boolean };
+
+    console.log("[whatsapp:subscribe] Graph API response", { status: response.status, body: json });
+
     if (!response.ok) {
-      return { success: false, error: json.error?.message ?? `HTTP ${response.status}` };
+      const errorCode = formatGraphErrorCode(json.error);
+      console.error("[whatsapp:subscribe] Graph API returned an error", {
+        status: response.status,
+        message: json.error?.message,
+        type: json.error?.type,
+        code: json.error?.code,
+        subcode: json.error?.error_subcode,
+        fbtraceId: json.error?.fbtrace_id,
+      });
+      return { success: false, error: json.error?.message ?? `HTTP ${response.status}`, errorCode };
     }
+
+    console.log("[whatsapp:subscribe] Subscribed successfully", { wabaId });
     return { success: true };
   } catch (err) {
+    console.error("[whatsapp:subscribe] Request threw before a response was received", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return { success: false, error: err instanceof Error ? err.message : "Unknown error subscribing webhooks" };
   }
 }
@@ -128,21 +157,50 @@ export async function subscribeWabaWebhooks(wabaId: string): Promise<SimpleGraph
 /** Best-effort on disconnect — callers should proceed with disconnecting even if this fails. */
 export async function unsubscribeWabaWebhooks(wabaId: string): Promise<SimpleGraphResult> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`;
+
+  console.log("[whatsapp:unsubscribe] Received unsubscribe request", {
+    wabaId,
+    accessTokenExists: Boolean(accessToken),
+    url,
+    method: "DELETE",
+  });
+
   if (!accessToken) {
+    console.error("[whatsapp:unsubscribe] Aborting — WHATSAPP_ACCESS_TOKEN is not set");
     return { success: false, error: "WhatsApp credentials are not configured" };
   }
 
   try {
-    const response = await fetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`,
-      { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
-    );
+    const response = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } });
     const json = (await response.json().catch(() => ({}))) as GraphErrorResponse;
+
+    console.log("[whatsapp:unsubscribe] Graph API response", { status: response.status, body: json });
+
     if (!response.ok) {
-      return { success: false, error: json.error?.message ?? `HTTP ${response.status}` };
+      const errorCode = formatGraphErrorCode(json.error);
+      console.error("[whatsapp:unsubscribe] Graph API returned an error", {
+        status: response.status,
+        message: json.error?.message,
+        code: json.error?.code,
+        subcode: json.error?.error_subcode,
+      });
+      return { success: false, error: json.error?.message ?? `HTTP ${response.status}`, errorCode };
     }
+
     return { success: true };
   } catch (err) {
+    console.error("[whatsapp:unsubscribe] Request threw before a response was received", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return { success: false, error: err instanceof Error ? err.message : "Unknown error unsubscribing webhooks" };
   }
+}
+
+/** "(#<code>[/<subcode>]) <type>" — e.g. "(#200/2018001) OAuthException", matching Meta's own error-message convention. */
+function formatGraphErrorCode(error: GraphErrorResponse["error"]): string | undefined {
+  if (!error?.code) return undefined;
+  const subcode = error.error_subcode ? `/${error.error_subcode}` : "";
+  return `#${error.code}${subcode}${error.type ? ` ${error.type}` : ""}`;
 }

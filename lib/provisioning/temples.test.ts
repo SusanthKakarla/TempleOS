@@ -183,6 +183,8 @@ const linkedWhatsAppAccount = {
   businessName: null,
   phoneVerificationStatus: null,
   webhookSubscribed: false,
+  webhookLastErrorCode: null,
+  webhookLastErrorMessage: null,
   status: "connected" as const,
   connectedAt: "2026-07-18T00:00:00.000Z",
   disconnectedAt: null,

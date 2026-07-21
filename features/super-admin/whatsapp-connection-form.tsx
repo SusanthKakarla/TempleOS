@@ -136,6 +136,12 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
                   ? "Subscribed — messages will reach the chatbot"
                   : "Not subscribed — incoming messages won't reach the chatbot. Try Update Connection."}
               </Badge>
+              {!account?.webhookSubscribed && account?.webhookLastErrorMessage && (
+                <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  Meta Error{account.webhookLastErrorCode ? ` (${account.webhookLastErrorCode})` : ""}:{" "}
+                  {account.webhookLastErrorMessage}
+                </p>
+              )}
             </div>
           )}
           {errors.message && (

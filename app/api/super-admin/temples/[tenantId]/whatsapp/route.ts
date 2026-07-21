@@ -10,6 +10,7 @@ import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { manualWhatsAppConnectSchema } from "@/lib/validation/whatsapp-connect";
 import { subscribeWabaWebhooks, unsubscribeWabaWebhooks } from "@/lib/whatsapp/embedded-signup";
+import { GRAPH_API_VERSION } from "@/lib/whatsapp/graph-api";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const invalidJson = Symbol("invalid-json");
@@ -19,7 +20,13 @@ interface RouteContext {
 }
 
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const superAdmin = await requireSuperAdmin().catch(() => undefined);
+  const superAdmin = await requireSuperAdmin().catch((err: unknown) => {
+    console.error("[whatsapp:manual-connect] requireSuperAdmin threw", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return undefined;
+  });
   if (superAdmin === undefined) {
     return NextResponse.json({ error: "WhatsApp connection failed.", code: "CONNECT_FAILED" }, { status: 500 });
   }
@@ -28,35 +35,71 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   }
 
   const { tenantId } = await context.params;
+  console.log("[whatsapp:manual-connect] Received Save/Update Connection request", { tenantId });
+
   if (!uuidPattern.test(tenantId)) {
+    console.error("[whatsapp:manual-connect] Aborting — tenantId is not a valid UUID", { tenantId });
     return templeNotFoundResponse();
   }
   const tenant = await getTenantById(tenantId);
   if (!tenant) {
+    console.error("[whatsapp:manual-connect] Aborting — no tenant found for tenantId", { tenantId });
     return templeNotFoundResponse();
   }
 
   const json = await req.json().catch(() => invalidJson);
   if (json === invalidJson) {
+    console.error("[whatsapp:manual-connect] Aborting — request body is not valid JSON", { tenantId });
     return validationErrorResponse("Invalid JSON body.");
   }
 
   const parsed = manualWhatsAppConnectSchema.safeParse(json);
   if (!parsed.success) {
+    console.error("[whatsapp:manual-connect] Aborting — validation failed", {
+      tenantId,
+      issues: parsed.error.issues,
+    });
     return validationErrorResponse(parsed.error.issues[0]?.message ?? "Invalid request.");
   }
+
+  const existingAccount = await getWhatsAppAccountByTenant(tenantId);
+  console.log("[whatsapp:manual-connect] Values loaded before calling Graph API", {
+    tenantId,
+    temple: tenant.name,
+    phoneNumber: parsed.data.phoneNumber,
+    metaPhoneNumberId: parsed.data.metaPhoneNumberId,
+    metaBusinessAccountId: parsed.data.metaBusinessAccountId,
+    businessName: parsed.data.businessName ?? null,
+    existingStatus: existingAccount?.status ?? "none (first connection)",
+    graphApiVersion: GRAPH_API_VERSION,
+    accessTokenExists: Boolean(process.env.WHATSAPP_ACCESS_TOKEN),
+    verifyTokenExists: Boolean(process.env.WHATSAPP_VERIFY_TOKEN),
+    embeddedSignupAppIdExists: Boolean(process.env.NEXT_PUBLIC_WHATSAPP_APP_ID),
+    embeddedSignupAppSecretExists: Boolean(process.env.WHATSAPP_APP_SECRET),
+    embeddedSignupConfigIdExists: Boolean(process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID),
+  });
 
   try {
     // Without this, Meta never forwards WhatsApp messages to our webhook for
     // this WABA — the number looks "connected" in our DB but the bot never
     // receives anything. A failed subscription doesn't block the connection
     // (mirrors the Embedded Signup callback): the UI shows "Not subscribed"
-    // and Update Connection can retry it.
+    // (with Meta's real error) and Update Connection can retry it.
     const webhookResult = await subscribeWabaWebhooks(parsed.data.metaBusinessAccountId);
 
     const account = await manuallyConnectWhatsAppAccount(tenantId, {
       ...parsed.data,
       webhookSubscribed: webhookResult.success,
+      webhookLastErrorCode: webhookResult.success ? null : (webhookResult.errorCode ?? null),
+      webhookLastErrorMessage: webhookResult.success ? null : webhookResult.error,
+    });
+
+    console.log("[whatsapp:manual-connect] Database update result", {
+      tenantId,
+      accountId: account.id,
+      webhookSubscribed: account.webhookSubscribed,
+      webhookLastErrorCode: account.webhookLastErrorCode,
+      webhookLastErrorMessage: account.webhookLastErrorMessage,
     });
 
     await createAuditLogEntry({
@@ -70,14 +113,24 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         metaPhoneNumberId: account.metaPhoneNumberId,
         metaBusinessAccountId: account.metaBusinessAccountId,
         webhookSubscribed: account.webhookSubscribed,
+        webhookLastErrorCode: account.webhookLastErrorCode,
       },
     });
 
     return NextResponse.json({ whatsappAccount: account });
   } catch (err) {
     if (isUniqueViolation(err)) {
+      console.error("[whatsapp:manual-connect] Unique constraint violation", {
+        tenantId,
+        constraint: getConstraintName(err),
+      });
       return validationErrorResponse(conflictMessageFromConstraint(getConstraintName(err)));
     }
+    console.error("[whatsapp:manual-connect] Unhandled error while saving the connection", {
+      tenantId,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return NextResponse.json({ error: "WhatsApp connection failed.", code: "CONNECT_FAILED" }, { status: 500 });
   }
 }

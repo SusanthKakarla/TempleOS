@@ -11,6 +11,8 @@ interface WhatsAppAccountRow {
   business_name: string | null;
   phone_verification_status: string | null;
   webhook_subscribed: boolean;
+  webhook_last_error_code: string | null;
+  webhook_last_error_message: string | null;
   status: WhatsAppAccountStatus;
   connected_at: Date | null;
   disconnected_at: Date | null;
@@ -28,6 +30,8 @@ function mapAccount(row: WhatsAppAccountRow): WhatsAppAccount {
     businessName: row.business_name,
     phoneVerificationStatus: row.phone_verification_status,
     webhookSubscribed: row.webhook_subscribed,
+    webhookLastErrorCode: row.webhook_last_error_code,
+    webhookLastErrorMessage: row.webhook_last_error_message,
     status: row.status,
     connectedAt: row.connected_at ? row.connected_at.toISOString() : null,
     disconnectedAt: row.disconnected_at ? row.disconnected_at.toISOString() : null,
@@ -67,6 +71,8 @@ export interface LinkWhatsAppAccountForProvisioningInput extends UpsertWhatsAppA
 export interface ManuallyConnectWhatsAppAccountInput extends UpsertWhatsAppAccountInput {
   businessName?: string | null;
   webhookSubscribed: boolean;
+  webhookLastErrorCode?: string | null;
+  webhookLastErrorMessage?: string | null;
 }
 
 export async function linkWhatsAppAccountForProvisioning(
@@ -88,14 +94,16 @@ export async function manuallyConnectWhatsAppAccount(
   input: ManuallyConnectWhatsAppAccountInput,
 ): Promise<WhatsAppAccount> {
   const { rows } = await getPool().query<WhatsAppAccountRow>(
-    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, business_name, webhook_subscribed, status, connected_at)
-     VALUES ($1, $2, $3, $4, $5, $6, 'connected', now())
+    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, business_name, webhook_subscribed, webhook_last_error_code, webhook_last_error_message, status, connected_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'connected', now())
      ON CONFLICT (tenant_id)
      DO UPDATE SET phone_number = EXCLUDED.phone_number,
                    meta_phone_number_id = EXCLUDED.meta_phone_number_id,
                    meta_business_account_id = EXCLUDED.meta_business_account_id,
                    business_name = EXCLUDED.business_name,
                    webhook_subscribed = EXCLUDED.webhook_subscribed,
+                   webhook_last_error_code = EXCLUDED.webhook_last_error_code,
+                   webhook_last_error_message = EXCLUDED.webhook_last_error_message,
                    status = 'connected',
                    connected_at = now(),
                    disconnected_at = NULL,
@@ -108,6 +116,8 @@ export async function manuallyConnectWhatsAppAccount(
       input.metaBusinessAccountId,
       input.businessName ?? null,
       input.webhookSubscribed,
+      input.webhookLastErrorCode ?? null,
+      input.webhookLastErrorMessage ?? null,
     ],
   );
   return mapAccount(rows[0]);
@@ -129,6 +139,8 @@ export interface CompleteEmbeddedSignupInput {
   businessName: string | null;
   phoneVerificationStatus: string | null;
   webhookSubscribed: boolean;
+  webhookLastErrorCode?: string | null;
+  webhookLastErrorMessage?: string | null;
 }
 
 /** Self-service setup via Meta Embedded Signup — also used for Reconnect (same upsert shape). */
@@ -139,9 +151,10 @@ export async function completeEmbeddedSignup(
   const { rows } = await getPool().query<WhatsAppAccountRow>(
     `INSERT INTO whatsapp_accounts (
        tenant_id, phone_number, meta_phone_number_id, meta_business_account_id,
-       business_name, phone_verification_status, webhook_subscribed, status, connected_at
+       business_name, phone_verification_status, webhook_subscribed,
+       webhook_last_error_code, webhook_last_error_message, status, connected_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, 'connected', now())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'connected', now())
      ON CONFLICT (tenant_id)
      DO UPDATE SET phone_number = EXCLUDED.phone_number,
                    meta_phone_number_id = EXCLUDED.meta_phone_number_id,
@@ -149,6 +162,8 @@ export async function completeEmbeddedSignup(
                    business_name = EXCLUDED.business_name,
                    phone_verification_status = EXCLUDED.phone_verification_status,
                    webhook_subscribed = EXCLUDED.webhook_subscribed,
+                   webhook_last_error_code = EXCLUDED.webhook_last_error_code,
+                   webhook_last_error_message = EXCLUDED.webhook_last_error_message,
                    status = 'connected',
                    connected_at = now(),
                    disconnected_at = NULL,
@@ -162,6 +177,8 @@ export async function completeEmbeddedSignup(
       input.businessName,
       input.phoneVerificationStatus,
       input.webhookSubscribed,
+      input.webhookLastErrorCode ?? null,
+      input.webhookLastErrorMessage ?? null,
     ],
   );
   return mapAccount(rows[0]);

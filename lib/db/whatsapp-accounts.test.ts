@@ -21,6 +21,8 @@ const row = {
   business_name: null,
   phone_verification_status: null,
   webhook_subscribed: false,
+  webhook_last_error_code: null,
+  webhook_last_error_message: null,
   status: "connected",
   connected_at: new Date("2026-07-18T00:00:00Z"),
   disconnected_at: null,
@@ -50,6 +52,33 @@ describe("WhatsApp accounts repository", () => {
     expect(String(query.mock.calls[0][0])).toContain("ON CONFLICT (tenant_id)");
     expect(String(query.mock.calls[0][0])).not.toContain("ON CONFLICT (meta_phone_number_id)");
     expect(query.mock.calls[0][1]).toContain(true);
+  });
+
+  it("persists Meta's real error code/message when the webhook subscribe call fails", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          ...row,
+          webhook_subscribed: false,
+          webhook_last_error_code: "#200 OAuthException",
+          webhook_last_error_message: "Missing permissions",
+        },
+      ],
+    });
+
+    const result = await manuallyConnectWhatsAppAccount("tenant-1", {
+      phoneNumber: "+919876543210",
+      metaPhoneNumberId: "meta-2",
+      metaBusinessAccountId: "business-1",
+      webhookSubscribed: false,
+      webhookLastErrorCode: "#200 OAuthException",
+      webhookLastErrorMessage: "Missing permissions",
+    });
+
+    expect(result.webhookSubscribed).toBe(false);
+    expect(result.webhookLastErrorCode).toBe("#200 OAuthException");
+    expect(result.webhookLastErrorMessage).toBe("Missing permissions");
+    expect(query.mock.calls[0][1]).toContain("Missing permissions");
   });
 
   it("completes embedded signup by tenant, upserting the Graph-fetched fields and clearing disconnectedAt", async () => {
