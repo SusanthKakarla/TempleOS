@@ -129,7 +129,7 @@ export function EventCard({
                 {tCommon("cancel")}
               </Button>
             )}
-            <Button variant="ghost" size="sm" disabled={pending} onClick={() => onDelete(event)}>
+            <Button variant="destructive" size="sm" disabled={pending} onClick={() => onDelete(event)}>
               {tCommon("delete")}
             </Button>
           </div>

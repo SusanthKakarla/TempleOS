@@ -136,7 +136,7 @@ export function DevoteeDonationsCard({
                       onSaved={refresh}
                     />
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       disabled={pendingId === donation.id}
                       onClick={() => handleDelete(donation)}

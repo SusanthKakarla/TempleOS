@@ -318,7 +318,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
                       </>
                     )}
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       disabled={pendingId === event.id}
                       onClick={() => handleDelete(event)}

@@ -128,7 +128,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                         onSaved={refresh}
                       />
                       <Button
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         disabled={pendingId === seva.id}
                         onClick={() => handleDelete(seva)}

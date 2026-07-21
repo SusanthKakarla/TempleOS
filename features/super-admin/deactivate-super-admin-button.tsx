@@ -33,7 +33,7 @@ export function DeactivateSuperAdminButton({ id, displayName }: { id: string; di
   }
 
   return (
-    <Button variant="ghost" size="sm" disabled={submitting} onClick={handleDeactivate}>
+    <Button variant="destructive" size="sm" disabled={submitting} onClick={handleDeactivate}>
       <UserX className="size-3.5" />
       {submitting ? "Removing..." : "Remove access"}
     </Button>
