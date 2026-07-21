@@ -167,27 +167,36 @@ describe("super admin auth boundary", () => {
     expect(source).toMatch(/\/super-admin/);
     expect(source).toMatch(/Members/);
     expect(source).not.toMatch(/delete|transfer|impersonat|data export/i);
-    expect(source).not.toMatch(
-      /WhatsApp|whatsappAccount|linked|unlinked|Meta phone|Business ID|disconnect|embedded signup/i,
-    );
+    // Manual WhatsApp connection management is in active V0 scope here (Super
+    // Admin manual connect/update/delete) — the connection form is rendered,
+    // but embedded signup (the tenant-admin self-connect flow) is not.
+    expect(source).toMatch(/WhatsAppConnectionForm/);
+    expect(source).not.toMatch(/embedded signup/i);
   });
 
-  it("keeps active Super Admin operations free of the deferred WhatsApp status shell", () => {
-    const activeOperationSources = [
-      path.join(process.cwd(), "app/(super-admin)/super-admin/page.tsx"),
+  it("keeps manual WhatsApp connection management confined to the temple detail surface", () => {
+    const whatsappOwnedSources = new Set([
       path.join(process.cwd(), "app/(super-admin)/super-admin/temples/[tenantId]/page.tsx"),
+      path.join(process.cwd(), "features/super-admin/whatsapp-connection-form.tsx"),
+      path.join(process.cwd(), "app/api/super-admin/temples/[tenantId]/whatsapp/route.ts"),
+      path.join(process.cwd(), "app/api/super-admin/temples/[tenantId]/route.ts"),
+    ]);
+
+    const otherActiveOperationSources = [
+      path.join(process.cwd(), "app/(super-admin)/super-admin/page.tsx"),
       path.join(process.cwd(), "app/(super-admin)/super-admin/roles/page.tsx"),
       ...listSourcesIfPresent(path.join(process.cwd(), "features/super-admin")).filter(
-        (source) => !source.includes(`new-temple-form`) && !source.includes(`super-admin-login-form`),
+        (source) => !whatsappOwnedSources.has(source) && !source.includes(`new-temple-form`) && !source.includes(`super-admin-login-form`),
       ),
       ...listSourcesIfPresent(path.join(process.cwd(), "app/api/super-admin")).filter(
         (source) =>
+          !whatsappOwnedSources.has(source) &&
           !source.includes(`${path.sep}temples${path.sep}route.ts`) &&
           !source.includes(`${path.sep}auth${path.sep}`),
       ),
     ];
 
-    for (const source of activeOperationSources) {
+    for (const source of otherActiveOperationSources) {
       const body = readFileSync(source, "utf8");
       expect(body, source).not.toMatch(
         /WhatsApp|whatsappStatus|whatsappAccount|linked|unlinked|status shell|update WhatsApp|No WhatsApp account linked|Meta phone|Business ID|disconnect|transfer|embedded signup/i,

@@ -1,4 +1,4 @@
-const GRAPH_API_VERSION = "v21.0";
+import { GRAPH_API_VERSION } from "./graph-api";
 
 export interface SendMessageResult {
   success: boolean;
