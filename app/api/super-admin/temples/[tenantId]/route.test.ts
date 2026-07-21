@@ -123,6 +123,7 @@ const activeOperationTempleDetail = {
   tenant: templeDetail.tenant,
   domain: templeDetail.domain,
   members: templeDetail.members,
+  whatsappAccount: templeDetail.whatsappAccount,
 };
 
 function request(id = tenantId): Request {
@@ -181,9 +182,6 @@ describe("super admin temple detail route", () => {
 
     const body = await res.json();
     expect(body).toEqual({ temple: activeOperationTempleDetail });
-    expect(JSON.stringify(body)).not.toMatch(
-      /whatsappAccount|metaPhoneNumberId|metaBusinessAccountId|connected|linked|unlinked/i,
-    );
     expect(res.status).toBe(200);
     expect(getTenantDetailForSuperAdmin).toHaveBeenCalledWith(tenantId);
   });
@@ -275,9 +273,6 @@ describe("super admin temple detail route", () => {
 
     const body = await res.json();
     expect(body).toEqual({ temple: activeOperationTempleDetail });
-    expect(JSON.stringify(body)).not.toMatch(
-      /whatsappAccount|metaPhoneNumberId|metaBusinessAccountId|connected|linked|unlinked/i,
-    );
     expect(res.status).toBe(200);
     expect(parseUpdateProvisionedTempleInput).toHaveBeenCalledWith(updateBody, tenantId);
     expect(updateProvisionedTemple).toHaveBeenCalledWith(

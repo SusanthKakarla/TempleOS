@@ -413,7 +413,7 @@ describe("canonical temple provisioning contract", () => {
     expect(source).not.toMatch(/getPilotTenant|admin-users|admin_users/);
     expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin|templeos_session/);
     expect(source).not.toMatch(/requireSuperAdmin|app\/api\/super-admin/);
-    expect(source).not.toMatch(/upsertWhatsAppAccount/);
+    expect(source).not.toMatch(/manuallyConnectWhatsAppAccount/);
     expect(source).toMatch(/V0_ROLE_DEFINITIONS/);
   });
 
@@ -648,7 +648,7 @@ describe("canonical temple provisioning contract", () => {
     if (!parsed.ok) throw new Error("expected validation success");
     vi.mocked(linkWhatsAppAccountForProvisioning).mockRejectedValueOnce({
       code: "23505",
-      constraint: "whatsapp_accounts_meta_phone_number_id_key",
+      constraint: "whatsapp_accounts_meta_phone_number_id_connected_key",
     });
 
     await expect(provisionTemple(parsed.data, actor)).rejects.toMatchObject({

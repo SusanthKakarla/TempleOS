@@ -23,6 +23,7 @@ import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
+import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
 import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
@@ -141,6 +142,8 @@ export default async function SuperAdminTempleDetailPage({
         </section>
 
         <TempleDetailEditForm tenant={temple.tenant} />
+
+        <WhatsAppConnectionForm tenantId={temple.tenant.id} account={temple.whatsappAccount} />
 
         <TableShell>
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">

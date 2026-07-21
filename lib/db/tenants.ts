@@ -343,10 +343,13 @@ export async function getTenantDetailForSuperAdmin(
     [tenantId],
   );
 
+  // Not filtered by status: whatsapp_accounts is unique per tenant, and Super
+  // Admin needs to see (and manage) a disconnected account too, not just an
+  // actively connected one.
   const whatsappResult = await client.query<WhatsAppAccountRow>(
     `SELECT *
      FROM whatsapp_accounts
-     WHERE tenant_id = $1 AND status = 'connected'
+     WHERE tenant_id = $1
      ORDER BY connected_at DESC NULLS LAST, updated_at DESC, id DESC
      LIMIT 1`,
     [tenantId],

@@ -64,6 +64,10 @@ export interface LinkWhatsAppAccountForProvisioningInput extends UpsertWhatsAppA
   tenantId: string;
 }
 
+export interface ManuallyConnectWhatsAppAccountInput extends UpsertWhatsAppAccountInput {
+  businessName?: string | null;
+}
+
 export async function linkWhatsAppAccountForProvisioning(
   input: LinkWhatsAppAccountForProvisioningInput,
   client: QueryClient = getPool(),
@@ -77,25 +81,36 @@ export async function linkWhatsAppAccountForProvisioning(
   return mapAccount(rows[0]);
 }
 
-/** Manual/operator-managed setup: links a tenant to its Meta WhatsApp phone number. */
-export async function upsertWhatsAppAccount(
+/** Manual/operator-managed setup: Super Admin links (or updates) a tenant's Meta WhatsApp phone number directly, bypassing Embedded Signup. */
+export async function manuallyConnectWhatsAppAccount(
   tenantId: string,
-  input: UpsertWhatsAppAccountInput,
+  input: ManuallyConnectWhatsAppAccountInput,
 ): Promise<WhatsAppAccount> {
   const { rows } = await getPool().query<WhatsAppAccountRow>(
-    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, status, connected_at)
-     VALUES ($1, $2, $3, $4, 'connected', now())
+    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, business_name, status, connected_at)
+     VALUES ($1, $2, $3, $4, $5, 'connected', now())
      ON CONFLICT (tenant_id)
      DO UPDATE SET phone_number = EXCLUDED.phone_number,
                    meta_phone_number_id = EXCLUDED.meta_phone_number_id,
                    meta_business_account_id = EXCLUDED.meta_business_account_id,
+                   business_name = EXCLUDED.business_name,
                    status = 'connected',
                    connected_at = now(),
+                   disconnected_at = NULL,
                    updated_at = now()
      RETURNING *`,
-    [tenantId, input.phoneNumber, input.metaPhoneNumberId, input.metaBusinessAccountId],
+    [tenantId, input.phoneNumber, input.metaPhoneNumberId, input.metaBusinessAccountId, input.businessName ?? null],
   );
   return mapAccount(rows[0]);
+}
+
+/** Super Admin hard-delete — fully removes the mapping row (unlike disconnectWhatsAppAccount's soft-disconnect). Caller is responsible for audit-logging before invoking this, since the row (and its identifying fields) won't exist afterward. */
+export async function deleteWhatsAppAccount(tenantId: string): Promise<WhatsAppAccount | null> {
+  const { rows } = await getPool().query<WhatsAppAccountRow>(
+    "DELETE FROM whatsapp_accounts WHERE tenant_id = $1 RETURNING *",
+    [tenantId],
+  );
+  return rows[0] ? mapAccount(rows[0]) : null;
 }
 
 export interface CompleteEmbeddedSignupInput {

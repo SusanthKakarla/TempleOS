@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { completeEmbeddedSignup, disconnectWhatsAppAccount, upsertWhatsAppAccount } from "./whatsapp-accounts";
+import {
+  completeEmbeddedSignup,
+  deleteWhatsAppAccount,
+  disconnectWhatsAppAccount,
+  manuallyConnectWhatsAppAccount,
+} from "./whatsapp-accounts";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -31,10 +36,10 @@ describe("WhatsApp accounts repository", () => {
     (getPool as unknown as Mock).mockReturnValue({ query });
   });
 
-  it("upserts manual setup by tenant so changing Meta IDs for the same tenant does not violate tenant uniqueness", async () => {
+  it("manually connects (upserts) by tenant so changing Meta IDs for the same tenant does not violate tenant uniqueness", async () => {
     query.mockResolvedValueOnce({ rows: [row] });
 
-    const result = await upsertWhatsAppAccount("tenant-1", {
+    const result = await manuallyConnectWhatsAppAccount("tenant-1", {
       phoneNumber: "+919876543210",
       metaPhoneNumberId: "meta-2",
       metaBusinessAccountId: "business-1",
@@ -82,6 +87,23 @@ describe("WhatsApp accounts repository", () => {
     query.mockResolvedValueOnce({ rows: [] });
 
     const result = await disconnectWhatsAppAccount("tenant-without-account");
+
+    expect(result).toBeNull();
+  });
+
+  it("hard-deletes the account row by tenant", async () => {
+    query.mockResolvedValueOnce({ rows: [row] });
+
+    const result = await deleteWhatsAppAccount("tenant-1");
+
+    expect(result?.id).toBe("whatsapp-1");
+    expect(String(query.mock.calls[0][0])).toContain("DELETE FROM whatsapp_accounts");
+  });
+
+  it("returns null from delete when the tenant has no whatsapp account", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const result = await deleteWhatsAppAccount("tenant-without-account");
 
     expect(result).toBeNull();
   });

@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/tenants";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
+import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
 import { isRoleCode, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
@@ -842,15 +843,6 @@ function toAssignTenantMemberRolesError(err: unknown): AssignTenantMemberRolesEr
   );
 }
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
-}
-
-function getConstraintName(err: unknown): string | undefined {
-  if (typeof err !== "object" || err === null || !("constraint" in err)) return undefined;
-  return typeof err.constraint === "string" ? err.constraint : undefined;
-}
-
 function conflictFieldFromConstraint(constraint: string | undefined): string | undefined {
   switch (constraint) {
     case "tenants_slug_unique":
@@ -862,8 +854,12 @@ function conflictFieldFromConstraint(constraint: string | undefined): string | u
       return "firstMember.phoneNumber";
     case "whatsapp_accounts_tenant_id_unique":
       return "whatsappAccount.tenantId";
-    case "whatsapp_accounts_meta_phone_number_id_key":
+    case "whatsapp_accounts_phone_number_connected_key":
+      return "whatsappAccount.phoneNumber";
+    case "whatsapp_accounts_meta_phone_number_id_connected_key":
       return "whatsappAccount.metaPhoneNumberId";
+    case "whatsapp_accounts_meta_business_account_id_connected_key":
+      return "whatsappAccount.metaBusinessAccountId";
     default:
       return undefined;
   }
