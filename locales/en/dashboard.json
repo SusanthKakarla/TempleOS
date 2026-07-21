@@ -623,7 +623,13 @@
     },
     "selectAll": "Select all users",
     "selectRow": "Select {name}",
-    "status": { "enabled": "Enabled", "disabled": "Disabled", "never": "Never" },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "never": "Never",
+      "disableAction": "Disable User",
+      "enableAction": "Enable User"
+    },
     "roleNames": {
       "admin": "Admin",
       "priest": "Priest",
@@ -632,10 +638,16 @@
       "devotee": "Devotee"
     },
     "emptyState": { "title": "No users found", "description": "Invite your first team member to get started." },
-    "confirmDisable": "Disable \"{name}\"? They will no longer be able to sign in.",
-    "confirmEnable": "Enable \"{name}\"?",
     "disableError": "Failed to disable user",
     "enableError": "Failed to enable user",
+    "toggleStatusDialog": {
+      "disableTitle": "Disable User",
+      "disableDescription": "Are you sure you want to disable {name}? Disabled users cannot log in until enabled again.",
+      "disableConfirm": "Disable User",
+      "enableTitle": "Enable User",
+      "enableDescription": "Are you sure you want to enable {name}? This user will immediately regain dashboard access.",
+      "enableConfirm": "Enable User"
+    },
     "inviteDialog": {
       "title": "Invite User",
       "description": "They'll be able to sign in immediately with this phone number.",
