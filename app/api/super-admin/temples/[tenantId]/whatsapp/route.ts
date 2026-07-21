@@ -9,6 +9,7 @@ import {
 import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { manualWhatsAppConnectSchema } from "@/lib/validation/whatsapp-connect";
+import { subscribeWabaWebhooks, unsubscribeWabaWebhooks } from "@/lib/whatsapp/embedded-signup";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const invalidJson = Symbol("invalid-json");
@@ -46,7 +47,17 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   }
 
   try {
-    const account = await manuallyConnectWhatsAppAccount(tenantId, parsed.data);
+    // Without this, Meta never forwards WhatsApp messages to our webhook for
+    // this WABA — the number looks "connected" in our DB but the bot never
+    // receives anything. A failed subscription doesn't block the connection
+    // (mirrors the Embedded Signup callback): the UI shows "Not subscribed"
+    // and Update Connection can retry it.
+    const webhookResult = await subscribeWabaWebhooks(parsed.data.metaBusinessAccountId);
+
+    const account = await manuallyConnectWhatsAppAccount(tenantId, {
+      ...parsed.data,
+      webhookSubscribed: webhookResult.success,
+    });
 
     await createAuditLogEntry({
       actorType: "super_admin",
@@ -55,7 +66,11 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       action: "whatsapp_integration.manually_connected",
       targetType: "whatsapp_account",
       targetId: account.id,
-      metadata: { metaPhoneNumberId: account.metaPhoneNumberId, metaBusinessAccountId: account.metaBusinessAccountId },
+      metadata: {
+        metaPhoneNumberId: account.metaPhoneNumberId,
+        metaBusinessAccountId: account.metaBusinessAccountId,
+        webhookSubscribed: account.webhookSubscribed,
+      },
     });
 
     return NextResponse.json({ whatsappAccount: account });
@@ -85,6 +100,9 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   if (!account) {
     return NextResponse.json({ error: "No WhatsApp account is connected for this temple.", code: "NOT_CONNECTED" }, { status: 400 });
   }
+
+  // Best-effort — a failed unsubscribe shouldn't block the delete.
+  await unsubscribeWabaWebhooks(account.metaBusinessAccountId);
 
   // Log before deleting — audit_log.target_id isn't a foreign key, so the entry
   // survives the row's removal, but the identifying fields wouldn't be

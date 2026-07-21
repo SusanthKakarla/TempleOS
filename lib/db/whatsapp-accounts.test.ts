@@ -43,11 +43,13 @@ describe("WhatsApp accounts repository", () => {
       phoneNumber: "+919876543210",
       metaPhoneNumberId: "meta-2",
       metaBusinessAccountId: "business-1",
+      webhookSubscribed: true,
     });
 
     expect(result.metaPhoneNumberId).toBe("meta-2");
     expect(String(query.mock.calls[0][0])).toContain("ON CONFLICT (tenant_id)");
     expect(String(query.mock.calls[0][0])).not.toContain("ON CONFLICT (meta_phone_number_id)");
+    expect(query.mock.calls[0][1]).toContain(true);
   });
 
   it("completes embedded signup by tenant, upserting the Graph-fetched fields and clearing disconnectedAt", async () => {
