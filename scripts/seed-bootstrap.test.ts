@@ -113,7 +113,7 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
   });
 
   it("keeps the super-admin temple list page behind the super-admin boundary", () => {
-    const source = read("app/(super-admin)/super-admin/temples/page.tsx");
+    const source = read("app/(super-admin)/super-admin/(shell)/temples/page.tsx");
     expect(source).toMatch(/requireSuperAdminPage/);
     expect(source).toMatch(/listTenantsForSuperAdmin/);
     expect(source).toMatch(/\/super-admin\/temples\/new/);
@@ -125,7 +125,7 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
   });
 
   it("keeps the super-admin temple detail page behind the super-admin boundary", () => {
-    const source = read("app/(super-admin)/super-admin/temples/[tenantId]/page.tsx");
+    const source = read("app/(super-admin)/super-admin/(shell)/temples/[tenantId]/page.tsx");
     expect(source).toMatch(/requireSuperAdminPage/);
     expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
     expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);

@@ -6,7 +6,6 @@ import {
   Globe2,
   Landmark,
   Lock,
-  LogOut,
   MapPin,
   ShieldAlert,
   UserRound,
@@ -23,18 +22,16 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
-import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
-import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { TenantStatusControl } from "@/features/super-admin/tenant-status-control";
 import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-feature-management-card";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import { listTenantFeatures } from "@/lib/db/tenant-features";
 import { listAuditLogEntriesForTenant } from "@/lib/db/audit-log";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
-import { requireSuperAdminPage } from "../../require-super-admin";
+import { requireSuperAdminPage } from "../../../require-super-admin";
 
 interface TempleDetailPageProps {
   params: Promise<{ tenantId: string }>;
@@ -57,50 +54,41 @@ export default async function SuperAdminTempleDetailPage({
   ]);
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
-      <AmbientBackground />
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="space-y-4">
-          <Button
-            variant="ghost"
-            className="px-0"
-            render={<Link href="/super-admin/temples" />}
-          >
-            <ArrowLeft className="size-4" />
-            Temples
-          </Button>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">
-                Super Admin
-              </p>
-              <h1 className="text-2xl font-semibold tracking-normal">
-                {temple.tenant.name}
-              </h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Tenant details, domain setup, and member roles.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{temple.tenant.slug}</Badge>
-              {temple.tenant.status !== "active" && (
-                <Badge variant="destructive">
-                  <ShieldAlert className="size-3.5" />
-                  {formatTitle(temple.tenant.status)}
-                </Badge>
-              )}
-              <Button
-                variant="outline"
-                render={<Link href="/super-admin/logout" />}
-              >
-                <LogOut className="size-4" />
-                Log out
-              </Button>
-            </div>
+    <div className="space-y-6">
+      <header className="space-y-4">
+        <Button
+          variant="ghost"
+          className="px-0"
+          render={<Link href="/super-admin/temples" />}
+        >
+          <ArrowLeft className="size-4" />
+          Temples
+        </Button>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">
+              Super Admin
+            </p>
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {temple.tenant.name}
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Tenant details, domain setup, and member roles.
+            </p>
           </div>
-        </header>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{temple.tenant.slug}</Badge>
+            {temple.tenant.status !== "active" && (
+              <Badge variant="destructive">
+                <ShieldAlert className="size-3.5" />
+                {formatTitle(temple.tenant.status)}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </header>
 
-        <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2">
           <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Landmark className="size-4 text-muted-foreground" />
@@ -270,8 +258,7 @@ export default async function SuperAdminTempleDetailPage({
             </Table>
           )}
         </TableShell>
-      </div>
-    </main>
+    </div>
   );
 }
 

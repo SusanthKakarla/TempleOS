@@ -17,12 +17,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { MetricCard } from "@/features/dashboard/metric-card";
-import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
 import { countTenantsByStatus, getPlatformActivityCounts, checkDatabaseHealth, countConnectedWhatsAppTenants, countPendingNotificationsPlatformWide, getLastSystemActivityAt } from "@/lib/db/platform-stats";
 import { listRecentPlatformAuditEntries } from "@/lib/db/audit-log";
-import { requireSuperAdminPage } from "./require-super-admin";
+import { requireSuperAdminPage } from "../require-super-admin";
 
 export default async function SuperAdminDashboardPage() {
   await requireSuperAdminPage("/super-admin");
@@ -39,39 +37,22 @@ export default async function SuperAdminDashboardPage() {
     ]);
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
-      <AmbientBackground />
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
-            <h1 className="text-2xl font-semibold tracking-normal">Platform Dashboard</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Platform-wide metrics, activity, and health across every provisioned temple.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" render={<Link href="/super-admin/temples" />}>
-              <Landmark className="size-4" />
-              Temples
-            </Button>
-            <Button variant="outline" render={<Link href="/super-admin/roles" />}>
-              <ShieldCheck className="size-4" />
-              Role Catalog
-            </Button>
-            <Button variant="outline" render={<Link href="/super-admin/admins" />}>
-              <UserCog className="size-4" />
-              Platform Admins
-            </Button>
-            <SuperAdminSignOutButton />
-            <Button render={<Link href="/super-admin/temples/new" />}>
-              <Plus className="size-4" />
-              New Temple
-            </Button>
-          </div>
-        </header>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
+          <h1 className="text-2xl font-semibold tracking-normal">Platform Dashboard</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Platform-wide metrics, activity, and health across every provisioned temple.
+          </p>
+        </div>
+        <Button render={<Link href="/super-admin/temples/new" />}>
+          <Plus className="size-4" />
+          New Temple
+        </Button>
+      </header>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard label="Total Temples" value={tenantCounts.total} icon={<Landmark className="size-4.5" />} gradient="gradient-ocean-blue" />
           <MetricCard label="Active Temples" value={tenantCounts.active} icon={<ShieldCheck className="size-4.5" />} gradient="gradient-green-emerald" />
           <MetricCard label="Suspended Temples" value={tenantCounts.suspended} icon={<Activity className="size-4.5" />} gradient="bg-destructive" />
@@ -159,8 +140,7 @@ export default async function SuperAdminDashboardPage() {
             </Button>
           </div>
         </section>
-      </div>
-    </main>
+    </div>
   );
 }
 

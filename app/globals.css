@@ -66,7 +66,7 @@
 }
 
 :root {
-  --font-sans: var(--font-geist-sans), var(--font-noto-telugu);
+  --font-sans: var(--font-plus-jakarta), var(--font-noto-telugu);
   --font-heading: var(--font-playfair), var(--font-noto-telugu), serif;
   --background: oklch(0.981 0.005 197.1);
   --foreground: oklch(0.18 0.02 190);
@@ -190,7 +190,7 @@
  * by app/layout.tsx's getLocale()) fixes that with no JS and no new font load.
  */
 html[lang="te"] {
-  --font-sans: var(--font-noto-telugu), var(--font-geist-sans);
+  --font-sans: var(--font-noto-telugu), var(--font-plus-jakarta);
   --font-heading: var(--font-noto-telugu), var(--font-playfair), serif;
 }
 
