@@ -98,14 +98,7 @@ export function UsersTable({
   function statusBadge(member: TenantMembershipListItem) {
     const isActive = member.status === "active";
     return (
-      <Badge
-        variant="outline"
-        className={cn(
-          "gap-1.5",
-          isActive ? "border-emerald/30 bg-emerald/10 text-emerald" : "border-destructive/30 bg-destructive/10 text-destructive",
-        )}
-      >
-        <span className={cn("size-1.5 rounded-full", isActive ? "bg-emerald" : "bg-destructive")} />
+      <Badge variant={isActive ? "default" : "destructive"}>
         {isActive ? t("status.enabled") : t("status.disabled")}
       </Badge>
     );

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Generic row/column skeleton used by route `loading.tsx` files while a table's data loads. */
 export function TableSkeleton({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
   return (
-    <div className="rounded-xl border bg-background p-4">
+    <div className="glass-card rounded-2xl p-4">
       <div className="space-y-4">
         {Array.from({ length: rows }).map((_, row) => (
           <div key={row} className="flex items-center gap-4">

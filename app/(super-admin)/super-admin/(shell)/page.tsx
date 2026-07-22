@@ -72,7 +72,7 @@ export default async function SuperAdminDashboardPage() {
               <Server className="size-4 text-muted-foreground" />
               Platform Health
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <HealthTile
                 label="Database"
                 ok={dbHealth.ok}

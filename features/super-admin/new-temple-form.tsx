@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -368,12 +369,10 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                         key={role.code}
                         className="flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm"
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={form.firstMemberRoles.includes(role.code)}
                           disabled={role.code === "admin"}
-                          onChange={() => toggleRole(role.code)}
-                          className="size-4"
+                          onCheckedChange={() => toggleRole(role.code)}
                         />
                         <span>{role.label}</span>
                       </label>
@@ -561,12 +560,11 @@ function FeatureGroup({
               )}
               title={feature.description ?? undefined}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={checked}
                 disabled={feature.isCore || comingSoon}
-                onChange={() => onToggle(feature)}
-                className="mt-0.5 size-4"
+                onCheckedChange={() => onToggle(feature)}
+                className="mt-0.5"
               />
               <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <span className="flex flex-col">

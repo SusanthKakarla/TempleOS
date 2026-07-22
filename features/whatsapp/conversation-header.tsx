@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { HandCoins } from "lucide-react";
+import { ArrowLeft, HandCoins } from "lucide-react";
 import type { ConversationSummary } from "@/types/db";
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,13 @@ export async function ConversationHeader({ conversation }: { conversation: Conve
   return (
     <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b p-3">
       <div className="flex items-center gap-3">
+        <Link
+          href="/dashboard/whatsapp-activity"
+          aria-label="Back to conversations"
+          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "md:hidden")}
+        >
+          <ArrowLeft className="size-4" />
+        </Link>
         <Avatar className="size-9">
           <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white shadow-sm">
             {getInitials(conversation.displayName)}

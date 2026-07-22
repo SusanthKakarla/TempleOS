@@ -138,16 +138,8 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
               </Badge>
             </div>
           )}
-          {errors.message && (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errors.message}
-            </p>
-          )}
-          {saved && (
-            <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              WhatsApp connection saved.
-            </p>
-          )}
+          {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
+          {saved && <p className="text-sm text-emerald">WhatsApp connection saved.</p>}
 
           <div className="grid gap-4 md:grid-cols-2">
             <FloatingLabelInput
@@ -179,17 +171,17 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
             />
           </div>
         </CardContent>
-        <div className="flex items-center justify-between gap-2 border-t px-(--card-spacing) pt-4">
-          <Button type="submit" disabled={submitting || deleting}>
-            <Save className="size-4" />
-            {submitting ? "Saving..." : isConnected ? "Update Connection" : "Save Connection"}
-          </Button>
+        <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) pt-4">
           {account && (
-            <Button type="button" variant="ghost" disabled={submitting || deleting} onClick={handleDelete}>
+            <Button type="button" variant="destructive" disabled={submitting || deleting} onClick={handleDelete}>
               <Trash2 className="size-4" />
               {deleting ? "Deleting..." : "Delete Connection"}
             </Button>
           )}
+          <Button type="submit" disabled={submitting || deleting}>
+            <Save className="size-4" />
+            {submitting ? "Saving..." : isConnected ? "Update Connection" : "Save Connection"}
+          </Button>
         </div>
       </form>
     </Card>

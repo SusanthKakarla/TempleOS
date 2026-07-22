@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
+import { TableShell } from "@/components/table-shell";
 import { formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -102,7 +103,7 @@ export function DevoteeDonationsCard({
       {donations.length === 0 ? (
         <EmptyState icon={<HandCoins className="size-5" />} title={t("emptyState")} className="py-10" />
       ) : (
-        <div className="rounded-xl border">
+        <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -148,7 +149,7 @@ export function DevoteeDonationsCard({
               ))}
             </motion.tbody>
           </Table>
-        </div>
+        </TableShell>
       )}
     </Card>
   );
