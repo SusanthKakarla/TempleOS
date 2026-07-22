@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createDonation, listDonations } from "@/lib/db/donations";
 import { createDonationSchema } from "@/lib/validation/donations";
 
@@ -9,6 +10,8 @@ export async function GET(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "donations");
+  if (featureBlocked) return featureBlocked;
 
   const params = req.nextUrl.searchParams;
   const donations = await listDonations(session.tenantId, {
@@ -26,6 +29,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "donations");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = createDonationSchema.safeParse(json);

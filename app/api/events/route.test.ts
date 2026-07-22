@@ -21,6 +21,10 @@ vi.mock("@/lib/db/tenants", () => ({
   getTenantById: vi.fn(),
 }));
 
+vi.mock("@/lib/db/tenant-features", () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("@/lib/db/event-notifications", () => ({
   enqueueEventNotifications: vi.fn(),
 }));

@@ -5,12 +5,37 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
+  BellRing,
+  CalendarCheck,
+  CalendarDays,
+  CalendarHeart,
   CheckCircle2,
+  Contact,
+  Download,
+  FileBarChart,
   Globe2,
+  HandCoins,
+  HeartHandshake,
   Landmark,
+  Languages,
+  LayoutDashboard,
+  LayoutGrid,
+  LineChart,
+  MessageCircle,
+  Package,
   Phone,
+  QrCode,
+  Settings2,
   ShieldCheck,
+  Soup,
+  Sparkles,
+  Upload,
+  UserCog,
   UserRound,
+  Users,
+  Users2,
+  UsersRound,
+  type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +56,7 @@ import {
   type NewTempleFormState,
   type ProvisionTempleSuccess,
 } from "./new-temple-form-helpers";
-import type { RoleCode } from "@/types/db";
+import type { Feature, FeatureKey, RoleCode } from "@/types/db";
 
 const emptyErrors: NewTempleFormErrors = { fieldErrors: {}, sectionErrors: {} };
 
@@ -40,15 +65,66 @@ const STEPS = [
   { key: "domain", title: "Domain", icon: Globe2 },
   { key: "firstMember", title: "First Member", icon: UserRound },
   { key: "whatsapp", title: "WhatsApp", icon: ShieldCheck },
+  { key: "features", title: "Feature Access", icon: LayoutGrid },
 ] as const;
 
-export function NewTempleForm() {
-  const [form, setForm] = useState<NewTempleFormState>(DEFAULT_NEW_TEMPLE_FORM_STATE);
+const FEATURE_ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  HandCoins,
+  MessageCircle,
+  BellRing,
+  Settings2,
+  UserCog,
+  ShieldCheck,
+  UsersRound,
+  Download,
+  Upload,
+  FileBarChart,
+  LineChart,
+  Package,
+  Soup,
+  HeartHandshake,
+  Users2,
+  UserRound,
+  Globe2,
+  QrCode,
+  CalendarCheck,
+  Sparkles,
+  Languages,
+  CalendarHeart,
+  Contact,
+};
+
+function featureIcon(iconName: string | null): LucideIcon {
+  return (iconName && FEATURE_ICON_MAP[iconName]) || LayoutGrid;
+}
+
+export function NewTempleForm({ features }: { features: Feature[] }) {
+  const defaultFeatureKeys = useMemo(
+    () => features.filter((f) => f.category !== "coming_soon" && f.defaultEnabled).map((f) => f.key),
+    [features],
+  );
+  const [form, setForm] = useState<NewTempleFormState>({
+    ...DEFAULT_NEW_TEMPLE_FORM_STATE,
+    featureKeys: defaultFeatureKeys,
+  });
   const [errors, setErrors] = useState<NewTempleFormErrors>(emptyErrors);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<ProvisionTempleSuccess["temple"] | null>(null);
   const [step, setStep] = useState(0);
   const hostname = useMemo(() => fullHostnamePreview(form.subdomain), [form.subdomain]);
+
+  function toggleFeature(feature: Feature) {
+    if (feature.isCore || feature.category === "coming_soon") return;
+    setForm((current) => ({
+      ...current,
+      featureKeys: current.featureKeys.includes(feature.key)
+        ? current.featureKeys.filter((key) => key !== feature.key)
+        : [...current.featureKeys, feature.key],
+    }));
+  }
 
   function updateField<K extends keyof NewTempleFormState>(field: K, value: NewTempleFormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -348,6 +424,39 @@ export function NewTempleForm() {
               </CardContent>
             </Card>
           )}
+
+          {step === 4 && (
+            <Card className="glass-card rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <LayoutGrid className="size-4 text-primary" />
+                  Feature Access
+                </CardTitle>
+                <CardDescription>Choose which modules this temple gets. Core features are always on.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FeatureGroup
+                  title="Core"
+                  features={features.filter((f) => f.category === "core")}
+                  selected={form.featureKeys}
+                  onToggle={toggleFeature}
+                />
+                <FeatureGroup
+                  title="Modules"
+                  features={features.filter((f) => f.category === "module")}
+                  selected={form.featureKeys}
+                  onToggle={toggleFeature}
+                />
+                <FeatureGroup
+                  title="Coming soon"
+                  features={features.filter((f) => f.category === "coming_soon")}
+                  selected={form.featureKeys}
+                  onToggle={toggleFeature}
+                  comingSoon
+                />
+              </CardContent>
+            </Card>
+          )}
         </motion.div>
 
         <div className="flex items-center justify-between gap-2">
@@ -418,5 +527,57 @@ function isProvisionTempleSuccess(value: unknown): value is ProvisionTempleSucce
     "temple" in value &&
     typeof value.temple === "object" &&
     value.temple !== null
+  );
+}
+
+function FeatureGroup({
+  title,
+  features,
+  selected,
+  onToggle,
+  comingSoon = false,
+}: {
+  title: string;
+  features: Feature[];
+  selected: FeatureKey[];
+  onToggle: (feature: Feature) => void;
+  comingSoon?: boolean;
+}) {
+  if (features.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</p>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map((feature) => {
+          const Icon = featureIcon(feature.icon);
+          const checked = feature.isCore || selected.includes(feature.key);
+          return (
+            <label
+              key={feature.key}
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm",
+                comingSoon ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+              )}
+              title={feature.description ?? undefined}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={feature.isCore || comingSoon}
+                onChange={() => onToggle(feature)}
+                className="mt-0.5 size-4"
+              />
+              <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <span className="flex flex-col">
+                <span>{feature.displayName}</span>
+                {feature.isCore && <span className="text-xs text-muted-foreground">Always on</span>}
+                {comingSoon && <span className="text-xs text-muted-foreground">Coming soon</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
   );
 }

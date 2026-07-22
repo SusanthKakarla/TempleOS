@@ -940,7 +940,8 @@
         "devotee": "భక్తులు",
         "family": "కుటుంబం",
         "event": "కార్యక్రమ రిమైండర్‌లు",
-        "announcement": "ప్రకటనలు"
+        "announcement": "ప్రకటనలు",
+        "platform": "ప్లాట్‌ఫారమ్"
       },
       "columns": {
         "recipient": "గ్రహీత",
@@ -957,7 +958,9 @@
         "event_reminder": "కార్యక్రమ రిమైండర్",
         "anniversary_devotee": "వార్షికోత్సవ శుభాకాంక్షలు",
         "anniversary_priest": "వార్షికోత్సవ పూజ రిమైండర్",
-        "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్"
+        "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్",
+        "tenant_config_changed": "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
+        "tenant_status_changed": "ఆలయ స్థితి మార్చబడింది"
       },
       "channelLabels": { "in_app": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
       "emptyState": {

@@ -65,6 +65,19 @@ export interface ListAuditLogEntriesFilters {
   limit?: number;
 }
 
+/**
+ * NOT tenant-scoped by design — powers the Super Admin Dashboard's Live
+ * Activity feed. Same deliberate exception pattern as
+ * lib/db/tenants.ts's listTenantIdsAndTimezones.
+ */
+export async function listRecentPlatformAuditEntries(limit = 20): Promise<AuditLogEntry[]> {
+  const { rows } = await getPool().query<AuditLogRow>(
+    "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT $1",
+    [limit],
+  );
+  return rows.map(mapAuditLogEntry);
+}
+
 export async function listAuditLogEntriesForTenant(
   tenantId: string,
   filters: ListAuditLogEntriesFilters = {},

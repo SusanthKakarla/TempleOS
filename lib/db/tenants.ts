@@ -1,11 +1,20 @@
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
-import { isRoleCode, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
+import { createAuditLogEntry } from "./audit-log";
+import {
+  isRoleCode,
+  type RoleCode,
+  type Tenant,
+  type TenantDomain,
+  type TenantStatus,
+  type WhatsAppAccount,
+} from "@/types/db";
 
 interface TenantRow {
   id: string;
   slug: string;
   name: string;
+  status: TenantStatus;
   default_contact_phone: string | null;
   address: string | null;
   timezone: string;
@@ -112,6 +121,7 @@ function mapTenant(row: TenantRow): Tenant {
     id: row.id,
     slug: row.slug,
     name: row.name,
+    status: row.status,
     defaultContactPhone: row.default_contact_phone,
     address: row.address,
     timezone: row.timezone,
@@ -490,5 +500,43 @@ export async function updateTenant(tenantId: string, fields: UpdateTenantInput):
       fields.notifyOnEventCancelled ?? null,
     ],
   );
+  return mapTenant(rows[0]);
+}
+
+/**
+ * Suspended/maintenance/archived/disabled tenants are locked out entirely —
+ * see lib/auth/session.ts's getSessionAdmin (login/API/dashboard access) and
+ * lib/notifications/engine.ts's enqueueNotification (WhatsApp/notifications).
+ */
+export async function setTenantStatus(
+  tenantId: string,
+  status: TenantStatus,
+  superAdminId: string,
+): Promise<Tenant | null> {
+  const { rows: currentRows } = await getPool().query<{ status: TenantStatus }>(
+    "SELECT status FROM tenants WHERE id = $1",
+    [tenantId],
+  );
+  const previousStatus = currentRows[0]?.status ?? null;
+  if (!currentRows[0]) return null;
+
+  const { rows } = await getPool().query<TenantRow>(
+    "UPDATE tenants SET status = $2, updated_at = now() WHERE id = $1 RETURNING *",
+    [tenantId, status],
+  );
+  if (!rows[0]) return null;
+
+  if (previousStatus !== status) {
+    await createAuditLogEntry({
+      actorType: "super_admin",
+      actorId: superAdminId,
+      tenantId,
+      action: "tenant.status_changed",
+      targetType: "tenant",
+      targetId: tenantId,
+      metadata: { oldValue: previousStatus, newValue: status },
+    });
+  }
+
   return mapTenant(rows[0]);
 }

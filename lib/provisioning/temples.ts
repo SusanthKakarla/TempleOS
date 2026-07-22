@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getPool } from "@/lib/db/pool";
+import { initializeTenantFeatures } from "@/lib/db/tenant-features";
 import { listActiveRoleCodesForSuperAdmin, V0_ROLE_DEFINITIONS } from "@/lib/db/role-definitions";
 import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import {
@@ -19,7 +20,7 @@ import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
 import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
-import { isRoleCode, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
+import { isRoleCode, type FeatureKey, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
@@ -70,6 +71,8 @@ export interface ProvisionTempleInput {
     roles: RoleCode[];
   };
   whatsappAccount?: LinkWhatsAppAccountInput;
+  /** Omitted or empty means "use each feature's own default_enabled" — see initializeTenantFeatures. */
+  featureKeys?: FeatureKey[];
 }
 
 export interface ProvisionTempleResult {
@@ -195,6 +198,7 @@ const rawProvisionTempleSchema = z.object({
       metaBusinessAccountId: z.string().trim().min(1, "Meta business account ID is required"),
     })
     .nullish(),
+  featureKeys: z.array(z.string()).optional(),
 });
 
 const rawUpdateProvisionedTempleSchema = z.object({
@@ -317,6 +321,7 @@ export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidati
             },
           }
         : {}),
+      ...(parsed.data.featureKeys ? { featureKeys: parsed.data.featureKeys as FeatureKey[] } : {}),
     },
   };
 }
@@ -456,6 +461,8 @@ export async function provisionTemple(
         )
       : null;
 
+    await initializeTenantFeatures(tenant.id, canonicalInput.featureKeys ?? null, client);
+
     await createAuditLogEntry(
       {
         actorType: "super_admin",
@@ -471,6 +478,7 @@ export async function provisionTemple(
           firstPersonId: person.id,
           roles: canonicalInput.firstMember.roles,
           whatsappAccountId: whatsappAccount?.id ?? null,
+          featureKeys: canonicalInput.featureKeys ?? null,
         },
       },
       client,

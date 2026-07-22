@@ -1,5 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { getTenantById } from "@/lib/db/tenants";
 import {
@@ -17,6 +18,8 @@ export async function GET(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const params = req.nextUrl.searchParams;
   const statusParam = params.get("status");
@@ -37,6 +40,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = parseInviteTenantMemberInput(json);

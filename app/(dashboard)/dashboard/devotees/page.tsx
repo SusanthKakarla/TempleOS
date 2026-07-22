@@ -1,4 +1,5 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import { listDevotees, countDevoteesFiltered, type ListDevoteesOptions } from "@/lib/db/devotees";
 import { getTenantById } from "@/lib/db/tenants";
 import { DevoteesTable } from "@/features/devotees/devotees-table";
@@ -28,6 +29,7 @@ const OCCASION_VALUES: NonNullable<ListDevoteesOptions["occasion"]>[] = [
 
 export default async function DevoteesPage({ searchParams }: DevoteesPageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "devotees");
 
   const {
     search,

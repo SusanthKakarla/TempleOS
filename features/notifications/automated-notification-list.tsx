@@ -33,6 +33,7 @@ const CATEGORY_VALUES: NotificationCategory[] = [
   "family",
   "event",
   "announcement",
+  "platform",
 ];
 
 interface AutomatedNotificationListProps {

@@ -3,10 +3,12 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { NewTempleForm } from "@/features/super-admin/new-temple-form";
+import { listFeatures } from "@/lib/db/features";
 import { requireSuperAdminPage } from "../../require-super-admin";
 
 export default async function NewTemplePage() {
   await requireSuperAdminPage("/super-admin/temples/new");
+  const features = await listFeatures();
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
@@ -24,7 +26,7 @@ export default async function NewTemplePage() {
             the canonical provisioning API.
           </p>
         </header>
-        <NewTempleForm />
+        <NewTempleForm features={features} />
       </div>
     </main>
   );

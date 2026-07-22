@@ -1,5 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createDevotee, listDevotees } from "@/lib/db/devotees";
 import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { createDevoteeSchema } from "@/lib/validation/devotees";
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const search = req.nextUrl.searchParams.get("search") ?? undefined;
   const devotees = await listDevotees(session.tenantId, { search });
@@ -26,6 +29,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = createDevoteeSchema.safeParse(json);

@@ -183,7 +183,11 @@ describe("super admin auth boundary", () => {
     ]);
 
     const otherActiveOperationSources = [
-      path.join(process.cwd(), "app/(super-admin)/super-admin/page.tsx"),
+      // The temple LIST view (not the platform Dashboard, which legitimately
+      // surfaces an aggregate WhatsApp-connectivity health metric) is the
+      // surface this guardrail actually protects — per-tenant connection
+      // management belongs only on the detail page.
+      path.join(process.cwd(), "app/(super-admin)/super-admin/temples/page.tsx"),
       path.join(process.cwd(), "app/(super-admin)/super-admin/roles/page.tsx"),
       ...listSourcesIfPresent(path.join(process.cwd(), "features/super-admin")).filter(
         (source) => !whatsappOwnedSources.has(source) && !source.includes(`new-temple-form`) && !source.includes(`super-admin-login-form`),

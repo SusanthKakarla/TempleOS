@@ -2,6 +2,7 @@ import { getDevoteeById } from "@/lib/db/devotees";
 import { getPreference } from "@/lib/db/notification-preferences";
 import { getTemplate, renderTemplate } from "@/lib/db/notification-templates";
 import { createNotification } from "@/lib/db/notifications";
+import { getTenantById } from "@/lib/db/tenants";
 import type { Notification, NotificationCategory, NotificationChannel, NotificationType, SupportedLanguage } from "@/types/db";
 
 type Recipient = { personId: string } | { devoteeId: string };
@@ -27,8 +28,16 @@ function isPersonRecipient(recipient: Recipient): recipient is { personId: strin
  * rows created. Actual delivery happens later via the cron sweep
  * (lib/notifications/delivery.ts) — this function only ever does fast DB
  * inserts, so callers never block on WhatsApp delivery.
+ *
+ * Also the single WhatsApp/notification lockout point for a non-active
+ * tenant (suspended/maintenance/archived/disabled) — covers every cron
+ * (birthday/anniversary/family/event reminders) and every request-triggered
+ * notification (welcome, devotee-registered) without touching each call site.
  */
 export async function enqueueNotification(input: EnqueueNotificationInput): Promise<Notification[]> {
+  const tenant = await getTenantById(input.tenantId);
+  if (!tenant || tenant.status !== "active") return [];
+
   const channels = await eligibleChannels(input.tenantId, input.recipient, input.notificationType);
   const created: Notification[] = [];
 

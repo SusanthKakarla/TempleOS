@@ -207,6 +207,7 @@ export interface NotificationCategoryCounts {
   announcement: number;
   anniversary: number;
   family: number;
+  platform: number;
 }
 
 /** Tenant-wide counts (any recipient) for the Notification Center's category tabs. */
@@ -223,6 +224,7 @@ export async function countNotificationsByCategory(tenantId: string): Promise<No
     announcement: 0,
     anniversary: 0,
     family: 0,
+    platform: 0,
   };
   for (const row of rows) {
     counts[row.category] = Number(row.count);

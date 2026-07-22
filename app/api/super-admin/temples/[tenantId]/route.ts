@@ -1,8 +1,11 @@
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { TENANT_SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
 import { getTenantDetailForSuperAdmin, type SuperAdminTenantDetail } from "@/lib/db/tenants";
+import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
+import { enqueueNotification } from "@/lib/notifications/engine";
+import { processNotifications } from "@/lib/notifications/delivery";
 import {
   parseUpdateProvisionedTempleInput,
   updateProvisionedTemple,
@@ -86,6 +89,28 @@ export async function PATCH(req: NextRequest, context: TempleDetailRouteContext)
       phoneNumber: superAdmin.phoneNumber,
       displayName: superAdmin.displayName,
     });
+
+    const changedFields = Object.keys(parsed.data.tenant);
+    if (changedFields.length > 0) {
+      const staff = await listTenantMembershipsForTenant(tenantId, { status: "active" });
+      const admins = staff.filter((member) => member.roles.includes("admin"));
+      const createdIds: string[] = [];
+      for (const admin of admins) {
+        const language = admin.preferredUiLanguage ?? "en";
+        const created = await enqueueNotification({
+          tenantId,
+          recipient: { personId: admin.personId },
+          notificationType: "tenant_config_changed",
+          category: "platform",
+          language,
+          templateVars: { summary: `${temple.tenant.name}'s settings were updated (${changedFields.join(", ")}).` },
+        });
+        createdIds.push(...created.map((n) => n.id));
+      }
+      if (createdIds.length > 0) {
+        after(() => processNotifications(createdIds));
+      }
+    }
 
     return NextResponse.json({ temple: activeOperationTempleDetail(temple) });
   } catch (err) {

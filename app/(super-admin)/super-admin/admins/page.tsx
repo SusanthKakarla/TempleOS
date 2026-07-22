@@ -27,7 +27,7 @@ export default async function SuperAdminAdminsPage() {
       <AmbientBackground />
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="space-y-4">
-          <Button variant="ghost" className="px-0" render={<Link href="/super-admin" />}>
+          <Button variant="ghost" className="px-0" render={<Link href="/super-admin/temples" />}>
             <ArrowLeft className="size-4" />
             Temples
           </Button>

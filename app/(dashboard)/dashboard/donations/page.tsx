@@ -1,4 +1,5 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import { listDonations, countDonationsFiltered, type ListDonationsFilter } from "@/lib/db/donations";
 import { listDevotees } from "@/lib/db/devotees";
 import { DonationsTable } from "@/features/donations/donations-table";
@@ -19,6 +20,7 @@ const SORT_VALUES: ListDonationsFilter["sort"][] = ["date", "amount", "donor"];
 
 export default async function DonationsPage({ searchParams }: DonationsPageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "donations");
 
   const { search, dateFrom, dateTo, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
   const page = parsePageParam(pageParam);

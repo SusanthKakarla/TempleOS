@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createSignedSessionToken, verifySignedSessionToken } from "./session-token";
 import { getTenantMembershipById } from "@/lib/db/tenant-memberships";
+import { getTenantById } from "@/lib/db/tenants";
 import { isRoleCode, type RoleCode } from "@/types/db";
 
 export const TENANT_SESSION_COOKIE_NAME = "templeos_session";
@@ -54,6 +55,13 @@ export async function getSessionAdmin(): Promise<SessionPayload | null> {
   if (membership.tenantId !== session.tenantId || membership.personId !== session.personId) {
     return null;
   }
+
+  // Total lockout for a non-active tenant (suspended/maintenance/archived/
+  // disabled) — every tenant-facing page and API route resolves its session
+  // through this one function, so this single check covers login, API
+  // access, and data creation all at once.
+  const tenant = await getTenantById(membership.tenantId);
+  if (!tenant || tenant.status !== "active") return null;
 
   return {
     ...session,

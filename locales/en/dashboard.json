@@ -926,7 +926,8 @@
         "devotee": "Devotees",
         "family": "Family",
         "event": "Event Reminders",
-        "announcement": "Announcements"
+        "announcement": "Announcements",
+        "platform": "Platform"
       },
       "columns": {
         "recipient": "Recipient",
@@ -943,7 +944,9 @@
         "event_reminder": "Event reminder",
         "anniversary_devotee": "Anniversary wish",
         "anniversary_priest": "Anniversary pooja reminder",
-        "family_occasion_reminder": "Family occasion reminder"
+        "family_occasion_reminder": "Family occasion reminder",
+        "tenant_config_changed": "Temple settings updated",
+        "tenant_status_changed": "Temple status changed"
       },
       "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
       "emptyState": {

@@ -5,8 +5,10 @@ import {
   ArrowLeft,
   Globe2,
   Landmark,
+  Lock,
   LogOut,
   MapPin,
+  ShieldAlert,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +28,11 @@ import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
 import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
+import { TenantStatusControl } from "@/features/super-admin/tenant-status-control";
+import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-feature-management-card";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
+import { listTenantFeatures } from "@/lib/db/tenant-features";
+import { listAuditLogEntriesForTenant } from "@/lib/db/audit-log";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import { requireSuperAdminPage } from "../../require-super-admin";
 
@@ -44,9 +50,11 @@ export default async function SuperAdminTempleDetailPage({
   if (!temple) {
     notFound();
   }
-  const roles = (await listRoleDefinitionsForSuperAdmin()).filter(
-    (role) => role.active,
-  );
+  const [roles, features, auditEntries] = await Promise.all([
+    listRoleDefinitionsForSuperAdmin().then((all) => all.filter((role) => role.active)),
+    listTenantFeatures(temple.tenant.id),
+    listAuditLogEntriesForTenant(temple.tenant.id, { limit: 10 }),
+  ]);
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
@@ -56,7 +64,7 @@ export default async function SuperAdminTempleDetailPage({
           <Button
             variant="ghost"
             className="px-0"
-            render={<Link href="/super-admin" />}
+            render={<Link href="/super-admin/temples" />}
           >
             <ArrowLeft className="size-4" />
             Temples
@@ -75,6 +83,12 @@ export default async function SuperAdminTempleDetailPage({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{temple.tenant.slug}</Badge>
+              {temple.tenant.status !== "active" && (
+                <Badge variant="destructive">
+                  <ShieldAlert className="size-3.5" />
+                  {formatTitle(temple.tenant.status)}
+                </Badge>
+              )}
               <Button
                 variant="outline"
                 render={<Link href="/super-admin/logout" />}
@@ -144,6 +158,43 @@ export default async function SuperAdminTempleDetailPage({
         <TempleDetailEditForm tenant={temple.tenant} />
 
         <WhatsAppConnectionForm tenantId={temple.tenant.id} account={temple.whatsappAccount} />
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="glass-card rounded-2xl p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <ShieldAlert className="size-4 text-muted-foreground" />
+              Status
+            </div>
+            <TenantStatusControl tenantId={temple.tenant.id} status={temple.tenant.status} />
+          </div>
+
+          <div className="glass-card rounded-2xl p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <Landmark className="size-4 text-muted-foreground" />
+              Audit
+            </div>
+            {auditEntries.length === 0 ? (
+              <EmptyPanel icon={<Landmark className="size-5" />} label="No configuration changes yet" />
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {auditEntries.map((entry) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 last:pb-0">
+                    <span className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</span>
+                    <span className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        <TenantFeatureManagementCard tenantId={temple.tenant.id} features={features} />
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          <ComingSoonCard title="Subscription" description="Plans and licensing (not available yet)." />
+          <ComingSoonCard title="Storage" description="Per-tenant storage usage tracking." />
+          <ComingSoonCard title="Security" description="Advanced security policies beyond status/features." />
+        </section>
 
         <TableShell>
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
@@ -255,6 +306,23 @@ async function fetchTempleDetailForSuperAdmin(
 
   const body = (await res.json()) as { temple: SuperAdminTenantDetail };
   return body.temple;
+}
+
+function ComingSoonCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="glass-card flex items-start gap-3 rounded-2xl p-4 opacity-70">
+      <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <div>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          {title}
+          <Badge variant="outline" className="text-xs">
+            Coming soon
+          </Badge>
+        </p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  );
 }
 
 function DetailRow({ label, value }: { label: string; value: string | null }) {

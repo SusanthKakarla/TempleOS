@@ -159,6 +159,63 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "📢 కుటుంబ రిమైండర్\n\nరేపు:\n{{occasionList}}\n\n{{templeName}} నుండి",
   },
+  // Platform config changes — Super Admin edited settings, or changed feature/status — to tenant admins.
+  {
+    notificationType: "tenant_config_changed",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "⚙️ Temple Settings Updated\n\n{{summary}}\n\nUpdated by the TempleOS platform team.",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "⚙️ ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి\n\n{{summary}}\n\nTempleOS ప్లాట్‌ఫారమ్ బృందం ద్వారా నవీకరించబడింది.",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "in_app",
+    language: "en",
+    title: "Temple Settings Updated",
+    body: "{{summary}}",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "in_app",
+    language: "te",
+    title: "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
+    body: "{{summary}}",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🔔 Temple Status Changed\n\n{{templeName}} is now {{status}}.\n\nContact the TempleOS platform team with any questions.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🔔 ఆలయ స్థితి మార్చబడింది\n\n{{templeName}} ఇప్పుడు {{status}}.\n\nప్రశ్నల కోసం TempleOS ప్లాట్‌ఫారమ్ బృందాన్ని సంప్రదించండి.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "in_app",
+    language: "en",
+    title: "Temple Status Changed",
+    body: "{{templeName}} is now {{status}}.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "in_app",
+    language: "te",
+    title: "ఆలయ స్థితి మార్చబడింది",
+    body: "{{templeName}} ఇప్పుడు {{status}}.",
+  },
   // New user welcome — admin/priest/committee_member/volunteer.
   {
     notificationType: "user_welcome",

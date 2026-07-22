@@ -51,7 +51,7 @@ export default async function SuperAdminRolesPage() {
           <Button
             variant="ghost"
             className="px-0"
-            render={<Link href="/super-admin" />}
+            render={<Link href="/super-admin/temples" />}
           >
             <ArrowLeft className="size-4" />
             Temples

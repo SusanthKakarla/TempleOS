@@ -3,6 +3,7 @@ import { getDevoteeById } from "@/lib/db/devotees";
 import { getPreference } from "@/lib/db/notification-preferences";
 import { getTemplate } from "@/lib/db/notification-templates";
 import { createNotification } from "@/lib/db/notifications";
+import { getTenantById } from "@/lib/db/tenants";
 import { enqueueNotification } from "./engine";
 
 vi.mock("@/lib/db/devotees", () => ({ getDevoteeById: vi.fn() }));
@@ -13,6 +14,7 @@ vi.mock("@/lib/db/notification-templates", () => ({
     body.replace(/\{\{(\w+)\}\}/g, (m, k: string) => vars[k] ?? m),
 }));
 vi.mock("@/lib/db/notifications", () => ({ createNotification: vi.fn() }));
+vi.mock("@/lib/db/tenants", () => ({ getTenantById: vi.fn() }));
 
 const inAppTemplate = {
   id: "tpl-in-app",
@@ -33,6 +35,8 @@ describe("enqueueNotification", () => {
     vi.mocked(getPreference).mockReset();
     vi.mocked(getTemplate).mockReset();
     vi.mocked(createNotification).mockReset();
+    vi.mocked(getTenantById).mockReset();
+    vi.mocked(getTenantById).mockResolvedValue({ status: "active" } as never);
     vi.mocked(createNotification).mockImplementation(async (input) => ({
       id: "created",
       tenantId: input.tenantId,

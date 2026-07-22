@@ -21,11 +21,11 @@ export default async function SuperAdminLoginPage({ searchParams }: SuperAdminLo
 }
 
 function getSafeSuperAdminNextPath(value: string | undefined): string {
-  if (!value) return "/super-admin/temples/new";
-  if (!value.startsWith("/super-admin")) return "/super-admin/temples/new";
-  if (value.startsWith("//") || value.includes("://")) return "/super-admin/temples/new";
+  if (!value) return "/super-admin";
+  if (!value.startsWith("/super-admin")) return "/super-admin";
+  if (value.startsWith("//") || value.includes("://")) return "/super-admin";
   if (value === "/super-admin/login" || value.startsWith("/super-admin/login?")) {
-    return "/super-admin/temples/new";
+    return "/super-admin";
   }
   return value;
 }

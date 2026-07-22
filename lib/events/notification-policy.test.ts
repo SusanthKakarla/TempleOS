@@ -88,6 +88,7 @@ describe("isAutoNotifyEnabled", () => {
     id: "tenant-1",
     slug: "sv-temple",
     name: "Sri Venkateswara Temple",
+    status: "active",
     defaultContactPhone: null,
     address: null,
     timezone: "Asia/Kolkata",

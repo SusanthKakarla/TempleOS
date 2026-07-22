@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getConversationByDevoteeId } from "@/lib/db/whatsapp-conversations";
 import { listMessagesForDevotee } from "@/lib/db/whatsapp-messages";
@@ -14,6 +15,7 @@ interface PageProps {
 
 export default async function ConversationThreadPage({ params }: PageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "conversations");
 
   const { devoteeId } = await params;
   const [conversation, devotee] = await Promise.all([

@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import {
   getEventNotificationSummary,
   listRecentEventNotifications,
@@ -37,10 +38,12 @@ const CATEGORY_VALUES: NotificationCategory[] = [
   "family",
   "event",
   "announcement",
+  "platform",
 ];
 
 export default async function NotificationsPage({ searchParams }: PageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "notifications");
   const t = await getTranslations("notifications");
   const locale = (await getLocale()) as SupportedLanguage;
 
