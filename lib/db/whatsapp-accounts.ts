@@ -66,6 +66,7 @@ export interface LinkWhatsAppAccountForProvisioningInput extends UpsertWhatsAppA
 
 export interface ManuallyConnectWhatsAppAccountInput extends UpsertWhatsAppAccountInput {
   businessName?: string | null;
+  webhookSubscribed: boolean;
 }
 
 export async function linkWhatsAppAccountForProvisioning(
@@ -87,19 +88,27 @@ export async function manuallyConnectWhatsAppAccount(
   input: ManuallyConnectWhatsAppAccountInput,
 ): Promise<WhatsAppAccount> {
   const { rows } = await getPool().query<WhatsAppAccountRow>(
-    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, business_name, status, connected_at)
-     VALUES ($1, $2, $3, $4, $5, 'connected', now())
+    `INSERT INTO whatsapp_accounts (tenant_id, phone_number, meta_phone_number_id, meta_business_account_id, business_name, webhook_subscribed, status, connected_at)
+     VALUES ($1, $2, $3, $4, $5, $6, 'connected', now())
      ON CONFLICT (tenant_id)
      DO UPDATE SET phone_number = EXCLUDED.phone_number,
                    meta_phone_number_id = EXCLUDED.meta_phone_number_id,
                    meta_business_account_id = EXCLUDED.meta_business_account_id,
                    business_name = EXCLUDED.business_name,
+                   webhook_subscribed = EXCLUDED.webhook_subscribed,
                    status = 'connected',
                    connected_at = now(),
                    disconnected_at = NULL,
                    updated_at = now()
      RETURNING *`,
-    [tenantId, input.phoneNumber, input.metaPhoneNumberId, input.metaBusinessAccountId, input.businessName ?? null],
+    [
+      tenantId,
+      input.phoneNumber,
+      input.metaPhoneNumberId,
+      input.metaBusinessAccountId,
+      input.businessName ?? null,
+      input.webhookSubscribed,
+    ],
   );
   return mapAccount(rows[0]);
 }

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
-import { MessageCircle, Save, Trash2 } from "lucide-react";
+import { CheckCircle2, MessageCircle, Save, Trash2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,6 +123,21 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {isConnected && (
+            <div>
+              <p className="mb-1 text-xs text-muted-foreground">Webhook status</p>
+              <Badge variant={account?.webhookSubscribed ? "default" : "destructive"} className="gap-1">
+                {account?.webhookSubscribed ? (
+                  <CheckCircle2 className="size-3.5" />
+                ) : (
+                  <XCircle className="size-3.5" />
+                )}
+                {account?.webhookSubscribed
+                  ? "Subscribed — messages will reach the chatbot"
+                  : "Not subscribed — incoming messages won't reach the chatbot. Try Update Connection."}
+              </Badge>
+            </div>
+          )}
           {errors.message && (
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {errors.message}
