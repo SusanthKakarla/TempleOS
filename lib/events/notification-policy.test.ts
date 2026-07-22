@@ -12,6 +12,7 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     startsAt: "2026-09-05T04:30:00.000Z",
     endsAt: null,
     status: "draft",
+    bannerMediaId: null,
     createdBy: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

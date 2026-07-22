@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     startsAt: parsed.data.startsAt,
     endsAt: parsed.data.endsAt ?? null,
     status: parsed.data.status,
+    bannerMediaId: parsed.data.bannerMediaId ?? null,
     createdBy: session.membershipId,
   });
 

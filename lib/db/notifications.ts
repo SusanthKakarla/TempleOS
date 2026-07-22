@@ -21,6 +21,7 @@ interface NotificationRow {
   message: string;
   language: SupportedLanguage;
   metadata: Record<string, unknown>;
+  media_id: string | null;
   delivery_status: NotificationDeliveryStatus;
   attempt_count: number;
   next_attempt_at: Date;
@@ -45,6 +46,7 @@ function mapNotification(row: NotificationRow): Notification {
     message: row.message,
     language: row.language,
     metadata: row.metadata,
+    mediaId: row.media_id,
     deliveryStatus: row.delivery_status,
     attemptCount: row.attempt_count,
     nextAttemptAt: row.next_attempt_at.toISOString(),
@@ -68,14 +70,15 @@ export interface CreateNotificationInput {
   message: string;
   language: SupportedLanguage;
   metadata?: Record<string, unknown>;
+  mediaId?: string | null;
 }
 
 export async function createNotification(input: CreateNotificationInput): Promise<Notification> {
   const { rows } = await getPool().query<NotificationRow>(
     `INSERT INTO notifications
        (tenant_id, recipient_person_id, recipient_devotee_id, notification_type, channel, category,
-        title, message, language, metadata, delivery_status, next_attempt_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, 'pending', now())
+        title, message, language, metadata, media_id, delivery_status, next_attempt_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, 'pending', now())
      RETURNING *`,
     [
       input.tenantId,
@@ -88,6 +91,7 @@ export async function createNotification(input: CreateNotificationInput): Promis
       input.message,
       input.language,
       JSON.stringify(input.metadata ?? {}),
+      input.mediaId ?? null,
     ],
   );
   return mapNotification(rows[0]);
@@ -208,6 +212,8 @@ export interface NotificationCategoryCounts {
   anniversary: number;
   family: number;
   platform: number;
+  donation: number;
+  festival: number;
 }
 
 /** Tenant-wide counts (any recipient) for the Notification Center's category tabs. */
@@ -225,6 +231,8 @@ export async function countNotificationsByCategory(tenantId: string): Promise<No
     anniversary: 0,
     family: 0,
     platform: 0,
+    donation: 0,
+    festival: 0,
   };
   for (const row of rows) {
     counts[row.category] = Number(row.count);

@@ -9,12 +9,21 @@ import {
   type ListRecentEventNotificationsOptions,
 } from "@/lib/db/event-notifications";
 import { listRecentNotifications, countNotificationsFiltered } from "@/lib/db/notifications";
+import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
+import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
 import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
+import { GreetingMediaCard } from "@/features/media/greeting-media-card";
+import { FestivalMediaGrid } from "@/features/media/festival-media-grid";
 import { parsePageParam } from "@/lib/pagination";
 import { PageHeader } from "@/components/page-header";
-import type { NotificationCategory, SupportedLanguage } from "@/types/db";
+import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
+
+async function resolveLinkedMedia(tenantId: string, notificationType: "birthday_devotee" | "anniversary_devotee" | "donation_thank_you"): Promise<NotificationMedia | null> {
+  const mediaId = await getTenantMediaIdForType(tenantId, notificationType);
+  return mediaId ? getNotificationMediaById(tenantId, mediaId) : null;
+}
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
@@ -61,7 +70,17 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
-  const [summary, notifications, totalCount, automatedNotifications, automatedTotalCount] = await Promise.all([
+  const [
+    summary,
+    notifications,
+    totalCount,
+    automatedNotifications,
+    automatedTotalCount,
+    birthdayMedia,
+    anniversaryMedia,
+    donationMedia,
+    festivalMedia,
+  ] = await Promise.all([
     getEventNotificationSummary(session.tenantId),
     listRecentEventNotifications(session.tenantId, {
       eventId,
@@ -73,6 +92,10 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
     countEventNotificationsFiltered(session.tenantId, { eventId }),
     listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: NOTIFICATIONS_PAGE_SIZE }),
     countNotificationsFiltered(session.tenantId, { category }),
+    resolveLinkedMedia(session.tenantId, "birthday_devotee"),
+    resolveLinkedMedia(session.tenantId, "anniversary_devotee"),
+    resolveLinkedMedia(session.tenantId, "donation_thank_you"),
+    listNotificationMedia(session.tenantId, "festival_greeting"),
   ]);
 
   const successRate =
@@ -110,6 +133,11 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
           icon={<BellRing className="size-4.5" />}
           gradient="gradient-blue-purple"
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <GreetingMediaCard birthday={birthdayMedia} anniversary={anniversaryMedia} donation={donationMedia} />
+        <FestivalMediaGrid initialMedia={festivalMedia} />
       </div>
 
       <NotificationList

@@ -221,6 +221,7 @@ export interface Event {
   startsAt: string;
   endsAt: string | null;
   status: EventStatus;
+  bannerMediaId: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -263,7 +264,9 @@ export type NotificationCategory =
   | "announcement"
   | "anniversary"
   | "family"
-  | "platform";
+  | "platform"
+  | "donation"
+  | "festival";
 export type NotificationType =
   | "birthday_devotee"
   | "birthday_priest"
@@ -274,7 +277,9 @@ export type NotificationType =
   | "anniversary_priest"
   | "family_occasion_reminder"
   | "tenant_config_changed"
-  | "tenant_status_changed";
+  | "tenant_status_changed"
+  | "donation_thank_you"
+  | "festival_greeting";
 
 export interface NotificationTemplate {
   id: string;
@@ -299,6 +304,7 @@ export interface Notification {
   message: string;
   language: SupportedLanguage;
   metadata: Record<string, unknown>;
+  mediaId: string | null;
   deliveryStatus: NotificationDeliveryStatus;
   attemptCount: number;
   nextAttemptAt: string;
@@ -306,6 +312,40 @@ export interface Notification {
   deliveredAt: string | null;
   readAt: string | null;
   failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const NOTIFICATION_MEDIA_CATEGORIES = [
+  "event_banner",
+  "birthday_greeting",
+  "anniversary_greeting",
+  "donation_thank_you",
+  "festival_greeting",
+] as const;
+export type NotificationMediaCategory = (typeof NOTIFICATION_MEDIA_CATEGORIES)[number];
+
+export interface NotificationMedia {
+  id: string;
+  tenantId: string;
+  category: NotificationMediaCategory;
+  title: string | null;
+  storageKey: string;
+  imageUrl: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  fileSize: number;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantNotificationMedia {
+  id: string;
+  tenantId: string;
+  notificationType: NotificationType;
+  mediaId: string;
   createdAt: string;
   updatedAt: string;
 }

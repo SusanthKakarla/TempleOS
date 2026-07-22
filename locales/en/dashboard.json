@@ -425,7 +425,9 @@
         "description": "Description",
         "location": "Location",
         "start": "Start",
-        "end": "End (optional)"
+        "end": "End (optional)",
+        "banner": "Event banner (optional)",
+        "bannerHint": "Sent as an image with the WhatsApp announcement. Recommended 1200×628."
       },
       "published": { "label": "Published", "description": "Visible to devotees on WhatsApp." },
       "preview": "Preview",

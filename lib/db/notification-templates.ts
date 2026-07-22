@@ -303,6 +303,37 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: "రేపు కార్యక్రమం",
     body: "{{eventTitle}} రేపు {{eventTime}} గంటలకు, {{eventLocation}} వద్ద జరుగుతుంది.",
   },
+  // Donation thank-you — devotee, WhatsApp only (same reasoning as birthday_devotee).
+  {
+    notificationType: "donation_thank_you",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Thank you, {{donorName}}, for your generous donation of {{amount}} towards {{purpose}}.\n\nOn behalf of {{templeName}}, may the deity bless you and your family.",
+  },
+  {
+    notificationType: "donation_thank_you",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 {{purpose}} కొరకు మీ {{amount}} విరాళానికి ధన్యవాదాలు, {{donorName}}.\n\n{{templeName}} తరఫున, దేవుడు మిమ్మల్ని మరియు మీ కుటుంబాన్ని ఆశీర్వదించాలని కోరుకుంటున్నాము.",
+  },
+  // Festival greeting — one shared template with a {{festivalName}} variable
+  // rather than 8 near-duplicate rows (see lib/db/festival-greetings.ts).
+  {
+    notificationType: "festival_greeting",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🎉 {{festivalName}} Greetings!\n\n🙏 {{templeName}} wishes you and your family a joyous {{festivalName}}, filled with divine blessings.\n\n🌸 Om Namah Shivaya 🌸",
+  },
+  {
+    notificationType: "festival_greeting",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🎉 {{festivalName}} శుభాకాంక్షలు!\n\n🙏 {{templeName}} తరఫున మీకు మరియు మీ కుటుంబానికి ఆనందకరమైన {{festivalName}} శుభాకాంక్షలు.\n\n🌸 ఓం నమః శివాయ 🌸",
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

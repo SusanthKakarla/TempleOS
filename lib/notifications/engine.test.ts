@@ -4,6 +4,7 @@ import { getPreference } from "@/lib/db/notification-preferences";
 import { getTemplate } from "@/lib/db/notification-templates";
 import { createNotification } from "@/lib/db/notifications";
 import { getTenantById } from "@/lib/db/tenants";
+import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { enqueueNotification } from "./engine";
 
 vi.mock("@/lib/db/devotees", () => ({ getDevoteeById: vi.fn() }));
@@ -15,6 +16,7 @@ vi.mock("@/lib/db/notification-templates", () => ({
 }));
 vi.mock("@/lib/db/notifications", () => ({ createNotification: vi.fn() }));
 vi.mock("@/lib/db/tenants", () => ({ getTenantById: vi.fn() }));
+vi.mock("@/lib/db/tenant-notification-media", () => ({ getTenantMediaIdForType: vi.fn() }));
 
 const inAppTemplate = {
   id: "tpl-in-app",
@@ -37,6 +39,8 @@ describe("enqueueNotification", () => {
     vi.mocked(createNotification).mockReset();
     vi.mocked(getTenantById).mockReset();
     vi.mocked(getTenantById).mockResolvedValue({ status: "active" } as never);
+    vi.mocked(getTenantMediaIdForType).mockReset();
+    vi.mocked(getTenantMediaIdForType).mockResolvedValue(null);
     vi.mocked(createNotification).mockImplementation(async (input) => ({
       id: "created",
       tenantId: input.tenantId,
@@ -49,6 +53,7 @@ describe("enqueueNotification", () => {
       message: input.message,
       language: input.language,
       metadata: input.metadata ?? {},
+      mediaId: input.mediaId ?? null,
       deliveryStatus: "pending",
       attemptCount: 0,
       nextAttemptAt: "2026-07-21T00:00:00.000Z",
@@ -160,5 +165,27 @@ describe("enqueueNotification", () => {
     expect(inApp?.title).toBe("Welcome Ravi");
     expect(whatsapp?.message).toBe("Welcome Ravi");
     expect(whatsapp?.title).toBeNull();
+  });
+
+  it("attaches the tenant's configured banner to the whatsapp row only, never in_app", async () => {
+    vi.mocked(getPreference).mockResolvedValue(null);
+    vi.mocked(getTemplate).mockImplementation(async (_type, channel) =>
+      channel === "in_app" ? inAppTemplate : whatsappTemplate,
+    );
+    vi.mocked(getTenantMediaIdForType).mockResolvedValue("media-1");
+
+    const created = await enqueueNotification({
+      tenantId: "tenant-1",
+      recipient: { personId: "person-1" },
+      notificationType: "user_welcome",
+      category: "new_user",
+      language: "en",
+      templateVars: { name: "Ravi" },
+    });
+
+    const inApp = created.find((n) => n.channel === "in_app");
+    const whatsapp = created.find((n) => n.channel === "whatsapp");
+    expect(whatsapp?.mediaId).toBe("media-1");
+    expect(inApp?.mediaId).toBeNull();
   });
 });

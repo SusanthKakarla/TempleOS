@@ -121,6 +121,7 @@ describe("events tenant admin API gate", () => {
       startsAt: "2026-08-01T10:00:00.000Z",
       endsAt: null,
       status: "published",
+      bannerMediaId: null,
       createdBy: "membership-1",
       createdAt: "2026-07-18T00:00:00.000Z",
       updatedAt: "2026-07-18T00:00:00.000Z",

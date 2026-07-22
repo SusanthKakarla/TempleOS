@@ -2,6 +2,7 @@ import { getDevoteeById } from "@/lib/db/devotees";
 import { getPreference } from "@/lib/db/notification-preferences";
 import { getTemplate, renderTemplate } from "@/lib/db/notification-templates";
 import { createNotification } from "@/lib/db/notifications";
+import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getTenantById } from "@/lib/db/tenants";
 import type { Notification, NotificationCategory, NotificationChannel, NotificationType, SupportedLanguage } from "@/types/db";
 
@@ -40,6 +41,10 @@ export async function enqueueNotification(input: EnqueueNotificationInput): Prom
 
   const channels = await eligibleChannels(input.tenantId, input.recipient, input.notificationType);
   const created: Notification[] = [];
+  // Reusable per-tenant image (birthday/anniversary/donation greeting banners,
+  // see lib/db/tenant-notification-media.ts) — frozen onto the row now, same
+  // as title/message, so delivery never has to re-resolve it mid-retry.
+  const mediaId = await getTenantMediaIdForType(input.tenantId, input.notificationType);
 
   for (const channel of channels) {
     const template = await getTemplate(input.notificationType, channel, input.language);
@@ -56,6 +61,7 @@ export async function enqueueNotification(input: EnqueueNotificationInput): Prom
       message: renderTemplate(template.body, input.templateVars),
       language: template.language,
       metadata: input.templateVars,
+      mediaId: channel === "whatsapp" ? mediaId : null,
     });
     created.push(notification);
   }
