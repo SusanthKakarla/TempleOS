@@ -153,13 +153,19 @@ describe("super admin auth boundary", () => {
     expect(source).toMatch(/params:\s*Promise<\{\s*tenantId:\s*string\s*\}>/);
     expect(source).toMatch(/await params/);
     expect(source).toMatch(/requireSuperAdminPage/);
-    expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
-    expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    // The page reads via the same getTenantDetailForSuperAdmin() the GET route
+    // itself calls — a prior self-fetch (page -> its own API route -> DB) was
+    // a real, measurable perf cost on the heaviest Super Admin page with no
+    // compensating benefit (the route did no redaction/validation beyond what
+    // the DB function already returns), so the "pages call routes, routes call
+    // the DB" layering rule is deliberately relaxed for this one read path.
+    // Mutations (PATCH) still go through the API route only — see the
+    // updateProvisionedTemple check below.
+    expect(source).toMatch(/getTenantDetailForSuperAdmin/);
     expect(source).toMatch(/TempleDetailEditForm/);
-    expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
     expect(source).not.toMatch(/updateProvisionedTemple|updateProvisionedTenantDetailsForSuperAdmin/);
     expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
-      source.indexOf("await fetchTempleDetailForSuperAdmin"),
+      source.indexOf("await getTenantDetailForSuperAdmin"),
     );
     expect(source).toMatch(/notFound\(\)/);
     expect(source).toMatch(/\/super-admin/);

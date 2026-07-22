@@ -240,12 +240,18 @@ export function DonationFormDialog({
               </SelectContent>
             </Select>
             {purposePreset === DONATION_PURPOSE_OTHER && (
-              <Input
-                placeholder={tForm("fields.purposePlaceholder")}
-                value={customPurpose}
-                onChange={(e) => setCustomPurpose(e.target.value)}
-                required
-              />
+              <>
+                <Label htmlFor="purpose-other" className="sr-only">
+                  {tForm("fields.purposePlaceholder")}
+                </Label>
+                <Input
+                  id="purpose-other"
+                  placeholder={tForm("fields.purposePlaceholder")}
+                  value={customPurpose}
+                  onChange={(e) => setCustomPurpose(e.target.value)}
+                  required
+                />
+              </>
             )}
           </div>
 

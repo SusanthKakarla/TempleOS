@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -30,7 +29,7 @@ import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-featu
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import { listTenantFeatures } from "@/lib/db/tenant-features";
 import { listAuditLogEntriesForTenant } from "@/lib/db/audit-log";
-import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
+import { getTenantDetailForSuperAdmin } from "@/lib/db/tenants";
 import { requireSuperAdminPage } from "../../../require-super-admin";
 
 interface TempleDetailPageProps {
@@ -42,7 +41,7 @@ export default async function SuperAdminTempleDetailPage({
 }: TempleDetailPageProps) {
   const { tenantId } = await params;
   await requireSuperAdminPage(`/super-admin/temples/${tenantId}`);
-  const temple = await fetchTempleDetailForSuperAdmin(tenantId);
+  const temple = await getTenantDetailForSuperAdmin(tenantId);
 
   if (!temple) {
     notFound();
@@ -210,6 +209,7 @@ export default async function SuperAdminTempleDetailPage({
                   <TableHead>Member</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Roles</TableHead>
+                  <TableHead>Manage Roles</TableHead>
                   <TableHead className="text-right">Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,7 +226,7 @@ export default async function SuperAdminTempleDetailPage({
                     </TableCell>
                     <TableCell>{member.phoneNumber}</TableCell>
                     <TableCell>
-                      <div className="mb-3 flex min-w-56 flex-wrap gap-1">
+                      <div className="flex min-w-40 flex-wrap gap-1">
                         {member.roles.length > 0 ? (
                           member.roles.map((role) => (
                             <Badge
@@ -243,6 +243,8 @@ export default async function SuperAdminTempleDetailPage({
                           <Badge variant="outline">No roles</Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
                       <MemberRoleEditor
                         tenantId={temple.tenant.id}
                         member={member}
@@ -260,39 +262,6 @@ export default async function SuperAdminTempleDetailPage({
         </TableShell>
     </div>
   );
-}
-
-async function fetchTempleDetailForSuperAdmin(
-  tenantId: string,
-): Promise<SuperAdminTenantDetail | null> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("host");
-  if (!host) {
-    throw new Error("Cannot fetch temple detail without a request host.");
-  }
-
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
-
-  const res = await fetch(
-    `${protocol}://${host}/api/super-admin/temples/${tenantId}`,
-    {
-      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-      cache: "no-store",
-    },
-  );
-
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error("Temple detail API request failed.");
-  }
-
-  const body = (await res.json()) as { temple: SuperAdminTenantDetail };
-  return body.temple;
 }
 
 function ComingSoonCard({ title, description }: { title: string; description: string }) {

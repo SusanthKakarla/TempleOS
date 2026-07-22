@@ -84,11 +84,11 @@ export default async function SuperAdminRolesPage() {
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Label</TableHead>
+                <TableHead className="w-28">Code</TableHead>
+                <TableHead className="w-36">Label</TableHead>
                 <TableHead>Meaning</TableHead>
-                <TableHead>Capabilities</TableHead>
-                <TableHead className="text-right">State</TableHead>
+                <TableHead className="w-72">Capabilities</TableHead>
+                <TableHead className="w-24 text-right">State</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,11 +102,11 @@ export default async function SuperAdminRolesPage() {
                   <TableCell className="font-medium">
                     {role.displayName}
                   </TableCell>
-                  <TableCell className="max-w-md text-sm text-muted-foreground">
+                  <TableCell className="max-w-md text-sm wrap-break-word text-muted-foreground">
                     {role.description ?? "No description available."}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex min-w-56 flex-wrap gap-1">
+                  <TableCell className="w-72">
+                    <div className="flex flex-wrap gap-1">
                       {capabilitiesFor(role).map((capability) => (
                         <Badge key={capability} variant="outline">
                           {capability}

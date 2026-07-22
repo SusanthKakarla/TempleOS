@@ -5,6 +5,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { SuperAdminTenantMember } from "@/lib/db/tenants";
 import type { RoleCode, RoleDefinition } from "@/types/db";
 import {
@@ -93,11 +94,9 @@ export function MemberRoleEditor({ tenantId, member, roles }: MemberRoleEditorPr
               key={role.code}
               className="inline-flex h-8 items-center gap-2 rounded-md border px-2 text-sm"
             >
-              <input
-                type="checkbox"
-                className="size-4"
+              <Checkbox
                 checked={checked}
-                onChange={(event) => toggleRole(role.code, event.target.checked)}
+                onCheckedChange={(value) => toggleRole(role.code, value === true)}
                 aria-label={`${role.displayName} role for ${member.displayName}`}
               />
               <span>{role.displayName}</span>

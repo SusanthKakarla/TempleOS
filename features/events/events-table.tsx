@@ -330,11 +330,6 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
               ))}
             </motion.tbody>
           </Table>
-        </TableShell>
-      )}
-
-      {events.length > 0 && (
-        <TableShell>
           <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/events" />
         </TableShell>
       )}

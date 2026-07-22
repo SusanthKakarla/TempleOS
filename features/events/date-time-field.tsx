@@ -6,6 +6,7 @@ import type { SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDate } from "@/lib/date";
 
@@ -55,9 +56,7 @@ export function DateTimeField({
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm leading-none font-medium">
-        {label}
-      </label>
+      <Label htmlFor={id}>{label}</Label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Popover>
           <PopoverTrigger
