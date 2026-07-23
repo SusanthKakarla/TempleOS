@@ -135,7 +135,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
         subtitle={t("pageHeader.subtitle")}
         actions={
           <>
-            <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")}>
+            <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")} className="hidden md:block">
               <TabsList>
                 <TabsTrigger value="table">
                   <Rows3 className="size-3.5" />
@@ -151,7 +151,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
             <EventFormDialog
               mode="create"
               trigger={
-                <Button className="hidden gap-1.5 sm:inline-flex">
+                <Button className="gap-1.5">
                   <PlusCircle className="size-4" />
                   {t("createButton")}
                 </Button>
@@ -182,29 +182,54 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
             />
           }
         />
-      ) : view === "card" ? (
-        <motion.div
-          initial="hidden"
-          animate="show"
-          variants={staggerContainer()}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {events.map((event) => (
-            <motion.div key={event.id} variants={rowFadeIn}>
-              <EventCard
-                event={event}
-                pending={pendingId === event.id}
-                onSaved={refresh}
-                onTogglePublish={handleTogglePublish}
-                onCancel={handleCancel}
-                onReopen={handleReopen}
-                onDelete={handleDelete}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
       ) : (
-        <TableShell>
+        <>
+          {/* Mobile always uses the card view — the table/card toggle is desktop/tablet only. */}
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={staggerContainer()}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:hidden"
+          >
+            {events.map((event) => (
+              <motion.div key={event.id} variants={rowFadeIn}>
+                <EventCard
+                  event={event}
+                  pending={pendingId === event.id}
+                  onSaved={refresh}
+                  onTogglePublish={handleTogglePublish}
+                  onCancel={handleCancel}
+                  onReopen={handleReopen}
+                  onDelete={handleDelete}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="hidden md:block">
+            {view === "card" ? (
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={staggerContainer()}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {events.map((event) => (
+                  <motion.div key={event.id} variants={rowFadeIn}>
+                    <EventCard
+                      event={event}
+                      pending={pendingId === event.id}
+                      onSaved={refresh}
+                      onTogglePublish={handleTogglePublish}
+                      onCancel={handleCancel}
+                      onReopen={handleReopen}
+                      onDelete={handleDelete}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <TableShell>
           <Table>
             <TableHeader>
               <TableRow>
@@ -328,22 +353,14 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
                   </TableCell>
                 </MotionTableRow>
               ))}
-            </motion.tbody>
-          </Table>
-          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/events" />
-        </TableShell>
+                </motion.tbody>
+              </Table>
+              <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/events" />
+              </TableShell>
+            )}
+          </div>
+        </>
       )}
-
-      <EventFormDialog
-        mode="create"
-        trigger={
-          <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
-            <PlusCircle className="size-5" />
-            <span className="sr-only">{t("createButton")}</span>
-          </Button>
-        }
-        onSaved={refresh}
-      />
     </div>
   );
 }

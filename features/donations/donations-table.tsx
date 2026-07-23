@@ -28,7 +28,6 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
-import { FloatingActionButton } from "@/components/floating-action-button";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
 import { formatInr } from "@/lib/currency";
@@ -116,7 +115,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [exportOpen, setExportOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState<DonationWithDonor | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
@@ -297,17 +295,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
               onOpenChange={setExportOpen}
               hideTrigger
             />
-            <DonationFormDialog
-              mode="create"
-              devotees={devotees}
-              trigger={
-                <Button className="hidden gap-1.5 lg:inline-flex">
-                  <Plus className="size-4" />
-                  {t("addButton")}
-                </Button>
-              }
-              onSaved={refresh}
-            />
           </>
         }
       />
@@ -316,21 +303,34 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         pathname={PATHNAME}
         placeholder={t("searchPlaceholder")}
         filtersSlot={
-          <FilterBottomSheet
-            title={tCommon("filters")}
-            activeCount={activeFilterCount}
-            onOpenChange={(open) => {
-              if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-            }}
-            onReset={() => {
-              const reset: PendingFilters = { preset: "custom", dateFrom: "", dateTo: "", purpose: "all" };
-              setPendingFilters(reset);
-              applyFilters(reset);
-            }}
-            onApply={() => applyFilters(pendingFilters)}
-          >
-            {filterSheetContent}
-          </FilterBottomSheet>
+          <>
+            <FilterBottomSheet
+              title={tCommon("filters")}
+              activeCount={activeFilterCount}
+              onOpenChange={(open) => {
+                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+              }}
+              onReset={() => {
+                const reset: PendingFilters = { preset: "custom", dateFrom: "", dateTo: "", purpose: "all" };
+                setPendingFilters(reset);
+                applyFilters(reset);
+              }}
+              onApply={() => applyFilters(pendingFilters)}
+            >
+              {filterSheetContent}
+            </FilterBottomSheet>
+            <DonationFormDialog
+              mode="create"
+              devotees={devotees}
+              trigger={
+                <Button className="shrink-0 gap-1.5">
+                  <Plus className="size-4" />
+                  <span className="hidden sm:inline">{t("addButton")}</span>
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
         }
       />
 
@@ -468,15 +468,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         />
       )}
 
-      <FloatingActionButton icon={<Plus className="size-5" />} label={t("addButton")} onClick={() => setCreateOpen(true)} />
-      <DonationFormDialog
-        mode="create"
-        devotees={devotees}
-        trigger={<span className="hidden" />}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSaved={refresh}
-      />
     </div>
   );
 }
