@@ -1,7 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { listDueEventNotifications } from "@/lib/db/event-notifications";
 import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
+import { isAuthorizedCronRequest } from "@/lib/cron/auth";
+import { logCronRun } from "@/lib/cron/log-run";
 
 const BATCH_LIMIT = 50;
 
@@ -18,21 +19,13 @@ const BATCH_LIMIT = 50;
  * puts back to `pending`/`retrying` — kept alive only for that, not deleted
  * alongside the rest of the legacy write path so that action keeps working.
  */
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  const provided = req.headers.get("authorization");
-  if (!secret || !provided) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const actual = Buffer.from(provided);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
-
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const due = await listDueEventNotifications(BATCH_LIMIT);
   await processEventNotifications(due.map((row) => row.id));
+  await logCronRun("process_event_notifications", { processed: due.length });
   return NextResponse.json({ processed: due.length });
 }

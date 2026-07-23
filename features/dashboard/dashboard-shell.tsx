@@ -1,5 +1,6 @@
 import type { SessionPayload } from "@/lib/auth/session";
 import { listTenantFeatures } from "@/lib/db/tenant-features";
+import { getTenantById } from "@/lib/db/tenants";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { AmbientBackground } from "./ambient-background";
@@ -13,14 +14,17 @@ export async function DashboardShell({
   session: SessionPayload;
   children: React.ReactNode;
 }) {
-  const features = await listTenantFeatures(session.tenantId);
+  const [features, tenant] = await Promise.all([
+    listTenantFeatures(session.tenantId),
+    getTenantById(session.tenantId),
+  ]);
   const enabledFeatures = new Set(features.filter((f) => f.enabled).map((f) => f.key));
 
   return (
     <MotionProvider>
       <SidebarProvider>
         <AmbientBackground />
-        <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} />
+        <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenant?.name ?? "TempleOS"} />
         <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
           <div className="flex h-full flex-col gap-3">
             <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />

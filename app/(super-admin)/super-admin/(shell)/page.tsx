@@ -18,23 +18,49 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/features/dashboard/metric-card";
-import { countTenantsByStatus, getPlatformActivityCounts, checkDatabaseHealth, countConnectedWhatsAppTenants, countPendingNotificationsPlatformWide, getLastSystemActivityAt } from "@/lib/db/platform-stats";
+import {
+  countTenantsByStatus,
+  getPlatformActivityCounts,
+  checkDatabaseHealth,
+  countConnectedWhatsAppTenants,
+  countPendingNotificationsPlatformWide,
+  countStuckRetryingNotifications,
+  getCronJobHealth,
+  getWhatsAppSendHealth,
+} from "@/lib/db/platform-stats";
 import { listRecentPlatformAuditEntries } from "@/lib/db/audit-log";
 import { requireSuperAdminPage } from "../require-super-admin";
+
+const CRON_JOB_LABELS: Record<string, string> = {
+  process_notifications: "Notification Retries",
+  daily_birthday_check: "Daily Scheduler",
+  process_event_notifications: "Event Announcements",
+};
 
 export default async function SuperAdminDashboardPage() {
   await requireSuperAdminPage("/super-admin");
 
-  const [tenantCounts, activityCounts, dbHealth, whatsappHealth, pendingNotifications, lastSystemActivityAt, recentActivity] =
-    await Promise.all([
-      countTenantsByStatus(),
-      getPlatformActivityCounts(),
-      checkDatabaseHealth(),
-      countConnectedWhatsAppTenants(),
-      countPendingNotificationsPlatformWide(),
-      getLastSystemActivityAt(),
-      listRecentPlatformAuditEntries(20),
-    ]);
+  const [
+    tenantCounts,
+    activityCounts,
+    dbHealth,
+    whatsappHealth,
+    whatsappSendHealth,
+    pendingNotifications,
+    stuckRetrying,
+    cronJobs,
+    recentActivity,
+  ] = await Promise.all([
+    countTenantsByStatus(),
+    getPlatformActivityCounts(),
+    checkDatabaseHealth(),
+    countConnectedWhatsAppTenants(),
+    getWhatsAppSendHealth(),
+    countPendingNotificationsPlatformWide(),
+    countStuckRetryingNotifications(),
+    getCronJobHealth(),
+    listRecentPlatformAuditEntries(20),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -72,7 +98,7 @@ export default async function SuperAdminDashboardPage() {
               <Server className="size-4 text-muted-foreground" />
               Platform Health
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <HealthTile
                 label="Database"
                 ok={dbHealth.ok}
@@ -80,8 +106,12 @@ export default async function SuperAdminDashboardPage() {
               />
               <HealthTile
                 label="WhatsApp"
-                ok={whatsappHealth.connected > 0}
-                detail={`${whatsappHealth.connected}/${whatsappHealth.total} temples connected`}
+                ok={whatsappHealth.connected > 0 && whatsappSendHealth.recentFailureCount === 0}
+                detail={
+                  whatsappSendHealth.recentFailureCount > 0
+                    ? `${whatsappSendHealth.recentFailureCount} failed in 24h: ${whatsappSendHealth.lastFailureReason?.slice(0, 80) ?? "Unknown error"}`
+                    : `${whatsappHealth.connected}/${whatsappHealth.total} temples connected`
+                }
               />
               <HealthTile
                 label="Notification Queue"
@@ -89,10 +119,18 @@ export default async function SuperAdminDashboardPage() {
                 detail={`${pendingNotifications} pending`}
               />
               <HealthTile
-                label="Cron Activity"
-                ok={Boolean(lastSystemActivityAt)}
-                detail={lastSystemActivityAt ? `Last seen ${formatTimestamp(lastSystemActivityAt)}` : "No activity yet"}
+                label="Stuck Retries"
+                ok={stuckRetrying === 0}
+                detail={stuckRetrying === 0 ? "None overdue" : `${stuckRetrying} retrying past 1h — retry cron may be down`}
               />
+              {cronJobs.map((job) => (
+                <HealthTile
+                  key={job.job}
+                  label={CRON_JOB_LABELS[job.job] ?? job.job}
+                  ok={!job.overdue}
+                  detail={job.lastRunAt ? `Last ran ${formatTimestamp(job.lastRunAt)}` : "Never ran"}
+                />
+              ))}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Storage and background-worker monitoring aren&apos;t tracked in this app yet — nothing fabricated here.

@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantById, listTenantIdsAndTimezones } from "@/lib/db/tenants";
 import {
@@ -13,6 +12,8 @@ import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { formatTime } from "@/lib/date";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
+import { isAuthorizedCronRequest } from "@/lib/cron/auth";
+import { logCronRun } from "@/lib/cron/log-run";
 import type { SupportedLanguage } from "@/types/db";
 
 /**
@@ -27,15 +28,6 @@ import type { SupportedLanguage } from "@/types/db";
  * daily). This route only ever discovers work and enqueues it through the
  * one shared engine — it never builds or sends a message itself.
  */
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  const provided = req.headers.get("authorization");
-  if (!secret || !provided) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const actual = Buffer.from(provided);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
-
 const OCCASION_LABELS: Record<SupportedLanguage, { birthday: string; anniversary: string }> = {
   en: { birthday: "Birthday", anniversary: "Anniversary" },
   te: { birthday: "పుట్టినరోజు", anniversary: "వివాహ వార్షికోత్సవం" },
@@ -49,7 +41,7 @@ function formatOccasionList(occasions: FamilyOccasionReminder["occasions"], lang
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -176,5 +168,6 @@ export async function POST(req: NextRequest) {
   }
 
   await processNotifications(createdIds);
+  await logCronRun("daily_birthday_check", { tenantsChecked: tenants.length, notificationsCreated: createdIds.length });
   return NextResponse.json({ tenantsChecked: tenants.length, notificationsCreated: createdIds.length });
 }
