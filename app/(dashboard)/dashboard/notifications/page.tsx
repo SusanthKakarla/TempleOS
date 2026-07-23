@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
 import {
@@ -8,7 +8,11 @@ import {
   countEventNotificationsFiltered,
   type ListRecentEventNotificationsOptions,
 } from "@/lib/db/event-notifications";
-import { listRecentNotifications, countNotificationsFiltered } from "@/lib/db/notifications";
+import {
+  listRecentNotifications,
+  countNotificationsFiltered,
+  countStuckRetryingNotifications,
+} from "@/lib/db/notifications";
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
 import { MetricCard } from "@/features/dashboard/metric-card";
@@ -16,6 +20,7 @@ import { NotificationList } from "@/features/notifications/notification-list";
 import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { GreetingMediaCard } from "@/features/media/greeting-media-card";
 import { FestivalMediaGrid } from "@/features/media/festival-media-grid";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { parsePageParam } from "@/lib/pagination";
 import { PageHeader } from "@/components/page-header";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
@@ -80,6 +85,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
     anniversaryMedia,
     donationMedia,
     festivalMedia,
+    stuckRetrying,
   ] = await Promise.all([
     getEventNotificationSummary(session.tenantId),
     listRecentEventNotifications(session.tenantId, {
@@ -96,6 +102,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
     resolveLinkedMedia(session.tenantId, "anniversary_devotee"),
     resolveLinkedMedia(session.tenantId, "donation_thank_you"),
     listNotificationMedia(session.tenantId, "festival_greeting"),
+    countStuckRetryingNotifications(session.tenantId),
   ]);
 
   const successRate =
@@ -106,6 +113,17 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
+
+      {stuckRetrying > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertTitle>WhatsApp delivery may be failing</AlertTitle>
+          <AlertDescription>
+            {stuckRetrying} notification{stuckRetrying === 1 ? " has" : "s have"} been retrying delivery for over an
+            hour. Contact your platform administrator if this persists.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard

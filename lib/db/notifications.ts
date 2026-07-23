@@ -240,6 +240,21 @@ export async function countNotificationsByCategory(tenantId: string): Promise<No
   return counts;
 }
 
+/**
+ * Notifications stuck past their retry backoff (tops out at 30 minutes — see
+ * computeRetryState below) — powers a tenant-facing "delivery may be
+ * failing" banner so admins don't need Super Admin access to notice.
+ */
+export async function countStuckRetryingNotifications(tenantId: string, overdueMinutes = 60): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM notifications
+     WHERE tenant_id = $1 AND delivery_status = 'retrying'
+       AND next_attempt_at < now() - ($2 || ' minutes')::interval`,
+    [tenantId, overdueMinutes],
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
 /** Dashboard "Scheduled Notifications" card — every notification still awaiting delivery, any category. */
 export async function countPendingNotifications(tenantId: string): Promise<number> {
   const { rows } = await getPool().query<{ count: string }>(
