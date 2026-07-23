@@ -821,10 +821,12 @@
       "empty": "ఇంకా కార్యకలాపం లేదు.",
       "columns": { "action": "చర్య", "user": "వినియోగదారు", "changedBy": "ఎవరు మార్చారు", "timestamp": "సమయం" },
       "actionLabels": {
-        "tenant_member.invited": "వినియోగదారుని ఆహ్వానించారు",
-        "tenant_member.roles_changed": "పాత్ర మార్చబడింది",
-        "tenant_member.enabled": "వినియోగదారుని ప్రారంభించారు",
-        "tenant_member.disabled": "వినియోగదారుని నిలిపివేశారు"
+        "tenant_member": {
+          "invited": "వినియోగదారుని ఆహ్వానించారు",
+          "roles_changed": "పాత్ర మార్చబడింది",
+          "enabled": "వినియోగదారుని ప్రారంభించారు",
+          "disabled": "వినియోగదారుని నిలిపివేశారు"
+        }
       }
     },
     "importWizard": {
