@@ -6,7 +6,10 @@ import { createAuditLogEntry } from "@/lib/db/audit-log";
 import {
   claimNotification,
   computeRetryState,
+  getNotificationByProviderMessageId,
+  markNotificationDelivered,
   markNotificationFailed,
+  markNotificationReadReceipt,
   markNotificationSent,
 } from "@/lib/db/notifications";
 import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
@@ -30,7 +33,7 @@ async function processOneNotification(id: string): Promise<void> {
 
   if (claimed.channel === "in_app") {
     // No external delivery step — the Notification Center reads the row directly.
-    await markNotificationSent(claimed.id);
+    await markNotificationSent(claimed.id, null);
     await logOutcome(claimed, "sent");
     return;
   }
@@ -52,10 +55,36 @@ async function processOneNotification(id: string): Promise<void> {
       )
     : await sendTextMessage(whatsappAccount.metaPhoneNumberId, phone, claimed.message);
   if (result.success) {
-    await markNotificationSent(claimed.id);
+    await markNotificationSent(claimed.id, result.providerMessageId);
     await logOutcome(claimed, "sent");
   } else {
     await failWithLog(claimed, result.error ?? "Unknown send error");
+  }
+}
+
+/**
+ * Applies a Meta delivery-status webhook callback (the async statuses array,
+ * distinct from Meta's synchronous send-accepted response) to whichever
+ * notification row it belongs to. A "sent" status is a no-op — this table
+ * already marked it sent synchronously. "failed" reuses markNotificationFailed
+ * as-is, so an async-detected failure gets the same retry backoff as a
+ * synchronous one — no separate retry mechanism.
+ */
+export async function applyWebhookDeliveryStatus(
+  providerMessageId: string,
+  status: "sent" | "delivered" | "read" | "failed",
+  errorReason?: string,
+): Promise<void> {
+  const notification = await getNotificationByProviderMessageId(providerMessageId);
+  if (!notification) return; // not a generic-engine send (legacy pipeline or inbound reply) — out of scope
+
+  if (status === "delivered") {
+    await markNotificationDelivered(notification.id);
+  } else if (status === "read") {
+    await markNotificationReadReceipt(notification.id);
+  } else if (status === "failed") {
+    const reason = errorReason ?? "WhatsApp reported delivery failure";
+    await failWithLog(notification, reason);
   }
 }
 

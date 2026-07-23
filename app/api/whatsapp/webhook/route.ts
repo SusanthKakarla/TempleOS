@@ -5,6 +5,7 @@ import { getTenantById } from "@/lib/db/tenants";
 import { upsertDevoteeFromWhatsApp, updateDevoteePreferredLanguage } from "@/lib/db/devotees";
 import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
 import { logWhatsAppInteraction } from "@/lib/db/whatsapp-interactions";
+import { applyWebhookDeliveryStatus } from "@/lib/notifications/delivery";
 import { listEvents } from "@/lib/db/events";
 import { getSpecialDayForDate } from "@/lib/db/temple-special-days";
 import { listSevas } from "@/lib/db/temple-sevas";
@@ -45,6 +46,18 @@ interface InboundMessage {
   };
 }
 
+// Meta's asynchronous delivery-status callback — separate from (and can
+// arrive in a payload alongside or instead of) the inbound `messages` array
+// above. `id` is the same WAMID markNotificationSent stored as
+// provider_message_id at send time.
+interface StatusUpdate {
+  id?: string;
+  status?: string;
+  errors?: Array<{ title?: string; message?: string }>;
+}
+
+const KNOWN_STATUSES = new Set(["sent", "delivered", "read", "failed"]);
+
 interface WhatsAppWebhookPayload {
   entry?: Array<{
     changes?: Array<{
@@ -52,6 +65,7 @@ interface WhatsAppWebhookPayload {
         metadata?: { phone_number_id?: string };
         contacts?: Array<{ profile?: { name?: string }; wa_id?: string }>;
         messages?: InboundMessage[];
+        statuses?: StatusUpdate[];
       };
     }>;
   }>;
@@ -190,7 +204,26 @@ export async function POST(req: NextRequest) {
       const value = change.value;
       const phoneNumberId = value?.metadata?.phone_number_id;
       const messages = value?.messages ?? [];
-      if (!phoneNumberId || messages.length === 0) continue;
+      const statuses = value?.statuses ?? [];
+      if (!phoneNumberId) continue;
+
+      for (const statusUpdate of statuses) {
+        if (!statusUpdate.id || !statusUpdate.status || !KNOWN_STATUSES.has(statusUpdate.status)) continue;
+        const errorReason = statusUpdate.errors?.[0]?.message ?? statusUpdate.errors?.[0]?.title;
+        try {
+          await applyWebhookDeliveryStatus(
+            statusUpdate.id,
+            statusUpdate.status as "sent" | "delivered" | "read" | "failed",
+            errorReason,
+          );
+        } catch (err) {
+          // One malformed/failed status update should not fail the whole
+          // webhook delivery (Meta retries the entire payload on non-2xx).
+          console.error("Failed to process WhatsApp status update", err);
+        }
+      }
+
+      if (messages.length === 0) continue;
 
       const account = await getWhatsAppAccountByPhoneNumberId(phoneNumberId);
       if (!account) continue; // unrecognized WhatsApp number; nothing we can do

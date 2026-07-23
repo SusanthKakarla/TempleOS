@@ -7,6 +7,7 @@ import { getTenantById } from "@/lib/db/tenants";
 import { createDonationSchema } from "@/lib/validation/donations";
 import { formatInr } from "@/lib/currency";
 import { enqueueNotification } from "@/lib/notifications/engine";
+import { enqueueDonationRecordedBroadcast } from "@/lib/db/donation-broadcasts";
 import { processNotifications } from "@/lib/notifications/delivery";
 
 export async function GET(req: NextRequest) {
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       getDevoteeById(session.tenantId, donation.devoteeId),
       getTenantById(session.tenantId),
     ]);
+    const allNotificationIds: string[] = [];
     if (devotee && tenant) {
       const language = devotee.preferredLanguage ?? "en";
       const created = await enqueueNotification({
@@ -78,9 +80,18 @@ export async function POST(req: NextRequest) {
           templeName: tenant.name,
         },
       });
-      if (created.length > 0) {
-        after(() => processNotifications(created.map((n) => n.id)));
-      }
+      allNotificationIds.push(...created.map((n) => n.id));
+    }
+
+    // Separate broadcast to every opted-in devotee (not just the donor) that
+    // a donation was recorded — see lib/db/donation-broadcasts.ts.
+    if (tenant) {
+      const broadcastIds = await enqueueDonationRecordedBroadcast(session.tenantId, tenant.name);
+      allNotificationIds.push(...broadcastIds);
+    }
+
+    if (allNotificationIds.length > 0) {
+      after(() => processNotifications(allNotificationIds));
     }
 
     return NextResponse.json({ donation }, { status: 201 });

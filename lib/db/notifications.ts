@@ -22,6 +22,7 @@ interface NotificationRow {
   language: SupportedLanguage;
   metadata: Record<string, unknown>;
   media_id: string | null;
+  provider_message_id: string | null;
   delivery_status: NotificationDeliveryStatus;
   attempt_count: number;
   next_attempt_at: Date;
@@ -47,6 +48,7 @@ function mapNotification(row: NotificationRow): Notification {
     language: row.language,
     metadata: row.metadata,
     mediaId: row.media_id,
+    providerMessageId: row.provider_message_id,
     deliveryStatus: row.delivery_status,
     attemptCount: row.attempt_count,
     nextAttemptAt: row.next_attempt_at.toISOString(),
@@ -124,11 +126,40 @@ export async function claimNotification(id: string): Promise<Notification | null
   return rows[0] ? mapNotification(rows[0]) : null;
 }
 
-export async function markNotificationSent(id: string): Promise<void> {
+export async function markNotificationSent(id: string, providerMessageId: string | null): Promise<void> {
   await getPool().query(
     `UPDATE notifications
-     SET delivery_status = 'sent', sent_at = now(), updated_at = now()
+     SET delivery_status = 'sent', sent_at = now(), provider_message_id = $2, updated_at = now()
      WHERE id = $1`,
+    [id, providerMessageId],
+  );
+}
+
+/**
+ * Resolves a Meta delivery-status webhook callback back to the row it
+ * belongs to — set by markNotificationSent at send time. Returns null for
+ * anything not sent through this table (the legacy event_notifications
+ * pipeline, or inbound webhook replies logged only to whatsapp_messages).
+ */
+export async function getNotificationByProviderMessageId(providerMessageId: string): Promise<Notification | null> {
+  const { rows } = await getPool().query<NotificationRow>(
+    `SELECT * FROM notifications WHERE provider_message_id = $1 LIMIT 1`,
+    [providerMessageId],
+  );
+  return rows[0] ? mapNotification(rows[0]) : null;
+}
+
+export async function markNotificationDelivered(id: string): Promise<void> {
+  await getPool().query(
+    `UPDATE notifications SET delivery_status = 'delivered', delivered_at = now(), updated_at = now() WHERE id = $1`,
+    [id],
+  );
+}
+
+/** A read receipt implies delivered, so this also promotes delivery_status if it hadn't been already. */
+export async function markNotificationReadReceipt(id: string): Promise<void> {
+  await getPool().query(
+    `UPDATE notifications SET delivery_status = 'delivered', read_at = now(), updated_at = now() WHERE id = $1`,
     [id],
   );
 }
