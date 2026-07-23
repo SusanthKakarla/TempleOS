@@ -31,9 +31,6 @@ export const te: LocaleDictionary = {
 
   unknownMessage: 'క్షమించండి, నాకు అర్థం కాలేదు. ఎంపికల కోసం "మెను" అని రిప్లై ఇవ్వండి.',
 
-  announcementIntro: "నమస్తే. {temple} దేవాలయంలో రాబోయే కార్యక్రమం: {title}, {date} న {time}కి.",
-  announcementFooter: 'రాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
-
   timingsClosedForOccasion: "{occasion} సందర్భంగా {temple} నేడు మూసివేయబడింది.",
   timingsNotConfigured: "దేవాలయ సమయాలు ఇంకా నమోదు చేయలేదు. దయచేసి దేవాలయ కార్యాలయాన్ని సంప్రదించండి.",
   timingsHeader: "{temple} సమయాలు:",

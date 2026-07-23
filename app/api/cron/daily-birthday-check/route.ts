@@ -2,27 +2,30 @@ import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantById, listTenantIdsAndTimezones } from "@/lib/db/tenants";
 import {
+  listDevoteesEligibleForEventReminders,
   listDevoteesWithAnniversaryToday,
   listDevoteesWithBirthdayToday,
   listFamilyOccasionRemindersDueTomorrow,
   type FamilyOccasionReminder,
 } from "@/lib/db/devotees";
+import { listPublishedEventsStartingTomorrow } from "@/lib/db/events";
 import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
+import { formatTime } from "@/lib/date";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
 import type { SupportedLanguage } from "@/types/db";
 
 /**
- * Not tenant/session-scoped — triggered by a Railway Cron schedule (~08:00
- * daily, configured in the Railway dashboard the same way the existing
- * process-event-notifications schedule is; not something this route can
+ * The single daily scheduler — not tenant/session-scoped, triggered by one
+ * Railway Cron schedule (~08:00 daily; not something this route can
  * configure itself). Iterates every tenant, computing "today"/"tomorrow" in
- * that tenant's own timezone (lib/db/tenants.ts's listTenantIdsAndTimezones).
- *
- * Extended (Family Relationship Management) to also check wedding
- * anniversaries and roll up each family's tomorrow occasions into one
- * reminder to the family head — kept in this same route/URL rather than a
- * new one, since a Railway Cron job is already pointed at this exact path.
+ * that tenant's own timezone (lib/db/tenants.ts's listTenantIdsAndTimezones),
+ * and discovers every date-based notification in one pass: birthdays,
+ * anniversaries, family occasion reminders, and day-before event reminders
+ * (absorbed from the former hourly event-reminders cron — "starting
+ * tomorrow" doesn't change within a day, so hourly bought nothing over
+ * daily). This route only ever discovers work and enqueues it through the
+ * one shared engine — it never builds or sends a message itself.
  */
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -123,6 +126,52 @@ export async function POST(req: NextRequest) {
         },
       });
       createdIds.push(...created.map((n) => n.id));
+    }
+
+    // Absorbed from the former hourly event-reminders cron (see route
+    // docstring) — "day-before" reminders for events published by this
+    // tenant, sent to eligible devotees plus active admins/priests.
+    const eventsStartingTomorrow = await listPublishedEventsStartingTomorrow(tenantId, timezone);
+    if (eventsStartingTomorrow.length > 0) {
+      const [eligibleDevotees, staff] = await Promise.all([
+        listDevoteesEligibleForEventReminders(tenantId),
+        listTenantMembershipsForTenant(tenantId, { status: "active" }),
+      ]);
+      const eligibleStaff = staff.filter((member) => member.roles.includes("admin") || member.roles.includes("priest"));
+
+      for (const event of eventsStartingTomorrow) {
+        const baseVars = {
+          eventId: event.id,
+          eventTitle: event.title,
+          eventLocation: event.location ?? tenant.name,
+        };
+
+        for (const devotee of eligibleDevotees) {
+          const language = devotee.preferredLanguage ?? "en";
+          const created = await enqueueNotification({
+            tenantId,
+            recipient: { devoteeId: devotee.id },
+            notificationType: "event_reminder",
+            category: "event",
+            language,
+            templateVars: { ...baseVars, eventTime: formatTime(event.startsAt, language) },
+          });
+          createdIds.push(...created.map((n) => n.id));
+        }
+
+        for (const member of eligibleStaff) {
+          const language = member.preferredUiLanguage ?? "en";
+          const created = await enqueueNotification({
+            tenantId,
+            recipient: { personId: member.personId },
+            notificationType: "event_reminder",
+            category: "event",
+            language,
+            templateVars: { ...baseVars, eventTime: formatTime(event.startsAt, language) },
+          });
+          createdIds.push(...created.map((n) => n.id));
+        }
+      }
     }
   }
 

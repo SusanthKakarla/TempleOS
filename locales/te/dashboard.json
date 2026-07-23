@@ -962,7 +962,13 @@
         "anniversary_priest": "వార్షికోత్సవ పూజ రిమైండర్",
         "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్",
         "tenant_config_changed": "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
-        "tenant_status_changed": "ఆలయ స్థితి మార్చబడింది"
+        "tenant_status_changed": "ఆలయ స్థితి మార్చబడింది",
+        "donation_thank_you": "విరాళ ధన్యవాదాలు",
+        "festival_greeting": "పండుగ శుభాకాంక్షలు",
+        "new_event": "కొత్త కార్యక్రమం",
+        "event_updated": "కార్యక్రమం నవీకరించబడింది",
+        "event_cancelled": "కార్యక్రమం రద్దు చేయబడింది",
+        "event_announcement": "కార్యక్రమ ప్రకటన"
       },
       "channelLabels": { "in_app": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
       "emptyState": {

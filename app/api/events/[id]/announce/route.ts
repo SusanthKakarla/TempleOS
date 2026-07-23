@@ -3,10 +3,9 @@ import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/t
 import { getEventById } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import { listOptedInDevotees } from "@/lib/db/devotees";
-import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
-import { buildAnnouncementMessage } from "@/lib/whatsapp/templates";
-import { sendTextMessage } from "@/lib/whatsapp/client";
+import { enqueueEventAnnouncement } from "@/lib/db/event-announcements";
+import { countSentNotifications } from "@/lib/db/notifications";
+import { processNotifications } from "@/lib/notifications/delivery";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -41,37 +40,25 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const recipients = await listOptedInDevotees(session.tenantId);
-
-  let sent = 0;
-  let failed = 0;
-
-  for (const devotee of recipients) {
-    // Opted-in devotees always have a phone (opt-in is only ever set by the
-    // inbound WhatsApp webhook, which requires one) — this guard is just to
-    // satisfy the nullable column type, not an expected runtime case.
-    if (!devotee.whatsappPhone) continue;
-    // Devotees who haven't picked a language yet (preferredLanguage === null)
-    // default to English for broadcast announcements — there's no live
-    // conversation here to gate on a language picker first.
-    const message = buildAnnouncementMessage(tenant, event, devotee.preferredLanguage ?? "en");
-    const result = await sendTextMessage(whatsappAccount.metaPhoneNumberId, devotee.whatsappPhone, message);
-    await logWhatsAppMessage(session.tenantId, {
-      devoteeId: devotee.id,
-      direction: "outbound",
-      fromPhone: whatsappAccount.phoneNumber,
-      toPhone: devotee.whatsappPhone,
-      body: message,
-      messageType: "text",
-      status: result.success ? "sent" : "failed",
-      providerMessageId: result.providerMessageId,
-    });
-    if (result.success) {
-      sent += 1;
-    } else {
-      failed += 1;
-    }
+  // Same eligibility this button has always used (every WhatsApp opt-in, not
+  // gated on the event_notifications_enabled toggle the automatic
+  // new/updated/cancelled triggers require) — see
+  // lib/db/event-announcements.ts's enqueueEventAnnouncement.
+  const insertedIds = await enqueueEventAnnouncement(tenant, event, "event_announcement", false);
+  if (insertedIds.length === 0) {
+    return NextResponse.json({ total: 0, sent: 0, failed: 0 });
   }
 
-  return NextResponse.json({ total: recipients.length, sent, failed });
+  // Awaited rather than after() — this dialog's contract (features/events/announce-dialog.tsx)
+  // has always been to report real sent/failed counts once sending is done,
+  // so unifying onto the generic queue keeps that contract instead of
+  // changing it to a fire-and-forget "queued" response. Any send that
+  // doesn't succeed on this first attempt is no longer lost, though — the
+  // generic retry sweep (app/api/cron/process-notifications/route.ts) will
+  // keep retrying it same as any other notification, which is strictly
+  // better than the all-or-nothing single attempt this route used to make.
+  await processNotifications(insertedIds);
+  const sent = await countSentNotifications(insertedIds);
+
+  return NextResponse.json({ total: insertedIds.length, sent, failed: insertedIds.length - sent });
 }

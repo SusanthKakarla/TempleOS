@@ -3,7 +3,7 @@ import { GET, POST } from "./route";
 import { requireTenantAdminSession } from "@/lib/auth/tenant-admin";
 import { createEvent, listEvents } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
-import { enqueueEventNotifications } from "@/lib/db/event-notifications";
+import { enqueueEventAnnouncement } from "@/lib/db/event-announcements";
 import type { SessionPayload } from "@/lib/auth/session";
 
 vi.mock("@/lib/auth/tenant-admin", () => ({
@@ -25,12 +25,12 @@ vi.mock("@/lib/db/tenant-features", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("@/lib/db/event-notifications", () => ({
-  enqueueEventNotifications: vi.fn(),
+vi.mock("@/lib/db/event-announcements", () => ({
+  enqueueEventAnnouncement: vi.fn(),
 }));
 
-vi.mock("@/lib/whatsapp/event-notifications", () => ({
-  processEventNotifications: vi.fn(),
+vi.mock("@/lib/notifications/delivery", () => ({
+  processNotifications: vi.fn(),
 }));
 
 const adminSession: SessionPayload = {
@@ -59,7 +59,7 @@ describe("events tenant admin API gate", () => {
     vi.mocked(createEvent).mockReset();
     vi.mocked(listEvents).mockReset();
     vi.mocked(getTenantById).mockReset();
-    vi.mocked(enqueueEventNotifications).mockReset();
+    vi.mocked(enqueueEventAnnouncement).mockReset();
   });
 
   it("returns 401 without a valid tenant session", async () => {

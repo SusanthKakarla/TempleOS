@@ -948,7 +948,13 @@
         "anniversary_priest": "Anniversary pooja reminder",
         "family_occasion_reminder": "Family occasion reminder",
         "tenant_config_changed": "Temple settings updated",
-        "tenant_status_changed": "Temple status changed"
+        "tenant_status_changed": "Temple status changed",
+        "donation_thank_you": "Donation thank-you",
+        "festival_greeting": "Festival greeting",
+        "new_event": "New event",
+        "event_updated": "Event updated",
+        "event_cancelled": "Event cancelled",
+        "event_announcement": "Event announcement"
       },
       "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
       "emptyState": {

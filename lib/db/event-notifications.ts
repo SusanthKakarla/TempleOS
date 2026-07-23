@@ -6,6 +6,19 @@ import type {
 } from "@/types/db";
 import { computeOffset } from "@/lib/pagination";
 
+/**
+ * event_notifications no longer receives new rows — new/updated/cancelled
+ * event announcements now enqueue through lib/db/event-announcements.ts into
+ * the generic `notifications` table instead (same table/worker/retry/logging
+ * pipeline every other notification type already used). What remains here
+ * is intentionally kept alive for two purposes only: reading historical rows
+ * (the Notifications page's legacy table, and the summary counts) and
+ * retrying already-failed historical rows via the "Resend failed" action
+ * (app/api/events/[id]/notifications/resend/route.ts) — both harmless,
+ * self-limiting concerns now that the table is never written to for new
+ * events.
+ */
+
 interface EventNotificationRow {
   id: string;
   tenant_id: string;
@@ -42,23 +55,6 @@ function mapEventNotification(row: EventNotificationRow): EventNotification {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
-}
-
-/** One row per eligible devotee (opted in to WhatsApp AND event notifications). */
-export async function enqueueEventNotifications(
-  tenantId: string,
-  eventId: string,
-  notificationType: EventNotificationType,
-): Promise<string[]> {
-  const { rows } = await getPool().query<{ id: string }>(
-    `INSERT INTO event_notifications (tenant_id, event_id, devotee_id, notification_type, delivery_status, next_attempt_at)
-     SELECT $1, $2, d.id, $3, 'pending', now()
-     FROM devotees d
-     WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true AND d.event_notifications_enabled = true
-     RETURNING id`,
-    [tenantId, eventId, notificationType],
-  );
-  return rows.map((r) => r.id);
 }
 
 /**

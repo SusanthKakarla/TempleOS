@@ -203,6 +203,21 @@ export async function markNotificationRead(id: string, personId: string): Promis
   );
 }
 
+/**
+ * Used right after an awaited processNotifications() call for a
+ * just-enqueued batch that needs an immediate sent/failed tally — see
+ * app/api/events/[id]/announce/route.ts, which (unlike every other after()
+ * caller) still reports real counts back in its HTTP response.
+ */
+export async function countSentNotifications(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const { rows } = await getPool().query<{ count: string }>(
+    `SELECT count(*) AS count FROM notifications WHERE id = ANY($1::uuid[]) AND delivery_status IN ('sent', 'delivered')`,
+    [ids],
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
 export interface NotificationCategoryCounts {
   birthday: number;
   new_user: number;

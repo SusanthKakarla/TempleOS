@@ -209,21 +209,12 @@ export async function listRecentDevotees(tenantId: string, limit = 5): Promise<D
   return rows.map(mapDevotee);
 }
 
-/** Recipients for the event-reminder cron — same eligibility rule as enqueueEventNotifications. */
+/** Recipients for the event-reminder cron — same eligibility rule lib/db/event-announcements.ts uses for automatic (non-manual) event announcements. */
 export async function listDevoteesEligibleForEventReminders(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
     `${DEVOTEE_SELECT}
      WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true AND d.event_notifications_enabled = true
      ORDER BY d.display_name ASC`,
-    [tenantId],
-  );
-  return rows.map(mapDevotee);
-}
-
-/** Recipients for "Send WhatsApp announcement" — only devotees who opted in via inbound WhatsApp. */
-export async function listOptedInDevotees(tenantId: string): Promise<Devotee[]> {
-  const { rows } = await getPool().query<DevoteeRow>(
-    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true ORDER BY d.display_name ASC`,
     [tenantId],
   );
   return rows.map(mapDevotee);

@@ -283,7 +283,11 @@ export type NotificationType =
   | "tenant_config_changed"
   | "tenant_status_changed"
   | "donation_thank_you"
-  | "festival_greeting";
+  | "festival_greeting"
+  | "new_event"
+  | "event_updated"
+  | "event_cancelled"
+  | "event_announcement";
 
 export interface NotificationTemplate {
   id: string;

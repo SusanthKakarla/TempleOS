@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { Event, Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
 import { t } from "./i18n";
 import {
-  buildAnnouncementMessage,
   buildContactMessage,
   buildDonationInfoMessage,
   buildEventCancelledNotification,
@@ -274,16 +273,6 @@ describe("buildUnknownMessage", () => {
 
   it("renders in Telugu", () => {
     expect(buildUnknownMessage("te")).toBe(t("te", "unknownMessage"));
-  });
-});
-
-describe("buildAnnouncementMessage", () => {
-  it("includes temple name, event title, date, and time", () => {
-    const message = buildAnnouncementMessage(tenant, makeEvent(), "en");
-    expect(message).toContain(tenant.name);
-    expect(message).toContain("Ganesh Chaturthi");
-    expect(message).toContain("10:00");
-    expect(message).toMatch(/reply "events"/i);
   });
 });
 

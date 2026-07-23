@@ -41,9 +41,6 @@ export interface LocaleDictionary {
 
   unknownMessage: string;
 
-  announcementIntro: string; // params: temple, title, date, time
-  announcementFooter: string;
-
   timingsClosedForOccasion: string; // params: temple, occasion
   timingsNotConfigured: string;
   timingsHeader: string; // params: temple

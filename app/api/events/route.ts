@@ -6,9 +6,9 @@ import {
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createEvent, listEvents } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
-import { enqueueEventNotifications } from "@/lib/db/event-notifications";
+import { enqueueEventAnnouncement } from "@/lib/db/event-announcements";
 import { isAutoNotifyEnabled } from "@/lib/events/notification-policy";
-import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
+import { processNotifications } from "@/lib/notifications/delivery";
 import { createEventSchema, eventStatusSchema } from "@/lib/validation/events";
 
 export async function GET(req: NextRequest) {
@@ -77,13 +77,9 @@ export async function POST(req: NextRequest) {
   if (event.status === "published") {
     const tenant = await getTenantById(session.tenantId);
     if (tenant && isAutoNotifyEnabled(tenant, "new_event")) {
-      const insertedIds = await enqueueEventNotifications(
-        session.tenantId,
-        event.id,
-        "new_event",
-      );
+      const insertedIds = await enqueueEventAnnouncement(tenant, event, "new_event", true);
       if (insertedIds.length > 0) {
-        after(() => processEventNotifications(insertedIds));
+        after(() => processNotifications(insertedIds));
       }
     }
   }

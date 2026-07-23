@@ -31,9 +31,6 @@ export const en: LocaleDictionary = {
 
   unknownMessage: 'Sorry, I did not understand. Reply "menu" to see options.',
 
-  announcementIntro: "Namaste. Upcoming event at {temple}: {title} on {date} at {time}.",
-  announcementFooter: 'Reply "events" to view upcoming events.',
-
   timingsClosedForOccasion: "{temple} is closed today for {occasion}.",
   timingsNotConfigured: "Temple timings have not been configured yet. Please contact the temple office.",
   timingsHeader: "{temple} timings:",

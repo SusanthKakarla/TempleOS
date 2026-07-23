@@ -1,12 +1,12 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { deleteEvent, getEventById, updateEvent } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
-import { enqueueEventNotifications } from "@/lib/db/event-notifications";
+import { enqueueEventAnnouncement } from "@/lib/db/event-announcements";
 import {
   decideEventNotificationType,
   isAutoNotifyEnabled,
 } from "@/lib/events/notification-policy";
-import { processEventNotifications } from "@/lib/whatsapp/event-notifications";
+import { processNotifications } from "@/lib/notifications/delivery";
 import {
   requireTenantAdminSession,
   tenantAdminAuthResponse,
@@ -46,24 +46,21 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // Automatic WhatsApp notification (see migrations/007_event_notifications.sql).
-  // Queue rows are inserted synchronously (fast, bounded) so state is durable
-  // even if the process restarts before after() runs; the actual WhatsApp
-  // sends happen post-response via after() so publishing/updating an event
-  // never waits on Graph API calls. The Railway Cron sweep
-  // (app/api/cron/process-event-notifications/route.ts) is the durable
-  // catch-all for anything after() misses.
+  // Automatic WhatsApp notification, through the same generic
+  // notifications/engine.ts queue every other notification type uses. Queue
+  // rows are inserted synchronously (fast, bounded) so state is durable even
+  // if the process restarts before after() runs; the actual WhatsApp sends
+  // happen post-response via after() so publishing/updating an event never
+  // waits on Graph API calls. The Railway Cron sweep
+  // (app/api/cron/process-notifications/route.ts) is the durable catch-all
+  // for anything after() misses.
   const notificationType = decideEventNotificationType(priorEvent, event);
   if (notificationType) {
     const tenant = await getTenantById(session.tenantId);
     if (tenant && isAutoNotifyEnabled(tenant, notificationType)) {
-      const insertedIds = await enqueueEventNotifications(
-        session.tenantId,
-        event.id,
-        notificationType,
-      );
+      const insertedIds = await enqueueEventAnnouncement(tenant, event, notificationType, true);
       if (insertedIds.length > 0) {
-        after(() => processEventNotifications(insertedIds));
+        after(() => processNotifications(insertedIds));
       }
     }
   }

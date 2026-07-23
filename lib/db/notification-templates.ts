@@ -334,6 +334,71 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "🎉 {{festivalName}} శుభాకాంక్షలు!\n\n🙏 {{templeName}} తరఫున మీకు మరియు మీ కుటుంబానికి ఆనందకరమైన {{festivalName}} శుభాకాంక్షలు.\n\n🌸 ఓం నమః శివాయ 🌸",
   },
+  // Event announcements — devotee, WhatsApp only. Ported from the retired
+  // lib/whatsapp/templates.ts button-message builders (buildNewEventNotification
+  // etc.); {{eventLocationLine}} is a pre-formatted "\n📍 {location}" or "" built
+  // by the caller (lib/db/event-announcements.ts), same pre-formatted-variable
+  // convention as family_occasion_reminder's occasionList. No reply buttons —
+  // the footer instead asks the reader to type "events", same wording the
+  // manual-announce message already used.
+  {
+    notificationType: "new_event",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: '🙏 Namaste. {{templeName}} has announced a new event: *{{eventTitle}}*, on {{eventDate}} at {{eventTime}}.{{eventLocationLine}}\nReply "events" to view upcoming events.',
+  },
+  {
+    notificationType: "new_event",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: '🙏 నమస్తే. {{templeName}}లో కొత్త కార్యక్రమం ప్రకటించారు: *{{eventTitle}}*, {{eventDate}} న {{eventTime}}కి.{{eventLocationLine}}\nరాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
+  },
+  {
+    notificationType: "event_updated",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: '🔔 The event *{{eventTitle}}* at {{templeName}} has been updated. New date/time: {{eventDate}} at {{eventTime}}.{{eventLocationLine}}\nReply "events" to view upcoming events.',
+  },
+  {
+    notificationType: "event_updated",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: '🔔 {{templeName}}లోని *{{eventTitle}}* కార్యక్రమం నవీకరించబడింది. కొత్త తేదీ/సమయం: {{eventDate}} న {{eventTime}}.{{eventLocationLine}}\nరాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
+  },
+  {
+    notificationType: "event_cancelled",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: '⚠️ The event *{{eventTitle}}* at {{templeName}} has been cancelled. We apologize for the inconvenience.{{eventLocationLine}}\nReply "events" to view upcoming events.',
+  },
+  {
+    notificationType: "event_cancelled",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: '⚠️ {{templeName}}లోని *{{eventTitle}}* కార్యక్రమం రద్దు చేయబడింది. అసౌకర్యానికి క్షమించండి.{{eventLocationLine}}\nరాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
+  },
+  // Manual "Send Announcement" broadcast — same wording the ad-hoc route used
+  // before unification (no location line in the original either).
+  {
+    notificationType: "event_announcement",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: 'Namaste. Upcoming event at {{templeName}}: {{eventTitle}} on {{eventDate}} at {{eventTime}}.\nReply "events" to view upcoming events.',
+  },
+  {
+    notificationType: "event_announcement",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: 'నమస్తే. {{templeName}} దేవాలయంలో రాబోయే కార్యక్రమం: {{eventTitle}}, {{eventDate}} న {{eventTime}}కి.\nరాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

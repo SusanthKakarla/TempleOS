@@ -16,13 +16,15 @@ describe("t", () => {
   });
 
   it("interpolates multiple tokens", () => {
-    const result = t("en", "announcementIntro", {
+    const result = t("en", "notifyNewEventIntro", {
       temple: "My Temple",
       title: "Ganesh Chaturthi",
       date: "5 Sep 2026",
       time: "10:00 AM",
     });
-    expect(result).toBe("Namaste. Upcoming event at My Temple: Ganesh Chaturthi on 5 Sep 2026 at 10:00 AM.");
+    expect(result).toBe(
+      "🙏 Namaste. My Temple has announced a new event: *Ganesh Chaturthi*, on 5 Sep 2026 at 10:00 AM.",
+    );
   });
 
   it("leaves an unmatched token placeholder untouched", () => {

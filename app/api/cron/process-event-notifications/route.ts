@@ -7,10 +7,16 @@ const BATCH_LIMIT = 50;
 
 /**
  * Not tenant/session-scoped — triggered by Railway Cron (see .env.example's
- * CRON_SECRET), not an admin request. Durable catch-all for the retry
- * backoff and anything the PATCH route's after() call misses (server
- * restart, after() failure). Safe to invoke directly (unlike Meta's inbound
- * webhook) since this is an outbound-trigger route we own.
+ * CRON_SECRET), not an admin request. Safe to invoke directly (unlike Meta's
+ * inbound webhook) since this is an outbound-trigger route we own.
+ *
+ * event_notifications no longer receives new rows (see lib/db/event-notifications.ts) —
+ * new/updated/cancelled event announcements enqueue through the generic
+ * engine now, which app/api/cron/process-notifications/route.ts sweeps
+ * instead. This cron's only remaining job is the retry backoff for rows the
+ * "Resend failed" action (app/api/events/[id]/notifications/resend/route.ts)
+ * puts back to `pending`/`retrying` — kept alive only for that, not deleted
+ * alongside the rest of the legacy write path so that action keeps working.
  */
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;

@@ -76,7 +76,8 @@ export function buildLanguagePickerMessage(): WhatsAppButtonMessage {
   };
 }
 
-function formatEventDateTime(
+/** Exported for lib/db/event-announcements.ts — the one other place event date/time needs tenant-timezone-correct formatting. */
+export function formatEventDateTime(
   event: Event,
   timezone: string,
   lang: SupportedLanguage,
@@ -200,12 +201,6 @@ export function buildContactMessage(
 
 export function buildUnknownMessage(lang: SupportedLanguage): string {
   return t(lang, "unknownMessage");
-}
-
-export function buildAnnouncementMessage(tenant: Tenant, event: Event, lang: SupportedLanguage): string {
-  const { date, time } = formatEventDateTime(event, tenant.timezone, lang);
-  const intro = t(lang, "announcementIntro", { temple: tenant.name, title: event.title, date, time });
-  return `${intro}\n${t(lang, "announcementFooter")}`;
 }
 
 /** Postgres TIME columns come back as "HH:MM:SS" — format as e.g. "6:00 AM". */
