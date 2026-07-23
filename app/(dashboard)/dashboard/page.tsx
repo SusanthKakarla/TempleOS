@@ -1,49 +1,14 @@
-import {
-  AlertTriangle,
-  BellRing,
-  CalendarDays,
-  CalendarHeart,
-  Cake,
-  HandCoins,
-  HeartHandshake,
-  MessageCircle,
-  Megaphone,
-  Send,
-  User,
-  Users,
-  UsersRound,
-} from "lucide-react";
+import { CalendarDays, HandCoins, Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
-import { countUpcomingPublishedEvents, listEvents } from "@/lib/db/events";
-import {
-  countDevotees,
-  countOptedInDevotees,
-  listRecentDevotees,
-  countIndividualDevotees,
-  countBirthdaysThisWeek,
-  countAnniversariesThisWeek,
-} from "@/lib/db/devotees";
-import { countFamilies } from "@/lib/db/devotee-families";
-import { countPendingNotifications } from "@/lib/db/notifications";
+import { countUpcomingPublishedEvents } from "@/lib/db/events";
+import { countDevotees } from "@/lib/db/devotees";
 import { getDonationSummary, getDonationsPerDay } from "@/lib/db/donations";
-import {
-  countFailedMessages,
-  countMessagesByDirection,
-  listRecentMessages,
-  getMessagesPerDay,
-} from "@/lib/db/whatsapp-messages";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
-import { bucketEventsPerDay } from "@/lib/dashboard-sparklines";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
-import { MessagesChart } from "@/features/dashboard/messages-chart";
-import { UpcomingEventsWidget } from "@/features/dashboard/upcoming-events-widget";
-import { RecentDevoteesWidget } from "@/features/dashboard/recent-devotees-widget";
-import { RecentMessagesWidget } from "@/features/dashboard/recent-messages-widget";
-import { QuickActions } from "@/features/dashboard/quick-actions";
 
 const CHART_DAYS = 30;
 
@@ -58,54 +23,19 @@ export default async function DashboardHomePage() {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("dashboardHome");
 
-  const [
-    tenant,
-    upcomingEvents,
-    totalDevotees,
-    optedInDevotees,
-    messagesReceived,
-    messagesSent,
-    failedSends,
-    donationSummary,
-    upcomingEventsList,
-    recentDevotees,
-    recentMessages,
-    donationsPerDayRaw,
-    messagesPerDayRaw,
-    totalFamilies,
-    individualDevotees,
-  ] = await Promise.all([
+  const [tenant, upcomingEvents, totalDevotees, donationSummary, donationsPerDayRaw] = await Promise.all([
     getTenantById(session.tenantId),
     countUpcomingPublishedEvents(session.tenantId),
     countDevotees(session.tenantId),
-    countOptedInDevotees(session.tenantId),
-    countMessagesByDirection(session.tenantId, "inbound"),
-    countMessagesByDirection(session.tenantId, "outbound"),
-    countFailedMessages(session.tenantId),
     getDonationSummary(session.tenantId),
-    listEvents(session.tenantId, { status: "published", upcomingOnly: true }),
-    listRecentDevotees(session.tenantId, 5),
-    listRecentMessages(session.tenantId, 5),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
-    getMessagesPerDay(session.tenantId, CHART_DAYS),
-    countFamilies(session.tenantId),
-    countIndividualDevotees(session.tenantId),
   ]);
 
-  const tenantTimezone = tenant?.timezone ?? "Asia/Kolkata";
-  const [birthdaysThisWeek, anniversariesThisWeek, scheduledNotifications] = await Promise.all([
-    countBirthdaysThisWeek(session.tenantId, tenantTimezone),
-    countAnniversariesThisWeek(session.tenantId, tenantTimezone),
-    countPendingNotifications(session.tenantId),
-  ]);
-
-  const eventsPerDay = bucketEventsPerDay(upcomingEventsList);
   const donationsPerDay = zeroFillDays(
     donationsPerDayRaw.map((row) => ({ date: row.date, total: Number(row.total) })),
     CHART_DAYS,
     { total: 0 },
   );
-  const messagesPerDay = zeroFillDays(messagesPerDayRaw, CHART_DAYS, { inbound: 0, outbound: 0 });
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -123,11 +53,17 @@ export default async function DashboardHomePage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
+          label={t("metrics.totalDonations")}
+          value={Number(donationSummary.totalThisMonth)}
+          format="currency"
+          icon={<HandCoins className="size-4.5" />}
+          gradient="gradient-saffron-gold"
+        />
+        <MetricCard
           label={t("metrics.upcomingEvents")}
           value={upcomingEvents}
           icon={<CalendarDays className="size-4.5" />}
-          gradient="gradient-saffron-gold"
-          sparkline={eventsPerDay}
+          gradient="gradient-maroon-orange"
         />
         <MetricCard
           label={t("metrics.totalDevotees")}
@@ -135,87 +71,9 @@ export default async function DashboardHomePage() {
           icon={<Users className="size-4.5" />}
           gradient="gradient-blue-purple"
         />
-        <MetricCard
-          label={t("metrics.whatsappOptIns")}
-          value={optedInDevotees}
-          icon={<MessageCircle className="size-4.5" />}
-          gradient="gradient-green-emerald"
-        />
-        <MetricCard
-          label={t("metrics.totalDonationsThisMonth")}
-          value={Number(donationSummary.totalThisMonth)}
-          format="currency"
-          icon={<HandCoins className="size-4.5" />}
-          gradient="gradient-saffron-gold"
-        />
-        <MetricCard
-          label={t("metrics.totalDonors")}
-          value={donationSummary.donorCount}
-          icon={<HeartHandshake className="size-4.5" />}
-          gradient="gradient-maroon-orange"
-        />
-        <MetricCard
-          label={t("metrics.messagesReceived")}
-          value={messagesReceived}
-          icon={<Send className="size-4.5" />}
-          gradient="bg-royal-blue"
-        />
-        <MetricCard
-          label={t("metrics.messagesSent")}
-          value={messagesSent}
-          icon={<Megaphone className="size-4.5" />}
-          gradient="gradient-maroon-orange"
-        />
-        <MetricCard
-          label={t("metrics.failedSends")}
-          value={failedSends}
-          icon={<AlertTriangle className="size-4.5" />}
-          gradient="bg-destructive"
-        />
-        <MetricCard
-          label={t("metrics.totalFamilies")}
-          value={totalFamilies}
-          icon={<UsersRound className="size-4.5" />}
-          gradient="gradient-blue-purple"
-        />
-        <MetricCard
-          label={t("metrics.individualDevotees")}
-          value={individualDevotees}
-          icon={<User className="size-4.5" />}
-          gradient="gradient-maroon-orange"
-        />
-        <MetricCard
-          label={t("metrics.birthdaysThisWeek")}
-          value={birthdaysThisWeek}
-          icon={<Cake className="size-4.5" />}
-          gradient="gradient-saffron-gold"
-        />
-        <MetricCard
-          label={t("metrics.anniversariesThisWeek")}
-          value={anniversariesThisWeek}
-          icon={<CalendarHeart className="size-4.5" />}
-          gradient="gradient-green-emerald"
-        />
-        <MetricCard
-          label={t("metrics.scheduledNotifications")}
-          value={scheduledNotifications}
-          icon={<BellRing className="size-4.5" />}
-          gradient="bg-royal-blue"
-        />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <DonationsChart data={donationsPerDay} />
-        <MessagesChart data={messagesPerDay} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <UpcomingEventsWidget events={upcomingEventsList.slice(0, 5)} />
-        <RecentDevoteesWidget devotees={recentDevotees} />
-        <RecentMessagesWidget messages={recentMessages} />
-      </div>
-
-      <QuickActions />
+      <DonationsChart data={donationsPerDay} />
     </div>
   );
 }

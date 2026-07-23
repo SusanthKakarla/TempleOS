@@ -88,10 +88,13 @@ const USER_MANAGEMENT_NAV_ITEM = {
 export function AppSidebar({
   isSuperAdmin,
   enabledFeatures,
+  tenantName,
 }: {
   isSuperAdmin: boolean;
   /** Feature keys enabled for this tenant — undefined means "don't filter" (e.g. super-admin views without a tenant). */
   enabledFeatures?: Set<string>;
+  /** The logged-in temple's name, shown in place of the static "TempleOS" brand mark. */
+  tenantName: string;
 }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
@@ -106,12 +109,15 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="px-3 py-4">
-        <div className="flex items-center gap-2.5 px-1">
+        <div className="flex min-w-0 items-center gap-2.5 px-1">
           <div className="gradient-ocean-blue flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-foreground shadow-sm">
             <Landmark className="size-4.5" />
           </div>
-          <span className="font-heading text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-            TempleOS
+          <span
+            title={tenantName}
+            className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden"
+          >
+            {tenantName}
           </span>
         </div>
       </SidebarHeader>

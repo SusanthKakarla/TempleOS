@@ -37,6 +37,7 @@
     "namaste": "నమస్తే 🙏",
     "todayIs": "{greeting}. ఈరోజు {date}.",
     "metrics": {
+      "totalDonations": "మొత్తం విరాళాలు",
       "upcomingEvents": "రాబోయే కార్యక్రమాలు",
       "totalDevotees": "మొత్తం భక్తులు",
       "whatsappOptIns": "వాట్సాప్ ఆప్ట్-ఇన్‌లు",
@@ -51,34 +52,8 @@
       "anniversariesThisWeek": "ఈ వారం వార్షికోత్సవాలు",
       "scheduledNotifications": "షెడ్యూల్ చేసిన నోటిఫికేషన్‌లు"
     },
-    "upcomingEvents": {
-      "title": "రాబోయే కార్యక్రమాలు",
-      "viewAll": "అన్నీ చూడండి",
-      "empty": "ఇంకా ప్రచురించిన రాబోయే కార్యక్రమాలు లేవు.",
-      "published": "ప్రచురించబడింది"
-    },
-    "recentDevotees": {
-      "title": "ఇటీవలి భక్తులు",
-      "viewAll": "అన్నీ చూడండి",
-      "empty": "ఇంకా భక్తులు లేరు.",
-      "optedIn": "చేరారు",
-      "notOptedIn": "చేరలేదు"
-    },
-    "recentMessages": {
-      "title": "ఇటీవలి వాట్సాప్ సందేశాలు",
-      "viewAll": "అన్నీ చూడండి",
-      "empty": "ఇంకా వాట్సాప్ కార్యకలాపం లేదు."
-    },
-    "quickActions": {
-      "title": "త్వరిత చర్యలు",
-      "createEvent": "కార్యక్రమాన్ని సృష్టించండి",
-      "addDevotee": "భక్తుడిని జోడించండి"
-    },
     "charts": {
-      "donationsTrend": "విరాళాలు (గత 30 రోజులు)",
-      "messagesTrend": "వాట్సాప్ సందేశాలు (గత 30 రోజులు)",
-      "inbound": "అందినవి",
-      "outbound": "పంపినవి"
+      "donationsTrend": "విరాళాలు (గత 30 రోజులు)"
     }
   },
   "export": {
