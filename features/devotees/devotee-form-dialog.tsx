@@ -27,13 +27,19 @@ interface DevoteeFormDialogProps {
   devotee?: Devotee;
   trigger: ReactElement;
   onSaved: () => void;
+  /** Controlled open state — lets a caller open this dialog from elsewhere (e.g. an overflow menu's "Edit" item, or a FloatingActionButton) instead of the given `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function DevoteeFormDialog({ mode, devotee, trigger, onSaved }: DevoteeFormDialogProps) {
+export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: controlledOpen, onOpenChange }: DevoteeFormDialogProps) {
   const t = useTranslations("devotees.formDialog");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [registrationType, setRegistrationType] = useState<"individual" | "family" | null>(
     mode === "edit" ? "individual" : null,
   );

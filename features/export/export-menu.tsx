@@ -29,6 +29,11 @@ interface ExportMenuProps {
   selectedIds?: string[];
   /** Also used as the exported filename's base — always the English word regardless of locale. */
   moduleLabel: ModuleLabelKey;
+  /** Controlled open state — lets a page open this dialog from its own trigger (e.g. a page-level overflow menu item) instead of the built-in button. Omit for the default self-managed behavior. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Suppresses the built-in "Export" button, for callers that provide `open`/`onOpenChange` and their own trigger elsewhere. */
+  hideTrigger?: boolean;
 }
 
 const FORMATS: { value: ExportFormat; labelKey: "excel" | "csv" | "pdf"; icon: typeof FileSpreadsheet }[] = [
@@ -37,9 +42,20 @@ const FORMATS: { value: ExportFormat; labelKey: "excel" | "csv" | "pdf"; icon: t
   { value: "pdf", labelKey: "pdf", icon: FileText },
 ];
 
-export function ExportMenu({ exportUrl, filterParams, selectedIds = [], moduleLabel }: ExportMenuProps) {
+export function ExportMenu({
+  exportUrl,
+  filterParams,
+  selectedIds = [],
+  moduleLabel,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: ExportMenuProps) {
   const t = useTranslations("export");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [scope, setScope] = useState<Scope>("all");
   const [pendingFormat, setPendingFormat] = useState<ExportFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,14 +102,16 @@ export function ExportMenu({ exportUrl, filterParams, selectedIds = [], moduleLa
         }
       }}
     >
-      <DialogTrigger
-        render={
-          <Button variant="outline" className="gap-1.5">
-            <Download className="size-4" />
-            {t("exportButton")}
-          </Button>
-        }
-      />
+      {!hideTrigger && (
+        <DialogTrigger
+          render={
+            <Button variant="outline" className="gap-1.5">
+              <Download className="size-4" />
+              {t("exportButton")}
+            </Button>
+          }
+        />
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("dialogTitle", { module: t(`moduleLabels.${moduleLabel}`) })}</DialogTitle>

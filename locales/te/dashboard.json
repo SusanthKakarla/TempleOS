@@ -6,7 +6,9 @@
     "saving": "సేవ్ అవుతోంది...",
     "cancel": "రద్దు చేయండి",
     "close": "మూసివేయండి",
-    "search": "వెతకండి"
+    "search": "వెతకండి",
+    "viewDetails": "వివరాలు చూడండి",
+    "filters": "ఫిల్టర్‌లు"
   },
   "nav": {
     "dashboard": "డ్యాష్‌బోర్డ్",
@@ -435,6 +437,7 @@
     "importButton": "దిగుమతి",
     "addButton": "భక్తుడిని జోడించండి",
     "searchPlaceholder": "పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
+    "sendWhatsapp": "వాట్సాప్ పంపండి",
     "columns": {
       "name": "పేరు",
       "phone": "ఫోన్",
@@ -446,17 +449,21 @@
       "actions": "చర్యలు"
     },
     "filters": {
+      "typeLabel": "రకం",
       "allRegistrationTypes": "అన్ని రకాలు",
       "individual": "వ్యక్తిగతం",
       "family": "కుటుంబం",
+      "occasionLabel": "సందర్భం",
       "allOccasions": "అన్ని సందర్భాలు",
       "birthdayToday": "ఈరోజు పుట్టినరోజు",
       "birthdayWeek": "ఈ వారం పుట్టినరోజు",
       "anniversaryToday": "ఈరోజు వార్షికోత్సవం",
       "anniversaryWeek": "ఈ వారం వార్షికోత్సవం",
+      "donorLabel": "దాత",
       "allDonorStatus": "అన్ని దాతలు",
       "donor": "దాత",
       "nonDonor": "దాత కాదు",
+      "whatsappLabel": "వాట్సాప్ స్థితి",
       "allWhatsappStatus": "అన్ని వాట్సాప్ స్థితులు"
     },
     "relationshipNames": {
@@ -677,6 +684,16 @@
     "dateFromLabel": "నుండి తేదీ",
     "dateToLabel": "వరకు తేదీ",
     "dateRangeSeparator": "వరకు",
+    "filters": {
+      "dateRangeLabel": "తేదీ పరిధి",
+      "presetToday": "ఈరోజు",
+      "presetLast7": "గత 7 రోజులు",
+      "presetLast30": "గత 30 రోజులు",
+      "presetThisMonth": "ఈ నెల",
+      "presetCustom": "అనుకూల పరిధి",
+      "pickCustomRange": "తేదీ పరిధిని ఎంచుకోండి",
+      "allPurposes": "అన్ని ప్రయోజనాలు"
+    },
     "columns": {
       "donor": "దాత",
       "amount": "మొత్తం",

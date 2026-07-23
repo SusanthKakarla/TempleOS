@@ -204,6 +204,7 @@ export interface ListDonationsFilter {
   devoteeId?: string;
   dateFrom?: string;
   dateTo?: string;
+  purpose?: string;
   page?: number;
   pageSize?: number;
   sort?: "date" | "amount" | "donor";
@@ -216,7 +217,9 @@ const DONATION_SORT_COLUMNS: Record<NonNullable<ListDonationsFilter["sort"]>, st
   donor: "dev.display_name",
 };
 
-function buildDonationConditions(filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo">) {
+function buildDonationConditions(
+  filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo" | "purpose">,
+) {
   const conditions = ["d.tenant_id = $1"];
   const params: unknown[] = [];
 
@@ -235,6 +238,10 @@ function buildDonationConditions(filter: Pick<ListDonationsFilter, "search" | "d
   if (filter.dateTo) {
     params.push(filter.dateTo);
     conditions.push(`d.donated_at <= $${params.length + 1}`);
+  }
+  if (filter.purpose) {
+    params.push(filter.purpose);
+    conditions.push(`d.purpose = $${params.length + 1}`);
   }
   return { conditions, params };
 }
@@ -268,7 +275,7 @@ export async function listDonations(
 
 export async function countDonationsFiltered(
   tenantId: string,
-  filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo"> = {},
+  filter: Pick<ListDonationsFilter, "search" | "devoteeId" | "dateFrom" | "dateTo" | "purpose"> = {},
 ): Promise<number> {
   const { conditions, params: filterParams } = buildDonationConditions(filter);
   const params: unknown[] = [tenantId, ...filterParams];

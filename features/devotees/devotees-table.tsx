@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Upload, UserPlus, Users } from "lucide-react";
+import { Download, Eye, MessageCircle, Pencil, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableCell,
@@ -26,13 +26,20 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
+import { OverflowActionMenu } from "@/components/overflow-action-menu";
+import { FloatingActionButton } from "@/components/floating-action-button";
+import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
+import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate } from "@/lib/date";
+import { maskPhoneForDisplay } from "@/lib/phone.mts";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
 import { DevoteeFormDialog } from "./devotee-form-dialog";
-import { DevoteesSearchInput } from "./devotees-search-input";
 
 const MotionTableRow = motion.create(TableRow);
+const PATHNAME = "/dashboard/devotees";
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -48,9 +55,24 @@ interface DevoteesTableProps {
   dir: "asc" | "desc";
 }
 
+interface PendingFilters {
+  registrationType: string;
+  occasion: string;
+  isDonor: string;
+  whatsappOptIn: string;
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters {
+  return {
+    registrationType: searchParams.get("registrationType") ?? "all",
+    occasion: searchParams.get("occasion") ?? "all",
+    isDonor: searchParams.get("isDonor") ?? "all",
+    whatsappOptIn: searchParams.get("whatsappOptIn") ?? "all",
+  };
+}
+
 export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir }: DevoteesTableProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("devotees");
@@ -59,6 +81,11 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingDevotee, setEditingDevotee] = useState<Devotee | null>(null);
+  const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
   function refresh() {
     router.refresh();
@@ -70,11 +97,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
 
   function toggleSelectAll(checked: boolean) {
     setSelectedIds(checked ? devotees.map((d) => d.id) : []);
-  }
-
-  function updateFilter(key: string, value: string) {
-    const params = mergeSearchParam(searchParams, key, value === "all" ? null : value);
-    router.replace(`${pathname}?${params.toString()}`);
   }
 
   async function handleDelete(devotee: Devotee) {
@@ -95,6 +117,14 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
     } finally {
       setPendingId(null);
     }
+  }
+
+  function applyFilters(next: PendingFilters) {
+    let params: URLSearchParams = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(next)) {
+      params = mergeSearchParam(params, key, value === "all" ? null : value);
+    }
+    router.replace(`${PATHNAME}?${params.toString()}`);
   }
 
   const registrationTypeItems: Record<string, string> = {
@@ -120,45 +150,46 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
     false: t("notOptedIn"),
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
-        actions={
-          <>
-            <Link href="/dashboard/devotees/import" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-              <Upload className="size-4" />
-              {t("importButton")}
-            </Link>
-            <ExportMenu
-              exportUrl="/api/devotees/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="devotees"
-            />
-            <DevoteeFormDialog
-              mode="create"
-              trigger={
-                <Button className="hidden gap-1.5 sm:inline-flex">
-                  <UserPlus className="size-4" />
-                  {t("addButton")}
-                </Button>
-              }
-              onSaved={refresh}
-            />
-          </>
-        }
-      />
+  const activeFilterCount = Object.values(filtersFromSearchParams(searchParams)).filter((v) => v !== "all").length;
 
-      <div className="flex flex-wrap items-center gap-3">
-        <DevoteesSearchInput />
+  function devoteeActionItems(devotee: Devotee) {
+    return [
+      {
+        label: tCommon("viewDetails"),
+        icon: <Eye className="size-4" />,
+        onClick: () => router.push(`/dashboard/devotees/${devotee.id}`),
+      },
+      {
+        label: tCommon("edit"),
+        icon: <Pencil className="size-4" />,
+        disabled: pendingId === devotee.id,
+        onClick: () => setEditingDevotee(devotee),
+      },
+      {
+        label: t("sendWhatsapp"),
+        icon: <MessageCircle className="size-4" />,
+        onClick: () => router.push(`/dashboard/whatsapp-activity/${devotee.id}`),
+      },
+      {
+        label: tCommon("delete"),
+        icon: <Trash2 className="size-4" />,
+        variant: "destructive" as const,
+        disabled: pendingId === devotee.id,
+        onClick: () => handleDelete(devotee),
+      },
+    ];
+  }
+
+  const filterSheetContent = (
+    <div className="space-y-4 py-4">
+      <div className="space-y-1.5">
+        <Label>{t("filters.typeLabel")}</Label>
         <Select
-          value={searchParams.get("registrationType") ?? "all"}
-          onValueChange={(v) => updateFilter("registrationType", v ?? "all")}
+          value={pendingFilters.registrationType}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, registrationType: v ?? "all" }))}
           items={registrationTypeItems}
         >
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -169,12 +200,15 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>{t("filters.occasionLabel")}</Label>
         <Select
-          value={searchParams.get("occasion") ?? "all"}
-          onValueChange={(v) => updateFilter("occasion", v ?? "all")}
+          value={pendingFilters.occasion}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, occasion: v ?? "all" }))}
           items={occasionItems}
         >
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -185,12 +219,15 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>{t("filters.donorLabel")}</Label>
         <Select
-          value={searchParams.get("isDonor") ?? "all"}
-          onValueChange={(v) => updateFilter("isDonor", v ?? "all")}
+          value={pendingFilters.isDonor}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, isDonor: v ?? "all" }))}
           items={donorItems}
         >
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -201,12 +238,15 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>{t("filters.whatsappLabel")}</Label>
         <Select
-          value={searchParams.get("whatsappOptIn") ?? "all"}
-          onValueChange={(v) => updateFilter("whatsappOptIn", v ?? "all")}
+          value={pendingFilters.whatsappOptIn}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, whatsappOptIn: v ?? "all" }))}
           items={whatsappItems}
         >
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -218,6 +258,83 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
           </SelectContent>
         </Select>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title={t("pageHeader.title")}
+        subtitle={t("pageHeader.subtitle")}
+        actions={
+          <>
+            <Link
+              href="/dashboard/devotees/import"
+              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+            >
+              <Upload className="size-4" />
+              {t("importButton")}
+            </Link>
+            <div className="hidden lg:block">
+              <ExportMenu
+                exportUrl="/api/devotees/export"
+                filterParams={searchParams}
+                selectedIds={selectedIds}
+                moduleLabel="devotees"
+              />
+            </div>
+            <OverflowActionMenu
+              label="Import / Export"
+              items={[
+                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/devotees/import") },
+                { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
+              ]}
+            />
+            {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
+            <ExportMenu
+              exportUrl="/api/devotees/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="devotees"
+              open={exportOpen}
+              onOpenChange={setExportOpen}
+              hideTrigger
+            />
+            <DevoteeFormDialog
+              mode="create"
+              trigger={
+                <Button className="hidden gap-1.5 lg:inline-flex">
+                  <UserPlus className="size-4" />
+                  {t("addButton")}
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
+        }
+      />
+
+      <ResponsiveSearchBar
+        pathname={PATHNAME}
+        placeholder={t("searchPlaceholder")}
+        filtersSlot={
+          <FilterBottomSheet
+            title={tCommon("filters")}
+            activeCount={activeFilterCount}
+            onOpenChange={(open) => {
+              if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+            }}
+            onReset={() => {
+              const reset: PendingFilters = { registrationType: "all", occasion: "all", isDonor: "all", whatsappOptIn: "all" };
+              setPendingFilters(reset);
+              applyFilters(reset);
+            }}
+            onApply={() => applyFilters(pendingFilters)}
+          >
+            {filterSheetContent}
+          </FilterBottomSheet>
+        }
+      />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -240,128 +357,156 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
           }
         />
       ) : (
-        <TableShell>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={selectedIds.length > 0 && selectedIds.length === devotees.length}
-                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                    aria-label={t("selectAll")}
-                  />
-                </TableHead>
-                <SortableTableHead
-                  column="name"
-                  label={t("columns.name")}
-                  currentSort={sort}
-                  currentDir={dir}
-                  pathname="/dashboard/devotees"
-                />
-                <SortableTableHead
-                  column="phone"
-                  label={t("columns.phone")}
-                  currentSort={sort}
-                  currentDir={dir}
-                  pathname="/dashboard/devotees"
-                />
-                <TableHead>{t("columns.family")}</TableHead>
-                <TableHead>{t("columns.whatsapp")}</TableHead>
-                <TableHead>{t("columns.birthStar")}</TableHead>
-                <TableHead>{t("columns.gothram")}</TableHead>
-                <SortableTableHead
-                  column="firstSeen"
-                  label={t("columns.firstSeen")}
-                  currentSort={sort}
-                  currentDir={dir}
-                  pathname="/dashboard/devotees"
-                />
-                <TableHead className="text-right">{t("columns.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
-              {devotees.map((devotee) => (
-                <MotionTableRow key={devotee.id} variants={rowFadeIn}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(devotee.id)}
-                      onCheckedChange={(checked) => toggleSelected(devotee.id, checked === true)}
-                      aria-label={t("selectRow", { name: devotee.displayName })}
+        <>
+          {/* Tablet + desktop: table, with Family/Birth Star/Gothram hidden on tablet (shown desktop-only). */}
+          <div className="hidden md:block">
+            <TableShell>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedIds.length > 0 && selectedIds.length === devotees.length}
+                        onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                        aria-label={t("selectAll")}
+                      />
+                    </TableHead>
+                    <SortableTableHead column="name" label={t("columns.name")} currentSort={sort} currentDir={dir} pathname={PATHNAME} />
+                    <SortableTableHead column="phone" label={t("columns.phone")} currentSort={sort} currentDir={dir} pathname={PATHNAME} />
+                    <TableHead className="hidden lg:table-cell">{t("columns.family")}</TableHead>
+                    <TableHead>{t("columns.whatsapp")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("columns.birthStar")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("columns.gothram")}</TableHead>
+                    <SortableTableHead
+                      column="firstSeen"
+                      label={t("columns.firstSeen")}
+                      currentSort={sort}
+                      currentDir={dir}
+                      pathname={PATHNAME}
+                      className="hidden lg:table-cell"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/dashboard/devotees/${devotee.id}`}
-                      className="flex items-center gap-2.5 hover:underline"
-                    >
-                      <Avatar className="size-8">
-                        <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
-                          {getInitials(devotee.displayName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{devotee.displayName}</span>
-                    </Link>
-                  </TableCell>
-                  <TableCell>{devotee.whatsappPhone ?? "—"}</TableCell>
-                  <TableCell>
-                    {devotee.familyId ? (
-                      <Link
-                        href={`/dashboard/devotees/family/${devotee.familyId}/edit`}
-                        className="inline-flex flex-col hover:underline"
-                      >
-                        <span className="text-sm font-medium">{devotee.familyName}</span>
-                        {devotee.relationship && (
-                          <span className="text-xs text-muted-foreground">{tRelationship(devotee.relationship)}</span>
+                    <TableHead className="text-right">{t("columns.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
+                  {devotees.map((devotee) => (
+                    <MotionTableRow key={devotee.id} variants={rowFadeIn}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(devotee.id)}
+                          onCheckedChange={(checked) => toggleSelected(devotee.id, checked === true)}
+                          aria-label={t("selectRow", { name: devotee.displayName })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/dashboard/devotees/${devotee.id}`} className="flex items-center gap-2.5 hover:underline">
+                          <Avatar className="size-8">
+                            <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
+                              {getInitials(devotee.displayName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{devotee.displayName}</span>
+                        </Link>
+                      </TableCell>
+                      <TableCell>{devotee.whatsappPhone ?? "—"}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {devotee.familyId ? (
+                          <Link href={`/dashboard/devotees/family/${devotee.familyId}/edit`} className="inline-flex flex-col hover:underline">
+                            <span className="text-sm font-medium">{devotee.familyName}</span>
+                            {devotee.relationship && (
+                              <span className="text-xs text-muted-foreground">{tRelationship(devotee.relationship)}</span>
+                            )}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
-                      </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
+                          {devotee.whatsappOptInStatus ? t("optedIn") : t("notOptedIn")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{devotee.birthStar ?? "—"}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{devotee.ancestralLineage ?? "—"}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{formatDate(devotee.firstSeenAt, locale)}</TableCell>
+                      <TableCell className="text-right">
+                        <OverflowActionMenu items={devoteeActionItems(devotee)} />
+                      </TableCell>
+                    </MotionTableRow>
+                  ))}
+                </motion.tbody>
+              </Table>
+              <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
+            </TableShell>
+          </div>
+
+          {/* Mobile: compact high-density list, ~64px rows. Long-press any row to enter multi-select. */}
+          <div className="space-y-3 md:hidden">
+            <MobileListView>
+              {devotees.map((devotee) => (
+                <MobileListRow
+                  key={devotee.id}
+                  href={`/dashboard/devotees/${devotee.id}`}
+                  leading={
+                    <Avatar className="size-9">
+                      <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
+                        {getInitials(devotee.displayName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  }
+                  title={devotee.displayName}
+                  subtitle={maskPhoneForDisplay(devotee.whatsappPhone)}
+                  badge={
+                    devotee.isDonor ? (
+                      <Badge variant="default">{t("filters.donor")}</Badge>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
-                      {devotee.whatsappOptInStatus ? t("optedIn") : t("notOptedIn")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{devotee.birthStar ?? "—"}</TableCell>
-                  <TableCell>{devotee.ancestralLineage ?? "—"}</TableCell>
-                  <TableCell>{formatDate(devotee.firstSeenAt, locale)}</TableCell>
-                  <TableCell className="flex justify-end gap-2">
-                    <DevoteeFormDialog
-                      mode="edit"
-                      devotee={devotee}
-                      trigger={
-                        <Button variant="outline" size="sm" disabled={pendingId === devotee.id}>
-                          {tCommon("edit")}
-                        </Button>
-                      }
-                      onSaved={refresh}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={pendingId === devotee.id}
-                      onClick={() => handleDelete(devotee)}
-                    >
-                      {tCommon("delete")}
-                    </Button>
-                  </TableCell>
-                </MotionTableRow>
+                      <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
+                        {devotee.whatsappOptInStatus ? t("optedIn") : t("notOptedIn")}
+                      </Badge>
+                    )
+                  }
+                  trailing={<OverflowActionMenu items={devoteeActionItems(devotee)} />}
+                  selectMode={selectMode}
+                  selected={selectedIds.includes(devotee.id)}
+                  onToggleSelect={(checked) => toggleSelected(devotee.id, checked)}
+                  onLongPress={() => {
+                    setSelectMode(true);
+                    if (!selectedIds.includes(devotee.id)) toggleSelected(devotee.id, true);
+                  }}
+                />
               ))}
-            </motion.tbody>
-          </Table>
-          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/devotees" />
-        </TableShell>
+            </MobileListView>
+            <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
+          </div>
+        </>
       )}
 
+      {editingDevotee && (
+        <DevoteeFormDialog
+          mode="edit"
+          devotee={editingDevotee}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingDevotee(null);
+          }}
+          onSaved={() => {
+            setEditingDevotee(null);
+            refresh();
+          }}
+        />
+      )}
+
+      <FloatingActionButton
+        icon={<UserPlus className="size-5" />}
+        label={t("addButton")}
+        onClick={() => setCreateOpen(true)}
+      />
       <DevoteeFormDialog
         mode="create"
-        trigger={
-          <Button size="icon-lg" className="fixed right-4 bottom-4 z-40 rounded-full shadow-lg sm:hidden">
-            <UserPlus className="size-5" />
-            <span className="sr-only">{t("addButton")}</span>
-          </Button>
-        }
+        trigger={<span className="hidden" />}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         onSaved={refresh}
       />
     </div>

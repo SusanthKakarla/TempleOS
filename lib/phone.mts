@@ -23,3 +23,12 @@ export function normalizeWhatsAppId(waId: string): string {
   const parsed = parsePhoneNumberFromString(withPlus, metadata);
   return parsed && parsed.isValid() ? parsed.number : withPlus;
 }
+
+/** Masks all but the first 5 and last 2 digits of the national number (e.g. "98765••••10"), for compact mobile list rows. Ignores a leading country code. */
+export function maskPhoneForDisplay(phone: string | null | undefined): string {
+  if (!phone) return "—";
+  const digits = phone.replace(/[^\d]/g, "");
+  const national = digits.length > 10 ? digits.slice(-10) : digits;
+  if (national.length < 7) return phone;
+  return `${national.slice(0, 5)}••••${national.slice(-2)}`;
+}
