@@ -78,6 +78,8 @@ interface WhatsAppAccountRow {
   business_name: string | null;
   phone_verification_status: string | null;
   webhook_subscribed: boolean;
+  webhook_last_error_code: string | null;
+  webhook_last_error_message: string | null;
   status: WhatsAppAccount["status"];
   connected_at: Date | null;
   disconnected_at: Date | null;
@@ -193,6 +195,8 @@ function mapWhatsAppAccount(row: WhatsAppAccountRow): WhatsAppAccount {
     businessName: row.business_name,
     phoneVerificationStatus: row.phone_verification_status,
     webhookSubscribed: row.webhook_subscribed,
+    webhookLastErrorCode: row.webhook_last_error_code,
+    webhookLastErrorMessage: row.webhook_last_error_message,
     status: row.status,
     connectedAt: row.connected_at ? row.connected_at.toISOString() : null,
     disconnectedAt: row.disconnected_at ? row.disconnected_at.toISOString() : null,

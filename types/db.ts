@@ -199,6 +199,10 @@ export interface WhatsAppAccount {
   businessName: string | null;
   phoneVerificationStatus: string | null;
   webhookSubscribed: boolean;
+  // Set from Meta's Graph API error whenever a subscribe/unsubscribe call
+  // fails; cleared to null on the next successful attempt.
+  webhookLastErrorCode: string | null;
+  webhookLastErrorMessage: string | null;
   status: WhatsAppAccountStatus;
   connectedAt: string | null;
   disconnectedAt: string | null;

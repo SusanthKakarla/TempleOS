@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
     businessName: wabaDetails.businessName ?? phoneDetails.verifiedName ?? null,
     phoneVerificationStatus: phoneDetails.codeVerificationStatus,
     webhookSubscribed: webhookResult.success,
+    webhookLastErrorCode: webhookResult.success ? null : (webhookResult.errorCode ?? null),
+    webhookLastErrorMessage: webhookResult.success ? null : webhookResult.error,
   });
 
   await createAuditLogEntry({
