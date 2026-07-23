@@ -21,12 +21,15 @@ interface WhatsAppConnectionCardProps {
   account: WhatsAppAccount | null;
   initialConnectResult: ConnectResult | null;
   initialCancelled: boolean;
+  /** Compact single-row "Connected" summary instead of the full card — used once WhatsApp is already connected, so the connection details don't dominate the page. */
+  compact?: boolean;
 }
 
 export function WhatsAppConnectionCard({
   account,
   initialConnectResult,
   initialCancelled,
+  compact = false,
 }: WhatsAppConnectionCardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -108,6 +111,27 @@ export function WhatsAppConnectionCard({
     } finally {
       setPending(null);
     }
+  }
+
+  if (compact && isConnected && account) {
+    return (
+      <div className="glass-card flex flex-wrap items-center gap-3 rounded-2xl p-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald/10 text-emerald">
+          <MessageCircle className="size-4.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{account.phoneNumber}</p>
+          <p className="truncate text-xs text-muted-foreground">{account.businessName ?? t("cardTitle")}</p>
+        </div>
+        <Badge variant="default" className="gap-1">
+          <CheckCircle2 className="size-3.5" />
+          {t("statusConnected")}
+        </Badge>
+        <Button variant="outline" size="sm" disabled={pending !== null} onClick={handleDisconnect}>
+          {pending === "disconnect" ? t("disconnecting") : t("disconnectButton")}
+        </Button>
+      </div>
+    );
   }
 
   return (

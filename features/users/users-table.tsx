@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { History, Upload, UserPlus, Users as UsersIcon } from "lucide-react";
+import { Activity, Download, History, ShieldCheck, Upload, UserPlus, Users as UsersIcon } from "lucide-react";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import type { RoleCode, SupportedLanguage } from "@/types/db";
 import { ROLE_CODES } from "@/types/db";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -29,16 +28,21 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
+import { OverflowActionMenu } from "@/components/overflow-action-menu";
+import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
+import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
-import { UsersSearchInput } from "./users-search-input";
 import { InviteUserDialog } from "./invite-user-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { ToggleUserStatusDialog } from "./toggle-user-status-dialog";
 import { UserActivityPanel } from "./user-activity-panel";
 
 const MotionTableRow = motion.create(TableRow);
+const PATHNAME = "/dashboard/users";
 
 function getInitials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
@@ -52,6 +56,18 @@ interface UsersTableProps {
   totalCount: number;
   sort?: "name" | "status" | "lastSignIn";
   dir: "asc" | "desc";
+}
+
+interface PendingFilters {
+  role: string;
+  status: string;
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters {
+  return {
+    role: searchParams.get("role") ?? "all",
+    status: searchParams.get("status") ?? "all",
+  };
 }
 
 export function UsersTable({
@@ -68,7 +84,13 @@ export function UsersTable({
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [changingRoleMember, setChangingRoleMember] = useState<TenantMembershipListItem | null>(null);
+  const [togglingStatusMember, setTogglingStatusMember] = useState<TenantMembershipListItem | null>(null);
+  const [viewingActivityMember, setViewingActivityMember] = useState<TenantMembershipListItem | null>(null);
+  const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
   function refresh() {
     router.refresh();
@@ -82,8 +104,11 @@ export function UsersTable({
     setSelectedIds(checked ? members.map((m) => m.id) : []);
   }
 
-  function updateFilter(key: "status" | "role", value: string) {
-    const params = mergeSearchParam(searchParams, key, value === "all" ? null : value);
+  function applyFilters(next: PendingFilters) {
+    let params: URLSearchParams = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(next)) {
+      params = mergeSearchParam(params, key, value === "all" ? null : value);
+    }
     router.replace(`${pathname}?${params.toString()}`);
   }
 
@@ -95,6 +120,8 @@ export function UsersTable({
     inactive: t("status.disabled"),
   };
 
+  const activeFilterCount = Object.values(filtersFromSearchParams(searchParams)).filter((v) => v !== "all").length;
+
   function statusBadge(member: TenantMembershipListItem) {
     const isActive = member.status === "active";
     return (
@@ -104,83 +131,40 @@ export function UsersTable({
     );
   }
 
-  function rowActions(member: TenantMembershipListItem, className: string): ReactNode {
+  function memberActionItems(member: TenantMembershipListItem) {
     const isActive = member.status === "active";
-    return (
-      <div className={className}>
-        <ChangeRoleDialog
-          member={member}
-          trigger={
-            <Button variant="outline" size="sm">
-              {t("changeRoleDialog.title")}
-            </Button>
-          }
-          onChanged={refresh}
-        />
-        {member.id !== currentMembershipId && (
-          <ToggleUserStatusDialog
-            member={member}
-            trigger={
-              <Button variant={isActive ? "destructive" : "success"} size="sm">
-                {isActive ? t("status.disableAction") : t("status.enableAction")}
-              </Button>
-            }
-            onChanged={refresh}
-          />
-        )}
-        <UserActivityPanel
-          member={member}
-          trigger={
-            <Button variant="secondary" size="sm">
-              {t("activityPanel.title")}
-            </Button>
-          }
-        />
-      </div>
-    );
+    const items = [
+      {
+        label: t("changeRoleDialog.title"),
+        icon: <ShieldCheck className="size-4" />,
+        onClick: () => setChangingRoleMember(member),
+      },
+    ];
+    if (member.id !== currentMembershipId) {
+      items.push({
+        label: isActive ? t("status.disableAction") : t("status.enableAction"),
+        icon: <UsersIcon className="size-4" />,
+        onClick: () => setTogglingStatusMember(member),
+      });
+    }
+    items.push({
+      label: t("activityPanel.title"),
+      icon: <Activity className="size-4" />,
+      onClick: () => setViewingActivityMember(member),
+    });
+    return items;
   }
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
-        actions={
-          <>
-            <Link
-              href="/dashboard/users/activity"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
-            >
-              <History className="size-4" />
-              {t("activityLog.pageTitle")}
-            </Link>
-            <Link href="/dashboard/users/import" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-              <Upload className="size-4" />
-              {t("importButton")}
-            </Link>
-            <ExportMenu
-              exportUrl="/api/users/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="users"
-            />
-            <InviteUserDialog
-              trigger={
-                <Button className="gap-1.5">
-                  <UserPlus className="size-4" />
-                  {t("inviteButton")}
-                </Button>
-              }
-              onInvited={refresh}
-            />
-          </>
-        }
-      />
-
-      <div className="flex flex-wrap items-center gap-3">
-        <UsersSearchInput />
-        <Select value={searchParams.get("role") ?? "all"} onValueChange={(v) => updateFilter("role", v ?? "all")} items={roleItems}>
-          <SelectTrigger className="w-full sm:w-40">
+  const filterSheetContent = (
+    <div className="space-y-4 py-4">
+      <div className="space-y-1.5">
+        <Label>{t("columns.role")}</Label>
+        <Select
+          value={pendingFilters.role}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, role: v ?? "all" }))}
+          items={roleItems}
+        >
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -191,8 +175,15 @@ export function UsersTable({
             ))}
           </SelectContent>
         </Select>
-        <Select value={searchParams.get("status") ?? "all"} onValueChange={(v) => updateFilter("status", v ?? "all")} items={statusItems}>
-          <SelectTrigger className="w-full sm:w-40">
+      </div>
+      <div className="space-y-1.5">
+        <Label>{t("columns.status")}</Label>
+        <Select
+          value={pendingFilters.status}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
+          items={statusItems}
+        >
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -204,6 +195,92 @@ export function UsersTable({
           </SelectContent>
         </Select>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title={t("pageHeader.title")}
+        subtitle={t("pageHeader.subtitle")}
+        actions={
+          <>
+            <Link
+              href="/dashboard/users/activity"
+              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+            >
+              <History className="size-4" />
+              {t("activityLog.pageTitle")}
+            </Link>
+            <Link
+              href="/dashboard/users/import"
+              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+            >
+              <Upload className="size-4" />
+              {t("importButton")}
+            </Link>
+            <div className="hidden lg:block">
+              <ExportMenu
+                exportUrl="/api/users/export"
+                filterParams={searchParams}
+                selectedIds={selectedIds}
+                moduleLabel="users"
+              />
+            </div>
+            <OverflowActionMenu
+              label="Activity / Import / Export"
+              items={[
+                { label: t("activityLog.pageTitle"), icon: <History className="size-4" />, onClick: () => router.push("/dashboard/users/activity") },
+                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/users/import") },
+                { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
+              ]}
+            />
+            {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
+            <ExportMenu
+              exportUrl="/api/users/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="users"
+              open={exportOpen}
+              onOpenChange={setExportOpen}
+              hideTrigger
+            />
+          </>
+        }
+      />
+
+      <ResponsiveSearchBar
+        pathname={PATHNAME}
+        placeholder={t("searchPlaceholder")}
+        filtersSlot={
+          <>
+            <FilterBottomSheet
+              title={tCommon("filters")}
+              activeCount={activeFilterCount}
+              onOpenChange={(open) => {
+                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+              }}
+              onReset={() => {
+                const reset: PendingFilters = { role: "all", status: "all" };
+                setPendingFilters(reset);
+                applyFilters(reset);
+              }}
+              onApply={() => applyFilters(pendingFilters)}
+            >
+              {filterSheetContent}
+            </FilterBottomSheet>
+            <InviteUserDialog
+              trigger={
+                <Button className="shrink-0 gap-1.5">
+                  <UserPlus className="size-4" />
+                  <span className="hidden sm:inline">{t("inviteButton")}</span>
+                </Button>
+              }
+              onInvited={refresh}
+            />
+          </>
+        }
+      />
 
       {members.length === 0 ? (
         <EmptyState
@@ -224,10 +301,10 @@ export function UsersTable({
         />
       ) : (
         <>
-          {/* Desktop / tablet: fixed-width table, horizontal scroll if needed */}
-          <div className="hidden sm:block">
+          {/* Tablet + desktop: table, Phone/Joined/Last Login hidden on tablet (shown desktop-only). */}
+          <div className="hidden md:block">
             <TableShell>
-              <Table className="table-fixed">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10">
@@ -237,34 +314,20 @@ export function UsersTable({
                         aria-label={t("selectAll")}
                       />
                     </TableHead>
-                    <SortableTableHead
-                      column="name"
-                      label={t("columns.name")}
-                      currentSort={sort}
-                      currentDir={dir}
-                      pathname="/dashboard/users"
-                      className="w-56"
-                    />
-                    <TableHead className="w-36">{t("columns.phone")}</TableHead>
-                    <TableHead className="w-44">{t("columns.role")}</TableHead>
-                    <SortableTableHead
-                      column="status"
-                      label={t("columns.status")}
-                      currentSort={sort}
-                      currentDir={dir}
-                      pathname="/dashboard/users"
-                      className="w-28"
-                    />
-                    <TableHead className="w-32">{t("columns.joined")}</TableHead>
+                    <SortableTableHead column="name" label={t("columns.name")} currentSort={sort} currentDir={dir} pathname={PATHNAME} />
+                    <TableHead className="hidden lg:table-cell">{t("columns.phone")}</TableHead>
+                    <TableHead>{t("columns.role")}</TableHead>
+                    <SortableTableHead column="status" label={t("columns.status")} currentSort={sort} currentDir={dir} pathname={PATHNAME} />
+                    <TableHead className="hidden lg:table-cell">{t("columns.joined")}</TableHead>
                     <SortableTableHead
                       column="lastSignIn"
                       label={t("columns.lastLogin")}
                       currentSort={sort}
                       currentDir={dir}
-                      pathname="/dashboard/users"
-                      className="w-32"
+                      pathname={PATHNAME}
+                      className="hidden lg:table-cell"
                     />
-                    <TableHead className="w-80 text-right">{t("columns.actions")}</TableHead>
+                    <TableHead className="text-right">{t("columns.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
@@ -287,7 +350,7 @@ export function UsersTable({
                           <span className="truncate font-medium">{member.displayName}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="truncate">{member.phoneNumber}</TableCell>
+                      <TableCell className="hidden truncate lg:table-cell">{member.phoneNumber}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {member.roles.length === 0 ? (
@@ -302,69 +365,85 @@ export function UsersTable({
                         </div>
                       </TableCell>
                       <TableCell>{statusBadge(member)}</TableCell>
-                      <TableCell>{formatDate(member.createdAt, locale)}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">{formatDate(member.createdAt, locale)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {member.lastSignedInAt ? formatDate(member.lastSignedInAt, locale) : t("status.never")}
                       </TableCell>
-                      <TableCell>{rowActions(member, "flex justify-end gap-2")}</TableCell>
+                      <TableCell className="text-right">
+                        <OverflowActionMenu items={memberActionItems(member)} />
+                      </TableCell>
                     </MotionTableRow>
                   ))}
                 </motion.tbody>
               </Table>
-              <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/users" />
+              <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
             </TableShell>
           </div>
 
-          {/* Mobile: one card per user, no clipped content */}
-          <div className="space-y-3 sm:hidden">
-            {members.map((member) => (
-              <Card key={member.id} className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <Avatar className="size-9 shrink-0">
+          {/* Mobile: compact high-density list, ~64px rows. */}
+          <div className="space-y-3 md:hidden">
+            <MobileListView>
+              {members.map((member) => (
+                <MobileListRow
+                  key={member.id}
+                  leading={
+                    <Avatar className="size-9">
                       <AvatarFallback className="gradient-blue-purple text-xs font-semibold text-white">
                         {getInitials(member.displayName)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{member.displayName}</p>
-                      <p className="truncate text-sm text-muted-foreground">{member.phoneNumber}</p>
-                    </div>
-                  </div>
-                  {statusBadge(member)}
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {member.roles.length === 0 ? (
-                    <span className="text-sm text-muted-foreground">—</span>
-                  ) : (
-                    member.roles.map((role: RoleCode) => (
-                      <Badge key={role} variant="outline">
-                        {t(`roleNames.${role}`)}
-                      </Badge>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                  <div>
-                    <p className="text-xs">{t("columns.joined")}</p>
-                    <p className="text-foreground">{formatDate(member.createdAt, locale)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs">{t("columns.lastLogin")}</p>
-                    <p className="text-foreground">
-                      {member.lastSignedInAt ? formatDate(member.lastSignedInAt, locale) : t("status.never")}
-                    </p>
-                  </div>
-                </div>
-
-                {rowActions(member, "mt-4 flex flex-col gap-2")}
-              </Card>
-            ))}
-            <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/users" />
+                  }
+                  title={member.displayName}
+                  subtitle={`${member.phoneNumber} · ${member.roles.length ? member.roles.map((role) => t(`roleNames.${role}`)).join(", ") : "—"}`}
+                  badge={statusBadge(member)}
+                  trailing={<OverflowActionMenu items={memberActionItems(member)} />}
+                />
+              ))}
+            </MobileListView>
+            <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
           </div>
         </>
+      )}
+
+      {changingRoleMember && (
+        <ChangeRoleDialog
+          member={changingRoleMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setChangingRoleMember(null);
+          }}
+          onChanged={() => {
+            setChangingRoleMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {togglingStatusMember && (
+        <ToggleUserStatusDialog
+          member={togglingStatusMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setTogglingStatusMember(null);
+          }}
+          onChanged={() => {
+            setTogglingStatusMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {viewingActivityMember && (
+        <UserActivityPanel
+          member={viewingActivityMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setViewingActivityMember(null);
+          }}
+        />
       )}
     </div>
   );

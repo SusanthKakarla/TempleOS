@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
-  BellRing,
   CalendarDays,
   LayoutDashboard,
   Landmark,
@@ -39,13 +38,6 @@ export const NAV_ITEMS = [
     icon: Receipt,
     gradient: "gradient-saffron-gold",
     featureKey: "donations",
-  },
-  {
-    href: "/dashboard/notifications",
-    labelKey: "notifications",
-    icon: BellRing,
-    gradient: "gradient-green-emerald",
-    featureKey: "notifications",
   },
   {
     href: "/dashboard/chatbot-settings",

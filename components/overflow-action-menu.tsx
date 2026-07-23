@@ -37,6 +37,7 @@ export function OverflowActionMenu({ items, label = "More actions", stopPropagat
             <Button
               variant="ghost"
               size="icon-sm"
+              className="max-md:size-11"
               aria-label={label}
               onClick={(event) => {
                 if (stopPropagation) event.stopPropagation();

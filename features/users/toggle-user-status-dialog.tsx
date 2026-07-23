@@ -18,15 +18,22 @@ export function ToggleUserStatusDialog({
   member,
   trigger,
   onChanged,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   member: TenantMembershipListItem;
   trigger: ReactElement;
   onChanged: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const t = useTranslations("userManagement");
   const tDialog = useTranslations("userManagement.toggleStatusDialog");
   const tCommon = useTranslations("common");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
