@@ -89,27 +89,10 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4">
-      <div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold tracking-normal">Edit Temple Details</h2>
-          <p className="text-sm text-muted-foreground">Safe tenant setup fields only.</p>
-        </div>
-        <Button type="submit" disabled={submitting}>
-          <Save className="size-4" />
-          {submitting ? "Saving..." : "Save"}
-        </Button>
+      <div className="border-b pb-3">
+        <h2 className="text-base font-semibold tracking-normal">Edit Temple Details</h2>
+        <p className="text-sm text-muted-foreground">Safe tenant setup fields only.</p>
       </div>
-
-      {errors.formError && (
-        <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {errors.formError}
-        </p>
-      )}
-      {saved && (
-        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Temple details updated.
-        </p>
-      )}
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <FloatingLabelInput
@@ -143,6 +126,16 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
             rows={3}
           />
         </FieldError>
+      </div>
+
+      {errors.formError && <p className="mt-4 text-sm text-destructive">{errors.formError}</p>}
+      {saved && <p className="mt-4 text-sm text-emerald">Temple details updated.</p>}
+
+      <div className="mt-4 flex justify-end">
+        <Button type="submit" disabled={submitting}>
+          <Save className="size-4" />
+          {submitting ? "Saving..." : "Save"}
+        </Button>
       </div>
     </form>
   );

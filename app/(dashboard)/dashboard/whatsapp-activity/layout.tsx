@@ -3,6 +3,7 @@ import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { getWhatsAppStats } from "@/lib/db/whatsapp-conversations";
 import { WhatsAppStatsBar } from "@/features/whatsapp/whatsapp-stats-bar";
+import { WhatsAppActivityPanes } from "@/features/whatsapp/whatsapp-activity-panes";
 import { PageHeader } from "@/components/page-header";
 
 export default async function WhatsAppActivityLayout({
@@ -22,12 +23,7 @@ export default async function WhatsAppActivityLayout({
     <div className="space-y-6">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
       {stats && <WhatsAppStatsBar stats={stats} />}
-      <div className="flex h-[75vh] min-h-125 gap-4 overflow-hidden">
-        <div className="glass-panel w-full max-w-xs shrink-0 overflow-hidden rounded-2xl lg:max-w-sm xl:max-w-md">
-          {list}
-        </div>
-        <div className="glass-panel flex-1 overflow-hidden rounded-2xl">{children}</div>
-      </div>
+      <WhatsAppActivityPanes list={list}>{children}</WhatsAppActivityPanes>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import { getTenantById } from "@/lib/db/tenants";
 import { listSpecialDays } from "@/lib/db/temple-special-days";
 import { listSevas } from "@/lib/db/temple-sevas";
@@ -17,6 +18,7 @@ interface ChatbotSettingsPageProps {
 
 export default async function ChatbotSettingsPage({ searchParams }: ChatbotSettingsPageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "whatsapp_chatbot");
   const t = await getTranslations("chatbotSettings.pageHeader");
   const params = await searchParams;
 

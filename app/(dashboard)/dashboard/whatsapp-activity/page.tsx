@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { MessageCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 
 export default async function WhatsAppActivityIndexPage() {
-  await requireDashboardAdmin();
+  const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "conversations");
   const t = await getTranslations("whatsappActivity.emptyStates.selectConversation");
 
   return (

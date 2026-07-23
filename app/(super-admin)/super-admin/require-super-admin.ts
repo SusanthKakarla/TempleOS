@@ -7,7 +7,7 @@ import {
 import type { SuperAdmin } from "@/types/db";
 
 export async function requireSuperAdminPage(
-  returnPath = "/super-admin/temples/new",
+  returnPath = "/super-admin",
 ): Promise<SuperAdmin> {
   const superAdmin = await requireSuperAdmin();
   if (!superAdmin) {

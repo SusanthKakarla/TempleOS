@@ -21,6 +21,7 @@ export const createEventSchema = z
     startsAt: isoDateTime,
     endsAt: isoDateTime.nullable().optional(),
     status: eventStatusSchema.default("draft"),
+    bannerMediaId: z.string().uuid().nullable().optional(),
   })
   .refine(
     (data) => !data.endsAt || Date.parse(data.endsAt) >= Date.parse(data.startsAt),
@@ -35,6 +36,7 @@ export const updateEventSchema = z
     startsAt: isoDateTime.optional(),
     endsAt: isoDateTime.nullable().optional(),
     status: eventStatusSchema.optional(),
+    bannerMediaId: z.string().uuid().nullable().optional(),
   })
   .refine(
     (data) =>

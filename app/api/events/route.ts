@@ -3,6 +3,7 @@ import {
   requireTenantAdminSession,
   tenantAdminAuthResponse,
 } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createEvent, listEvents } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { enqueueEventNotifications } from "@/lib/db/event-notifications";
@@ -16,6 +17,8 @@ export async function GET(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "events");
+  if (featureBlocked) return featureBlocked;
 
   const statusParam = req.nextUrl.searchParams.get("status");
   const statusResult = statusParam
@@ -41,6 +44,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "events");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = createEventSchema.safeParse(json);
@@ -60,6 +65,7 @@ export async function POST(req: NextRequest) {
     startsAt: parsed.data.startsAt,
     endsAt: parsed.data.endsAt ?? null,
     status: parsed.data.status,
+    bannerMediaId: parsed.data.bannerMediaId ?? null,
     createdBy: session.membershipId,
   });
 

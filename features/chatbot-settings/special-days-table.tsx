@@ -140,7 +140,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                         onSaved={refresh}
                       />
                       <Button
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         disabled={pendingId === specialDay.id}
                         onClick={() => handleDelete(specialDay)}

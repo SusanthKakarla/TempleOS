@@ -122,6 +122,7 @@ const createdTenant = {
   id: "tenant-1",
   slug: "sv-temple",
   name: "Sri Venkateswara Temple",
+  status: "active" as const,
   defaultContactPhone: "+917995362200",
   address: "123 Temple Street",
   timezone: "Asia/Kolkata",

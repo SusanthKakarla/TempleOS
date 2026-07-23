@@ -338,7 +338,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                       onSaved={refresh}
                     />
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       disabled={pendingId === devotee.id}
                       onClick={() => handleDelete(devotee)}

@@ -63,6 +63,7 @@ describe("new temple form helpers", () => {
         displayName: "Temple Admin",
         roles: ["admin", "priest"],
       },
+      featureKeys: [],
     });
   });
 

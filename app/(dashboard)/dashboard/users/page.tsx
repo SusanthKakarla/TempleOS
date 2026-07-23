@@ -1,4 +1,5 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import {
   listTenantMembershipsForTenant,
   countTenantMembershipsFiltered,
@@ -23,6 +24,7 @@ const SORT_VALUES: ListTenantMembershipsFilters["sort"][] = ["name", "status", "
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "user_management");
 
   const { search, status, role, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
   const page = parsePageParam(pageParam);

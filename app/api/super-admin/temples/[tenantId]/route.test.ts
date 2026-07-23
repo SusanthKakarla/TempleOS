@@ -23,6 +23,18 @@ vi.mock("@/lib/db/tenants", () => ({
   getTenantDetailForSuperAdmin: vi.fn(),
 }));
 
+vi.mock("@/lib/db/tenant-memberships", () => ({
+  listTenantMembershipsForTenant: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/notifications/engine", () => ({
+  enqueueNotification: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/notifications/delivery", () => ({
+  processNotifications: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/provisioning/temples", () => ({
   parseUpdateProvisionedTempleInput: vi.fn(),
   updateProvisionedTemple: vi.fn(),
@@ -61,6 +73,7 @@ const templeDetail = {
     id: tenantId,
     slug: "sv-temple",
     name: "Sri Venkateswara Temple",
+    status: "active" as const,
     defaultContactPhone: "+14155552671",
     address: "1 Temple Way",
     timezone: "America/Los_Angeles",

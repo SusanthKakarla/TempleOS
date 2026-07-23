@@ -19,6 +19,8 @@ import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatDateTime } from "@/lib/date";
+import { MediaUpload } from "@/features/media/media-upload";
+import type { NotificationMedia } from "@/types/db";
 import { dateTimeLocalValueToIso, isoToDateTimeLocalValue } from "./datetime-local";
 import { DateTimeField } from "./date-time-field";
 
@@ -40,6 +42,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
   const [startsAt, setStartsAt] = useState(isoToDateTimeLocalValue(event?.startsAt ?? null));
   const [endsAt, setEndsAt] = useState(isoToDateTimeLocalValue(event?.endsAt ?? null));
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "draft");
+  const [banner, setBanner] = useState<NotificationMedia | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,6 +54,15 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
     setEndsAt(isoToDateTimeLocalValue(event?.endsAt ?? null));
     setStatus(event?.status ?? "draft");
     setError(null);
+
+    if (event?.bannerMediaId) {
+      fetch(`/api/media/${event.bannerMediaId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body: { media?: NotificationMedia } | null) => setBanner(body?.media ?? null))
+        .catch(() => setBanner(null));
+    } else {
+      setBanner(null);
+    }
   }
 
   async function handleSubmit(formEvent: FormEvent) {
@@ -78,6 +90,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
           startsAt: startsAtIso,
           endsAt: endsAtIso,
           status,
+          bannerMediaId: banner?.id ?? null,
         }),
       });
 
@@ -135,6 +148,13 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
             icon={<MapPin />}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
+          />
+          <MediaUpload
+            category="event_banner"
+            value={banner}
+            onChange={setBanner}
+            label={t("fields.banner")}
+            hint={t("fields.bannerHint")}
           />
           <div className="space-y-4">
             <DateTimeField id="startsAt" label={t("fields.start")} value={startsAt} onChange={setStartsAt} required />

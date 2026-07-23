@@ -108,6 +108,7 @@ const provisionedTemple = {
     id: "tenant-1",
     slug: "sv-temple",
     name: "Sri Venkateswara Temple",
+    status: "active" as const,
     defaultContactPhone: "+14155552671",
     address: "1 Temple Way",
     timezone: "America/Los_Angeles",

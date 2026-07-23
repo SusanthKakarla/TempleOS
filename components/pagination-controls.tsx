@@ -37,6 +37,7 @@ export function PaginationControls({ page, pageSize, totalCount, pathname, param
       </span>
       <div className="flex items-center gap-1.5">
         <Link
+          aria-label="Previous page"
           aria-disabled={page <= 1}
           tabIndex={page <= 1 ? -1 : undefined}
           href={hrefForPage(page - 1)}
@@ -51,6 +52,7 @@ export function PaginationControls({ page, pageSize, totalCount, pathname, param
           {page} / {totalPages}
         </span>
         <Link
+          aria-label="Next page"
           aria-disabled={page >= totalPages}
           tabIndex={page >= totalPages ? -1 : undefined}
           href={hrefForPage(page + 1)}

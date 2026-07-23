@@ -87,17 +87,34 @@ export function sendTextMessage(phoneNumberId: string, toPhone: string, body: st
   return sendMessage(phoneNumberId, toPhone, { type: "text", text: { body } });
 }
 
-/** Sends up to 3 tappable reply buttons (e.g. the language picker). */
+/** Sends an image with a caption — used for birthday/anniversary/donation/festival notifications that have a configured banner. */
+export function sendImageMessage(
+  phoneNumberId: string,
+  toPhone: string,
+  imageUrl: string,
+  caption: string,
+): Promise<SendMessageResult> {
+  return sendMessage(phoneNumberId, toPhone, { type: "image", image: { link: imageUrl, caption } });
+}
+
+/**
+ * Sends up to 3 tappable reply buttons (e.g. the language picker, event
+ * announcements). `headerImageUrl` puts an event banner on the same
+ * interactive message (Meta supports an image header alongside body text and
+ * reply buttons in one send) rather than requiring a second message.
+ */
 export function sendButtonMessage(
   phoneNumberId: string,
   toPhone: string,
   bodyText: string,
   buttons: InteractiveButton[],
+  headerImageUrl?: string,
 ): Promise<SendMessageResult> {
   return sendMessage(phoneNumberId, toPhone, {
     type: "interactive",
     interactive: {
       type: "button",
+      ...(headerImageUrl ? { header: { type: "image", image: { link: headerImageUrl } } } : {}),
       body: { text: bodyText },
       action: {
         buttons: buttons.map((b) => ({ type: "reply", reply: { id: b.id, title: b.title } })),

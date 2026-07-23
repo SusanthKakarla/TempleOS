@@ -1,11 +1,13 @@
 import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
+import { requireTenantFeature } from "@/lib/auth/features";
 import { listRoleDefinitionsForSuperAdmin, countActiveMembersByRole } from "@/lib/db/role-definitions";
 import { RolesGrid } from "@/features/users/roles-grid";
 import { PageHeader } from "@/components/page-header";
 
 export default async function RolesPage() {
   const session = await requireDashboardAdmin();
+  await requireTenantFeature(session.tenantId, "roles_permissions");
   const t = await getTranslations("rolesAndPermissions.pageHeader");
 
   const [roles, counts] = await Promise.all([

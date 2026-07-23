@@ -159,6 +159,63 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "📢 కుటుంబ రిమైండర్\n\nరేపు:\n{{occasionList}}\n\n{{templeName}} నుండి",
   },
+  // Platform config changes — Super Admin edited settings, or changed feature/status — to tenant admins.
+  {
+    notificationType: "tenant_config_changed",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "⚙️ Temple Settings Updated\n\n{{summary}}\n\nUpdated by the TempleOS platform team.",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "⚙️ ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి\n\n{{summary}}\n\nTempleOS ప్లాట్‌ఫారమ్ బృందం ద్వారా నవీకరించబడింది.",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "in_app",
+    language: "en",
+    title: "Temple Settings Updated",
+    body: "{{summary}}",
+  },
+  {
+    notificationType: "tenant_config_changed",
+    channel: "in_app",
+    language: "te",
+    title: "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
+    body: "{{summary}}",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🔔 Temple Status Changed\n\n{{templeName}} is now {{status}}.\n\nContact the TempleOS platform team with any questions.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🔔 ఆలయ స్థితి మార్చబడింది\n\n{{templeName}} ఇప్పుడు {{status}}.\n\nప్రశ్నల కోసం TempleOS ప్లాట్‌ఫారమ్ బృందాన్ని సంప్రదించండి.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "in_app",
+    language: "en",
+    title: "Temple Status Changed",
+    body: "{{templeName}} is now {{status}}.",
+  },
+  {
+    notificationType: "tenant_status_changed",
+    channel: "in_app",
+    language: "te",
+    title: "ఆలయ స్థితి మార్చబడింది",
+    body: "{{templeName}} ఇప్పుడు {{status}}.",
+  },
   // New user welcome — admin/priest/committee_member/volunteer.
   {
     notificationType: "user_welcome",
@@ -245,6 +302,37 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     language: "te",
     title: "రేపు కార్యక్రమం",
     body: "{{eventTitle}} రేపు {{eventTime}} గంటలకు, {{eventLocation}} వద్ద జరుగుతుంది.",
+  },
+  // Donation thank-you — devotee, WhatsApp only (same reasoning as birthday_devotee).
+  {
+    notificationType: "donation_thank_you",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Thank you, {{donorName}}, for your generous donation of {{amount}} towards {{purpose}}.\n\nOn behalf of {{templeName}}, may the deity bless you and your family.",
+  },
+  {
+    notificationType: "donation_thank_you",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 {{purpose}} కొరకు మీ {{amount}} విరాళానికి ధన్యవాదాలు, {{donorName}}.\n\n{{templeName}} తరఫున, దేవుడు మిమ్మల్ని మరియు మీ కుటుంబాన్ని ఆశీర్వదించాలని కోరుకుంటున్నాము.",
+  },
+  // Festival greeting — one shared template with a {{festivalName}} variable
+  // rather than 8 near-duplicate rows (see lib/db/festival-greetings.ts).
+  {
+    notificationType: "festival_greeting",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🎉 {{festivalName}} Greetings!\n\n🙏 {{templeName}} wishes you and your family a joyous {{festivalName}}, filled with divine blessings.\n\n🌸 Om Namah Shivaya 🌸",
+  },
+  {
+    notificationType: "festival_greeting",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🎉 {{festivalName}} శుభాకాంక్షలు!\n\n🙏 {{templeName}} తరఫున మీకు మరియు మీ కుటుంబానికి ఆనందకరమైన {{festivalName}} శుభాకాంక్షలు.\n\n🌸 ఓం నమః శివాయ 🌸",
   },
 ];
 

@@ -1,5 +1,6 @@
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getPersonById } from "@/lib/db/persons";
+import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 import { createAuditLogEntry } from "@/lib/db/audit-log";
 import {
@@ -8,7 +9,8 @@ import {
   markNotificationFailed,
   markNotificationSent,
 } from "@/lib/db/notifications";
-import { sendTextMessage } from "@/lib/whatsapp/client";
+import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
+import { sendImageMessage, sendTextMessage } from "@/lib/whatsapp/client";
 import type { Notification } from "@/types/db";
 
 /**
@@ -40,7 +42,15 @@ async function processOneNotification(id: string): Promise<void> {
     return;
   }
 
-  const result = await sendTextMessage(whatsappAccount.metaPhoneNumberId, phone, claimed.message);
+  const media = claimed.mediaId ? await getNotificationMediaById(claimed.tenantId, claimed.mediaId) : null;
+  const result = media
+    ? await sendImageMessage(
+        whatsappAccount.metaPhoneNumberId,
+        phone,
+        buildWhatsAppImageUrl(media.imageUrl),
+        claimed.message,
+      )
+    : await sendTextMessage(whatsappAccount.metaPhoneNumberId, phone, claimed.message);
   if (result.success) {
     await markNotificationSent(claimed.id);
     await logOutcome(claimed, "sent");
@@ -82,6 +92,7 @@ async function logOutcome(notification: Notification, outcome: "sent" | "failed"
       notificationType: notification.notificationType,
       channel: notification.channel,
       category: notification.category,
+      hasMedia: notification.mediaId !== null,
       ...(reason ? { failureReason: reason } : {}),
     },
   });

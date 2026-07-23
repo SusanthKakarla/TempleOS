@@ -1,6 +1,7 @@
 import { getEventById } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { getDevoteeById } from "@/lib/db/devotees";
+import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 import { logWhatsAppMessage } from "@/lib/db/whatsapp-messages";
 import {
@@ -8,6 +9,7 @@ import {
   markEventNotificationFailed,
   markEventNotificationSent,
 } from "@/lib/db/event-notifications";
+import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
 import { buildEventNotificationMessage } from "./templates";
 import { sendButtonMessage } from "./client";
 
@@ -48,11 +50,13 @@ async function processOneEventNotification(id: string): Promise<void> {
 
   const lang = devotee.preferredLanguage ?? "en";
   const message = buildEventNotificationMessage(claimed.notificationType, tenant, event, lang);
+  const banner = event.bannerMediaId ? await getNotificationMediaById(claimed.tenantId, event.bannerMediaId) : null;
   const result = await sendButtonMessage(
     whatsappAccount.metaPhoneNumberId,
     devotee.whatsappPhone,
     message.body,
     message.buttons,
+    banner ? buildWhatsAppImageUrl(banner.imageUrl) : undefined,
   );
   const logged = await logWhatsAppMessage(claimed.tenantId, {
     devoteeId: devotee.id,

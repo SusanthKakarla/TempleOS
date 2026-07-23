@@ -1,4 +1,4 @@
-import type { RoleCode, Tenant, TenantDomain, WhatsAppAccount } from "@/types/db";
+import type { FeatureKey, RoleCode, Tenant, TenantDomain, WhatsAppAccount } from "@/types/db";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
 export const PRODUCT_DOMAIN = "trytempleos.com";
@@ -32,6 +32,7 @@ export interface NewTempleFormState {
   whatsappPhoneNumber: string;
   metaPhoneNumberId: string;
   metaBusinessAccountId: string;
+  featureKeys: FeatureKey[];
 }
 
 export interface ProvisionTemplePayload {
@@ -55,6 +56,7 @@ export interface ProvisionTemplePayload {
     metaPhoneNumberId: string;
     metaBusinessAccountId: string;
   };
+  featureKeys: FeatureKey[];
 }
 
 export interface ProvisionTempleSuccess {
@@ -104,6 +106,7 @@ export const DEFAULT_NEW_TEMPLE_FORM_STATE: NewTempleFormState = {
   whatsappPhoneNumber: "",
   metaPhoneNumberId: "",
   metaBusinessAccountId: "",
+  featureKeys: [],
 };
 
 export function normalizeSubdomainInput(value: string): string {
@@ -186,6 +189,7 @@ export function validateNewTempleForm(state: NewTempleFormState): BuildProvision
             },
           }
         : {}),
+      featureKeys: state.featureKeys,
     },
   };
 }

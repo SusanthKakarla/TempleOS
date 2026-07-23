@@ -2,6 +2,7 @@ import "./load-env.mts";
 import { getPool } from "../lib/db/pool";
 import { seedV0RoleDefinitions } from "../lib/db/role-definitions";
 import { seedNotificationTemplates } from "../lib/db/notification-templates";
+import { seedFeatureCatalog } from "../lib/db/features";
 import { upsertFirstSuperAdmin } from "../lib/db/super-admins";
 
 /**
@@ -16,6 +17,9 @@ async function main() {
 
   const templates = await seedNotificationTemplates();
   console.log(`Seeded ${templates.length} notification templates.`);
+
+  const features = await seedFeatureCatalog();
+  console.log(`Seeded ${features.length} platform features.`);
 
   const phoneNumber = process.env.SUPER_ADMIN_PHONE_NUMBER;
   if (!phoneNumber) {

@@ -11,6 +11,7 @@ interface EventRow {
   starts_at: Date;
   ends_at: Date | null;
   status: EventStatus;
+  banner_media_id: string | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
@@ -26,6 +27,7 @@ function mapEvent(row: EventRow): Event {
     startsAt: row.starts_at.toISOString(),
     endsAt: row.ends_at ? row.ends_at.toISOString() : null,
     status: row.status,
+    bannerMediaId: row.banner_media_id,
     createdBy: row.created_by,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -142,13 +144,14 @@ export interface CreateEventInput {
   startsAt: string;
   endsAt: string | null;
   status: EventStatus;
+  bannerMediaId: string | null;
   createdBy: string;
 }
 
 export async function createEvent(tenantId: string, input: CreateEventInput): Promise<Event> {
   const { rows } = await getPool().query<EventRow>(
-    `INSERT INTO events (tenant_id, title, description, location, starts_at, ends_at, status, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO events (tenant_id, title, description, location, starts_at, ends_at, status, banner_media_id, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       tenantId,
@@ -158,6 +161,7 @@ export async function createEvent(tenantId: string, input: CreateEventInput): Pr
       input.startsAt,
       input.endsAt,
       input.status,
+      input.bannerMediaId,
       input.createdBy,
     ],
   );
@@ -171,6 +175,7 @@ export interface UpdateEventInput {
   startsAt?: string;
   endsAt?: string | null;
   status?: EventStatus;
+  bannerMediaId?: string | null;
 }
 
 export async function updateEvent(
@@ -186,6 +191,7 @@ export async function updateEvent(
          starts_at = COALESCE($8, starts_at),
          ends_at = CASE WHEN $9::boolean THEN $10 ELSE ends_at END,
          status = COALESCE($11, status),
+         banner_media_id = CASE WHEN $12::boolean THEN $13 ELSE banner_media_id END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING *`,
@@ -201,6 +207,8 @@ export async function updateEvent(
       "endsAt" in input,
       input.endsAt ?? null,
       input.status ?? null,
+      "bannerMediaId" in input,
+      input.bannerMediaId ?? null,
     ],
   );
   return rows[0] ? mapEvent(rows[0]) : null;

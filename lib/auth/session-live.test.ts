@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cookies } from "next/headers";
 import { getTenantMembershipById } from "@/lib/db/tenant-memberships";
+import { getTenantById } from "@/lib/db/tenants";
 import {
   TENANT_SESSION_COOKIE_NAME,
   createSessionToken,
@@ -14,6 +15,10 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@/lib/db/tenant-memberships", () => ({
   getTenantMembershipById: vi.fn(),
+}));
+
+vi.mock("@/lib/db/tenants", () => ({
+  getTenantById: vi.fn(),
 }));
 
 beforeAll(() => {
@@ -54,6 +59,8 @@ describe("live tenant session authorization", () => {
   beforeEach(() => {
     vi.mocked(cookies).mockReset();
     vi.mocked(getTenantMembershipById).mockReset();
+    vi.mocked(getTenantById).mockReset();
+    vi.mocked(getTenantById).mockResolvedValue({ status: "active" } as never);
   });
 
   it("rejects a valid cookie when the membership is no longer active", async () => {

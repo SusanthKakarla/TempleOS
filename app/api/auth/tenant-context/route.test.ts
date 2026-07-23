@@ -29,6 +29,7 @@ const tenant = {
   id: "tenant-1",
   slug: "woop",
   name: "Woop Temple",
+  status: "active" as const,
   defaultContactPhone: null,
   address: null,
   timezone: "America/Los_Angeles",

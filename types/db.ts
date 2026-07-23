@@ -1,7 +1,11 @@
+export const TENANT_STATUSES = ["active", "suspended", "maintenance", "archived", "disabled"] as const;
+export type TenantStatus = (typeof TENANT_STATUSES)[number];
+
 export interface Tenant {
   id: string;
   slug: string;
   name: string;
+  status: TenantStatus;
   defaultContactPhone: string | null;
   address: string | null;
   timezone: string;
@@ -37,6 +41,77 @@ export interface AuditLogEntry {
   targetId: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
+}
+
+/**
+ * The catalog is plain TEXT in the DB (see migrations/015_feature_access.sql),
+ * not a CHECK-constrained enum — new modules can be added with one INSERT.
+ * This union covers every key the app ships with today, split into the ones
+ * enforcement code actually references (real modules) and the rest (bundled
+ * sub-capabilities and "coming soon" placeholders), so `requireTenantFeature`
+ * call sites get autocomplete/typo-safety without the catalog itself being
+ * closed.
+ */
+export const REAL_FEATURE_KEYS = [
+  "dashboard",
+  "events",
+  "devotees",
+  "donations",
+  "conversations",
+  "notifications",
+  "whatsapp_chatbot",
+  "user_management",
+  "roles_permissions",
+] as const;
+export type RealFeatureKey = (typeof REAL_FEATURE_KEYS)[number];
+
+export const BUNDLED_FEATURE_KEYS = ["family_devotees", "export", "import"] as const;
+export type BundledFeatureKey = (typeof BUNDLED_FEATURE_KEYS)[number];
+
+export const COMING_SOON_FEATURE_KEYS = [
+  "reports",
+  "analytics",
+  "inventory",
+  "prasadam",
+  "volunteers",
+  "committee",
+  "priests",
+  "temple_website",
+  "qr_donations",
+  "online_booking",
+  "ai_assistant",
+  "language_translation",
+  "festival_calendar",
+  "crm",
+] as const;
+export type ComingSoonFeatureKey = (typeof COMING_SOON_FEATURE_KEYS)[number];
+
+export type FeatureKey = RealFeatureKey | BundledFeatureKey | ComingSoonFeatureKey;
+export type FeatureCategory = "core" | "module" | "coming_soon";
+
+export interface Feature {
+  id: string;
+  key: FeatureKey;
+  displayName: string;
+  description: string | null;
+  icon: string | null;
+  category: FeatureCategory;
+  isCore: boolean;
+  defaultEnabled: boolean;
+  dependsOn: FeatureKey[];
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantFeature {
+  id: string;
+  tenantId: string;
+  featureKey: FeatureKey;
+  enabled: boolean;
+  enabledBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SuperAdmin {
@@ -150,6 +225,7 @@ export interface Event {
   startsAt: string;
   endsAt: string | null;
   status: EventStatus;
+  bannerMediaId: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -184,7 +260,17 @@ export interface EventNotification {
 
 export type NotificationChannel = "in_app" | "whatsapp";
 export type NotificationDeliveryStatus = EventNotificationDeliveryStatus;
-export type NotificationCategory = "birthday" | "new_user" | "devotee" | "event" | "announcement" | "anniversary" | "family";
+export type NotificationCategory =
+  | "birthday"
+  | "new_user"
+  | "devotee"
+  | "event"
+  | "announcement"
+  | "anniversary"
+  | "family"
+  | "platform"
+  | "donation"
+  | "festival";
 export type NotificationType =
   | "birthday_devotee"
   | "birthday_priest"
@@ -193,7 +279,11 @@ export type NotificationType =
   | "event_reminder"
   | "anniversary_devotee"
   | "anniversary_priest"
-  | "family_occasion_reminder";
+  | "family_occasion_reminder"
+  | "tenant_config_changed"
+  | "tenant_status_changed"
+  | "donation_thank_you"
+  | "festival_greeting";
 
 export interface NotificationTemplate {
   id: string;
@@ -218,6 +308,7 @@ export interface Notification {
   message: string;
   language: SupportedLanguage;
   metadata: Record<string, unknown>;
+  mediaId: string | null;
   deliveryStatus: NotificationDeliveryStatus;
   attemptCount: number;
   nextAttemptAt: string;
@@ -225,6 +316,40 @@ export interface Notification {
   deliveredAt: string | null;
   readAt: string | null;
   failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const NOTIFICATION_MEDIA_CATEGORIES = [
+  "event_banner",
+  "birthday_greeting",
+  "anniversary_greeting",
+  "donation_thank_you",
+  "festival_greeting",
+] as const;
+export type NotificationMediaCategory = (typeof NOTIFICATION_MEDIA_CATEGORIES)[number];
+
+export interface NotificationMedia {
+  id: string;
+  tenantId: string;
+  category: NotificationMediaCategory;
+  title: string | null;
+  storageKey: string;
+  imageUrl: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  fileSize: number;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantNotificationMedia {
+  id: string;
+  tenantId: string;
+  notificationType: NotificationType;
+  mediaId: string;
   createdAt: string;
   updatedAt: string;
 }

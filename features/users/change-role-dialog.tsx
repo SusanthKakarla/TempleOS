@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import { ROLE_CODES, type RoleCode } from "@/types/db";
 
@@ -83,11 +84,9 @@ export function ChangeRoleDialog({
             const checked = roles.includes(role);
             return (
               <label key={role} className="inline-flex h-8 items-center gap-2 rounded-md border px-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="size-4"
+                <Checkbox
                   checked={checked}
-                  onChange={(e) => toggleRole(role, e.target.checked)}
+                  onCheckedChange={(value) => toggleRole(role, value === true)}
                   aria-label={`${t(`roleNames.${role}`)} role for ${member.displayName}`}
                 />
                 <span>{t(`roleNames.${role}`)}</span>

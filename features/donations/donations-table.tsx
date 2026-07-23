@@ -252,7 +252,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                       onSaved={refresh}
                     />
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       disabled={pendingId === donation.id}
                       onClick={() => handleDelete(donation)}

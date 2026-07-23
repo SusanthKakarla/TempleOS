@@ -4,8 +4,6 @@ import {
   Globe2,
   Landmark,
   Plus,
-  ShieldCheck,
-  UserCog,
   UsersRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,54 +18,33 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
-import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
-import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
-import { requireSuperAdminPage } from "./require-super-admin";
+import { requireSuperAdminPage } from "../../require-super-admin";
 
-export default async function SuperAdminPage() {
-  await requireSuperAdminPage();
+export default async function SuperAdminTemplesPage() {
+  await requireSuperAdminPage("/super-admin/temples");
   const temples = await listTenantsForSuperAdmin();
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
-      <AmbientBackground />
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              Super Admin
-            </p>
-            <h1 className="text-2xl font-semibold tracking-normal">Temples</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Provisioned tenant records, domain setup, and first admin/member
-              status.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              render={<Link href="/super-admin/roles" />}
-            >
-              <ShieldCheck className="size-4" />
-              Role Catalog
-            </Button>
-            <Button
-              variant="outline"
-              render={<Link href="/super-admin/admins" />}
-            >
-              <UserCog className="size-4" />
-              Platform Admins
-            </Button>
-            <SuperAdminSignOutButton />
-            <Button render={<Link href="/super-admin/temples/new" />}>
-              <Plus className="size-4" />
-              New Temple
-            </Button>
-          </div>
-        </header>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">
+            Super Admin
+          </p>
+          <h1 className="text-2xl font-semibold tracking-normal">Temples</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Provisioned tenant records, domain setup, and first admin/member
+            status.
+          </p>
+        </div>
+        <Button render={<Link href="/super-admin/temples/new" />}>
+          <Plus className="size-4" />
+          New Temple
+        </Button>
+      </header>
 
-        {temples.length === 0 ? (
+      {temples.length === 0 ? (
           <EmptyState
             icon={<Landmark className="size-6" />}
             title="No temples provisioned"
@@ -156,8 +133,7 @@ export default async function SuperAdminPage() {
             </Table>
           </TableShell>
         )}
-      </div>
-    </main>
+    </div>
   );
 }
 

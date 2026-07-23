@@ -425,7 +425,9 @@
         "description": "Description",
         "location": "Location",
         "start": "Start",
-        "end": "End (optional)"
+        "end": "End (optional)",
+        "banner": "Event banner (optional)",
+        "bannerHint": "Sent as an image with the WhatsApp announcement. Recommended 1200×628."
       },
       "published": { "label": "Published", "description": "Visible to devotees on WhatsApp." },
       "preview": "Preview",
@@ -926,7 +928,8 @@
         "devotee": "Devotees",
         "family": "Family",
         "event": "Event Reminders",
-        "announcement": "Announcements"
+        "announcement": "Announcements",
+        "platform": "Platform"
       },
       "columns": {
         "recipient": "Recipient",
@@ -943,7 +946,9 @@
         "event_reminder": "Event reminder",
         "anniversary_devotee": "Anniversary wish",
         "anniversary_priest": "Anniversary pooja reminder",
-        "family_occasion_reminder": "Family occasion reminder"
+        "family_occasion_reminder": "Family occasion reminder",
+        "tenant_config_changed": "Temple settings updated",
+        "tenant_status_changed": "Temple status changed"
       },
       "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
       "emptyState": {

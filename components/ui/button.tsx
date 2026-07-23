@@ -11,7 +11,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "gradient-ocean-blue text-primary-foreground hover:brightness-95",
+        default:
+          "gradient-ocean-blue text-primary-foreground hover:brightness-110 hover:-translate-y-px hover:shadow-[0_4px_20px_-4px_var(--persian-green)]",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

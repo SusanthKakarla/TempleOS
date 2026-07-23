@@ -25,6 +25,7 @@ const tenant: Tenant = {
   id: "tenant-1",
   slug: "sv-temple",
   name: "Sri Venkateswara Temple",
+  status: "active",
   defaultContactPhone: "+919876500000",
   address: "123 Temple Street",
   timezone: "Asia/Kolkata",
@@ -55,6 +56,7 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     startsAt: "2026-09-05T04:30:00.000Z", // 10:00 IST
     endsAt: null,
     status: "published",
+    bannerMediaId: null,
     createdBy: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

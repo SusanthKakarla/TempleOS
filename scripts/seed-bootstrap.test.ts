@@ -113,7 +113,7 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
   });
 
   it("keeps the super-admin temple list page behind the super-admin boundary", () => {
-    const source = read("app/(super-admin)/super-admin/page.tsx");
+    const source = read("app/(super-admin)/super-admin/(shell)/temples/page.tsx");
     expect(source).toMatch(/requireSuperAdminPage/);
     expect(source).toMatch(/listTenantsForSuperAdmin/);
     expect(source).toMatch(/\/super-admin\/temples\/new/);
@@ -125,18 +125,20 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
   });
 
   it("keeps the super-admin temple detail page behind the super-admin boundary", () => {
-    const source = read("app/(super-admin)/super-admin/temples/[tenantId]/page.tsx");
+    const source = read("app/(super-admin)/super-admin/(shell)/temples/[tenantId]/page.tsx");
     expect(source).toMatch(/requireSuperAdminPage/);
-    expect(source).toMatch(/fetchTempleDetailForSuperAdmin/);
-    expect(source).toMatch(/\/api\/super-admin\/temples\/\$\{tenantId\}/);
+    // Reads via getTenantDetailForSuperAdmin() directly — see the matching
+    // note in app/api/super-admin/auth-boundary.test.ts for why the prior
+    // page -> own API route self-fetch was removed (real perf cost, no
+    // compensating benefit). Mutations (PATCH) still go through the API route.
+    expect(source).toMatch(/getTenantDetailForSuperAdmin/);
     expect(source).toMatch(/TempleDetailEditForm/);
-    expect(source).not.toMatch(/getTenantDetailForSuperAdmin/);
     expect(source).not.toMatch(/updateProvisionedTemple|updateProvisionedTenantDetailsForSuperAdmin/);
     expect(source).toMatch(/notFound\(\)/);
     expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users/i);
     expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
     expect(source.indexOf("await requireSuperAdminPage")).toBeLessThan(
-      source.indexOf("await fetchTempleDetailForSuperAdmin"),
+      source.indexOf("await getTenantDetailForSuperAdmin"),
     );
   });
 

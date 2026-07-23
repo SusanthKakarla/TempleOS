@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Globe2,
   Landmark,
-  LogOut,
+  Lock,
   MapPin,
+  ShieldAlert,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,14 +21,16 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
-import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
-import { SuperAdminSignOutButton } from "@/features/super-admin/super-admin-sign-out-button";
+import { TenantStatusControl } from "@/features/super-admin/tenant-status-control";
+import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-feature-management-card";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
-import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
-import { requireSuperAdminPage } from "../../require-super-admin";
+import { listTenantFeatures } from "@/lib/db/tenant-features";
+import { listAuditLogEntriesForTenant } from "@/lib/db/audit-log";
+import { getTenantDetailForSuperAdmin } from "@/lib/db/tenants";
+import { requireSuperAdminPage } from "../../../require-super-admin";
 
 interface TempleDetailPageProps {
   params: Promise<{ tenantId: string }>;
@@ -39,54 +41,53 @@ export default async function SuperAdminTempleDetailPage({
 }: TempleDetailPageProps) {
   const { tenantId } = await params;
   await requireSuperAdminPage(`/super-admin/temples/${tenantId}`);
-  const temple = await fetchTempleDetailForSuperAdmin(tenantId);
+  const temple = await getTenantDetailForSuperAdmin(tenantId);
 
   if (!temple) {
     notFound();
   }
-  const roles = (await listRoleDefinitionsForSuperAdmin()).filter(
-    (role) => role.active,
-  );
+  const [roles, features, auditEntries] = await Promise.all([
+    listRoleDefinitionsForSuperAdmin().then((all) => all.filter((role) => role.active)),
+    listTenantFeatures(temple.tenant.id),
+    listAuditLogEntriesForTenant(temple.tenant.id, { limit: 10 }),
+  ]);
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
-      <AmbientBackground />
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="space-y-4">
-          <Button
-            variant="ghost"
-            className="px-0"
-            render={<Link href="/super-admin" />}
-          >
-            <ArrowLeft className="size-4" />
-            Temples
-          </Button>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">
-                Super Admin
-              </p>
-              <h1 className="text-2xl font-semibold tracking-normal">
-                {temple.tenant.name}
-              </h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Tenant details, domain setup, and member roles.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{temple.tenant.slug}</Badge>
-              <Button
-                variant="outline"
-                render={<Link href="/super-admin/logout" />}
-              >
-                <LogOut className="size-4" />
-                Log out
-              </Button>
-            </div>
+    <div className="space-y-6">
+      <header className="space-y-4">
+        <Button
+          variant="ghost"
+          className="px-0"
+          render={<Link href="/super-admin/temples" />}
+        >
+          <ArrowLeft className="size-4" />
+          Temples
+        </Button>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">
+              Super Admin
+            </p>
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {temple.tenant.name}
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Tenant details, domain setup, and member roles.
+            </p>
           </div>
-        </header>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{temple.tenant.slug}</Badge>
+            {temple.tenant.status !== "active" && (
+              <Badge variant="destructive">
+                <ShieldAlert className="size-3.5" />
+                {formatTitle(temple.tenant.status)}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </header>
 
-        <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2">
           <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Landmark className="size-4 text-muted-foreground" />
@@ -145,6 +146,43 @@ export default async function SuperAdminTempleDetailPage({
 
         <WhatsAppConnectionForm tenantId={temple.tenant.id} account={temple.whatsappAccount} />
 
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="glass-card rounded-2xl p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <ShieldAlert className="size-4 text-muted-foreground" />
+              Status
+            </div>
+            <TenantStatusControl tenantId={temple.tenant.id} status={temple.tenant.status} />
+          </div>
+
+          <div className="glass-card rounded-2xl p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <Landmark className="size-4 text-muted-foreground" />
+              Audit
+            </div>
+            {auditEntries.length === 0 ? (
+              <EmptyPanel icon={<Landmark className="size-5" />} label="No configuration changes yet" />
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {auditEntries.map((entry) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 last:pb-0">
+                    <span className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</span>
+                    <span className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        <TenantFeatureManagementCard tenantId={temple.tenant.id} features={features} />
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          <ComingSoonCard title="Subscription" description="Plans and licensing (not available yet)." />
+          <ComingSoonCard title="Storage" description="Per-tenant storage usage tracking." />
+          <ComingSoonCard title="Security" description="Advanced security policies beyond status/features." />
+        </section>
+
         <TableShell>
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
             <div>
@@ -171,6 +209,7 @@ export default async function SuperAdminTempleDetailPage({
                   <TableHead>Member</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Roles</TableHead>
+                  <TableHead>Manage Roles</TableHead>
                   <TableHead className="text-right">Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -187,7 +226,7 @@ export default async function SuperAdminTempleDetailPage({
                     </TableCell>
                     <TableCell>{member.phoneNumber}</TableCell>
                     <TableCell>
-                      <div className="mb-3 flex min-w-56 flex-wrap gap-1">
+                      <div className="flex min-w-40 flex-wrap gap-1">
                         {member.roles.length > 0 ? (
                           member.roles.map((role) => (
                             <Badge
@@ -204,6 +243,8 @@ export default async function SuperAdminTempleDetailPage({
                           <Badge variant="outline">No roles</Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
                       <MemberRoleEditor
                         tenantId={temple.tenant.id}
                         member={member}
@@ -219,42 +260,25 @@ export default async function SuperAdminTempleDetailPage({
             </Table>
           )}
         </TableShell>
-      </div>
-    </main>
+    </div>
   );
 }
 
-async function fetchTempleDetailForSuperAdmin(
-  tenantId: string,
-): Promise<SuperAdminTenantDetail | null> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("host");
-  if (!host) {
-    throw new Error("Cannot fetch temple detail without a request host.");
-  }
-
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
-
-  const res = await fetch(
-    `${protocol}://${host}/api/super-admin/temples/${tenantId}`,
-    {
-      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-      cache: "no-store",
-    },
+function ComingSoonCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="glass-card flex items-start gap-3 rounded-2xl p-4 opacity-70">
+      <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <div>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          {title}
+          <Badge variant="outline" className="text-xs">
+            Coming soon
+          </Badge>
+        </p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </div>
   );
-
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error("Temple detail API request failed.");
-  }
-
-  const body = (await res.json()) as { temple: SuperAdminTenantDetail };
-  return body.temple;
 }
 
 function DetailRow({ label, value }: { label: string; value: string | null }) {
