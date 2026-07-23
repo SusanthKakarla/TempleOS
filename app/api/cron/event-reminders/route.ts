@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantById, listTenantIdsAndTimezones } from "@/lib/db/tenants";
 import { listDevoteesEligibleForEventReminders } from "@/lib/db/devotees";
@@ -7,6 +6,8 @@ import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { formatTime } from "@/lib/date";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
+import { isAuthorizedCronRequest } from "@/lib/cron/auth";
+import { logCronRun } from "@/lib/cron/log-run";
 
 /**
  * Not tenant/session-scoped — triggered by a Railway Cron schedule (hourly,
@@ -17,17 +18,8 @@ import { processNotifications } from "@/lib/notifications/delivery";
  * listPublishedEventsStartingTomorrow's dedup) to eligible devotees plus
  * active admins/priests of that tenant.
  */
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  const provided = req.headers.get("authorization");
-  if (!secret || !provided) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const actual = Buffer.from(provided);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
-
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -82,5 +74,6 @@ export async function POST(req: NextRequest) {
   }
 
   await processNotifications(createdIds);
+  await logCronRun("event_reminders", { tenantsChecked: tenants.length, notificationsCreated: createdIds.length });
   return NextResponse.json({ tenantsChecked: tenants.length, notificationsCreated: createdIds.length });
 }
