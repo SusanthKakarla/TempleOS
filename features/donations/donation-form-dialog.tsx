@@ -36,6 +36,9 @@ interface DonationFormDialogProps {
   fixedDevoteeId?: string;
   trigger: ReactElement;
   onSaved: () => void;
+  /** Controlled open state — lets a caller open this dialog from elsewhere (e.g. tapping a mobile row, or an overflow menu item) instead of `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function initialPurposeState(purpose: string | undefined): { preset: string; custom: string } {
@@ -53,11 +56,16 @@ export function DonationFormDialog({
   fixedDevoteeId,
   trigger,
   onSaved,
+  open: controlledOpen,
+  onOpenChange,
 }: DonationFormDialogProps) {
   const t = useTranslations("donations");
   const tForm = useTranslations("donations.formDialog");
   const tCommon = useTranslations("common");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
   const [amount, setAmount] = useState(donation?.amount ?? "");
   const initialPurpose = initialPurposeState(donation?.purpose);

@@ -10,6 +10,7 @@ interface DonationsPageProps {
     search?: string;
     dateFrom?: string;
     dateTo?: string;
+    purpose?: string;
     page?: string;
     sort?: string;
     dir?: string;
@@ -22,14 +23,14 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
   const session = await requireDashboardAdmin();
   await requireTenantFeature(session.tenantId, "donations");
 
-  const { search, dateFrom, dateTo, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
+  const { search, dateFrom, dateTo, purpose, page: pageParam, sort: sortParam, dir: dirParam } = await searchParams;
   const page = parsePageParam(pageParam);
   const sort = SORT_VALUES.find((value) => value === sortParam);
   const dir = dirParam === "asc" ? "asc" : "desc";
 
   const [donations, totalCount, devotees] = await Promise.all([
-    listDonations(session.tenantId, { search, dateFrom, dateTo, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
-    countDonationsFiltered(session.tenantId, { search, dateFrom, dateTo }),
+    listDonations(session.tenantId, { search, dateFrom, dateTo, purpose, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
+    countDonationsFiltered(session.tenantId, { search, dateFrom, dateTo, purpose }),
     listDevotees(session.tenantId),
   ]);
 

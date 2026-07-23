@@ -6,7 +6,9 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "close": "Close",
-    "search": "Search"
+    "search": "Search",
+    "viewDetails": "View Details",
+    "filters": "Filters"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -432,6 +434,7 @@
     "importButton": "Import",
     "addButton": "Add devotee",
     "searchPlaceholder": "Search by name or phone...",
+    "sendWhatsapp": "Send WhatsApp",
     "columns": {
       "name": "Name",
       "phone": "Phone",
@@ -443,17 +446,21 @@
       "actions": "Actions"
     },
     "filters": {
+      "typeLabel": "Type",
       "allRegistrationTypes": "All types",
       "individual": "Individual",
       "family": "Family",
+      "occasionLabel": "Occasion",
       "allOccasions": "All occasions",
       "birthdayToday": "Birthday today",
       "birthdayWeek": "Birthday this week",
       "anniversaryToday": "Anniversary today",
       "anniversaryWeek": "Anniversary this week",
+      "donorLabel": "Donor",
       "allDonorStatus": "All donors",
       "donor": "Donor",
       "nonDonor": "Non-donor",
+      "whatsappLabel": "WhatsApp Status",
       "allWhatsappStatus": "All WhatsApp status"
     },
     "relationshipNames": {
@@ -674,6 +681,16 @@
     "dateFromLabel": "From date",
     "dateToLabel": "To date",
     "dateRangeSeparator": "to",
+    "filters": {
+      "dateRangeLabel": "Date Range",
+      "presetToday": "Today",
+      "presetLast7": "Last 7 Days",
+      "presetLast30": "Last 30 Days",
+      "presetThisMonth": "This Month",
+      "presetCustom": "Custom Range",
+      "pickCustomRange": "Pick a date range",
+      "allPurposes": "All purposes"
+    },
     "columns": {
       "donor": "Donor",
       "amount": "Amount",
