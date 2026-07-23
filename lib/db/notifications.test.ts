@@ -58,6 +58,8 @@ describe("claimNotification", () => {
       message: "Happy Birthday!",
       language: "en",
       metadata: {},
+      media_id: null,
+      provider_message_id: null,
       delivery_status: "queued",
       attempt_count: 0,
       next_attempt_at: new Date("2026-07-21T00:00:00Z"),

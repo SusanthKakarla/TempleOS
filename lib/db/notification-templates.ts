@@ -318,6 +318,24 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "🙏 {{purpose}} కొరకు మీ {{amount}} విరాళానికి ధన్యవాదాలు, {{donorName}}.\n\n{{templeName}} తరఫున, దేవుడు మిమ్మల్ని మరియు మీ కుటుంబాన్ని ఆశీర్వదించాలని కోరుకుంటున్నాము.",
   },
+  // Donation recorded — broadcast to every opted-in devotee (not just the
+  // donor), WhatsApp only (devotees have no in-app dashboard access).
+  // Deliberately generic — no donor name or amount, so one devotee's
+  // donation details are never broadcast to everyone else.
+  {
+    notificationType: "donation_recorded",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Donation Update\n\nA new donation has been recorded for {{templeName}}.\n\nThank you for supporting our temple activities.\n\nMay the Lord bless you and your family.",
+  },
+  {
+    notificationType: "donation_recorded",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 విరాళ నవీకరణ\n\n{{templeName}} కోసం కొత్త విరాళం నమోదు చేయబడింది.\n\nమా దేవాలయ కార్యకలాపాలకు మద్దతు ఇచ్చినందుకు ధన్యవాదాలు.\n\nదేవుడు మిమ్మల్ని మరియు మీ కుటుంబాన్ని ఆశీర్వదించాలని కోరుకుంటున్నాము.",
+  },
   // Festival greeting — one shared template with a {{festivalName}} variable
   // rather than 8 near-duplicate rows (see lib/db/festival-greetings.ts).
   {

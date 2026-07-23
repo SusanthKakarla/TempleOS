@@ -283,6 +283,7 @@ export type NotificationType =
   | "tenant_config_changed"
   | "tenant_status_changed"
   | "donation_thank_you"
+  | "donation_recorded"
   | "festival_greeting"
   | "new_event"
   | "event_updated"
@@ -313,6 +314,7 @@ export interface Notification {
   language: SupportedLanguage;
   metadata: Record<string, unknown>;
   mediaId: string | null;
+  providerMessageId: string | null;
   deliveryStatus: NotificationDeliveryStatus;
   attemptCount: number;
   nextAttemptAt: string;

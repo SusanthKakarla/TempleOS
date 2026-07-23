@@ -821,10 +821,12 @@
       "empty": "No activity yet.",
       "columns": { "action": "Action", "user": "User", "changedBy": "Changed By", "timestamp": "Timestamp" },
       "actionLabels": {
-        "tenant_member.invited": "User invited",
-        "tenant_member.roles_changed": "Role changed",
-        "tenant_member.enabled": "User enabled",
-        "tenant_member.disabled": "User disabled"
+        "tenant_member": {
+          "invited": "User invited",
+          "roles_changed": "Role changed",
+          "enabled": "User enabled",
+          "disabled": "User disabled"
+        }
       }
     },
     "importWizard": {

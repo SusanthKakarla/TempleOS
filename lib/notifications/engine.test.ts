@@ -54,6 +54,7 @@ describe("enqueueNotification", () => {
       language: input.language,
       metadata: input.metadata ?? {},
       mediaId: input.mediaId ?? null,
+      providerMessageId: null,
       deliveryStatus: "pending",
       attemptCount: 0,
       nextAttemptAt: "2026-07-21T00:00:00.000Z",
