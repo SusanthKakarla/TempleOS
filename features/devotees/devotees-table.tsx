@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Download, Eye, MessageCircle, Pencil, Trash2, Upload, UserPlus, Users } from "lucide-react";
+import { Download, Eye, Pencil, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,6 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
-import { FloatingActionButton } from "@/components/floating-action-button";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
 import { MobileListView } from "@/components/mobile-list-view";
@@ -83,7 +82,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [editingDevotee, setEditingDevotee] = useState<Devotee | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
@@ -164,11 +162,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         icon: <Pencil className="size-4" />,
         disabled: pendingId === devotee.id,
         onClick: () => setEditingDevotee(devotee),
-      },
-      {
-        label: t("sendWhatsapp"),
-        icon: <MessageCircle className="size-4" />,
-        onClick: () => router.push(`/dashboard/whatsapp-activity/${devotee.id}`),
       },
       {
         label: tCommon("delete"),
@@ -300,16 +293,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
               onOpenChange={setExportOpen}
               hideTrigger
             />
-            <DevoteeFormDialog
-              mode="create"
-              trigger={
-                <Button className="hidden gap-1.5 lg:inline-flex">
-                  <UserPlus className="size-4" />
-                  {t("addButton")}
-                </Button>
-              }
-              onSaved={refresh}
-            />
           </>
         }
       />
@@ -318,21 +301,33 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         pathname={PATHNAME}
         placeholder={t("searchPlaceholder")}
         filtersSlot={
-          <FilterBottomSheet
-            title={tCommon("filters")}
-            activeCount={activeFilterCount}
-            onOpenChange={(open) => {
-              if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-            }}
-            onReset={() => {
-              const reset: PendingFilters = { registrationType: "all", occasion: "all", isDonor: "all", whatsappOptIn: "all" };
-              setPendingFilters(reset);
-              applyFilters(reset);
-            }}
-            onApply={() => applyFilters(pendingFilters)}
-          >
-            {filterSheetContent}
-          </FilterBottomSheet>
+          <>
+            <FilterBottomSheet
+              title={tCommon("filters")}
+              activeCount={activeFilterCount}
+              onOpenChange={(open) => {
+                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+              }}
+              onReset={() => {
+                const reset: PendingFilters = { registrationType: "all", occasion: "all", isDonor: "all", whatsappOptIn: "all" };
+                setPendingFilters(reset);
+                applyFilters(reset);
+              }}
+              onApply={() => applyFilters(pendingFilters)}
+            >
+              {filterSheetContent}
+            </FilterBottomSheet>
+            <DevoteeFormDialog
+              mode="create"
+              trigger={
+                <Button className="shrink-0 gap-1.5">
+                  <UserPlus className="size-4" />
+                  <span className="hidden sm:inline">{t("addButton")}</span>
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
         }
       />
 
@@ -497,18 +492,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         />
       )}
 
-      <FloatingActionButton
-        icon={<UserPlus className="size-5" />}
-        label={t("addButton")}
-        onClick={() => setCreateOpen(true)}
-      />
-      <DevoteeFormDialog
-        mode="create"
-        trigger={<span className="hidden" />}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSaved={refresh}
-      />
     </div>
   );
 }

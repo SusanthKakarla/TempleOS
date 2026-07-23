@@ -51,12 +51,10 @@ const tenantDashboardPages = [
   "app/(dashboard)/dashboard/devotees/family/new/page.tsx",
   "app/(dashboard)/dashboard/devotees/family/[familyId]/edit/page.tsx",
   "app/(dashboard)/dashboard/donations/page.tsx",
-  "app/(dashboard)/dashboard/whatsapp-activity/page.tsx",
   "app/(dashboard)/dashboard/chatbot-settings/page.tsx",
   "app/(dashboard)/dashboard/users/page.tsx",
   "app/(dashboard)/dashboard/users/import/page.tsx",
   "app/(dashboard)/dashboard/users/activity/page.tsx",
-  "app/(dashboard)/dashboard/roles/page.tsx",
   "app/(dashboard)/dashboard/notification-preferences/page.tsx",
 ];
 
