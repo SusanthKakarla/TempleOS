@@ -13,6 +13,8 @@ import { listRecentNotifications, countNotificationsFiltered, countStuckRetrying
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
+import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
+import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
@@ -100,19 +102,32 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     />
   );
 
-  const notificationTabData = notificationData && {
-    automatedNotifications: notificationData[0],
-    category,
-    notifPage,
-    pageSize: DEFAULT_PAGE_SIZE,
-    automatedTotalCount: notificationData[1],
-    birthdayMedia: notificationData[2],
-    anniversaryMedia: notificationData[3],
-    donationMedia: notificationData[4],
-    festivalMedia: notificationData[5],
-    stuckRetrying: notificationData[6],
-    locale,
-  };
+  // NotificationSettingsContent/AutomatedNotificationList are async Server Components —
+  // they must be rendered here (in this Server Component page), not imported into
+  // ChatbotSettingsTabs, which is a Client Component ("use client", for the interactive
+  // Tabs state). Passing the already-rendered JSX down as props is the supported way to
+  // interleave server-rendered content inside a client component's tree.
+  const notificationSettingsSlot = notificationData && (
+    <NotificationSettingsContent
+      birthdayMedia={notificationData[2]}
+      anniversaryMedia={notificationData[3]}
+      donationMedia={notificationData[4]}
+      festivalMedia={notificationData[5]}
+      stuckRetrying={notificationData[6]}
+    />
+  );
+
+  const automatedNotificationsSlot = notificationData && (
+    <AutomatedNotificationList
+      notifications={notificationData[0]}
+      category={category}
+      page={notifPage}
+      pageSize={DEFAULT_PAGE_SIZE}
+      totalCount={notificationData[1]}
+      locale={locale}
+      pathname="/dashboard/chatbot-settings"
+    />
+  );
 
   // Deep-link into the automated-notifications tab when the URL params describe filtering it.
   const defaultTab = category || notifPageParam ? "automatedNotifications" : "info";
@@ -130,7 +145,8 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         sevas={sevas}
         faqs={faqs}
         socialLinks={socialLinks}
-        notificationData={notificationTabData}
+        notificationSettingsSlot={notificationSettingsSlot}
+        automatedNotificationsSlot={automatedNotificationsSlot}
         defaultTab={defaultTab}
       />
     </SettingsSection>
