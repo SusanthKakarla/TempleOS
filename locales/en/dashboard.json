@@ -21,7 +21,8 @@
     "admins": "Admins",
     "userManagement": "User Management",
     "users": "Users",
-    "rolesAndPermissions": "Roles & Permissions"
+    "rolesAndPermissions": "Roles & Permissions",
+    "more": "More"
   },
   "topbar": {
     "accountMenu": "Account menu",
@@ -389,6 +390,13 @@
     "viewTabs": { "table": "Table", "card": "Card" },
     "createButton": "Create event",
     "columns": { "title": "Title", "when": "When", "location": "Location", "status": "Status", "actions": "Actions" },
+    "filters": {
+      "whenLabel": "When",
+      "upcomingOnly": "Upcoming only",
+      "allEvents": "All events",
+      "statusLabel": "Status",
+      "allStatuses": "All statuses"
+    },
     "selectAll": "Select all events",
     "selectRow": "Select {title}",
     "notifications": "Notifications",
@@ -475,7 +483,10 @@
       "donor": "Donor",
       "nonDonor": "Non-donor",
       "whatsappLabel": "WhatsApp Status",
-      "allWhatsappStatus": "All WhatsApp status"
+      "allWhatsappStatus": "All WhatsApp status",
+      "statusLabel": "Status",
+      "activeOnly": "Active only",
+      "includeInactive": "Include inactive"
     },
     "relationshipNames": {
       "head_of_family": "Head of Family",
@@ -513,8 +524,15 @@
       "title": "No devotees found",
       "description": "Devotees appear here once they message the temple WhatsApp number, or you can add one manually."
     },
-    "confirmDelete": "Delete \"{name}\"? This cannot be undone. Their WhatsApp activity history is kept but will no longer be linked to a name.",
-    "deleteError": "Failed to delete devotee",
+    "inactiveBadge": "Inactive",
+    "reactivateAction": "Reactivate",
+    "deactivateDialog": {
+      "title": "Deactivate devotee?",
+      "description": "{name} will be hidden from your devotee list and stop receiving notifications. Donation and notification history is preserved, and you can reactivate them anytime.",
+      "confirm": "Deactivate"
+    },
+    "deactivateError": "Failed to deactivate devotee",
+    "reactivateError": "Failed to reactivate devotee",
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
@@ -537,7 +555,13 @@
         "genderPlaceholder": "Select gender",
         "maritalStatus": "Marital status (optional)",
         "maritalStatusPlaceholder": "Select marital status",
-        "weddingAnniversary": "Wedding anniversary (optional)"
+        "weddingAnniversary": "Wedding anniversary (optional)",
+        "preferredLanguage": "Preferred language (optional)",
+        "preferredLanguagePlaceholder": "Select language",
+        "family": "Family (optional)",
+        "noFamily": "No family",
+        "address": "Address (optional)",
+        "notes": "Notes (optional)"
       },
       "genderOptions": { "male": "Male", "female": "Female", "other": "Other" },
       "maritalStatusOptions": {
@@ -546,9 +570,14 @@
         "widowed": "Widowed",
         "divorced": "Divorced"
       },
+      "languageOptions": { "en": "English", "te": "Telugu" },
       "eventNotifications": {
         "label": "Event notifications",
         "description": "Automatically notify about new, updated, or cancelled events."
+      },
+      "whatsappStatus": {
+        "label": "WhatsApp status",
+        "description": "Set automatically when a devotee messages the temple WhatsApp number — can't be set manually."
       },
       "errorFallback": "Failed to save devotee"
     },
@@ -690,6 +719,7 @@
   },
   "donations": {
     "pageHeader": { "title": "Donations", "subtitle": "Manually recorded donations. No online payments or receipts." },
+    "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time" },
     "addButton": "Add donation",
     "searchPlaceholder": "Search by donor name or phone...",
     "dateFromLabel": "From date",
@@ -792,6 +822,7 @@
     "emptyState": { "title": "No users found", "description": "Invite your first team member to get started." },
     "disableError": "Failed to disable user",
     "enableError": "Failed to enable user",
+    "languageNames": { "en": "English", "te": "Telugu" },
     "toggleStatusDialog": {
       "disableTitle": "Disable User",
       "disableDescription": "Are you sure you want to disable {name}? Disabled users cannot log in until enabled again.",
@@ -813,6 +844,18 @@
       "confirm": "Change {name}'s role?",
       "errorFallback": "Failed to change role"
     },
+    "editDialog": {
+      "title": "Edit user",
+      "description": "Update {name}'s name and preferred language for this temple.",
+      "fields": { "name": "Name", "language": "Preferred language", "languagePlaceholder": "Select language" },
+      "errorFallback": "Failed to update user"
+    },
+    "deleteDialog": {
+      "title": "Delete user?",
+      "description": "{name} will be permanently removed from this temple's team. This cannot be undone — donations and events they recorded stay in your history, just no longer attributed to them.",
+      "confirm": "Delete",
+      "errorFallback": "Failed to delete user"
+    },
     "activityPanel": { "title": "Role History", "empty": "No activity yet." },
     "activityLog": {
       "pageTitle": "Activity Log",
@@ -825,7 +868,9 @@
           "invited": "User invited",
           "roles_changed": "Role changed",
           "enabled": "User enabled",
-          "disabled": "User disabled"
+          "disabled": "User disabled",
+          "details_updated": "Details updated",
+          "deleted": "User deleted"
         }
       }
     },

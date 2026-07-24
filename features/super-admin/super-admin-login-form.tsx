@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CountryCode } from "libphonenumber-js";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { motion, MotionConfig } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -227,6 +228,9 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
         >
           <Card className="glass-card rounded-2xl">
             <CardHeader className="gap-2 pb-2">
+              <Badge variant="outline" className="w-fit gap-1.5 border-secondary/40 text-secondary uppercase tracking-wide">
+                Platform Console
+              </Badge>
               <CardTitle className="text-2xl font-semibold">Super Admin</CardTitle>
               <CardDescription className="text-base">
                 {step === "phone"

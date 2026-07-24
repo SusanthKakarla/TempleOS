@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, Download, History, ShieldCheck, Upload, UserPlus, Users as UsersIcon } from "lucide-react";
+import { Activity, Download, History, Pencil, Trash2, Upload, UserCog, UserPlus, Users as UsersIcon, UserX } from "lucide-react";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import type { RoleCode, SupportedLanguage } from "@/types/db";
 import { ROLE_CODES } from "@/types/db";
@@ -40,6 +40,8 @@ import { InviteUserDialog } from "./invite-user-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { ToggleUserStatusDialog } from "./toggle-user-status-dialog";
 import { UserActivityPanel } from "./user-activity-panel";
+import { EditUserDialog } from "./edit-user-dialog";
+import { DeleteUserDialog } from "./delete-user-dialog";
 
 const MotionTableRow = motion.create(TableRow);
 const PATHNAME = "/dashboard/users";
@@ -87,6 +89,8 @@ export function UsersTable({
   const tCommon = useTranslations("common");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [exportOpen, setExportOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TenantMembershipListItem | null>(null);
+  const [deletingMember, setDeletingMember] = useState<TenantMembershipListItem | null>(null);
   const [changingRoleMember, setChangingRoleMember] = useState<TenantMembershipListItem | null>(null);
   const [togglingStatusMember, setTogglingStatusMember] = useState<TenantMembershipListItem | null>(null);
   const [viewingActivityMember, setViewingActivityMember] = useState<TenantMembershipListItem | null>(null);
@@ -131,28 +135,41 @@ export function UsersTable({
     );
   }
 
-  function memberActionItems(member: TenantMembershipListItem) {
+  function rowActionItems(member: TenantMembershipListItem) {
     const isActive = member.status === "active";
-    const items = [
+    const isSelf = member.id === currentMembershipId;
+    return [
+      {
+        label: tCommon("edit"),
+        icon: <Pencil className="size-4" />,
+        onClick: () => setEditingMember(member),
+      },
       {
         label: t("changeRoleDialog.title"),
-        icon: <ShieldCheck className="size-4" />,
+        icon: <UserCog className="size-4" />,
         onClick: () => setChangingRoleMember(member),
       },
+      {
+        label: t("activityPanel.title"),
+        icon: <Activity className="size-4" />,
+        onClick: () => setViewingActivityMember(member),
+      },
+      ...(isSelf
+        ? []
+        : [
+            {
+              label: isActive ? t("status.disableAction") : t("status.enableAction"),
+              icon: <UserX className="size-4" />,
+              onClick: () => setTogglingStatusMember(member),
+            },
+            {
+              label: tCommon("delete"),
+              icon: <Trash2 className="size-4" />,
+              variant: "destructive" as const,
+              onClick: () => setDeletingMember(member),
+            },
+          ]),
     ];
-    if (member.id !== currentMembershipId) {
-      items.push({
-        label: isActive ? t("status.disableAction") : t("status.enableAction"),
-        icon: <UsersIcon className="size-4" />,
-        onClick: () => setTogglingStatusMember(member),
-      });
-    }
-    items.push({
-      label: t("activityPanel.title"),
-      icon: <Activity className="size-4" />,
-      onClick: () => setViewingActivityMember(member),
-    });
-    return items;
   }
 
   const filterSheetContent = (
@@ -370,7 +387,7 @@ export function UsersTable({
                         {member.lastSignedInAt ? formatDate(member.lastSignedInAt, locale) : t("status.never")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <OverflowActionMenu items={memberActionItems(member)} />
+                        <OverflowActionMenu items={rowActionItems(member)} />
                       </TableCell>
                     </MotionTableRow>
                   ))}
@@ -396,13 +413,43 @@ export function UsersTable({
                   title={member.displayName}
                   subtitle={`${member.phoneNumber} · ${member.roles.length ? member.roles.map((role) => t(`roleNames.${role}`)).join(", ") : "—"}`}
                   badge={statusBadge(member)}
-                  trailing={<OverflowActionMenu items={memberActionItems(member)} />}
+                  trailing={<OverflowActionMenu items={rowActionItems(member)} />}
                 />
               ))}
             </MobileListView>
             <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
           </div>
         </>
+      )}
+
+      {editingMember && (
+        <EditUserDialog
+          member={editingMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingMember(null);
+          }}
+          onSaved={() => {
+            setEditingMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {deletingMember && (
+        <DeleteUserDialog
+          member={deletingMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeletingMember(null);
+          }}
+          onDeleted={() => {
+            setDeletingMember(null);
+            refresh();
+          }}
+        />
       )}
 
       {changingRoleMember && (

@@ -3,9 +3,10 @@
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, Cake, Heart, Phone, Sparkles, User, UserRound, Users, UsersRound } from "lucide-react";
-import type { Devotee, Gender, MaritalStatus } from "@/types/db";
+import { Bell, Cake, Heart, MessageCircle, Phone, Sparkles, User, UserRound, Users, UsersRound } from "lucide-react";
+import type { Devotee, DevoteeFamily, Gender, MaritalStatus, SupportedLanguage } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from "@/types/db";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,9 @@ import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+
+const NO_FAMILY_VALUE = "__none__";
 
 interface DevoteeFormDialogProps {
   mode: "create" | "edit";
@@ -34,6 +38,7 @@ interface DevoteeFormDialogProps {
 
 export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: controlledOpen, onOpenChange }: DevoteeFormDialogProps) {
   const t = useTranslations("devotees.formDialog");
+  const tDevoteesRoot = useTranslations("devotees");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -54,6 +59,13 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
   const [eventNotificationsEnabled, setEventNotificationsEnabled] = useState(
     devotee?.eventNotificationsEnabled ?? true,
   );
+  const [preferredLanguage, setPreferredLanguage] = useState<SupportedLanguage | "">(
+    devotee?.preferredLanguage ?? "",
+  );
+  const [familyId, setFamilyId] = useState(devotee?.familyId ?? "");
+  const [address, setAddress] = useState(devotee?.address ?? "");
+  const [notes, setNotes] = useState(devotee?.notes ?? "");
+  const [families, setFamilies] = useState<DevoteeFamily[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -68,7 +80,19 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
     setMaritalStatus(devotee?.maritalStatus ?? "");
     setWeddingAnniversary(devotee?.weddingAnniversary ?? "");
     setEventNotificationsEnabled(devotee?.eventNotificationsEnabled ?? true);
+    setPreferredLanguage(devotee?.preferredLanguage ?? "");
+    setFamilyId(devotee?.familyId ?? "");
+    setAddress(devotee?.address ?? "");
+    setNotes(devotee?.notes ?? "");
     setError(null);
+  }
+
+  function loadFamilies() {
+    if (mode !== "edit") return;
+    fetch("/api/devotees/families")
+      .then((res) => res.json())
+      .then((body: { families?: DevoteeFamily[] }) => setFamilies(body.families ?? []))
+      .catch(() => setFamilies([]));
   }
 
   const genderItems: Record<string, string> = Object.fromEntries(
@@ -97,7 +121,15 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
           gender: gender || null,
           maritalStatus: maritalStatus || null,
           weddingAnniversary,
-          ...(mode === "edit" ? { eventNotificationsEnabled } : {}),
+          ...(mode === "edit"
+            ? {
+                eventNotificationsEnabled,
+                preferredLanguage: preferredLanguage || null,
+                familyId: familyId || null,
+                address,
+                notes,
+              }
+            : {}),
         }),
       });
 
@@ -120,7 +152,10 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) resetToDevotee();
+        if (next) {
+          resetToDevotee();
+          loadFamilies();
+        }
       }}
     >
       <DialogTrigger render={trigger} />
@@ -256,6 +291,74 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               />
             </div>
           </div>
+          {mode === "edit" && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="preferredLanguage">{t("fields.preferredLanguage")}</Label>
+                  <Select
+                    value={preferredLanguage || undefined}
+                    onValueChange={(v) => setPreferredLanguage((v as SupportedLanguage) ?? "")}
+                    items={{ en: t("languageOptions.en"), te: t("languageOptions.te") }}
+                  >
+                    <SelectTrigger id="preferredLanguage" className="w-full">
+                      <SelectValue placeholder={t("fields.preferredLanguagePlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">{t("languageOptions.en")}</SelectItem>
+                      <SelectItem value="te">{t("languageOptions.te")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="familyId">{t("fields.family")}</Label>
+                  <Select
+                    value={familyId || NO_FAMILY_VALUE}
+                    onValueChange={(v) => setFamilyId(v === NO_FAMILY_VALUE ? "" : (v ?? ""))}
+                    items={Object.fromEntries([
+                      [NO_FAMILY_VALUE, t("fields.noFamily")],
+                      ...families.map((f) => [f.id, f.familyName]),
+                    ])}
+                  >
+                    <SelectTrigger id="familyId" className="w-full">
+                      <Users className="size-4 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_FAMILY_VALUE}>{t("fields.noFamily")}</SelectItem>
+                      {families.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.familyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <FloatingLabelInput
+                id="address"
+                label={t("fields.address")}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="notes">{t("fields.notes")}</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="size-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{t("whatsappStatus.label")}</p>
+                    <p className="text-xs text-muted-foreground">{t("whatsappStatus.description")}</p>
+                  </div>
+                </div>
+                <Badge variant={devotee?.whatsappOptInStatus ? "default" : "secondary"}>
+                  {devotee?.whatsappOptInStatus ? tDevoteesRoot("optedIn") : tDevoteesRoot("notOptedIn")}
+                </Badge>
+              </div>
+            </>
+          )}
           {mode === "edit" && (
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex items-center gap-2">

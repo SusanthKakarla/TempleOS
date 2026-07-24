@@ -184,7 +184,7 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardContent className="space-y-4">
             <h2 className="font-heading text-lg font-semibold">{t("familyDetails")}</h2>
             <div className="space-y-2">
@@ -238,7 +238,7 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
           </div>
 
           {members.map((member, index) => (
-            <Card key={member.id ?? `new-${index}`}>
+            <Card key={member.id ?? `new-${index}`} className="glass-card rounded-2xl">
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">

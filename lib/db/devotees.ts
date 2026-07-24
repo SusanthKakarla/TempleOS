@@ -23,6 +23,9 @@ interface DevoteeRow {
   gender: string | null;
   marital_status: string | null;
   wedding_anniversary: string | null;
+  address: string | null;
+  notes: string | null;
+  is_active: boolean;
   family_name: string | null;
   relationship: string | null;
   created_at: Date;
@@ -51,6 +54,9 @@ function mapDevotee(row: DevoteeRow): Devotee {
     gender: row.gender as Gender | null,
     maritalStatus: row.marital_status as MaritalStatus | null,
     weddingAnniversary: row.wedding_anniversary,
+    address: row.address,
+    notes: row.notes,
+    isActive: row.is_active,
     familyName: row.family_name,
     relationship: row.relationship as RelationshipCode | null,
     createdAt: row.created_at.toISOString(),
@@ -106,6 +112,8 @@ export interface ListDevoteesOptions {
   /** "_week" variants need `timezone` set — silently ignored otherwise. */
   occasion?: "birthday_today" | "birthday_week" | "anniversary_today" | "anniversary_week";
   timezone?: string;
+  /** Default false — deactivated devotees are hidden from the list unless explicitly requested (e.g. to reactivate one). */
+  includeInactive?: boolean;
 }
 
 const DEVOTEE_SORT_COLUMNS: Record<NonNullable<ListDevoteesOptions["sort"]>, string> = {
@@ -120,6 +128,9 @@ function buildDevoteeConditions(opts: DevoteeFilterOptions = {}): { conditions: 
   const conditions = ["d.tenant_id = $1"];
   const params: unknown[] = [];
 
+  if (!opts.includeInactive) {
+    conditions.push("d.is_active = true");
+  }
   if (opts.search && opts.search.trim()) {
     params.push(`%${opts.search.trim()}%`);
     const idx = params.length + 1;
@@ -213,7 +224,7 @@ export async function listRecentDevotees(tenantId: string, limit = 5): Promise<D
 export async function listDevoteesEligibleForEventReminders(tenantId: string): Promise<Devotee[]> {
   const { rows } = await getPool().query<DevoteeRow>(
     `${DEVOTEE_SELECT}
-     WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true AND d.event_notifications_enabled = true
+     WHERE d.tenant_id = $1 AND d.whatsapp_opt_in_status = true AND d.event_notifications_enabled = true AND d.is_active = true
      ORDER BY d.display_name ASC`,
     [tenantId],
   );
@@ -231,6 +242,7 @@ export async function listDevoteesWithBirthdayToday(tenantId: string, timezone: 
     `${DEVOTEE_SELECT}
      WHERE d.tenant_id = $1
        AND d.whatsapp_opt_in_status = true
+       AND d.is_active = true
        AND d.date_of_birth IS NOT NULL
        AND ${occasionTodayCondition("d.date_of_birth", 2)}
        AND NOT EXISTS (
@@ -250,6 +262,7 @@ export async function listDevoteesWithAnniversaryToday(tenantId: string, timezon
     `${DEVOTEE_SELECT}
      WHERE d.tenant_id = $1
        AND d.whatsapp_opt_in_status = true
+       AND d.is_active = true
        AND d.wedding_anniversary IS NOT NULL
        AND ${occasionTodayCondition("d.wedding_anniversary", 2)}
        AND NOT EXISTS (
@@ -290,13 +303,13 @@ export async function listFamilyOccasionRemindersDueTomorrow(
     `WITH tomorrow_occasions AS (
        SELECT d.family_id, d.display_name AS name, 'birthday' AS kind
        FROM devotees d
-       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.date_of_birth IS NOT NULL
+       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.date_of_birth IS NOT NULL AND d.is_active = true
          AND EXTRACT(MONTH FROM d.date_of_birth) = EXTRACT(MONTH FROM ((now() AT TIME ZONE $2) + interval '1 day'))
          AND EXTRACT(DAY FROM d.date_of_birth) = EXTRACT(DAY FROM ((now() AT TIME ZONE $2) + interval '1 day'))
        UNION ALL
        SELECT d.family_id, d.display_name, 'anniversary'
        FROM devotees d
-       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.wedding_anniversary IS NOT NULL
+       WHERE d.tenant_id = $1 AND d.family_id IS NOT NULL AND d.wedding_anniversary IS NOT NULL AND d.is_active = true
          AND EXTRACT(MONTH FROM d.wedding_anniversary) = EXTRACT(MONTH FROM ((now() AT TIME ZONE $2) + interval '1 day'))
          AND EXTRACT(DAY FROM d.wedding_anniversary) = EXTRACT(DAY FROM ((now() AT TIME ZONE $2) + interval '1 day'))
      )
@@ -306,6 +319,7 @@ export async function listFamilyOccasionRemindersDueTomorrow(
      JOIN devotee_families df ON df.id = t.family_id
      JOIN devotees pd ON pd.id = df.primary_devotee_id
      WHERE df.primary_devotee_id IS NOT NULL
+       AND pd.is_active = true
        AND NOT EXISTS (
          SELECT 1 FROM notifications n
          WHERE n.recipient_devotee_id = df.primary_devotee_id
@@ -450,6 +464,10 @@ export interface UpdateDevoteeInput {
   gender?: Gender | null;
   maritalStatus?: MaritalStatus | null;
   weddingAnniversary?: string | null;
+  familyId?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  preferredLanguage?: SupportedLanguage | null;
 }
 
 export async function updateDevotee(
@@ -468,6 +486,10 @@ export async function updateDevotee(
          gender = CASE WHEN $13::boolean THEN $14 ELSE gender END,
          marital_status = CASE WHEN $15::boolean THEN $16 ELSE marital_status END,
          wedding_anniversary = CASE WHEN $17::boolean THEN $18 ELSE wedding_anniversary END,
+         family_id = CASE WHEN $19::boolean THEN $20::uuid ELSE family_id END,
+         address = CASE WHEN $21::boolean THEN $22 ELSE address END,
+         notes = CASE WHEN $23::boolean THEN $24 ELSE notes END,
+         preferred_language = CASE WHEN $25::boolean THEN $26 ELSE preferred_language END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING id`,
@@ -490,25 +512,45 @@ export async function updateDevotee(
       input.maritalStatus ?? null,
       "weddingAnniversary" in input,
       input.weddingAnniversary ?? null,
+      "familyId" in input,
+      input.familyId ?? null,
+      "address" in input,
+      input.address ?? null,
+      "notes" in input,
+      input.notes ?? null,
+      "preferredLanguage" in input,
+      input.preferredLanguage ?? null,
     ],
   );
   return rows[0] ? getDevoteeById(tenantId, rows[0].id) : null;
 }
 
 /**
- * WhatsApp message/interaction history rows referencing this devotee are
- * kept (their devotee_id column is nullable and ON DELETE SET NULL) — only
- * the devotee record itself is removed. Donation history has no such
- * fallback (devotee_id there is required, no ON DELETE action), so deleting
- * a devotee with donations fails with a foreign key violation; the caller
- * (the API route) turns that into a friendly 409.
+ * Soft-delete — mirrors lib/db/tenant-memberships.ts's deactivate/reactivate
+ * pattern. Replaces the previous hard DELETE: donation/notification history
+ * stays fully intact either way (no more foreign-key-violation edge case
+ * for devotees with donations), and the row can be reactivated later.
+ * is_active = true is enforced by every recipient-selection query, so a
+ * deactivated devotee simply stops being selected for future notifications.
  */
-export async function deleteDevotee(tenantId: string, devoteeId: string): Promise<boolean> {
-  const result = await getPool().query("DELETE FROM devotees WHERE tenant_id = $1 AND id = $2", [
-    tenantId,
-    devoteeId,
-  ]);
-  return (result.rowCount ?? 0) > 0;
+async function setDevoteeActiveState(
+  tenantId: string,
+  devoteeId: string,
+  isActive: boolean,
+): Promise<Devotee | null> {
+  const { rows } = await getPool().query<{ id: string }>(
+    `UPDATE devotees SET is_active = $3, updated_at = now() WHERE tenant_id = $1 AND id = $2 RETURNING id`,
+    [tenantId, devoteeId, isActive],
+  );
+  return rows[0] ? getDevoteeById(tenantId, rows[0].id) : null;
+}
+
+export async function deactivateDevotee(tenantId: string, devoteeId: string): Promise<Devotee | null> {
+  return setDevoteeActiveState(tenantId, devoteeId, false);
+}
+
+export async function reactivateDevotee(tenantId: string, devoteeId: string): Promise<Devotee | null> {
+  return setDevoteeActiveState(tenantId, devoteeId, true);
 }
 
 export async function countDevotees(tenantId: string): Promise<number> {

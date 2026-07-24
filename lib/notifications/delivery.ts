@@ -9,11 +9,13 @@ import {
   getNotificationByProviderMessageId,
   markNotificationDelivered,
   markNotificationFailed,
+  markNotificationPermanentlyFailed,
   markNotificationReadReceipt,
   markNotificationSent,
 } from "@/lib/db/notifications";
 import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
 import { sendImageMessage, sendTextMessage } from "@/lib/whatsapp/client";
+import { isPermanentWhatsAppError } from "@/lib/whatsapp/errors";
 import type { Notification } from "@/types/db";
 
 /**
@@ -57,6 +59,10 @@ async function processOneNotification(id: string): Promise<void> {
   if (result.success) {
     await markNotificationSent(claimed.id, result.providerMessageId);
     await logOutcome(claimed, "sent");
+  } else if (isPermanentWhatsAppError(result.errorCode)) {
+    const reason = result.error ?? "Permanent WhatsApp delivery failure";
+    await markNotificationPermanentlyFailed(claimed.id, reason);
+    await logOutcome(claimed, "failed", reason);
   } else {
     await failWithLog(claimed, result.error ?? "Unknown send error");
   }
@@ -74,6 +80,7 @@ export async function applyWebhookDeliveryStatus(
   providerMessageId: string,
   status: "sent" | "delivered" | "read" | "failed",
   errorReason?: string,
+  errorCode?: number,
 ): Promise<void> {
   const notification = await getNotificationByProviderMessageId(providerMessageId);
   if (!notification) return; // not a generic-engine send (legacy pipeline or inbound reply) — out of scope
@@ -84,7 +91,12 @@ export async function applyWebhookDeliveryStatus(
     await markNotificationReadReceipt(notification.id);
   } else if (status === "failed") {
     const reason = errorReason ?? "WhatsApp reported delivery failure";
-    await failWithLog(notification, reason);
+    if (isPermanentWhatsAppError(errorCode)) {
+      await markNotificationPermanentlyFailed(notification.id, reason);
+      await logOutcome(notification, "failed", reason);
+    } else {
+      await failWithLog(notification, reason);
+    }
   }
 }
 

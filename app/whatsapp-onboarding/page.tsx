@@ -17,7 +17,7 @@ export default async function WhatsAppOnboardingPage({ searchParams }: WhatsAppO
       {handoff && token ? (
         <WhatsAppOnboardingFlow handoffToken={token} returnUrl={handoff.returnUrl} />
       ) : (
-        <Card className="w-full max-w-md">
+        <Card className="glass-card w-full max-w-md rounded-2xl">
           <CardHeader>
             <CardTitle>Connection link expired</CardTitle>
             <CardDescription>

@@ -20,6 +20,8 @@ export const dateOfBirthSchema = z
 
 const genderSchema = z.enum(GENDER_OPTIONS).nullable().optional();
 const maritalStatusSchema = z.enum(MARITAL_STATUS_OPTIONS).nullable().optional();
+const preferredLanguageSchema = z.enum(["en", "te"]).nullable().optional();
+const familyIdSchema = z.string().uuid().nullable().optional();
 
 export const createDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required"),
@@ -42,6 +44,10 @@ export const updateDevoteeSchema = z.object({
   gender: genderSchema,
   maritalStatus: maritalStatusSchema,
   weddingAnniversary: dateOfBirthSchema,
+  familyId: familyIdSchema,
+  address: nullableTrimmedString,
+  notes: nullableTrimmedString,
+  preferredLanguage: preferredLanguageSchema,
 });
 
 export type CreateDevoteePayload = z.infer<typeof createDevoteeSchema>;

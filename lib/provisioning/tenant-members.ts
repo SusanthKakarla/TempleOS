@@ -11,12 +11,14 @@ import {
   deactivateTenantMembership,
   reactivateTenantMembership,
   replaceTenantMembershipRoles,
+  updateTenantMembershipDetails,
+  deleteTenantMembership,
   type TenantMembershipListItem,
   type TenantMembershipWithRoles,
 } from "@/lib/db/tenant-memberships";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
-import { isRoleCode, type RoleCode, type TenantMembershipStatus } from "@/types/db";
+import { isRoleCode, type RoleCode, type SupportedLanguage, type TenantMembershipStatus } from "@/types/db";
 
 export interface TenantAdminActor {
   type: "tenant_member";
@@ -39,6 +41,7 @@ export class TenantMemberActionError extends Error {
       | "ALREADY_MEMBER"
       | "LAST_ADMIN_GUARD"
       | "SELF_ACTION_FORBIDDEN"
+      | "HAS_RECORDED_HISTORY"
       | "ACTION_FAILED",
     public readonly errors: TenantMemberValidationIssue[] = [],
   ) {
@@ -350,6 +353,127 @@ export async function setTenantMemberStatus(
   } finally {
     client.release();
   }
+}
+
+export interface UpdateTenantMemberDetailsInput {
+  membershipId: string;
+  displayName?: string;
+  preferredUiLanguage?: SupportedLanguage;
+}
+
+export async function updateTenantMemberDetails(
+  input: UpdateTenantMemberDetailsInput,
+  actor: TenantAdminActor,
+): Promise<TenantMembershipListItem> {
+  const updated = await updateTenantMembershipDetails(actor.tenantId, input.membershipId, {
+    displayName: input.displayName,
+    preferredUiLanguage: input.preferredUiLanguage,
+  });
+  if (!updated) {
+    throw new TenantMemberActionError("Member not found.", 404, "MEMBER_NOT_FOUND");
+  }
+
+  await createAuditLogEntry({
+    actorType: "tenant_member",
+    actorId: actor.membershipId,
+    tenantId: actor.tenantId,
+    action: "tenant_member.details_updated",
+    targetType: "tenant_membership",
+    targetId: input.membershipId,
+    metadata: {
+      ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+      ...(input.preferredUiLanguage !== undefined ? { preferredUiLanguage: input.preferredUiLanguage } : {}),
+    },
+  });
+
+  return updated;
+}
+
+export interface DeleteTenantMemberInput {
+  membershipId: string;
+}
+
+/**
+ * Hard delete. Same self-action and last-admin guards as
+ * setTenantMemberStatus's disable path. Only actually succeeds for a member
+ * with no donation/event/media history: donations.recorded_by and
+ * events.created_by are composite FKs — (created_by, tenant_id) REFERENCES
+ * tenant_memberships(id, tenant_id) ON DELETE SET NULL — and Postgres nulls
+ * BOTH columns together on that cascade, including tenant_id, which has its
+ * own NOT NULL constraint on those tables. So deleting a member who has ever
+ * recorded a donation or created an event always fails with a not-null
+ * violation, caught below and surfaced as HAS_RECORDED_HISTORY — the same
+ * "can't delete, has history" outcome the devotee hard-delete used to hit,
+ * just a different Postgres error code. Disable remains the only way to
+ * remove such a member from future activity while keeping their history.
+ */
+export async function deleteTenantMember(input: DeleteTenantMemberInput, actor: TenantAdminActor): Promise<void> {
+  if (input.membershipId === actor.membershipId) {
+    throw new TenantMemberActionError("You cannot delete your own account.", 403, "SELF_ACTION_FORBIDDEN");
+  }
+
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query<{ has_admin: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM tenant_membership_roles tmr
+         JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.code = 'admin' AND rd.active = true
+         WHERE tmr.membership_id = $1
+       ) AS has_admin`,
+      [input.membershipId],
+    );
+    if (rows[0]?.has_admin) {
+      const otherAdmins = await countOtherActiveAdmins(actor.tenantId, input.membershipId, client);
+      if (otherAdmins === 0) {
+        throw new TenantMemberActionError("Cannot delete the temple's only admin.", 409, "LAST_ADMIN_GUARD");
+      }
+    }
+
+    // Logged before the row is gone — targetId still resolves to something
+    // meaningful in the audit trail even though the membership won't.
+    await createAuditLogEntry(
+      {
+        actorType: "tenant_member",
+        actorId: actor.membershipId,
+        tenantId: actor.tenantId,
+        action: "tenant_member.deleted",
+        targetType: "tenant_membership",
+        targetId: input.membershipId,
+        metadata: {},
+      },
+      client,
+    );
+
+    const deleted = await deleteTenantMembership(actor.tenantId, input.membershipId, client);
+    if (!deleted) {
+      throw new TenantMemberActionError("Member not found.", 404, "MEMBER_NOT_FOUND");
+    }
+
+    await client.query("COMMIT");
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original error for callers.
+    }
+    if (err instanceof TenantMemberActionError) throw err;
+    if (isNotNullViolation(err)) {
+      throw new TenantMemberActionError(
+        "Can't delete a member who has recorded donations or created events — disable them instead to keep that history intact.",
+        409,
+        "HAS_RECORDED_HISTORY",
+      );
+    }
+    throw new TenantMemberActionError("Failed to delete member.", 500, "ACTION_FAILED");
+  } finally {
+    client.release();
+  }
+}
+
+function isNotNullViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && err.code === "23502";
 }
 
 function isUniqueViolation(err: unknown): boolean {

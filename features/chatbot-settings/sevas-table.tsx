@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { formatInr } from "@/lib/currency";
 import { SevaFormDialog } from "./seva-form-dialog";
 
@@ -85,62 +87,103 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
             <p className="text-sm text-muted-foreground">{tForm("emptyState")}</p>
           </div>
         ) : (
-          <div className="rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{tForm("columns.name")}</TableHead>
-                  <TableHead>{tForm("columns.price")}</TableHead>
-                  <TableHead>{tForm("columns.duration")}</TableHead>
-                  <TableHead>{tForm("columns.availableDays")}</TableHead>
-                  <TableHead>{tForm("columns.booking")}</TableHead>
-                  <TableHead className="text-right">{tForm("columns.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <>
+            <div className="hidden rounded-xl border md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tForm("columns.name")}</TableHead>
+                    <TableHead>{tForm("columns.price")}</TableHead>
+                    <TableHead>{tForm("columns.duration")}</TableHead>
+                    <TableHead>{tForm("columns.availableDays")}</TableHead>
+                    <TableHead>{tForm("columns.booking")}</TableHead>
+                    <TableHead className="text-right">{tForm("columns.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sevas.map((seva) => (
+                    <TableRow key={seva.id}>
+                      <TableCell>
+                        <p className="font-medium">{seva.name}</p>
+                        {seva.description && (
+                          <p className="max-w-xs truncate text-xs text-muted-foreground">
+                            {seva.description}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>{seva.price ? formatInr(seva.price) : "—"}</TableCell>
+                      <TableCell>{seva.duration ?? "—"}</TableCell>
+                      <TableCell>{formatDays(seva.availableDays, t, tForm("everyDay"))}</TableCell>
+                      <TableCell>
+                        <Badge variant={seva.bookingEnabled ? "default" : "secondary"}>
+                          {seva.bookingEnabled ? tForm("enabled") : tForm("disabled")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="flex justify-end gap-2">
+                        <SevaFormDialog
+                          mode="edit"
+                          seva={seva}
+                          trigger={
+                            <Button variant="outline" size="sm" disabled={pendingId === seva.id}>
+                              {t("common.edit")}
+                            </Button>
+                          }
+                          onSaved={refresh}
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={pendingId === seva.id}
+                          onClick={() => handleDelete(seva)}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="md:hidden">
+              <MobileListView>
                 {sevas.map((seva) => (
-                  <TableRow key={seva.id}>
-                    <TableCell>
-                      <p className="font-medium">{seva.name}</p>
-                      {seva.description && (
-                        <p className="max-w-xs truncate text-xs text-muted-foreground">
-                          {seva.description}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>{seva.price ? formatInr(seva.price) : "—"}</TableCell>
-                    <TableCell>{seva.duration ?? "—"}</TableCell>
-                    <TableCell>{formatDays(seva.availableDays, t, tForm("everyDay"))}</TableCell>
-                    <TableCell>
+                  <MobileListRow
+                    key={seva.id}
+                    title={seva.name}
+                    subtitle={seva.price ? formatInr(seva.price) : undefined}
+                    badge={
                       <Badge variant={seva.bookingEnabled ? "default" : "secondary"}>
                         {seva.bookingEnabled ? tForm("enabled") : tForm("disabled")}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="flex justify-end gap-2">
-                      <SevaFormDialog
-                        mode="edit"
-                        seva={seva}
-                        trigger={
-                          <Button variant="outline" size="sm" disabled={pendingId === seva.id}>
-                            {t("common.edit")}
-                          </Button>
-                        }
-                        onSaved={refresh}
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        disabled={pendingId === seva.id}
-                        onClick={() => handleDelete(seva)}
-                      >
-                        {t("common.delete")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                    }
+                    trailing={
+                      <div className="flex shrink-0 gap-2">
+                        <SevaFormDialog
+                          mode="edit"
+                          seva={seva}
+                          trigger={
+                            <Button variant="outline" size="sm" disabled={pendingId === seva.id}>
+                              {t("common.edit")}
+                            </Button>
+                          }
+                          onSaved={refresh}
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={pendingId === seva.id}
+                          onClick={() => handleDelete(seva)}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      </div>
+                    }
+                  />
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </MobileListView>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

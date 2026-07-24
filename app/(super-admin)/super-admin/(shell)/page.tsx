@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import {
   countTenantsByStatus,
@@ -64,19 +65,16 @@ export default async function SuperAdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
-          <h1 className="text-2xl font-semibold tracking-normal">Platform Dashboard</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Platform-wide metrics, activity, and health across every provisioned temple.
-          </p>
-        </div>
-        <Button render={<Link href="/super-admin/temples/new" />}>
-          <Plus className="size-4" />
-          New Temple
-        </Button>
-      </header>
+      <PageHeader
+        title="Platform Dashboard"
+        subtitle="Platform-wide metrics, activity, and health across every provisioned temple."
+        actions={
+          <Button render={<Link href="/super-admin/temples/new" />}>
+            <Plus className="size-4" />
+            New Temple
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard label="Total Temples" value={tenantCounts.total} icon={<Landmark className="size-4.5" />} gradient="gradient-ocean-blue" />
@@ -184,7 +182,7 @@ export default async function SuperAdminDashboardPage() {
 
 function HealthTile({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
-    <Card className="p-3">
+    <Card className="glass-card rounded-xl p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{label}</span>
         <Badge variant={ok ? "default" : "destructive"}>{ok ? "Healthy" : "Attention"}</Badge>

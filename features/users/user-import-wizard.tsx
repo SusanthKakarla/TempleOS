@@ -129,7 +129,7 @@ export function UserImportWizard() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {step === "upload" && (
-        <Card>
+        <Card className="glass-card rounded-2xl border-dashed">
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <FileUp className="size-6 text-muted-foreground" />
@@ -227,7 +227,7 @@ export function UserImportWizard() {
       )}
 
       {step === "importing" && (
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <p className="text-sm font-medium">{t("importing.title")}</p>
             <p className="text-sm text-muted-foreground">{t("importing.description")}</p>
@@ -236,7 +236,7 @@ export function UserImportWizard() {
       )}
 
       {step === "done" && result && (
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
             <CheckCircle2 className="size-10 text-emerald" />
             <div>
@@ -295,7 +295,7 @@ function CountChip({
   tone?: string;
 }) {
   return (
-    <Card className="p-3">
+    <Card className="glass-card rounded-xl p-3">
       <div className="flex items-center gap-2">
         <Icon className={`size-4 ${tone ?? "text-muted-foreground"}`} />
         <div>

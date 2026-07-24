@@ -26,6 +26,7 @@ export function ChangeRoleDialog({
   member: TenantMembershipListItem;
   trigger: ReactElement;
   onChanged: () => void;
+  /** Controlled open state — lets a caller open this from an OverflowActionMenu item instead of the given `trigger`. Omit for the default self-managed behavior. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {

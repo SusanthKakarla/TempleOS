@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 
 interface AccessDeniedPageProps {
   searchParams: Promise<{ phone?: string }>;
@@ -17,10 +18,11 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
   const { phone } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-sm">
+    <main className="relative flex min-h-screen items-center justify-center p-4">
+      <AmbientBackground />
+      <Card className="glass-card w-full max-w-sm rounded-2xl">
         <CardHeader>
-          <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-secondary/15 text-secondary">
             <ShieldAlert className="size-5" />
           </div>
           <CardTitle>Access not provisioned</CardTitle>

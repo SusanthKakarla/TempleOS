@@ -177,6 +177,20 @@ export function computeRetryState(attemptCountAfterFailure: number): {
     : { deliveryStatus: "failed", nextAttemptAt: null };
 }
 
+/**
+ * For errors we know will fail identically on every retry (see
+ * lib/whatsapp/errors.ts's isPermanentWhatsAppError) — skips the
+ * computeRetryState backoff entirely and goes straight to the terminal
+ * state, rather than burning through 1/5/30-minute retries that can never
+ * succeed.
+ */
+export async function markNotificationPermanentlyFailed(id: string, reason: string): Promise<void> {
+  await getPool().query(
+    `UPDATE notifications SET delivery_status = 'failed', failure_reason = $2, updated_at = now() WHERE id = $1`,
+    [id, reason],
+  );
+}
+
 export async function markNotificationFailed(id: string, attemptCountBefore: number, reason: string): Promise<void> {
   const attemptCount = attemptCountBefore + 1;
   const { deliveryStatus, nextAttemptAt } = computeRetryState(attemptCount);

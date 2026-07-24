@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate as formatDateLocalized } from "@/lib/date";
 import { SpecialDayFormDialog } from "./special-day-form-dialog";
 
@@ -106,53 +108,96 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
             <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
           </div>
         ) : (
-          <div className="rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("columns.date")}</TableHead>
-                  <TableHead>{t("columns.occasion")}</TableHead>
-                  <TableHead>{t("columns.timings")}</TableHead>
-                  <TableHead className="text-right">{t("columns.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <>
+            <div className="hidden rounded-xl border md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("columns.date")}</TableHead>
+                    <TableHead>{t("columns.occasion")}</TableHead>
+                    <TableHead>{t("columns.timings")}</TableHead>
+                    <TableHead className="text-right">{t("columns.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {specialDays.map((specialDay) => (
+                    <TableRow key={specialDay.id}>
+                      <TableCell>{formatDate(specialDay.date, locale)}</TableCell>
+                      <TableCell>{specialDay.occasion}</TableCell>
+                      <TableCell>
+                        {specialDay.isClosed ? (
+                          <Badge variant="destructive">{t("closedBadge")}</Badge>
+                        ) : (
+                          formatTimings(specialDay, t)
+                        )}
+                      </TableCell>
+                      <TableCell className="flex justify-end gap-2">
+                        <SpecialDayFormDialog
+                          mode="edit"
+                          specialDay={specialDay}
+                          trigger={
+                            <Button variant="outline" size="sm" disabled={pendingId === specialDay.id}>
+                              {tCommon("edit")}
+                            </Button>
+                          }
+                          onSaved={refresh}
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={pendingId === specialDay.id}
+                          onClick={() => handleDelete(specialDay)}
+                        >
+                          {tCommon("delete")}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="md:hidden">
+              <MobileListView>
                 {specialDays.map((specialDay) => (
-                  <TableRow key={specialDay.id}>
-                    <TableCell>{formatDate(specialDay.date, locale)}</TableCell>
-                    <TableCell>{specialDay.occasion}</TableCell>
-                    <TableCell>
-                      {specialDay.isClosed ? (
+                  <MobileListRow
+                    key={specialDay.id}
+                    title={specialDay.occasion}
+                    subtitle={formatDate(specialDay.date, locale)}
+                    badge={
+                      specialDay.isClosed ? (
                         <Badge variant="destructive">{t("closedBadge")}</Badge>
                       ) : (
-                        formatTimings(specialDay, t)
-                      )}
-                    </TableCell>
-                    <TableCell className="flex justify-end gap-2">
-                      <SpecialDayFormDialog
-                        mode="edit"
-                        specialDay={specialDay}
-                        trigger={
-                          <Button variant="outline" size="sm" disabled={pendingId === specialDay.id}>
-                            {tCommon("edit")}
-                          </Button>
-                        }
-                        onSaved={refresh}
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        disabled={pendingId === specialDay.id}
-                        onClick={() => handleDelete(specialDay)}
-                      >
-                        {tCommon("delete")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                        <span className="text-xs text-muted-foreground">{formatTimings(specialDay, t)}</span>
+                      )
+                    }
+                    trailing={
+                      <div className="flex shrink-0 gap-2">
+                        <SpecialDayFormDialog
+                          mode="edit"
+                          specialDay={specialDay}
+                          trigger={
+                            <Button variant="outline" size="sm" disabled={pendingId === specialDay.id}>
+                              {tCommon("edit")}
+                            </Button>
+                          }
+                          onSaved={refresh}
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={pendingId === specialDay.id}
+                          onClick={() => handleDelete(specialDay)}
+                        >
+                          {tCommon("delete")}
+                        </Button>
+                      </div>
+                    }
+                  />
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </MobileListView>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Download, Eye, HandCoins, Pencil, Plus, Trash2 } from "lucide-react";
-import type { Devotee, DonationWithDonor, SupportedLanguage } from "@/types/db";
+import { CalendarRange, Download, Eye, HandCoins, Pencil, Plus, Trash2 } from "lucide-react";
+import type { Devotee, DonationSummary, DonationWithDonor, SupportedLanguage } from "@/types/db";
+import { MetricCard } from "@/features/dashboard/metric-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -80,6 +81,7 @@ interface DonationsTableProps {
   totalCount: number;
   sort?: "date" | "amount" | "donor";
   dir: "asc" | "desc";
+  summary: DonationSummary;
 }
 
 interface PendingFilters {
@@ -98,7 +100,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters 
   };
 }
 
-export function DonationsTable({ donations, devotees, page, pageSize, totalCount, sort, dir }: DonationsTableProps) {
+export function DonationsTable({ donations, devotees, page, pageSize, totalCount, sort, dir, summary }: DonationsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
@@ -298,6 +300,25 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
           </>
         }
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <MetricCard
+          label={t("summary.totalThisMonth")}
+          value={Number(summary.totalThisMonth)}
+          format="currency"
+          icon={<HandCoins className="size-4.5" />}
+          gradient="gradient-saffron-gold"
+          compact
+        />
+        <MetricCard
+          label={t("summary.totalAllTime")}
+          value={Number(summary.totalAllTime)}
+          format="currency"
+          icon={<CalendarRange className="size-4.5" />}
+          gradient="gradient-green-emerald"
+          compact
+        />
+      </div>
 
       <ResponsiveSearchBar
         pathname={PATHNAME}
