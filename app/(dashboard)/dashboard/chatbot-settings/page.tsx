@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { MessageCircle, Settings2, BellRing } from "lucide-react";
+import { MessageCircle, Settings2 } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
 import { isFeatureEnabled } from "@/lib/db/tenant-features";
@@ -25,7 +25,6 @@ import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notifi
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
-import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam } from "@/lib/pagination";
@@ -78,7 +77,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const { eventId, page: pageParam, sort: sortParam, dir: dirParam, category: categoryParam, notifPage: notifPageParam } = params;
   const page = parsePageParam(pageParam);
   const sort = SORT_VALUES.find((value) => value === sortParam);
-  const dir = dirParam === "asc" ? "asc" : "desc";
+  const dir: "asc" | "desc" = dirParam === "asc" ? "asc" : "desc";
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
@@ -124,6 +123,36 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     />
   );
 
+  const notificationTabData = notificationData && {
+    summary: notificationData[0],
+    notifications: notificationData[1],
+    eventId,
+    page,
+    pageSize: NOTIFICATIONS_PAGE_SIZE,
+    totalCount: notificationData[2],
+    sort,
+    dir,
+    automatedNotifications: notificationData[3],
+    category,
+    notifPage,
+    automatedTotalCount: notificationData[4],
+    birthdayMedia: notificationData[5],
+    anniversaryMedia: notificationData[6],
+    donationMedia: notificationData[7],
+    festivalMedia: notificationData[8],
+    stuckRetrying: notificationData[9],
+    locale,
+  };
+
+  // Deep-link into whichever notification tab the URL params describe, so links from
+  // event pages / notification emails land on the right tab instead of always "info".
+  const defaultTab =
+    category || notifPageParam
+      ? "automatedNotifications"
+      : eventId || sortParam || pageParam
+        ? "notificationSettings"
+        : "info";
+
   const chatbotConfigSection = (
     <SettingsSection
       icon={<Settings2 className="size-4.5" />}
@@ -131,40 +160,14 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       description={t("sections.chatbotConfig.description")}
       defaultOpen
     >
-      <ChatbotSettingsTabs tenant={tenant} specialDays={specialDays} sevas={sevas} faqs={faqs} socialLinks={socialLinks} />
-    </SettingsSection>
-  );
-
-  const notificationSectionDefaultOpen = Boolean(
-    eventId || category || notifPageParam || sortParam || (notificationData && notificationData[9] > 0),
-  );
-
-  const notificationSection = notificationData && (
-    <SettingsSection
-      icon={<BellRing className="size-4.5" />}
-      title={t("sections.notificationSettings.title")}
-      description={t("sections.notificationSettings.description")}
-      defaultOpen={notificationSectionDefaultOpen}
-    >
-      <NotificationSettingsContent
-        summary={notificationData[0]}
-        notifications={notificationData[1]}
-        eventId={eventId}
-        page={page}
-        pageSize={NOTIFICATIONS_PAGE_SIZE}
-        totalCount={notificationData[2]}
-        sort={sort}
-        dir={dir}
-        automatedNotifications={notificationData[3]}
-        category={category}
-        notifPage={notifPage}
-        automatedTotalCount={notificationData[4]}
-        birthdayMedia={notificationData[5]}
-        anniversaryMedia={notificationData[6]}
-        donationMedia={notificationData[7]}
-        festivalMedia={notificationData[8]}
-        stuckRetrying={notificationData[9]}
-        locale={locale}
+      <ChatbotSettingsTabs
+        tenant={tenant}
+        specialDays={specialDays}
+        sevas={sevas}
+        faqs={faqs}
+        socialLinks={socialLinks}
+        notificationData={notificationTabData}
+        defaultTab={defaultTab}
       />
     </SettingsSection>
   );
@@ -186,7 +189,6 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       {!isConnected && whatsappConnectionCard}
 
       {chatbotConfigSection}
-      {notificationSection}
 
       {isConnected && whatsappConnectionCard}
     </div>

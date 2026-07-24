@@ -31,6 +31,7 @@ import { ExportMenu } from "@/features/export/export-menu";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
+import { StickyToolbar } from "@/components/sticky-toolbar";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate } from "@/lib/date";
@@ -217,87 +218,90 @@ export function UsersTable({
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
-        actions={
-          <>
-            <Link
-              href="/dashboard/users/activity"
-              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
-            >
-              <History className="size-4" />
-              {t("activityLog.pageTitle")}
-            </Link>
-            <Link
-              href="/dashboard/users/import"
-              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
-            >
-              <Upload className="size-4" />
-              {t("importButton")}
-            </Link>
-            <div className="hidden lg:block">
+      <StickyToolbar>
+        <PageHeader
+          title={t("pageHeader.title")}
+          subtitle={t("pageHeader.subtitle")}
+          actions={
+            <>
+              <Link
+                href="/dashboard/users/activity"
+                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+              >
+                <History className="size-4" />
+                {t("activityLog.pageTitle")}
+              </Link>
+              <Link
+                href="/dashboard/users/import"
+                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+              >
+                <Upload className="size-4" />
+                {t("importButton")}
+              </Link>
+              <div className="hidden lg:block">
+                <ExportMenu
+                  exportUrl="/api/users/export"
+                  filterParams={searchParams}
+                  selectedIds={selectedIds}
+                  moduleLabel="users"
+                />
+              </div>
+              <OverflowActionMenu
+                label="Activity / Import / Export"
+                items={[
+                  { label: t("activityLog.pageTitle"), icon: <History className="size-4" />, onClick: () => router.push("/dashboard/users/activity") },
+                  { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/users/import") },
+                  { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
+                ]}
+              />
+              {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
               <ExportMenu
                 exportUrl="/api/users/export"
                 filterParams={searchParams}
                 selectedIds={selectedIds}
                 moduleLabel="users"
+                open={exportOpen}
+                onOpenChange={setExportOpen}
+                hideTrigger
               />
-            </div>
-            <OverflowActionMenu
-              label="Activity / Import / Export"
-              items={[
-                { label: t("activityLog.pageTitle"), icon: <History className="size-4" />, onClick: () => router.push("/dashboard/users/activity") },
-                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/users/import") },
-                { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
-              ]}
-            />
-            {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
-            <ExportMenu
-              exportUrl="/api/users/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="users"
-              open={exportOpen}
-              onOpenChange={setExportOpen}
-              hideTrigger
-            />
-          </>
-        }
-      />
+            </>
+          }
+        />
 
-      <ResponsiveSearchBar
-        pathname={PATHNAME}
-        placeholder={t("searchPlaceholder")}
-        filtersSlot={
-          <>
-            <FilterBottomSheet
-              title={tCommon("filters")}
-              activeCount={activeFilterCount}
-              onOpenChange={(open) => {
-                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-              }}
-              onReset={() => {
-                const reset: PendingFilters = { role: "all", status: "all" };
-                setPendingFilters(reset);
-                applyFilters(reset);
-              }}
-              onApply={() => applyFilters(pendingFilters)}
-            >
-              {filterSheetContent}
-            </FilterBottomSheet>
-            <InviteUserDialog
-              trigger={
-                <Button className="shrink-0 gap-1.5">
-                  <UserPlus className="size-4" />
-                  <span className="hidden sm:inline">{t("inviteButton")}</span>
-                </Button>
-              }
-              onInvited={refresh}
-            />
-          </>
-        }
-      />
+        <ResponsiveSearchBar
+          pathname={PATHNAME}
+          placeholder={t("searchPlaceholder")}
+          sticky={false}
+          filtersSlot={
+            <>
+              <FilterBottomSheet
+                title={tCommon("filters")}
+                activeCount={activeFilterCount}
+                onOpenChange={(open) => {
+                  if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+                }}
+                onReset={() => {
+                  const reset: PendingFilters = { role: "all", status: "all" };
+                  setPendingFilters(reset);
+                  applyFilters(reset);
+                }}
+                onApply={() => applyFilters(pendingFilters)}
+              >
+                {filterSheetContent}
+              </FilterBottomSheet>
+              <InviteUserDialog
+                trigger={
+                  <Button className="shrink-0 gap-1.5">
+                    <UserPlus className="size-4" />
+                    <span className="hidden sm:inline">{t("inviteButton")}</span>
+                  </Button>
+                }
+                onInvited={refresh}
+              />
+            </>
+          }
+        />
+      </StickyToolbar>
 
       {members.length === 0 ? (
         <EmptyState

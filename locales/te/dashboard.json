@@ -216,7 +216,9 @@
       "timings": "వేళలు",
       "sevas": "సేవలు",
       "contact": "సంప్రదింపు & సోషల్",
-      "faq": "ప్రశ్నలు"
+      "faq": "ప్రశ్నలు",
+      "notificationSettings": "నోటిఫికేషన్ సెట్టింగ్‌లు",
+      "automatedNotifications": "ఆటోమేటెడ్ నోటిఫికేషన్‌లు"
     },
     "common": {
       "save": "సేవ్ చేయండి",

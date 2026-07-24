@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
-  Bell,
   CalendarDays,
   LayoutDashboard,
   Landmark,
@@ -46,12 +45,6 @@ export const NAV_ITEMS = [
     icon: Settings2,
     gradient: "gradient-green-emerald",
     featureKey: "whatsapp_chatbot",
-  },
-  {
-    href: "/dashboard/notification-preferences",
-    labelKey: "notifications",
-    icon: Bell,
-    gradient: "gradient-ocean-blue",
   },
   {
     href: "/dashboard/users",

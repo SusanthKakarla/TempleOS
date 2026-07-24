@@ -54,7 +54,7 @@ export function EventCard({
         <div className="gradient-maroon-orange h-1.5 w-full" />
         <CardHeader className="pt-4">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-heading text-base font-semibold leading-snug">{event.title}</h3>
+            <h3 className="line-clamp-2 font-heading text-base font-semibold leading-snug">{event.title}</h3>
             <Badge variant={STATUS_BADGE_VARIANT[event.status]} className="shrink-0">
               {t(`status.${event.status}`)}
             </Badge>
@@ -85,7 +85,7 @@ export function EventCard({
             )}
           </div>
         </CardContent>
-        <CardFooter className="mt-1 flex items-center justify-between gap-2 border-t py-3">
+        <CardFooter className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t py-3">
           {event.status === "cancelled" ? (
             <span className="text-xs text-muted-foreground">{t("cancelledLabel")}</span>
           ) : (
@@ -98,7 +98,7 @@ export function EventCard({
               {t("publishedLabel")}
             </label>
           )}
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             <EventFormDialog
               mode="edit"
               event={event}

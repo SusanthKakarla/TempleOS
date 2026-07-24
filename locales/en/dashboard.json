@@ -216,7 +216,9 @@
       "timings": "Timings",
       "sevas": "Sevas",
       "contact": "Contact & Social",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "notificationSettings": "Notification Settings",
+      "automatedNotifications": "Automated Notifications"
     },
     "common": {
       "save": "Save",

@@ -4,6 +4,7 @@ import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { MotionProvider } from "@/features/dashboard/motion-provider";
 import { SuperAdminSidebar } from "./super-admin-sidebar";
 import { SuperAdminTopbar } from "./super-admin-topbar";
+import { SuperAdminBottomNavBar } from "./super-admin-bottom-nav-bar";
 
 export function SuperAdminShell({
   superAdmin,
@@ -21,7 +22,7 @@ export function SuperAdminShell({
           <div className="flex h-full flex-col gap-3">
             <SuperAdminTopbar displayName={superAdmin.displayName} phoneNumber={superAdmin.phoneNumber} />
             <div className="glass-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
-              <div className="p-4 sm:p-6">
+              <div className="p-4 pb-20 sm:p-6 md:pb-6">
                 <div className="mx-auto w-full max-w-400">{children}</div>
               </div>
               <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
@@ -30,6 +31,7 @@ export function SuperAdminShell({
             </div>
           </div>
         </SidebarInset>
+        <SuperAdminBottomNavBar />
       </SidebarProvider>
     </MotionProvider>
   );

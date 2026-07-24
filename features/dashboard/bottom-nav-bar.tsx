@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, CalendarDays, LayoutDashboard, Menu, Receipt } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Menu, Receipt, Users } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/devotees", labelKey: "devotees", icon: Users },
   { href: "/dashboard/events", labelKey: "events", icon: CalendarDays },
   { href: "/dashboard/donations", labelKey: "donations", icon: Receipt },
-  { href: "/dashboard/notification-preferences", labelKey: "notifications", icon: Bell },
 ] as const;
 
 /** Mobile-only quick-access bar for the 4 most-used sections, plus a "More" trigger for the full drawer. The drawer (AppSidebar as a Sheet) remains the primary/complete nav — this is a shortcut, not a replacement. */

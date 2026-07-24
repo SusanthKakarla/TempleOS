@@ -1,11 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { AlertTriangle, BellRing, CheckCircle2, Clock, XCircle } from "lucide-react";
 import type { EventNotificationListItem, ListRecentEventNotificationsOptions } from "@/lib/db/event-notifications";
-import type { NotificationListItem } from "@/lib/db/notifications";
-import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
+import type { NotificationMedia } from "@/types/db";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { NotificationList } from "@/features/notifications/notification-list";
-import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { GreetingMediaCard } from "@/features/media/greeting-media-card";
 import { FestivalMediaGrid } from "@/features/media/festival-media-grid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,18 +19,14 @@ interface NotificationSettingsContentProps {
   totalCount: number;
   sort?: ListRecentEventNotificationsOptions["sort"];
   dir: "asc" | "desc";
-  automatedNotifications: NotificationListItem[];
-  category?: NotificationCategory;
-  notifPage: number;
-  automatedTotalCount: number;
   birthdayMedia: NotificationMedia | null;
   anniversaryMedia: NotificationMedia | null;
   donationMedia: NotificationMedia | null;
   festivalMedia: NotificationMedia[];
   stuckRetrying: number;
-  locale: SupportedLanguage;
 }
 
+/** Content for the Chatbot Settings "Notification Settings" tab — event-notification delivery metrics, media, and the event notification log. The "Automated Notifications" tab (birthday/anniversary/etc.) is a sibling tab, rendered separately. */
 export async function NotificationSettingsContent({
   summary,
   notifications,
@@ -42,16 +36,11 @@ export async function NotificationSettingsContent({
   totalCount,
   sort,
   dir,
-  automatedNotifications,
-  category,
-  notifPage,
-  automatedTotalCount,
   birthdayMedia,
   anniversaryMedia,
   donationMedia,
   festivalMedia,
   stuckRetrying,
-  locale,
 }: NotificationSettingsContentProps) {
   const t = await getTranslations("notifications");
   const successRate = summary.sent + summary.failed > 0 ? Math.round((summary.sent / (summary.sent + summary.failed)) * 100) : 100;
@@ -107,16 +96,6 @@ export async function NotificationSettingsContent({
         totalCount={totalCount}
         sort={sort}
         dir={dir}
-        pathname={PATHNAME}
-      />
-
-      <AutomatedNotificationList
-        notifications={automatedNotifications}
-        category={category}
-        page={notifPage}
-        pageSize={pageSize}
-        totalCount={automatedTotalCount}
-        locale={locale}
         pathname={PATHNAME}
       />
     </div>

@@ -225,13 +225,18 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 />
               </div>
             </div>
-            <FloatingLabelInput
-              id="birthStar"
-              label={t("fields.birthStar")}
-              icon={<Sparkles />}
-              value={birthStar}
-              onChange={(e) => setBirthStar(e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="birthStar">{t("fields.birthStar")}</Label>
+              <div className="relative">
+                <Sparkles className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="birthStar"
+                  value={birthStar}
+                  onChange={(e) => setBirthStar(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
           </div>
           <FloatingLabelInput
             id="ancestralLineage"
