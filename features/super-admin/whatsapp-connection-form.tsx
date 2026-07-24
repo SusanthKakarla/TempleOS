@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
@@ -6,7 +6,7 @@ import { CheckCircle2, MessageCircle, Save, Trash2, XCircle } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import type { WhatsAppAccount } from "@/types/db";
 
 interface WhatsAppConnectionFormProps {
@@ -133,8 +133,8 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
                   <XCircle className="size-3.5" />
                 )}
                 {account?.webhookSubscribed
-                  ? "Subscribed — messages will reach the chatbot"
-                  : "Not subscribed — incoming messages won't reach the chatbot. Try Update Connection."}
+                  ? "Subscribed â€” messages will reach the chatbot"
+                  : "Not subscribed â€” incoming messages won't reach the chatbot. Try Update Connection."}
               </Badge>
               {!account?.webhookSubscribed && account?.webhookLastErrorMessage && (
                 <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -148,28 +148,28 @@ export function WhatsAppConnectionForm({ tenantId, account }: WhatsAppConnection
           {saved && <p className="text-sm text-emerald">WhatsApp connection saved.</p>}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <FloatingLabelInput
+            <LabeledInput
               id="whatsapp-phone-number"
               label="Business Phone Number"
               value={form.phoneNumber}
               onChange={(event) => updateField("phoneNumber", event.target.value)}
               required
             />
-            <FloatingLabelInput
+            <LabeledInput
               id="whatsapp-meta-phone-number-id"
               label="Meta Phone Number ID"
               value={form.metaPhoneNumberId}
               onChange={(event) => updateField("metaPhoneNumberId", event.target.value)}
               required
             />
-            <FloatingLabelInput
+            <LabeledInput
               id="whatsapp-meta-business-account-id"
               label="Meta Business Account ID"
               value={form.metaBusinessAccountId}
               onChange={(event) => updateField("metaBusinessAccountId", event.target.value)}
               required
             />
-            <FloatingLabelInput
+            <LabeledInput
               id="whatsapp-display-name"
               label="Display Name (optional)"
               value={form.businessName}

@@ -158,6 +158,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
     params = mergeSearchParam(params, "dateFrom", range?.dateFrom || null);
     params = mergeSearchParam(params, "dateTo", range?.dateTo || null);
     params = mergeSearchParam(params, "purpose", next.purpose === "all" ? null : next.purpose);
+    params = mergeSearchParam(params, "page", null);
     router.replace(`${PATHNAME}?${params.toString()}`);
   }
 

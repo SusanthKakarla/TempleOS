@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
-import type { EventNotificationListItem, ListRecentEventNotificationsOptions } from "@/lib/db/event-notifications";
 import type { NotificationListItem } from "@/lib/db/notifications";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,14 +17,6 @@ import { SocialLinksForm } from "./social-links-form";
 import { FaqsTable } from "./faqs-table";
 
 interface NotificationTabData {
-  summary: { sent: number; failed: number; pending: number };
-  notifications: EventNotificationListItem[];
-  eventId?: string;
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  sort?: ListRecentEventNotificationsOptions["sort"];
-  dir: "asc" | "desc";
   birthdayMedia: NotificationMedia | null;
   anniversaryMedia: NotificationMedia | null;
   donationMedia: NotificationMedia | null;
@@ -34,6 +25,7 @@ interface NotificationTabData {
   automatedNotifications: NotificationListItem[];
   category?: NotificationCategory;
   notifPage: number;
+  pageSize: number;
   automatedTotalCount: number;
   locale: SupportedLanguage;
 }
@@ -100,14 +92,6 @@ export function ChatbotSettingsTabs({
         <>
           <TabsContent value="notificationSettings">
             <NotificationSettingsContent
-              summary={notificationData.summary}
-              notifications={notificationData.notifications}
-              eventId={notificationData.eventId}
-              page={notificationData.page}
-              pageSize={notificationData.pageSize}
-              totalCount={notificationData.totalCount}
-              sort={notificationData.sort}
-              dir={notificationData.dir}
               birthdayMedia={notificationData.birthdayMedia}
               anniversaryMedia={notificationData.anniversaryMedia}
               donationMedia={notificationData.donationMedia}

@@ -9,17 +9,7 @@ import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import {
-  getEventNotificationSummary,
-  listRecentEventNotifications,
-  countEventNotificationsFiltered,
-  type ListRecentEventNotificationsOptions,
-} from "@/lib/db/event-notifications";
-import {
-  listRecentNotifications,
-  countNotificationsFiltered,
-  countStuckRetryingNotifications,
-} from "@/lib/db/notifications";
+import { listRecentNotifications, countNotificationsFiltered, countStuckRetryingNotifications } from "@/lib/db/notifications";
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
@@ -27,12 +17,9 @@ import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-con
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
-import { parsePageParam } from "@/lib/pagination";
+import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
 
-const NOTIFICATIONS_PAGE_SIZE = 50;
-
-const SORT_VALUES: ListRecentEventNotificationsOptions["sort"][] = ["date", "status"];
 const CATEGORY_VALUES: NotificationCategory[] = [
   "birthday",
   "anniversary",
@@ -56,10 +43,6 @@ interface ChatbotSettingsPageProps {
   searchParams: Promise<{
     whatsapp_connect_token?: string;
     whatsapp_connect_error?: string;
-    eventId?: string;
-    page?: string;
-    sort?: string;
-    dir?: string;
     category?: string;
     notifPage?: string;
   }>;
@@ -74,10 +57,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
 
   const notificationsEnabled = await isFeatureEnabled(session.tenantId, "notifications");
 
-  const { eventId, page: pageParam, sort: sortParam, dir: dirParam, category: categoryParam, notifPage: notifPageParam } = params;
-  const page = parsePageParam(pageParam);
-  const sort = SORT_VALUES.find((value) => value === sortParam);
-  const dir: "asc" | "desc" = dirParam === "asc" ? "asc" : "desc";
+  const { category: categoryParam, notifPage: notifPageParam } = params;
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
@@ -90,10 +70,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     getWhatsAppAccountByTenant(session.tenantId),
     notificationsEnabled
       ? Promise.all([
-          getEventNotificationSummary(session.tenantId),
-          listRecentEventNotifications(session.tenantId, { eventId, page, pageSize: NOTIFICATIONS_PAGE_SIZE, sort, dir }),
-          countEventNotificationsFiltered(session.tenantId, { eventId }),
-          listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: NOTIFICATIONS_PAGE_SIZE }),
+          listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: DEFAULT_PAGE_SIZE }),
           countNotificationsFiltered(session.tenantId, { category }),
           resolveLinkedMedia(session.tenantId, "birthday_devotee"),
           resolveLinkedMedia(session.tenantId, "anniversary_devotee"),
@@ -124,34 +101,21 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   );
 
   const notificationTabData = notificationData && {
-    summary: notificationData[0],
-    notifications: notificationData[1],
-    eventId,
-    page,
-    pageSize: NOTIFICATIONS_PAGE_SIZE,
-    totalCount: notificationData[2],
-    sort,
-    dir,
-    automatedNotifications: notificationData[3],
+    automatedNotifications: notificationData[0],
     category,
     notifPage,
-    automatedTotalCount: notificationData[4],
-    birthdayMedia: notificationData[5],
-    anniversaryMedia: notificationData[6],
-    donationMedia: notificationData[7],
-    festivalMedia: notificationData[8],
-    stuckRetrying: notificationData[9],
+    pageSize: DEFAULT_PAGE_SIZE,
+    automatedTotalCount: notificationData[1],
+    birthdayMedia: notificationData[2],
+    anniversaryMedia: notificationData[3],
+    donationMedia: notificationData[4],
+    festivalMedia: notificationData[5],
+    stuckRetrying: notificationData[6],
     locale,
   };
 
-  // Deep-link into whichever notification tab the URL params describe, so links from
-  // event pages / notification emails land on the right tab instead of always "info".
-  const defaultTab =
-    category || notifPageParam
-      ? "automatedNotifications"
-      : eventId || sortParam || pageParam
-        ? "notificationSettings"
-        : "info";
+  // Deep-link into the automated-notifications tab when the URL params describe filtering it.
+  const defaultTab = category || notifPageParam ? "automatedNotifications" : "info";
 
   const chatbotConfigSection = (
     <SettingsSection

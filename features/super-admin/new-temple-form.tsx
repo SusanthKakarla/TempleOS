@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fadeInUp, springSnappy } from "@/lib/motion";
@@ -147,7 +147,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
     setErrors(emptyErrors);
   }
 
-  /** Lightweight required-field presence check to gate step advancement — does not replace buildProvisionTemplePayload's real validation, which still runs unchanged on final submit. */
+  /** Lightweight required-field presence check to gate step advancement â€” does not replace buildProvisionTemplePayload's real validation, which still runs unchanged on final submit. */
   function canAdvance(fromStep: number): boolean {
     if (fromStep === 0) {
       return form.templeName.trim() !== "" && form.tenantSlug.trim() !== "" && form.timezone.trim() !== "";
@@ -259,7 +259,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                 <CardDescription>Core tenant record and contact details.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
-                <FloatingLabelInput
+                <LabeledInput
                   id="temple-name"
                   label="Temple name"
                   error={errors.fieldErrors.templeName}
@@ -267,7 +267,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                   onChange={(event) => updateField("templeName", event.target.value)}
                   required
                 />
-                <FloatingLabelInput
+                <LabeledInput
                   id="tenant-slug"
                   label="Tenant slug"
                   error={errors.fieldErrors.tenantSlug}
@@ -275,7 +275,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                   onChange={(event) => updateSlugField("tenantSlug", event.target.value)}
                   required
                 />
-                <FloatingLabelInput
+                <LabeledInput
                   id="contact-phone"
                   label="Contact phone"
                   icon={<Phone />}
@@ -283,7 +283,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                   value={form.contactPhone}
                   onChange={(event) => updateField("contactPhone", event.target.value)}
                 />
-                <FloatingLabelInput
+                <LabeledInput
                   id="timezone"
                   label="Timezone"
                   error={errors.fieldErrors.timezone}
@@ -317,7 +317,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                 <CardDescription>Subdomain for tenant login and routing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FloatingLabelInput
+                <LabeledInput
                   id="subdomain"
                   label="Subdomain slug"
                   error={errors.fieldErrors.subdomain}
@@ -344,7 +344,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FloatingLabelInput
+                  <LabeledInput
                     id="first-member-phone"
                     label="Phone number"
                     error={errors.fieldErrors.firstMemberPhone}
@@ -352,7 +352,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                     onChange={(event) => updateField("firstMemberPhone", event.target.value)}
                     required
                   />
-                  <FloatingLabelInput
+                  <LabeledInput
                     id="first-member-display-name"
                     label="Display name"
                     error={errors.fieldErrors.firstMemberDisplayName}
@@ -396,21 +396,21 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                 <CardDescription>Optional provisioning-time linkage details.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-3">
-                <FloatingLabelInput
+                <LabeledInput
                   id="whatsapp-phone"
                   label="WhatsApp phone"
                   error={errors.fieldErrors.whatsappPhoneNumber}
                   value={form.whatsappPhoneNumber}
                   onChange={(event) => updateField("whatsappPhoneNumber", event.target.value)}
                 />
-                <FloatingLabelInput
+                <LabeledInput
                   id="meta-phone-number-id"
                   label="Meta phone number ID"
                   error={errors.fieldErrors.metaPhoneNumberId}
                   value={form.metaPhoneNumberId}
                   onChange={(event) => updateField("metaPhoneNumberId", event.target.value)}
                 />
-                <FloatingLabelInput
+                <LabeledInput
                   id="meta-business-account-id"
                   label="Meta business account ID"
                   error={errors.fieldErrors.metaBusinessAccountId}

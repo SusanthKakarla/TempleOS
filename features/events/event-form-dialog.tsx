@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatDateTime } from "@/lib/date";
@@ -125,7 +125,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
           <DialogDescription>{mode === "create" ? t("createDescription") : t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="title"
             label={t("fields.title")}
             icon={<Type />}
@@ -142,7 +142,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
               rows={3}
             />
           </div>
-          <FloatingLabelInput
+          <LabeledInput
             id="location"
             label={t("fields.location")}
             icon={<MapPin />}
@@ -183,7 +183,7 @@ export function EventFormDialog({ mode, event, trigger, onSaved }: EventFormDial
               <p className="text-sm font-medium">{title}</p>
               <p className="text-xs text-muted-foreground">
                 {formatDateTime(previewDate, locale)}
-                {location ? ` · ${location}` : ""}
+                {location ? ` Â· ${location}` : ""}
               </p>
             </div>
           )}

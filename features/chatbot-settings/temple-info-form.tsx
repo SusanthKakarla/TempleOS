@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -56,7 +56,7 @@ export function TempleInfoForm({ tenant }: { tenant: Tenant }) {
       </CardHeader>
       <CardContent>
         <form id="temple-info-form" onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="temple-name"
             label={tForm("fields.name")}
             value={name}

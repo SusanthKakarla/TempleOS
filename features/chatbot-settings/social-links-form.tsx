@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Globe, Link as LinkIcon } from "lucide-react";
 import type { SocialPlatform, TempleSocialLink } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // lucide-react no longer ships trademarked brand/logo icons, so every
@@ -77,7 +77,7 @@ function SocialLinkRow({
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
         <Icon className="size-4 text-muted-foreground" />
       </div>
-      <FloatingLabelInput
+      <LabeledInput
         id={`social-link-${platform}`}
         label={label}
         wrapperClassName="flex-1"
