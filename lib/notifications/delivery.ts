@@ -14,9 +14,21 @@ import {
   markNotificationSent,
 } from "@/lib/db/notifications";
 import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
-import { sendImageMessage, sendTextMessage } from "@/lib/whatsapp/client";
 import { isPermanentWhatsAppError } from "@/lib/whatsapp/errors";
+import { sendNotification } from "@/lib/whatsapp/send-notification";
+import { logDeliveryOutcome } from "@/lib/whatsapp/delivery-logger";
 import type { Notification } from "@/types/db";
+
+/** metadata is Record<string,unknown> (JSONB) — enqueueNotification always populates it with string template vars, but this coerces defensively rather than asserting, since it also feeds the WhatsApp template variable resolver. */
+function metadataToTemplateContext(metadata: Record<string, unknown>): Record<string, string | undefined> {
+  const context: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      context[key] = String(value);
+    }
+  }
+  return context;
+}
 
 /**
  * Sends/marks every given `notifications` row. Called both from an after()
@@ -48,23 +60,22 @@ async function processOneNotification(id: string): Promise<void> {
   }
 
   const media = claimed.mediaId ? await getNotificationMediaById(claimed.tenantId, claimed.mediaId) : null;
-  const result = media
-    ? await sendImageMessage(
-        whatsappAccount.metaPhoneNumberId,
-        phone,
-        buildWhatsAppImageUrl(media.imageUrl),
-        claimed.message,
-      )
-    : await sendTextMessage(whatsappAccount.metaPhoneNumberId, phone, claimed.message);
-  if (result.success) {
-    await markNotificationSent(claimed.id, result.providerMessageId);
-    await logOutcome(claimed, "sent");
-  } else if (isPermanentWhatsAppError(result.errorCode)) {
-    const reason = result.error ?? "Permanent WhatsApp delivery failure";
-    await markNotificationPermanentlyFailed(claimed.id, reason);
-    await logOutcome(claimed, "failed", reason);
-  } else {
-    await failWithLog(claimed, result.error ?? "Unknown send error");
+  const result = await sendNotification({
+    tenantId: claimed.tenantId,
+    phoneNumberId: whatsappAccount.metaPhoneNumberId,
+    toPhone: phone,
+    // Matches an existing NotificationType where a Meta template has been
+    // configured for it (e.g. "user_welcome") — see lib/whatsapp/template-registry.ts.
+    templateKey: claimed.notificationType,
+    language: claimed.language,
+    freeFormMessage: claimed.message,
+    freeFormImageUrl: media ? buildWhatsAppImageUrl(media.imageUrl) : null,
+    templateContext: metadataToTemplateContext(claimed.metadata),
+  });
+
+  const { outcome, terminal } = await logDeliveryOutcome(claimed, result);
+  if (terminal) {
+    await logOutcome(claimed, outcome === "sent" ? "sent" : "failed", outcome === "failed" ? result.error : undefined);
   }
 }
 

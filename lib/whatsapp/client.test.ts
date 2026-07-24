@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { sendButtonMessage, sendImageMessage } from "./client";
+import { sendButtonMessage, sendImageMessage, sendTemplateMessage } from "./client";
 
 function jsonResponse(body: unknown, ok = true) {
   return { ok, status: ok ? 200 : 400, json: async () => body } as Response;
@@ -67,5 +67,62 @@ describe("sendButtonMessage", () => {
     const [, init] = vi.mocked(fetch).mock.calls[0];
     const body = JSON.parse(init!.body as string);
     expect(body.interactive.header).toEqual({ type: "image", image: { link: "https://cdn.example/banner.jpg" } });
+  });
+});
+
+describe("sendTemplateMessage", () => {
+  beforeEach(() => {
+    process.env.WHATSAPP_ACCESS_TOKEN = "test-token";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ messages: [{ id: "wamid.3" }] })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("builds a template payload with positional body params", async () => {
+    const result = await sendTemplateMessage("phone-id", "+919876543210", "welcome_user_v1", "en", [
+      "Sri Venkateswara Temple",
+      "Priya",
+    ]);
+
+    expect(result.success).toBe(true);
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const body = JSON.parse(init!.body as string);
+    expect(body.type).toBe("template");
+    expect(body.template).toEqual({
+      name: "welcome_user_v1",
+      language: { code: "en" },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: "Sri Venkateswara Temple" },
+            { type: "text", text: "Priya" },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("omits components entirely for a template with no variables", async () => {
+    await sendTemplateMessage("phone-id", "+919876543210", "no_variables_template", "en", []);
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const body = JSON.parse(init!.body as string);
+    expect(body.template.components).toBeUndefined();
+  });
+
+  it("surfaces Meta's structured error code on failure, same as the other send functions", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({ error: { message: "Template name does not exist", code: 132001 } }, false),
+      ),
+    );
+
+    const result = await sendTemplateMessage("phone-id", "+919876543210", "does_not_exist", "en", []);
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe(132001);
   });
 });

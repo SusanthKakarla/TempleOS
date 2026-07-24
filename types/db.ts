@@ -210,6 +210,34 @@ export interface WhatsAppAccount {
   updatedAt: string;
 }
 
+export type WhatsAppTemplateApprovalStatus = "pending" | "approved" | "rejected" | "disabled";
+export type WhatsAppTemplateMetaCategory = "UTILITY" | "MARKETING" | "AUTHENTICATION";
+
+/**
+ * A Meta-approved WhatsApp Message Template registered for one tenant's WABA.
+ * Distinct from NotificationTemplate (this app's own free-form message-body
+ * copy) — this row only ever gets used when the 24h conversation window is
+ * closed and Meta requires a pre-approved template to originate the message.
+ */
+export interface WhatsAppMessageTemplate {
+  id: string;
+  tenantId: string;
+  templateKey: string;
+  metaTemplateName: string;
+  language: string;
+  metaCategory: WhatsAppTemplateMetaCategory;
+  /** Ordered named variables, e.g. ["templeName","userName"] — mapped to Meta's positional {{1}},{{2}}... params in this order. */
+  variables: string[];
+  approvalStatus: WhatsAppTemplateApprovalStatus;
+  enabled: boolean;
+  fallbackStrategy: string | null;
+  description: string | null;
+  version: number;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** WhatsApp chatbot UI language. Only the bot's own chrome is localized —
  * admin-authored CMS content is never machine-translated (see migrations/006_language_support.sql). */
 export type SupportedLanguage = "en" | "te";
@@ -322,6 +350,15 @@ export interface Notification {
   deliveredAt: string | null;
   readAt: string | null;
   failureReason: string | null;
+  /** Which WhatsApp delivery path was actually used — null until the send is attempted (e.g. still pending, or in_app-only). */
+  deliveryStrategy: "free_form" | "template" | null;
+  /** The Meta template name actually sent, when deliveryStrategy is "template". */
+  templateUsed: string | null;
+  conversationStatus: "active" | "inactive" | "unknown" | null;
+  /** Meta's structured numeric error code, distinct from failureReason's free text. */
+  metaErrorCode: number | null;
+  /** e.g. "template_missing" / "invalid_variables" / permanent Meta error — see lib/whatsapp/errors.ts. */
+  metaErrorCategory: string | null;
   createdAt: string;
   updatedAt: string;
 }

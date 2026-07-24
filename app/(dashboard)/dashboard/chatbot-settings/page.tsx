@@ -9,9 +9,15 @@ import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import { listRecentNotifications, countNotificationsFiltered, countStuckRetryingNotifications } from "@/lib/db/notifications";
+import {
+  listRecentNotifications,
+  countNotificationsFiltered,
+  countStuckRetryingNotifications,
+  getWhatsAppDeliveryAnalytics,
+} from "@/lib/db/notifications";
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
+import { listTemplatesForTenant } from "@/lib/db/whatsapp-message-templates";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
 import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
@@ -63,13 +69,14 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
-  const [tenant, specialDays, sevas, faqs, socialLinks, whatsappAccount, notificationData] = await Promise.all([
+  const [tenant, specialDays, sevas, faqs, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
     getTenantById(session.tenantId),
     listSpecialDays(session.tenantId),
     listSevas(session.tenantId),
     listFaqs(session.tenantId),
     listSocialLinks(session.tenantId),
     getWhatsAppAccountByTenant(session.tenantId),
+    listTemplatesForTenant(session.tenantId),
     notificationsEnabled
       ? Promise.all([
           listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: DEFAULT_PAGE_SIZE }),
@@ -79,6 +86,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
           resolveLinkedMedia(session.tenantId, "donation_thank_you"),
           listNotificationMedia(session.tenantId, "festival_greeting"),
           countStuckRetryingNotifications(session.tenantId),
+          getWhatsAppDeliveryAnalytics(session.tenantId),
         ])
       : null,
   ]);
@@ -126,6 +134,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       totalCount={notificationData[1]}
       locale={locale}
       pathname="/dashboard/chatbot-settings"
+      analytics={notificationData[7]}
     />
   );
 
@@ -147,6 +156,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         socialLinks={socialLinks}
         notificationSettingsSlot={notificationSettingsSlot}
         automatedNotificationsSlot={automatedNotificationsSlot}
+        whatsappTemplates={whatsappTemplates}
         defaultTab={defaultTab}
       />
     </SettingsSection>

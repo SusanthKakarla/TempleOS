@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay } from "@/types/db";
+import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay, WhatsAppMessageTemplate } from "@/types/db";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TempleInfoForm } from "./temple-info-form";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
@@ -12,6 +12,7 @@ import { SevasTable } from "./sevas-table";
 import { ContactForm } from "./contact-form";
 import { SocialLinksForm } from "./social-links-form";
 import { FaqsTable } from "./faqs-table";
+import { WhatsAppTemplatesTab } from "./whatsapp-templates-tab";
 
 export function ChatbotSettingsTabs({
   tenant,
@@ -21,6 +22,7 @@ export function ChatbotSettingsTabs({
   socialLinks,
   notificationSettingsSlot,
   automatedNotificationsSlot,
+  whatsappTemplates,
   defaultTab = "info",
 }: {
   tenant: Tenant;
@@ -37,6 +39,8 @@ export function ChatbotSettingsTabs({
    */
   notificationSettingsSlot: ReactNode | null;
   automatedNotificationsSlot: ReactNode | null;
+  /** Plain data (not pre-rendered JSX) — WhatsAppTemplatesTab is itself a Client Component, so it's safe to import and render directly here, unlike the two Server Components above. */
+  whatsappTemplates: WhatsAppMessageTemplate[];
   defaultTab?: string;
 }) {
   const t = useTranslations("chatbotSettings.tabs");
@@ -54,6 +58,7 @@ export function ChatbotSettingsTabs({
             <TabsTrigger value="automatedNotifications">{t("automatedNotifications")}</TabsTrigger>
           </>
         )}
+        <TabsTrigger value="whatsappTemplates">{t("whatsappTemplates")}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="info" className="space-y-4">
@@ -85,6 +90,10 @@ export function ChatbotSettingsTabs({
           <TabsContent value="automatedNotifications">{automatedNotificationsSlot}</TabsContent>
         </>
       )}
+
+      <TabsContent value="whatsappTemplates">
+        <WhatsAppTemplatesTab templates={whatsappTemplates} />
+      </TabsContent>
     </Tabs>
   );
 }

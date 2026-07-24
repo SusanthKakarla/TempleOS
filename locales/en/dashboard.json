@@ -218,7 +218,8 @@
       "contact": "Contact & Social",
       "faq": "FAQ",
       "notificationSettings": "Notification Settings",
-      "automatedNotifications": "Automated Notifications"
+      "automatedNotifications": "Automated Notifications",
+      "whatsappTemplates": "WhatsApp Templates"
     },
     "common": {
       "save": "Save",
