@@ -167,6 +167,20 @@
       "title": "WhatsApp Chatbot Settings",
       "subtitle": "Everything here is read live by the WhatsApp chatbot — changes take effect immediately, no deployment needed."
     },
+    "connectPrompt": {
+      "title": "Connect WhatsApp to get started",
+      "description": "Connect your temple's WhatsApp Business Account below before configuring the chatbot — the settings won't take effect until a number is connected."
+    },
+    "sections": {
+      "chatbotConfig": {
+        "title": "Chatbot Configuration",
+        "description": "Temple info, timings, sevas, contact details, and FAQs the chatbot uses to answer devotees."
+      },
+      "notificationSettings": {
+        "title": "Notification Settings",
+        "description": "Delivery metrics, greeting media, and the event and automated notification logs."
+      }
+    },
     "whatsappConnection": {
       "cardTitle": "WhatsApp Business Connection",
       "cardDescription": "Connect your temple's own WhatsApp Business Account so the chatbot can send and receive messages.",
@@ -916,6 +930,10 @@
     "pageHeader": {
       "title": "Notification Center",
       "subtitle": "Automatic WhatsApp notifications sent to devotees when events are published, updated, or cancelled."
+    },
+    "deliveryWarning": {
+      "title": "WhatsApp delivery may be failing",
+      "description": "{count, plural, one {# notification has} other {# notifications have}} been retrying delivery for over an hour. Contact your platform administrator if this persists."
     },
     "metrics": {
       "totalSent": "Total Sent",

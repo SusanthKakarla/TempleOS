@@ -283,7 +283,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
                       <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{t(`status.${event.status}`)}</Badge>
                       {event.status !== "draft" && (
                         <Link
-                          href={`/dashboard/notifications?eventId=${event.id}`}
+                          href={`/dashboard/chatbot-settings?eventId=${event.id}`}
                           className="text-xs text-muted-foreground underline-offset-2 hover:underline"
                         >
                           {t("notifications")}

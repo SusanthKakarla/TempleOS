@@ -61,7 +61,7 @@ export function EventCard({
           </div>
           {event.status !== "draft" && (
             <Link
-              href={`/dashboard/notifications?eventId=${event.id}`}
+              href={`/dashboard/chatbot-settings?eventId=${event.id}`}
               className="text-xs text-muted-foreground underline-offset-2 hover:underline"
             >
               {t("notifications")}

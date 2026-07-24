@@ -195,10 +195,10 @@ export function UserImportWizard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("columns.row")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t("columns.row")}</TableHead>
                   <TableHead>{t("columns.name")}</TableHead>
-                  <TableHead>{t("columns.phone")}</TableHead>
-                  <TableHead>{t("columns.roles")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("columns.phone")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t("columns.roles")}</TableHead>
                   <TableHead>{t("columns.status")}</TableHead>
                   <TableHead>{t("columns.issues")}</TableHead>
                 </TableRow>
@@ -206,16 +206,16 @@ export function UserImportWizard() {
               <TableBody>
                 {visibleRows.map((row) => (
                   <TableRow key={row.rowNumber}>
-                    <TableCell className="text-muted-foreground">{row.rowNumber}</TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">{row.rowNumber}</TableCell>
                     <TableCell>{row.data.displayName || "—"}</TableCell>
-                    <TableCell>{row.data.phone || "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">{row.data.phone || "—"}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {row.data.roles.length > 0 ? row.data.roles.map((r) => tRoleNames(r)).join(", ") : "—"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[row.status]}>{t(`statusLabels.${row.status}`)}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="max-w-32 text-sm text-muted-foreground sm:max-w-none">
                       {row.errors.join("; ") || "—"}
                     </TableCell>
                   </TableRow>

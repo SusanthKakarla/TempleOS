@@ -15,6 +15,8 @@ import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDateTime } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 
@@ -43,6 +45,7 @@ interface NotificationListProps {
   totalCount: number;
   sort?: "date" | "status";
   dir: "asc" | "desc";
+  pathname?: string;
 }
 
 export function NotificationList({
@@ -53,6 +56,7 @@ export function NotificationList({
   totalCount,
   sort,
   dir,
+  pathname = "/dashboard/notifications",
 }: NotificationListProps) {
   const router = useRouter();
   const locale = useLocale() as SupportedLanguage;
@@ -88,7 +92,7 @@ export function NotificationList({
         </h2>
         <div className="flex items-center gap-2">
           {eventId && (
-            <Link href="/dashboard/notifications" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
+            <Link href={pathname} className="text-sm text-muted-foreground underline-offset-2 hover:underline">
               {t("clearFilter")}
             </Link>
           )}
@@ -110,62 +114,89 @@ export function NotificationList({
           description={t("emptyState.description")}
         />
       ) : (
-        <TableShell>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("columns.event")}</TableHead>
-                <TableHead>{t("columns.devotee")}</TableHead>
-                <TableHead>{t("columns.type")}</TableHead>
-                <SortableTableHead
-                  column="status"
-                  label={t("columns.status")}
-                  currentSort={sort}
-                  currentDir={dir}
-                  pathname="/dashboard/notifications"
-                />
-                <SortableTableHead
-                  column="date"
-                  label={t("columns.sent")}
-                  currentSort={sort}
-                  currentDir={dir}
-                  pathname="/dashboard/notifications"
-                />
-              </TableRow>
-            </TableHeader>
-            <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
+        <>
+          <div className="hidden md:block">
+            <TableShell>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("columns.event")}</TableHead>
+                    <TableHead>{t("columns.devotee")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("columns.type")}</TableHead>
+                    <SortableTableHead
+                      column="status"
+                      label={t("columns.status")}
+                      currentSort={sort}
+                      currentDir={dir}
+                      pathname={pathname}
+                    />
+                    <SortableTableHead
+                      column="date"
+                      label={t("columns.sent")}
+                      currentSort={sort}
+                      currentDir={dir}
+                      pathname={pathname}
+                    />
+                  </TableRow>
+                </TableHeader>
+                <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
+                  {notifications.map((n) => (
+                    <MotionTableRow key={n.id} variants={rowFadeIn}>
+                      <TableCell className="font-medium">{n.eventTitle}</TableCell>
+                      <TableCell>{n.devoteeName}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {t.has(`typeLabels.${n.notificationType}`)
+                          ? t(`typeLabels.${n.notificationType}`)
+                          : n.notificationType}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={STATUS_BADGE_VARIANT[n.deliveryStatus]} className="w-fit gap-1">
+                            <StatusIcon status={n.deliveryStatus} />
+                            {t(`statusLabels.${n.deliveryStatus}`)}
+                          </Badge>
+                          {n.failureReason && <span className="text-xs text-destructive">{n.failureReason}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {n.sentAt ? formatDateTime(n.sentAt, locale) : "—"}
+                      </TableCell>
+                    </MotionTableRow>
+                  ))}
+                </motion.tbody>
+              </Table>
+              <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={pathname} />
+            </TableShell>
+          </div>
+
+          <div className="space-y-3 md:hidden">
+            <MobileListView>
               {notifications.map((n) => (
-                <MotionTableRow key={n.id} variants={rowFadeIn}>
-                  <TableCell className="font-medium">{n.eventTitle}</TableCell>
-                  <TableCell>{n.devoteeName}</TableCell>
-                  <TableCell>
-                    {t.has(`typeLabels.${n.notificationType}`)
-                      ? t(`typeLabels.${n.notificationType}`)
-                      : n.notificationType}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={STATUS_BADGE_VARIANT[n.deliveryStatus]} className="w-fit gap-1">
-                        <StatusIcon status={n.deliveryStatus} />
-                        {t(`statusLabels.${n.deliveryStatus}`)}
-                      </Badge>
-                      {n.failureReason && <span className="text-xs text-destructive">{n.failureReason}</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {n.sentAt ? formatDateTime(n.sentAt, locale) : "—"}
-                  </TableCell>
-                </MotionTableRow>
+                <MobileListRow
+                  key={n.id}
+                  title={n.eventTitle}
+                  subtitle={
+                    t.has(`typeLabels.${n.notificationType}`)
+                      ? `${n.devoteeName} · ${t(`typeLabels.${n.notificationType}`)}`
+                      : `${n.devoteeName} · ${n.notificationType}`
+                  }
+                  badge={
+                    <Badge variant={STATUS_BADGE_VARIANT[n.deliveryStatus]} className="gap-1">
+                      <StatusIcon status={n.deliveryStatus} />
+                      {t(`statusLabels.${n.deliveryStatus}`)}
+                    </Badge>
+                  }
+                  trailing={
+                    <span className="text-xs whitespace-nowrap text-muted-foreground">
+                      {n.sentAt ? formatDateTime(n.sentAt, locale) : "—"}
+                    </span>
+                  }
+                />
               ))}
-            </motion.tbody>
-          </Table>
-          <PaginationControls
-            page={page}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            pathname="/dashboard/notifications"
-          />
-        </TableShell>
+            </MobileListView>
+            <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={pathname} />
+          </div>
+        </>
       )}
     </div>
   );

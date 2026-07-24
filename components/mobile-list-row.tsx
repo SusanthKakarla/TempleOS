@@ -7,7 +7,7 @@ import { useLongPress } from "@/hooks/use-long-press";
 import { cn } from "@/lib/utils";
 
 interface MobileListRowProps {
-  leading: ReactNode;
+  leading?: ReactNode;
   title: string;
   subtitle?: string;
   badge?: ReactNode;

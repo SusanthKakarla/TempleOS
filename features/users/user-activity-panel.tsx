@@ -29,11 +29,8 @@ export function UserActivityPanel({
   const [loading, setLoading] = useState(false);
 
   async function handleOpenChange(next: boolean) {
-    if (isControlled) {
-      controlledOnOpenChange?.(next);
-    } else {
-      setInternalOpen(next);
-    }
+    if (isControlled) controlledOnOpenChange?.(next);
+    else setInternalOpen(next);
     if (!next || entries !== null || loading) return;
     setLoading(true);
     try {
