@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { CalendarDays, LayoutGrid, PlusCircle, Rows3 } from "lucide-react";
 import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
@@ -279,17 +278,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
                   <TableCell>{formatEventTime(event, locale)}</TableCell>
                   <TableCell>{event.location ?? "—"}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{t(`status.${event.status}`)}</Badge>
-                      {event.status !== "draft" && (
-                        <Link
-                          href={`/dashboard/chatbot-settings?eventId=${event.id}`}
-                          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                        >
-                          {t("notifications")}
-                        </Link>
-                      )}
-                    </div>
+                    <Badge variant={STATUS_BADGE_VARIANT[event.status]}>{t(`status.${event.status}`)}</Badge>
                   </TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <EventFormDialog

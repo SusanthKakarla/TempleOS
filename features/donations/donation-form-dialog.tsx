@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dateTimeLocalValueToIso, isoToDateTimeLocalValue } from "@/features/events/datetime-local";
@@ -32,11 +32,11 @@ interface DonationFormDialogProps {
   mode: "create" | "edit";
   donation?: Donation;
   devotees: Devotee[];
-  /** Pre-selects a devotee and locks the picker — used from a devotee's own detail page. */
+  /** Pre-selects a devotee and locks the picker â€” used from a devotee's own detail page. */
   fixedDevoteeId?: string;
   trigger: ReactElement;
   onSaved: () => void;
-  /** Controlled open state — lets a caller open this dialog from elsewhere (e.g. tapping a mobile row, or an overflow menu item) instead of `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
+  /** Controlled open state â€” lets a caller open this dialog from elsewhere (e.g. tapping a mobile row, or an overflow menu item) instead of `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -175,7 +175,7 @@ export function DonationFormDialog({
               onValueChange={(value) => setDevoteeId(value ?? "")}
               disabled={Boolean(fixedDevoteeId)}
               items={Object.fromEntries(
-                devotees.map((devotee) => [devotee.id, `${devotee.displayName} · ${devotee.whatsappPhone}`]),
+                devotees.map((devotee) => [devotee.id, `${devotee.displayName} Â· ${devotee.whatsappPhone}`]),
               )}
             >
               <SelectTrigger id="devoteeId" className="w-full">
@@ -185,7 +185,7 @@ export function DonationFormDialog({
               <SelectContent>
                 {devotees.map((devotee) => (
                   <SelectItem key={devotee.id} value={devotee.id}>
-                    {devotee.displayName} · {devotee.whatsappPhone}
+                    {devotee.displayName} Â· {devotee.whatsappPhone}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -193,7 +193,7 @@ export function DonationFormDialog({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FloatingLabelInput
+            <LabeledInput
               id="amount"
               label={tForm("fields.amount")}
               icon={<IndianRupee />}

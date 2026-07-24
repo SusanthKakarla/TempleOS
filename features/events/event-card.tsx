@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, MapPin } from "lucide-react";
 import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
@@ -59,14 +58,6 @@ export function EventCard({
               {t(`status.${event.status}`)}
             </Badge>
           </div>
-          {event.status !== "draft" && (
-            <Link
-              href={`/dashboard/chatbot-settings?eventId=${event.id}`}
-              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-            >
-              {t("notifications")}
-            </Link>
-          )}
         </CardHeader>
         <CardContent className="space-y-2">
           {event.description && (

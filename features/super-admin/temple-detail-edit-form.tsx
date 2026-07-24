@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tenant } from "@/types/db";
 import {
@@ -95,7 +95,7 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <FloatingLabelInput
+        <LabeledInput
           id="edit-temple-name"
           label="Temple name"
           error={errors.fieldErrors.name}
@@ -103,14 +103,14 @@ export function TempleDetailEditForm({ tenant }: TempleDetailEditFormProps) {
           onChange={(event) => updateField("name", event.target.value)}
           required
         />
-        <FloatingLabelInput
+        <LabeledInput
           id="edit-contact-phone"
           label="Contact phone"
           error={errors.fieldErrors.defaultContactPhone}
           value={form.defaultContactPhone}
           onChange={(event) => updateField("defaultContactPhone", event.target.value)}
         />
-        <FloatingLabelInput
+        <LabeledInput
           id="edit-timezone"
           label="Timezone"
           error={errors.fieldErrors.timezone}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 
 export function AddSuperAdminDialog({ trigger }: { trigger: ReactElement }) {
   const router = useRouter();
@@ -70,7 +70,7 @@ export function AddSuperAdminDialog({ trigger }: { trigger: ReactElement }) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="add-super-admin-name"
             label="Full name"
             icon={<User />}
@@ -78,7 +78,7 @@ export function AddSuperAdminDialog({ trigger }: { trigger: ReactElement }) {
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="add-super-admin-phone"
             label="Phone number"
             icon={<Phone />}

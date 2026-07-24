@@ -9,17 +9,7 @@ import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import {
-  getEventNotificationSummary,
-  listRecentEventNotifications,
-  countEventNotificationsFiltered,
-  type ListRecentEventNotificationsOptions,
-} from "@/lib/db/event-notifications";
-import {
-  listRecentNotifications,
-  countNotificationsFiltered,
-  countStuckRetryingNotifications,
-} from "@/lib/db/notifications";
+import { listRecentNotifications, countNotificationsFiltered, countStuckRetryingNotifications } from "@/lib/db/notifications";
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
@@ -33,7 +23,6 @@ import type { NotificationCategory, NotificationMedia, SupportedLanguage } from 
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
-const SORT_VALUES: ListRecentEventNotificationsOptions["sort"][] = ["date", "status"];
 const CATEGORY_VALUES: NotificationCategory[] = [
   "birthday",
   "anniversary",
@@ -57,10 +46,6 @@ interface ChatbotSettingsPageProps {
   searchParams: Promise<{
     whatsapp_connect_token?: string;
     whatsapp_connect_error?: string;
-    eventId?: string;
-    page?: string;
-    sort?: string;
-    dir?: string;
     category?: string;
     notifPage?: string;
   }>;
@@ -75,10 +60,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
 
   const notificationsEnabled = await isFeatureEnabled(session.tenantId, "notifications");
 
-  const { eventId, page: pageParam, sort: sortParam, dir: dirParam, category: categoryParam, notifPage: notifPageParam } = params;
-  const page = parsePageParam(pageParam);
-  const sort = SORT_VALUES.find((value) => value === sortParam);
-  const dir = dirParam === "asc" ? "asc" : "desc";
+  const { category: categoryParam, notifPage: notifPageParam } = params;
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
@@ -91,9 +73,6 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     getWhatsAppAccountByTenant(session.tenantId),
     notificationsEnabled
       ? Promise.all([
-          getEventNotificationSummary(session.tenantId),
-          listRecentEventNotifications(session.tenantId, { eventId, page, pageSize: NOTIFICATIONS_PAGE_SIZE, sort, dir }),
-          countEventNotificationsFiltered(session.tenantId, { eventId }),
           listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: NOTIFICATIONS_PAGE_SIZE }),
           countNotificationsFiltered(session.tenantId, { category }),
           resolveLinkedMedia(session.tenantId, "birthday_devotee"),
@@ -136,7 +115,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   );
 
   const notificationSectionDefaultOpen = Boolean(
-    eventId || category || notifPageParam || sortParam || (notificationData && notificationData[9] > 0),
+    category || notifPageParam || (notificationData && notificationData[6] > 0),
   );
 
   const notificationSection = notificationData && (
@@ -147,23 +126,16 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       defaultOpen={notificationSectionDefaultOpen}
     >
       <NotificationSettingsContent
-        summary={notificationData[0]}
-        notifications={notificationData[1]}
-        eventId={eventId}
-        page={page}
-        pageSize={NOTIFICATIONS_PAGE_SIZE}
-        totalCount={notificationData[2]}
-        sort={sort}
-        dir={dir}
-        automatedNotifications={notificationData[3]}
+        automatedNotifications={notificationData[0]}
         category={category}
         notifPage={notifPage}
-        automatedTotalCount={notificationData[4]}
-        birthdayMedia={notificationData[5]}
-        anniversaryMedia={notificationData[6]}
-        donationMedia={notificationData[7]}
-        festivalMedia={notificationData[8]}
-        stuckRetrying={notificationData[9]}
+        pageSize={NOTIFICATIONS_PAGE_SIZE}
+        automatedTotalCount={notificationData[1]}
+        birthdayMedia={notificationData[2]}
+        anniversaryMedia={notificationData[3]}
+        donationMedia={notificationData[4]}
+        festivalMedia={notificationData[5]}
+        stuckRetrying={notificationData[6]}
         locale={locale}
       />
     </SettingsSection>

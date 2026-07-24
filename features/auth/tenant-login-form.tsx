@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { fadeInUp, springSoft } from "@/lib/motion";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { Button } from "@/components/ui/button";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import {
   Card,
   CardContent,
@@ -156,7 +156,7 @@ export function TenantLoginForm() {
           sendBlockedTimeoutRef.current = null;
         }, 60_000);
       }
-      // The widget may be left in a used/invalid state after any failure —
+      // The widget may be left in a used/invalid state after any failure â€”
       // clear it so the next attempt (retry, or a different number) always
       // gets a fresh one instead of silently failing.
       resetVerifier();
@@ -191,7 +191,7 @@ export function TenantLoginForm() {
         devLog("Session creation failed", response.status, body.error);
 
         if (body.code === "NOT_AUTHORIZED") {
-          // Authentication succeeded — the phone number just isn't provisioned
+          // Authentication succeeded â€” the phone number just isn't provisioned
           // for dashboard access. That's a distinct outcome from a login
           // failure, so it gets its own page rather than an inline error.
           router.push(`/access-denied?phone=${encodeURIComponent(fullPhone)}`);
@@ -243,7 +243,7 @@ export function TenantLoginForm() {
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="flex gap-2">
                   <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
-                  <FloatingLabelInput
+                  <LabeledInput
                     id="phone"
                     label="Phone number"
                     type="tel"
@@ -272,7 +272,7 @@ export function TenantLoginForm() {
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <FloatingLabelInput
+                <LabeledInput
                   id="otp"
                   label="Verification code"
                   inputMode="numeric"

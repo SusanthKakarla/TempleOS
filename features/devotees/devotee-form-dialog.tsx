@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
@@ -27,7 +27,7 @@ interface DevoteeFormDialogProps {
   devotee?: Devotee;
   trigger: ReactElement;
   onSaved: () => void;
-  /** Controlled open state — lets a caller open this dialog from elsewhere (e.g. an overflow menu's "Edit" item, or a FloatingActionButton) instead of the given `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
+  /** Controlled open state â€” lets a caller open this dialog from elsewhere (e.g. an overflow menu's "Edit" item, or a FloatingActionButton) instead of the given `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -160,7 +160,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="displayName"
             label={t("fields.name")}
             icon={<User />}
@@ -168,7 +168,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="whatsappPhone"
             label={t("fields.phoneNumber")}
             icon={<Phone />}
@@ -190,7 +190,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 />
               </div>
             </div>
-            <FloatingLabelInput
+            <LabeledInput
               id="birthStar"
               label={t("fields.birthStar")}
               icon={<Sparkles />}
@@ -198,7 +198,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               onChange={(e) => setBirthStar(e.target.value)}
             />
           </div>
-          <FloatingLabelInput
+          <LabeledInput
             id="ancestralLineage"
             label={t("fields.gothram")}
             icon={<Users />}

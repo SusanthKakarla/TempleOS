@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Mail, MapPin, Phone, Link as LinkIcon } from "lucide-react";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ContactForm({ tenant }: { tenant: Tenant }) {
@@ -54,14 +54,14 @@ export function ContactForm({ tenant }: { tenant: Tenant }) {
       </CardHeader>
       <CardContent>
         <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="contact-phone"
             label={tForm("fields.phone")}
             icon={<Phone />}
             value={defaultContactPhone}
             onChange={(e) => setDefaultContactPhone(e.target.value)}
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="contact-email"
             label={tForm("fields.email")}
             icon={<Mail />}
@@ -69,14 +69,14 @@ export function ContactForm({ tenant }: { tenant: Tenant }) {
             value={contactEmail}
             onChange={(e) => setContactEmail(e.target.value)}
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="contact-address"
             label={tForm("fields.address")}
             icon={<MapPin />}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="contact-maps"
             label={tForm("fields.mapsLink")}
             icon={<LinkIcon />}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { ROLE_CODES, type RoleCode } from "@/types/db";
 
 export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement; onInvited: () => void }) {
@@ -83,7 +83,7 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
           <DialogDescription>{tDialog("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="invite-name"
             label={tDialog("fields.name")}
             icon={<User />}
@@ -91,7 +91,7 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
-          <FloatingLabelInput
+          <LabeledInput
             id="invite-phone"
             label={tDialog("fields.phone")}
             icon={<Phone />}

@@ -4,19 +4,14 @@ import type {
   EventNotificationDeliveryStatus,
   EventNotificationType,
 } from "@/types/db";
-import { computeOffset } from "@/lib/pagination";
 
 /**
  * event_notifications no longer receives new rows — new/updated/cancelled
  * event announcements now enqueue through lib/db/event-announcements.ts into
  * the generic `notifications` table instead (same table/worker/retry/logging
- * pipeline every other notification type already used). What remains here
- * is intentionally kept alive for two purposes only: reading historical rows
- * (the Notifications page's legacy table, and the summary counts) and
- * retrying already-failed historical rows via the "Resend failed" action
- * (app/api/events/[id]/notifications/resend/route.ts) — both harmless,
- * self-limiting concerns now that the table is never written to for new
- * events.
+ * pipeline every other notification type already used). What remains here is
+ * the delivery engine for whatever historical rows are still pending/retrying
+ * (the cron sweep in app/api/cron/process-event-notifications/route.ts).
  */
 
 interface EventNotificationRow {
@@ -125,130 +120,4 @@ export async function markEventNotificationFailed(
      WHERE id = $1`,
     [id, attemptCount, reason, deliveryStatus, nextAttemptAt],
   );
-}
-
-/** Resend action — resets only currently-failed rows for one event. */
-export async function resendFailedEventNotifications(tenantId: string, eventId: string): Promise<string[]> {
-  const { rows } = await getPool().query<{ id: string }>(
-    `UPDATE event_notifications
-     SET delivery_status = 'pending', attempt_count = 0, next_attempt_at = now(), failure_reason = NULL, updated_at = now()
-     WHERE tenant_id = $1 AND event_id = $2 AND delivery_status = 'failed'
-     RETURNING id`,
-    [tenantId, eventId],
-  );
-  return rows.map((r) => r.id);
-}
-
-export interface EventNotificationSummary {
-  sent: number;
-  failed: number;
-  pending: number;
-  total: number;
-}
-
-export async function getEventNotificationSummary(tenantId: string): Promise<EventNotificationSummary> {
-  const { rows } = await getPool().query<{ delivery_status: EventNotificationDeliveryStatus; count: string }>(
-    `SELECT delivery_status, count(*) FROM event_notifications WHERE tenant_id = $1 GROUP BY delivery_status`,
-    [tenantId],
-  );
-
-  const summary: EventNotificationSummary = { sent: 0, failed: 0, pending: 0, total: 0 };
-  for (const row of rows) {
-    const count = Number(row.count);
-    summary.total += count;
-    if (row.delivery_status === "sent" || row.delivery_status === "delivered") summary.sent += count;
-    else if (row.delivery_status === "failed") summary.failed += count;
-    else summary.pending += count; // pending, queued, retrying
-  }
-  return summary;
-}
-
-export interface EventNotificationListItem extends EventNotification {
-  eventTitle: string;
-  devoteeName: string;
-}
-
-export interface ListRecentEventNotificationsOptions {
-  eventId?: string;
-  /** Legacy fixed-window param — a plain LIMIT with no OFFSET. Superseded by `page`/`pageSize` when `page` is set. */
-  limit?: number;
-  page?: number;
-  pageSize?: number;
-  sort?: "date" | "status";
-  dir?: "asc" | "desc";
-}
-
-const NOTIFICATION_SORT_COLUMNS: Record<NonNullable<ListRecentEventNotificationsOptions["sort"]>, string> = {
-  date: "n.created_at",
-  status: "n.delivery_status",
-};
-
-export async function listRecentEventNotifications(
-  tenantId: string,
-  opts: ListRecentEventNotificationsOptions = {},
-): Promise<EventNotificationListItem[]> {
-  const conditions = ["n.tenant_id = $1"];
-  const params: unknown[] = [tenantId];
-
-  if (opts.eventId) {
-    params.push(opts.eventId);
-    conditions.push(`n.event_id = $${params.length}`);
-  }
-
-  const sortColumn = opts.sort ? NOTIFICATION_SORT_COLUMNS[opts.sort] : "n.created_at";
-  const dir = opts.dir === "asc" ? "ASC" : "DESC";
-
-  let query = `SELECT n.*, e.title AS event_title, d.display_name AS devotee_name
-     FROM event_notifications n
-     JOIN events e ON e.id = n.event_id
-     JOIN devotees d ON d.id = n.devotee_id
-     WHERE ${conditions.join(" AND ")}
-     ORDER BY ${sortColumn} ${dir}`;
-
-  if (opts.page !== undefined) {
-    const pageSize = opts.pageSize ?? 50;
-    params.push(pageSize, computeOffset(opts.page, pageSize));
-    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
-  } else {
-    params.push(opts.limit ?? 50);
-    query += ` LIMIT $${params.length}`;
-  }
-
-  const { rows } = await getPool().query<EventNotificationRow & { event_title: string; devotee_name: string }>(
-    query,
-    params,
-  );
-  return rows.map((row) => ({
-    ...mapEventNotification(row),
-    eventTitle: row.event_title,
-    devoteeName: row.devotee_name,
-  }));
-}
-
-export async function countEventNotificationsFiltered(
-  tenantId: string,
-  opts: { eventId?: string } = {},
-): Promise<number> {
-  const conditions = ["tenant_id = $1"];
-  const params: unknown[] = [tenantId];
-  if (opts.eventId) {
-    params.push(opts.eventId);
-    conditions.push(`event_id = $${params.length}`);
-  }
-  const { rows } = await getPool().query<{ count: string }>(
-    `SELECT count(*) AS count FROM event_notifications WHERE ${conditions.join(" AND ")}`,
-    params,
-  );
-  return Number(rows[0]?.count ?? 0);
-}
-
-export async function listEventNotificationsForEvent(
-  tenantId: string,
-  eventId: string,
-): Promise<EventNotification[]> {
-  const { rows } = await getPool().query<EventNotificationRow>(
-    `SELECT * FROM event_notifications WHERE tenant_id = $1 AND event_id = $2 ORDER BY created_at DESC`,
-    [tenantId, eventId],
-  );
-  return rows.map(mapEventNotification);
 }
