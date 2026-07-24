@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
+import { PaginationControls } from "@/components/pagination-controls";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { formatDate as formatDateLocalized } from "@/lib/date";
 import { SpecialDayFormDialog } from "./special-day-form-dialog";
 
@@ -57,6 +59,8 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
   const tCommon = useTranslations("chatbotSettings.common");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pagedSpecialDays = specialDays.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE);
 
   function refresh() {
     router.refresh();
@@ -120,7 +124,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {specialDays.map((specialDay) => (
+                  {pagedSpecialDays.map((specialDay) => (
                     <TableRow key={specialDay.id}>
                       <TableCell>{formatDate(specialDay.date, locale)}</TableCell>
                       <TableCell>{specialDay.occasion}</TableCell>
@@ -155,11 +159,12 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                   ))}
                 </TableBody>
               </Table>
+              <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={specialDays.length} onPageChange={setPage} />
             </div>
 
             <div className="md:hidden">
               <MobileListView>
-                {specialDays.map((specialDay) => (
+                {pagedSpecialDays.map((specialDay) => (
                   <MobileListRow
                     key={specialDay.id}
                     title={specialDay.occasion}
@@ -196,6 +201,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
                   />
                 ))}
               </MobileListView>
+              <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={specialDays.length} onPageChange={setPage} />
             </div>
           </>
         )}

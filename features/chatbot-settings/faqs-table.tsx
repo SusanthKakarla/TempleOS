@@ -7,6 +7,8 @@ import { HelpCircle, Plus } from "lucide-react";
 import type { TempleFaq } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PaginationControls } from "@/components/pagination-controls";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { FaqFormDialog } from "./faq-form-dialog";
 
 export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
@@ -15,6 +17,8 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
   const tForm = useTranslations("chatbotSettings.faqsTable");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pagedFaqs = faqs.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE);
 
   function refresh() {
     router.refresh();
@@ -66,35 +70,38 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
             <p className="text-sm text-muted-foreground">{tForm("emptyState")}</p>
           </div>
         ) : (
-          <div className="divide-y rounded-xl border">
-            {faqs.map((faq) => (
-              <div key={faq.id} className="flex items-start justify-between gap-4 p-4">
-                <div className="min-w-0">
-                  <p className="font-medium">{faq.question}</p>
-                  <p className="text-sm text-muted-foreground">{faq.answer}</p>
+          <div className="overflow-hidden rounded-xl border">
+            <div className="divide-y">
+              {pagedFaqs.map((faq) => (
+                <div key={faq.id} className="flex items-start justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="font-medium">{faq.question}</p>
+                    <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <FaqFormDialog
+                      mode="edit"
+                      faq={faq}
+                      trigger={
+                        <Button variant="outline" size="sm" disabled={pendingId === faq.id}>
+                          {t("edit")}
+                        </Button>
+                      }
+                      onSaved={refresh}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pendingId === faq.id}
+                      onClick={() => handleDelete(faq)}
+                    >
+                      {t("delete")}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <FaqFormDialog
-                    mode="edit"
-                    faq={faq}
-                    trigger={
-                      <Button variant="outline" size="sm" disabled={pendingId === faq.id}>
-                        {t("edit")}
-                      </Button>
-                    }
-                    onSaved={refresh}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={pendingId === faq.id}
-                    onClick={() => handleDelete(faq)}
-                  >
-                    {t("delete")}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={faqs.length} onPageChange={setPage} />
           </div>
         )}
       </CardContent>

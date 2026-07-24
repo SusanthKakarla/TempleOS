@@ -18,10 +18,8 @@ import { SettingsSection } from "@/features/chatbot-settings/settings-section";
 import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
-import { parsePageParam } from "@/lib/pagination";
+import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
-
-const NOTIFICATIONS_PAGE_SIZE = 50;
 
 const CATEGORY_VALUES: NotificationCategory[] = [
   "birthday",
@@ -73,7 +71,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     getWhatsAppAccountByTenant(session.tenantId),
     notificationsEnabled
       ? Promise.all([
-          listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: NOTIFICATIONS_PAGE_SIZE }),
+          listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: DEFAULT_PAGE_SIZE }),
           countNotificationsFiltered(session.tenantId, { category }),
           resolveLinkedMedia(session.tenantId, "birthday_devotee"),
           resolveLinkedMedia(session.tenantId, "anniversary_devotee"),
@@ -129,7 +127,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         automatedNotifications={notificationData[0]}
         category={category}
         notifPage={notifPage}
-        pageSize={NOTIFICATIONS_PAGE_SIZE}
+        pageSize={DEFAULT_PAGE_SIZE}
         automatedTotalCount={notificationData[1]}
         birthdayMedia={notificationData[2]}
         anniversaryMedia={notificationData[3]}

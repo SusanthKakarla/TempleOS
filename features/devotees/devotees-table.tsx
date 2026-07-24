@@ -155,6 +155,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
       const isDefault = key === "status" ? value === "active" : value === "all";
       params = mergeSearchParam(params, key, isDefault ? null : value);
     }
+    params = mergeSearchParam(params, "page", null);
     router.replace(`${PATHNAME}?${params.toString()}`);
   }
 

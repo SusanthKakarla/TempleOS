@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
+import { PaginationControls } from "@/components/pagination-controls";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { formatInr } from "@/lib/currency";
 import { SevaFormDialog } from "./seva-form-dialog";
 
@@ -36,6 +38,8 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
   const tForm = useTranslations("chatbotSettings.sevasTable");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pagedSevas = sevas.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE);
 
   function refresh() {
     router.refresh();
@@ -101,7 +105,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sevas.map((seva) => (
+                  {pagedSevas.map((seva) => (
                     <TableRow key={seva.id}>
                       <TableCell>
                         <p className="font-medium">{seva.name}</p>
@@ -143,11 +147,12 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                   ))}
                 </TableBody>
               </Table>
+              <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={sevas.length} onPageChange={setPage} />
             </div>
 
             <div className="md:hidden">
               <MobileListView>
-                {sevas.map((seva) => (
+                {pagedSevas.map((seva) => (
                   <MobileListRow
                     key={seva.id}
                     title={seva.name}
@@ -182,6 +187,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
                   />
                 ))}
               </MobileListView>
+              <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={sevas.length} onPageChange={setPage} />
             </div>
           </>
         )}

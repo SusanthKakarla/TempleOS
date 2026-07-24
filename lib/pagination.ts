@@ -1,4 +1,4 @@
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 10;
 
 export function parsePageParam(raw?: string): number {
   const parsed = raw ? Number.parseInt(raw, 10) : 1;

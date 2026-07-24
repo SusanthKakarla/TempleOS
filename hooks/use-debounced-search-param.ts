@@ -22,7 +22,10 @@ export function useDebouncedSearchParam(
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const params = mergeSearchParam(searchParams, paramName, value.trim() || null);
+      const trimmed = value.trim();
+      if (trimmed === (searchParams.get(paramName) ?? "")) return;
+      let params = mergeSearchParam(searchParams, paramName, trimmed || null);
+      params = mergeSearchParam(params, "page", null);
       router.replace(`${pathname}?${params.toString()}`);
     }, delayMs);
     return () => clearTimeout(timeout);

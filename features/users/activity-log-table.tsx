@@ -1,22 +1,29 @@
-import { getLocale, getTranslations } from "next-intl/server";
+"use client";
+
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { History } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
+import { PaginationControls } from "@/components/pagination-controls";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { formatDateTime } from "@/lib/date";
 import type { AuditLogEntry, SupportedLanguage } from "@/types/db";
 
-export async function ActivityLogTable({
+export function ActivityLogTable({
   entries,
   memberNames,
 }: {
   entries: AuditLogEntry[];
   memberNames: Record<string, string>;
 }) {
-  const locale = (await getLocale()) as SupportedLanguage;
-  const t = await getTranslations("userManagement.activityLog");
+  const locale = useLocale() as SupportedLanguage;
+  const t = useTranslations("userManagement.activityLog");
+  const [page, setPage] = useState(1);
+  const pagedEntries = entries.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE);
 
   function actorName(id: string): string {
     return memberNames[id] ?? id.slice(0, 8);
@@ -44,7 +51,7 @@ export async function ActivityLogTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {entries.map((entry) => (
+              {pagedEntries.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium">{actionLabel(entry.action)}</TableCell>
                   <TableCell>{entry.targetId ? actorName(entry.targetId) : "—"}</TableCell>
@@ -54,12 +61,13 @@ export async function ActivityLogTable({
               ))}
             </TableBody>
           </Table>
+          <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={entries.length} onPageChange={setPage} />
         </TableShell>
       </div>
 
-      <div className="md:hidden">
+      <div className="space-y-3 md:hidden">
         <MobileListView>
-          {entries.map((entry) => (
+          {pagedEntries.map((entry) => (
             <MobileListRow
               key={entry.id}
               title={actionLabel(entry.action)}
@@ -72,6 +80,7 @@ export async function ActivityLogTable({
             />
           ))}
         </MobileListView>
+        <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={entries.length} onPageChange={setPage} />
       </div>
     </>
   );

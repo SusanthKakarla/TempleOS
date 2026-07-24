@@ -88,6 +88,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
     for (const [key, value] of Object.entries(next)) {
       params = mergeSearchParam(params, key, value === "all" ? null : value);
     }
+    params = mergeSearchParam(params, "page", null);
     router.replace(`${PATHNAME}?${params.toString()}`);
   }
 
@@ -173,7 +174,7 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
         title={t("pageHeader.title")}
         subtitle={t("pageHeader.subtitle")}
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
             <Tabs value={view} onValueChange={(v) => setView(v as "table" | "card")} className="hidden md:block">
               <TabsList>
                 <TabsTrigger value="table">
@@ -187,6 +188,60 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
               </TabsList>
             </Tabs>
             <ExportMenu exportUrl="/api/events/export" selectedIds={selectedIds} moduleLabel="events" />
+            <FilterBottomSheet
+              title={tCommon("filters")}
+              activeCount={activeFilterCount}
+              onOpenChange={(open) => {
+                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+              }}
+              onReset={() => {
+                const reset: PendingFilters = { when: "all", status: "all" };
+                setPendingFilters(reset);
+                applyFilters(reset);
+              }}
+              onApply={() => applyFilters(pendingFilters)}
+            >
+              <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <Label>{t("filters.whenLabel")}</Label>
+                  <Select
+                    value={pendingFilters.when}
+                    onValueChange={(v) => setPendingFilters((f) => ({ ...f, when: v ?? "all" }))}
+                    items={whenItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(whenItems).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("filters.statusLabel")}</Label>
+                  <Select
+                    value={pendingFilters.status}
+                    onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
+                    items={statusItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(statusItems).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </FilterBottomSheet>
             <EventFormDialog
               mode="create"
               trigger={
@@ -197,66 +252,9 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
               }
               onSaved={refresh}
             />
-          </>
+          </div>
         }
       />
-
-      <div className="flex justify-end">
-        <FilterBottomSheet
-          title={tCommon("filters")}
-          activeCount={activeFilterCount}
-          onOpenChange={(open) => {
-            if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-          }}
-          onReset={() => {
-            const reset: PendingFilters = { when: "all", status: "all" };
-            setPendingFilters(reset);
-            applyFilters(reset);
-          }}
-          onApply={() => applyFilters(pendingFilters)}
-        >
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label>{t("filters.whenLabel")}</Label>
-              <Select
-                value={pendingFilters.when}
-                onValueChange={(v) => setPendingFilters((f) => ({ ...f, when: v ?? "all" }))}
-                items={whenItems}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(whenItems).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("filters.statusLabel")}</Label>
-              <Select
-                value={pendingFilters.status}
-                onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
-                items={statusItems}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(statusItems).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </FilterBottomSheet>
-      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -301,29 +299,35 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
               </motion.div>
             ))}
           </motion.div>
+          <div className="md:hidden">
+            <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
+          </div>
 
           <div className="hidden md:block">
             {view === "card" ? (
-              <motion.div
-                initial="hidden"
-                animate="show"
-                variants={staggerContainer()}
-                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-              >
-                {events.map((event) => (
-                  <motion.div key={event.id} variants={rowFadeIn}>
-                    <EventCard
-                      event={event}
-                      pending={pendingId === event.id}
-                      onSaved={refresh}
-                      onTogglePublish={handleTogglePublish}
-                      onCancel={handleCancel}
-                      onReopen={handleReopen}
-                      onDelete={handleDelete}
-                    />
-                  </motion.div>
-                ))}
-              </motion.div>
+              <>
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={staggerContainer()}
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                >
+                  {events.map((event) => (
+                    <motion.div key={event.id} variants={rowFadeIn}>
+                      <EventCard
+                        event={event}
+                        pending={pendingId === event.id}
+                        onSaved={refresh}
+                        onTogglePublish={handleTogglePublish}
+                        onCancel={handleCancel}
+                        onReopen={handleReopen}
+                        onDelete={handleDelete}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+                <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
+              </>
             ) : (
               <TableShell>
           <Table>

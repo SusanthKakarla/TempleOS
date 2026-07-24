@@ -113,6 +113,7 @@ export function UsersTable({
     for (const [key, value] of Object.entries(next)) {
       params = mergeSearchParam(params, key, value === "all" ? null : value);
     }
+    params = mergeSearchParam(params, "page", null);
     router.replace(`${pathname}?${params.toString()}`);
   }
 
