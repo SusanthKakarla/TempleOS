@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { MobileListView } from "@/components/mobile-list-view";
+import { MobileListRow } from "@/components/mobile-list-row";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
@@ -54,28 +57,19 @@ export default async function SuperAdminTempleDetailPage({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-4">
-        <Button
-          variant="ghost"
-          className="px-0"
-          render={<Link href="/super-admin/temples" />}
-        >
-          <ArrowLeft className="size-4" />
-          Temples
-        </Button>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              Super Admin
-            </p>
-            <h1 className="text-2xl font-semibold tracking-normal">
-              {temple.tenant.name}
-            </h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Tenant details, domain setup, and member roles.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+      <Button
+        variant="ghost"
+        className="px-0"
+        render={<Link href="/super-admin/temples" />}
+      >
+        <ArrowLeft className="size-4" />
+        Temples
+      </Button>
+      <PageHeader
+        title={temple.tenant.name}
+        subtitle="Tenant details, domain setup, and member roles."
+        actions={
+          <>
             <Badge variant="outline">{temple.tenant.slug}</Badge>
             {temple.tenant.status !== "active" && (
               <Badge variant="destructive">
@@ -83,9 +77,9 @@ export default async function SuperAdminTempleDetailPage({
                 {formatTitle(temple.tenant.status)}
               </Badge>
             )}
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <section className="grid gap-4 lg:grid-cols-2">
           <div className="glass-card rounded-2xl p-4">
@@ -203,61 +197,88 @@ export default async function SuperAdminTempleDetailPage({
               className="rounded-none border-none py-10"
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Manage Roles</TableHead>
-                  <TableHead className="text-right">Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {temple.members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell>
-                      <div className="min-w-56">
-                        <p className="font-medium">{member.displayName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {member.personId}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{member.phoneNumber}</TableCell>
-                    <TableCell>
-                      <div className="flex min-w-40 flex-wrap gap-1">
-                        {member.roles.length > 0 ? (
-                          member.roles.map((role) => (
-                            <Badge
-                              key={role}
-                              variant={
-                                role === "admin" ? "secondary" : "outline"
-                              }
-                            >
-                              {roles.find((item) => item.code === role)
-                                ?.displayName ?? role}
-                            </Badge>
-                          ))
+            <>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Member</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Roles</TableHead>
+                      <TableHead>Manage Roles</TableHead>
+                      <TableHead className="text-right">Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {temple.members.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <div className="min-w-56">
+                            <p className="font-medium">{member.displayName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.personId}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{member.phoneNumber}</TableCell>
+                        <TableCell>
+                          <div className="flex min-w-40 flex-wrap gap-1">
+                            {member.roles.length > 0 ? (
+                              member.roles.map((role) => (
+                                <Badge
+                                  key={role}
+                                  variant={
+                                    role === "admin" ? "secondary" : "outline"
+                                  }
+                                >
+                                  {roles.find((item) => item.code === role)
+                                    ?.displayName ?? role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline">No roles</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <MemberRoleEditor
+                            tenantId={temple.tenant.id}
+                            member={member}
+                            roles={roles}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {formatTimestamp(member.updatedAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="md:hidden">
+                <MobileListView>
+                  {temple.members.map((member) => (
+                    <MobileListRow
+                      key={member.id}
+                      title={member.displayName}
+                      subtitle={member.phoneNumber}
+                      badge={
+                        member.roles.length > 0 ? (
+                          <Badge variant={member.roles.includes("admin") ? "secondary" : "outline"}>
+                            {roles.find((item) => item.code === member.roles[0])?.displayName ?? member.roles[0]}
+                            {member.roles.length > 1 ? ` +${member.roles.length - 1}` : ""}
+                          </Badge>
                         ) : (
                           <Badge variant="outline">No roles</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <MemberRoleEditor
-                        tenantId={temple.tenant.id}
-                        member={member}
-                        roles={roles}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatTimestamp(member.updatedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        )
+                      }
+                      trailing={<MemberRoleEditor tenantId={temple.tenant.id} member={member} roles={roles} />}
+                    />
+                  ))}
+                </MobileListView>
+              </div>
+            </>
           )}
         </TableShell>
     </div>

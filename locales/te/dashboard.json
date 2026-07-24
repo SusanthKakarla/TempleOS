@@ -389,6 +389,13 @@
     "viewTabs": { "table": "పట్టిక", "card": "కార్డ్" },
     "createButton": "కార్యక్రమం సృష్టించండి",
     "columns": { "title": "శీర్షిక", "when": "ఎప్పుడు", "location": "స్థలం", "status": "స్థితి", "actions": "చర్యలు" },
+    "filters": {
+      "whenLabel": "ఎప్పుడు",
+      "upcomingOnly": "రాబోయేవి మాత్రమే",
+      "allEvents": "అన్ని కార్యక్రమాలు",
+      "statusLabel": "స్థితి",
+      "allStatuses": "అన్ని స్థితులు"
+    },
     "selectAll": "అన్ని కార్యక్రమాలను ఎంచుకోండి",
     "selectRow": "{title} ఎంచుకోండి",
     "notifications": "నోటిఫికేషన్‌లు",
@@ -714,6 +721,7 @@
   },
   "donations": {
     "pageHeader": { "title": "విరాళాలు", "subtitle": "మాన్యువల్‌గా నమోదు చేసిన విరాళాలు. ఆన్‌లైన్ చెల్లింపులు లేదా రసీదులు లేవు." },
+    "summary": { "totalThisMonth": "ఈ నెల మొత్తం", "totalAllTime": "ఇప్పటివరకు మొత్తం" },
     "addButton": "విరాళం జోడించండి",
     "searchPlaceholder": "దాత పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
     "dateFromLabel": "నుండి తేదీ",

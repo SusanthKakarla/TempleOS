@@ -178,10 +178,12 @@ export function WhatsAppOnboardingFlow({
   const busy = status === "connecting" || status === "finishing";
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="glass-card w-full max-w-md rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <MessageCircle className="size-4.5" />
+          <span className="gradient-green-emerald flex size-8 items-center justify-center rounded-lg text-emerald-foreground">
+            <MessageCircle className="size-4" aria-hidden="true" />
+          </span>
           Connect WhatsApp Business
         </CardTitle>
         <CardDescription>

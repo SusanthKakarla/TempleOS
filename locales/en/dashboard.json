@@ -389,6 +389,13 @@
     "viewTabs": { "table": "Table", "card": "Card" },
     "createButton": "Create event",
     "columns": { "title": "Title", "when": "When", "location": "Location", "status": "Status", "actions": "Actions" },
+    "filters": {
+      "whenLabel": "When",
+      "upcomingOnly": "Upcoming only",
+      "allEvents": "All events",
+      "statusLabel": "Status",
+      "allStatuses": "All statuses"
+    },
     "selectAll": "Select all events",
     "selectRow": "Select {title}",
     "notifications": "Notifications",
@@ -711,6 +718,7 @@
   },
   "donations": {
     "pageHeader": { "title": "Donations", "subtitle": "Manually recorded donations. No online payments or receipts." },
+    "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time" },
     "addButton": "Add donation",
     "searchPlaceholder": "Search by donor name or phone...",
     "dateFromLabel": "From date",

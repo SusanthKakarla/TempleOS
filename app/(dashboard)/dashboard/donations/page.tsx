@@ -1,6 +1,6 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
-import { listDonations, countDonationsFiltered, type ListDonationsFilter } from "@/lib/db/donations";
+import { listDonations, countDonationsFiltered, getDonationSummary, type ListDonationsFilter } from "@/lib/db/donations";
 import { listDevotees } from "@/lib/db/devotees";
 import { DonationsTable } from "@/features/donations/donations-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -28,10 +28,11 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
   const sort = SORT_VALUES.find((value) => value === sortParam);
   const dir = dirParam === "asc" ? "asc" : "desc";
 
-  const [donations, totalCount, devotees] = await Promise.all([
+  const [donations, totalCount, devotees, summary] = await Promise.all([
     listDonations(session.tenantId, { search, dateFrom, dateTo, purpose, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
     countDonationsFiltered(session.tenantId, { search, dateFrom, dateTo, purpose }),
     listDevotees(session.tenantId),
+    getDonationSummary(session.tenantId),
   ]);
 
   return (
@@ -43,6 +44,7 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
       totalCount={totalCount}
       sort={sort}
       dir={dir}
+      summary={summary}
     />
   );
 }

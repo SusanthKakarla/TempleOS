@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
+import { PageHeader } from "@/components/page-header";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
 import type { RoleCode, RoleDefinition } from "@/types/db";
 import { requireSuperAdminPage } from "../../require-super-admin";
@@ -35,24 +36,16 @@ export default async function SuperAdminRolesPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">
-            Super Admin
-          </p>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Role Catalog
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Fixed V0 platform roles, meanings, and capability markers used
-            across temples.
-          </p>
-        </div>
-        <Badge variant="secondary">
-          <ShieldCheck className="size-3" />
-          Fixed V0
-        </Badge>
-      </header>
+      <PageHeader
+        title="Role Catalog"
+        subtitle="Fixed V0 platform roles, meanings, and capability markers used across temples."
+        actions={
+          <Badge variant="secondary">
+            <ShieldCheck className="size-3" />
+            Fixed V0
+          </Badge>
+        }
+      />
 
       <section className="grid gap-4 md:grid-cols-3">
         <SummaryPanel
@@ -81,7 +74,8 @@ export default async function SuperAdminRolesPage() {
             Permission checks use role codes. Labels are display text only.
           </p>
         </div>
-        <Table>
+        <div className="hidden md:block">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-28">Code</TableHead>
@@ -123,6 +117,33 @@ export default async function SuperAdminRolesPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        <div className="divide-y md:hidden">
+          {sortRoles(roles).map((role) => (
+            <div key={role.code} className="space-y-2 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{role.displayName}</span>
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{role.code}</code>
+                </div>
+                <Badge variant={role.active ? "secondary" : "outline"}>
+                  {role.active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {role.description ?? "No description available."}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {capabilitiesFor(role).map((capability) => (
+                  <Badge key={capability} variant="outline">
+                    {capability}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </TableShell>
     </div>
   );

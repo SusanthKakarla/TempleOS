@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -10,6 +10,8 @@ import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -23,12 +25,28 @@ import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
+import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ExportMenu } from "@/features/export/export-menu";
 import { formatDateTime, formatTime } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
+import { mergeSearchParam } from "@/lib/url-params";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventCard } from "./event-card";
 import { AnnounceDialog } from "./announce-dialog";
+
+const PATHNAME = "/dashboard/events";
+
+interface PendingFilters {
+  when: string;
+  status: string;
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters {
+  return {
+    when: searchParams.get("when") ?? "all",
+    status: searchParams.get("status") ?? "all",
+  };
+}
 
 const MotionTableRow = motion.create(TableRow);
 
@@ -56,6 +74,7 @@ interface EventsTableProps {
 
 export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: EventsTableProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("events");
   const tCommon = useTranslations("common");
@@ -63,6 +82,27 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
+
+  function applyFilters(next: PendingFilters) {
+    let params: URLSearchParams = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(next)) {
+      params = mergeSearchParam(params, key, value === "all" ? null : value);
+    }
+    router.replace(`${PATHNAME}?${params.toString()}`);
+  }
+
+  const whenItems: Record<string, string> = {
+    all: t("filters.allEvents"),
+    upcoming: t("filters.upcomingOnly"),
+  };
+  const statusItems: Record<string, string> = {
+    all: t("filters.allStatuses"),
+    published: t("status.published"),
+    draft: t("status.draft"),
+    cancelled: t("status.cancelled"),
+  };
+  const activeFilterCount = Object.values(filtersFromSearchParams(searchParams)).filter((v) => v !== "all").length;
 
   function refresh() {
     router.refresh();
@@ -161,6 +201,63 @@ export function EventsTable({ events, page, pageSize, totalCount, sort, dir }: E
           </>
         }
       />
+
+      <div className="flex justify-end">
+        <FilterBottomSheet
+          title={tCommon("filters")}
+          activeCount={activeFilterCount}
+          onOpenChange={(open) => {
+            if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+          }}
+          onReset={() => {
+            const reset: PendingFilters = { when: "all", status: "all" };
+            setPendingFilters(reset);
+            applyFilters(reset);
+          }}
+          onApply={() => applyFilters(pendingFilters)}
+        >
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>{t("filters.whenLabel")}</Label>
+              <Select
+                value={pendingFilters.when}
+                onValueChange={(v) => setPendingFilters((f) => ({ ...f, when: v ?? "all" }))}
+                items={whenItems}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(whenItems).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("filters.statusLabel")}</Label>
+              <Select
+                value={pendingFilters.status}
+                onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
+                items={statusItems}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(statusItems).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </FilterBottomSheet>
+      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
