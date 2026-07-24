@@ -68,7 +68,7 @@ export function EventCard({
             </Link>
           )}
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="flex-1 space-y-2">
           {event.description && (
             <p className="line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
           )}

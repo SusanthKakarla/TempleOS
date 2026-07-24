@@ -21,7 +21,8 @@
     "admins": "Admins",
     "userManagement": "User Management",
     "users": "Users",
-    "rolesAndPermissions": "Roles & Permissions"
+    "rolesAndPermissions": "Roles & Permissions",
+    "more": "More"
   },
   "topbar": {
     "accountMenu": "Account menu",
