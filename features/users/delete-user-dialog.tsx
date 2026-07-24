@@ -14,22 +14,21 @@ import {
 import { Button } from "@/components/ui/button";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 
-export function ToggleUserStatusDialog({
+export function DeleteUserDialog({
   member,
   trigger,
-  onChanged,
+  onDeleted,
   open: controlledOpen,
   onOpenChange,
 }: {
   member: TenantMembershipListItem;
   trigger: ReactElement;
-  onChanged: () => void;
+  onDeleted: () => void;
   /** Controlled open state — lets a caller open this from an OverflowActionMenu item instead of the given `trigger`. Omit for the default self-managed behavior. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const t = useTranslations("userManagement");
-  const tDialog = useTranslations("userManagement.toggleStatusDialog");
+  const tDialog = useTranslations("userManagement.deleteDialog");
   const tCommon = useTranslations("common");
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -38,26 +37,19 @@ export function ToggleUserStatusDialog({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const isActive = member.status === "active";
-  const nextStatus = isActive ? "inactive" : "active";
-
   async function handleConfirm() {
     setError(null);
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/users/${member.id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
+      const response = await fetch(`/api/users/${member.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? (isActive ? t("disableError") : t("enableError")));
+        throw new Error(body.error ?? tDialog("errorFallback"));
       }
       setOpen(false);
-      onChanged();
+      onDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("disableError"));
+      setError(err instanceof Error ? err.message : tDialog("errorFallback"));
     } finally {
       setSubmitting(false);
     }
@@ -74,24 +66,16 @@ export function ToggleUserStatusDialog({
       <AlertDialogTrigger render={trigger} />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{isActive ? tDialog("disableTitle") : tDialog("enableTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {isActive
-              ? tDialog("disableDescription", { name: member.displayName })
-              : tDialog("enableDescription", { name: member.displayName })}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{tDialog("title")}</AlertDialogTitle>
+          <AlertDialogDescription>{tDialog("description", { name: member.displayName })}</AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
             {tCommon("cancel")}
           </Button>
-          <Button
-            variant={isActive ? "destructive" : "success"}
-            onClick={handleConfirm}
-            disabled={submitting}
-          >
-            {isActive ? tDialog("disableConfirm") : tDialog("enableConfirm")}
+          <Button variant="destructive" onClick={handleConfirm} disabled={submitting}>
+            {tDialog("confirm")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

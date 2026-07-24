@@ -4,11 +4,13 @@ export interface SendMessageResult {
   success: boolean;
   providerMessageId: string | null;
   error?: string;
+  /** Meta's stable numeric error code (e.g. 131047) — see lib/whatsapp/errors.ts for classification. */
+  errorCode?: number;
 }
 
 interface GraphSendResponse {
   messages?: { id: string }[];
-  error?: { message?: string };
+  error?: { message?: string; code?: number };
 }
 
 export interface InteractiveButton {
@@ -69,6 +71,7 @@ async function sendMessage(
         success: false,
         providerMessageId: null,
         error: json.error?.message ?? `HTTP ${response.status}`,
+        errorCode: json.error?.code,
       };
     }
 

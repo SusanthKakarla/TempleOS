@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
-import { createFamilyWithMembers, type FamilyMemberInput } from "@/lib/db/devotee-families";
+import { createFamilyWithMembers, listFamiliesForTenant, type FamilyMemberInput } from "@/lib/db/devotee-families";
 import { createFamilySchema } from "@/lib/validation/devotee-families";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
+}
+
+/** For the devotee edit dialog's family-reassignment dropdown. */
+export async function GET() {
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
+  }
+  const { session } = auth;
+
+  const families = await listFamiliesForTenant(session.tenantId);
+  return NextResponse.json({ families });
 }
 
 export async function POST(req: NextRequest) {

@@ -431,6 +431,13 @@ export interface Devotee {
   gender: Gender | null;
   maritalStatus: MaritalStatus | null;
   weddingAnniversary: string | null;
+  // Independent of devotee_families.address — not every devotee belongs to a family.
+  address: string | null;
+  notes: string | null;
+  // Soft-delete (migrations/018_devotee_lifecycle.sql) — false means
+  // deactivated: excluded from recipient selection and the default list
+  // view, but the row and all history remain intact and reachable.
+  isActive: boolean;
   // Derived via a LEFT JOIN in lib/db/devotees.ts — not stored redundantly.
   familyName: string | null;
   relationship: RelationshipCode | null;

@@ -61,6 +61,7 @@ export async function enqueueEventAnnouncement(
        FROM devotees d
        WHERE d.tenant_id = $1
          AND d.whatsapp_opt_in_status = true
+         AND d.is_active = true
          AND COALESCE(d.preferred_language, 'en') = $5
          ${audienceFilter}
        RETURNING id`,

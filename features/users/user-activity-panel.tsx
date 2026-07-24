@@ -10,18 +10,31 @@ import { formatDateTime } from "@/lib/date";
 export function UserActivityPanel({
   member,
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   member: TenantMembershipListItem;
   trigger: ReactElement;
+  /** Controlled open state — lets a caller open this from an OverflowActionMenu item instead of the given `trigger`. Omit for the default self-managed behavior. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("userManagement.activityPanel");
   const tActions = useTranslations("userManagement.activityLog.actionLabels");
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
   const [entries, setEntries] = useState<AuditLogEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleOpenChange(open: boolean) {
-    if (!open || entries !== null || loading) return;
+  async function handleOpenChange(next: boolean) {
+    if (isControlled) {
+      controlledOnOpenChange?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+    if (!next || entries !== null || loading) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/users/${member.id}/activity`);
@@ -37,7 +50,7 @@ export function UserActivityPanel({
   }
 
   return (
-    <Sheet onOpenChange={handleOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger render={trigger} />
       <SheetContent>
         <SheetHeader>

@@ -114,6 +114,15 @@ export async function getFamilyWithMembers(tenantId: string, familyId: string): 
   return { family, members };
 }
 
+/** For the devotee edit dialog's family-reassignment dropdown. */
+export async function listFamiliesForTenant(tenantId: string): Promise<DevoteeFamily[]> {
+  const { rows } = await getPool().query<DevoteeFamilyRow>(
+    "SELECT * FROM devotee_families WHERE tenant_id = $1 ORDER BY family_name ASC",
+    [tenantId],
+  );
+  return rows.map(mapFamily);
+}
+
 export async function countFamilies(tenantId: string): Promise<number> {
   const { rows } = await getPool().query<{ count: string }>(
     "SELECT count(*) FROM devotee_families WHERE tenant_id = $1",

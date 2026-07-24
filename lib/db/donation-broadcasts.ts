@@ -33,6 +33,7 @@ export async function enqueueDonationRecordedBroadcast(tenantId: string, templeN
        FROM devotees d
        WHERE d.tenant_id = $1
          AND d.whatsapp_opt_in_status = true
+         AND d.is_active = true
          AND COALESCE(d.preferred_language, 'en') = $4
        RETURNING id`,
       [tenantId, title, message, language, JSON.stringify({ templeName })],

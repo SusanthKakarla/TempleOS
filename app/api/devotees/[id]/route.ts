@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
-import { deleteDevotee, updateDevotee } from "@/lib/db/devotees";
+import { deactivateDevotee, updateDevotee } from "@/lib/db/devotees";
 import { updateDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
@@ -57,6 +57,12 @@ function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
 }
 
+/**
+ * Soft delete: deactivates rather than removing the row (see
+ * lib/db/devotees.ts's deactivateDevotee). Donation and notification
+ * history are preserved either way; the devotee just stops being selected
+ * for future notifications and drops out of the default list view.
+ */
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const auth = await requireTenantAdminSession();
   if (!auth.ok) {
@@ -65,23 +71,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const { session } = auth;
 
   const { id } = await params;
-  try {
-    const deleted = await deleteDevotee(session.tenantId, id);
-    if (!deleted) {
-      return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
-    }
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    if (isForeignKeyViolation(err)) {
-      return NextResponse.json(
-        { error: "Can't remove a devotee with donation history" },
-        { status: 409 },
-      );
-    }
-    throw err;
+  const deactivated = await deactivateDevotee(session.tenantId, id);
+  if (!deactivated) {
+    return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
   }
-}
-
-function isForeignKeyViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23503";
+  return NextResponse.json({ ok: true });
 }

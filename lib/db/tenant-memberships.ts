@@ -188,6 +188,59 @@ export async function updateTenantMembershipLocale(
   );
 }
 
+export interface UpdateTenantMembershipDetailsInput {
+  displayName?: string;
+  preferredUiLanguage?: SupportedLanguage;
+}
+
+/**
+ * Tenant-scoped admin edit of another member's own-temple details — distinct
+ * from updateTenantMembershipLocale (unscoped, used by the self-service
+ * language switcher) since this one needs the tenant_id check to stop an
+ * admin editing a member of a different temple. Both fields already live on
+ * tenant_memberships, not the shared persons row, so this never touches a
+ * member's login phone number or their membership in any other temple.
+ */
+export async function updateTenantMembershipDetails(
+  tenantId: string,
+  membershipId: string,
+  input: UpdateTenantMembershipDetailsInput,
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipListItem | null> {
+  const { rows } = await client.query<{ id: string }>(
+    `UPDATE tenant_memberships
+     SET display_name = COALESCE($3, display_name),
+         preferred_ui_language = CASE WHEN $4::boolean THEN $5 ELSE preferred_ui_language END,
+         updated_at = now()
+     WHERE tenant_id = $1 AND id = $2
+     RETURNING id`,
+    [tenantId, membershipId, input.displayName ?? null, "preferredUiLanguage" in input, input.preferredUiLanguage ?? null],
+  );
+  if (!rows[0]) return null;
+  const [reloaded] = await listTenantMembershipsByIds(tenantId, [rows[0].id], client);
+  return reloaded ?? null;
+}
+
+/**
+ * Hard delete. Only succeeds for a member with no donation/event history —
+ * see lib/provisioning/tenant-members.ts's deleteTenantMember for why: the
+ * composite FKs on donations/events null out tenant_id along with
+ * created_by/recorded_by on delete, which those tables' own NOT NULL
+ * constraint on tenant_id then rejects. That caller catches it and surfaces
+ * a friendly error; this function just executes the raw DELETE.
+ */
+export async function deleteTenantMembership(
+  tenantId: string,
+  membershipId: string,
+  client: QueryClient = getPool(),
+): Promise<boolean> {
+  const result = await client.query("DELETE FROM tenant_memberships WHERE tenant_id = $1 AND id = $2", [
+    tenantId,
+    membershipId,
+  ]);
+  return (result.rowCount ?? 0) > 0;
+}
+
 export interface TenantMembershipListItem extends TenantMembershipWithRoles {
   phoneNumber: string;
 }

@@ -20,15 +20,23 @@ export function ChangeRoleDialog({
   member,
   trigger,
   onChanged,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   member: TenantMembershipListItem;
   trigger: ReactElement;
   onChanged: () => void;
+  /** Controlled open state — lets a caller open this from an OverflowActionMenu item instead of the given `trigger`. Omit for the default self-managed behavior. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const t = useTranslations("userManagement");
   const tDialog = useTranslations("userManagement.changeRoleDialog");
   const tCommon = useTranslations("common");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [roles, setRoles] = useState<RoleCode[]>(member.roles);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

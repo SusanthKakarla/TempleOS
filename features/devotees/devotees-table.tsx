@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Download, Eye, Pencil, Trash2, Upload, UserPlus, Users } from "lucide-react";
+import { Download, Eye, Pencil, RotateCcw, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableCell,
@@ -59,6 +67,7 @@ interface PendingFilters {
   occasion: string;
   isDonor: string;
   whatsappOptIn: string;
+  status: string;
 }
 
 function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters {
@@ -67,6 +76,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters 
     occasion: searchParams.get("occasion") ?? "all",
     isDonor: searchParams.get("isDonor") ?? "all",
     whatsappOptIn: searchParams.get("whatsappOptIn") ?? "all",
+    status: searchParams.get("status") ?? "active",
   };
 }
 
@@ -83,6 +93,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   const [selectMode, setSelectMode] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [editingDevotee, setEditingDevotee] = useState<Devotee | null>(null);
+  const [deactivatingDevotee, setDeactivatingDevotee] = useState<Devotee | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
   function refresh() {
@@ -97,30 +108,52 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
     setSelectedIds(checked ? devotees.map((d) => d.id) : []);
   }
 
-  async function handleDelete(devotee: Devotee) {
-    if (!window.confirm(t("confirmDelete", { name: devotee.displayName }))) {
-      return;
-    }
+  async function handleConfirmDeactivate() {
+    if (!deactivatingDevotee) return;
     setError(null);
-    setPendingId(devotee.id);
+    setPendingId(deactivatingDevotee.id);
     try {
-      const response = await fetch(`/api/devotees/${devotee.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/devotees/${deactivatingDevotee.id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? t("deleteError"));
+        throw new Error(body.error ?? t("deactivateError"));
       }
+      setDeactivatingDevotee(null);
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("deleteError"));
+      setError(err instanceof Error ? err.message : t("deactivateError"));
     } finally {
       setPendingId(null);
     }
   }
 
+  async function handleReactivate(devotee: Devotee) {
+    setError(null);
+    setPendingId(devotee.id);
+    try {
+      const response = await fetch(`/api/devotees/${devotee.id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? t("reactivateError"));
+      }
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("reactivateError"));
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  /** "status" defaults to "active" (not "all" like every other filter) — hiding it from the URL when active-only is exactly the opposite condition from the rest. */
   function applyFilters(next: PendingFilters) {
     let params: URLSearchParams = new URLSearchParams(searchParams);
     for (const [key, value] of Object.entries(next)) {
-      params = mergeSearchParam(params, key, value === "all" ? null : value);
+      const isDefault = key === "status" ? value === "active" : value === "all";
+      params = mergeSearchParam(params, key, isDefault ? null : value);
     }
     router.replace(`${PATHNAME}?${params.toString()}`);
   }
@@ -147,10 +180,31 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
     true: t("optedIn"),
     false: t("notOptedIn"),
   };
+  const statusItems: Record<string, string> = {
+    active: t("filters.activeOnly"),
+    all: t("filters.includeInactive"),
+  };
 
-  const activeFilterCount = Object.values(filtersFromSearchParams(searchParams)).filter((v) => v !== "all").length;
+  const activeFilterCount = Object.entries(filtersFromSearchParams(searchParams)).filter(
+    ([key, value]) => (key === "status" ? value !== "active" : value !== "all"),
+  ).length;
 
   function devoteeActionItems(devotee: Devotee) {
+    if (!devotee.isActive) {
+      return [
+        {
+          label: tCommon("viewDetails"),
+          icon: <Eye className="size-4" />,
+          onClick: () => router.push(`/dashboard/devotees/${devotee.id}`),
+        },
+        {
+          label: t("reactivateAction"),
+          icon: <RotateCcw className="size-4" />,
+          disabled: pendingId === devotee.id,
+          onClick: () => handleReactivate(devotee),
+        },
+      ];
+    }
     return [
       {
         label: tCommon("viewDetails"),
@@ -168,7 +222,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         icon: <Trash2 className="size-4" />,
         variant: "destructive" as const,
         disabled: pendingId === devotee.id,
-        onClick: () => handleDelete(devotee),
+        onClick: () => setDeactivatingDevotee(devotee),
       },
     ];
   }
@@ -251,6 +305,25 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
           </SelectContent>
         </Select>
       </div>
+      <div className="space-y-1.5">
+        <Label>{t("filters.statusLabel")}</Label>
+        <Select
+          value={pendingFilters.status}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "active" }))}
+          items={statusItems}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(statusItems).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 
@@ -309,7 +382,13 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                 if (open) setPendingFilters(filtersFromSearchParams(searchParams));
               }}
               onReset={() => {
-                const reset: PendingFilters = { registrationType: "all", occasion: "all", isDonor: "all", whatsappOptIn: "all" };
+                const reset: PendingFilters = {
+                  registrationType: "all",
+                  occasion: "all",
+                  isDonor: "all",
+                  whatsappOptIn: "all",
+                  status: "active",
+                };
                 setPendingFilters(reset);
                 applyFilters(reset);
               }}
@@ -401,6 +480,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{devotee.displayName}</span>
+                          {!devotee.isActive && <Badge variant="secondary">{t("inactiveBadge")}</Badge>}
                         </Link>
                       </TableCell>
                       <TableCell>{devotee.whatsappPhone ?? "—"}</TableCell>
@@ -452,7 +532,9 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                   title={devotee.displayName}
                   subtitle={maskPhoneForDisplay(devotee.whatsappPhone)}
                   badge={
-                    devotee.isDonor ? (
+                    !devotee.isActive ? (
+                      <Badge variant="secondary">{t("inactiveBadge")}</Badge>
+                    ) : devotee.isDonor ? (
                       <Badge variant="default">{t("filters.donor")}</Badge>
                     ) : (
                       <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
@@ -492,6 +574,30 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         />
       )}
 
+      <AlertDialog
+        open={deactivatingDevotee !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeactivatingDevotee(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deactivateDialog.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deactivatingDevotee && t("deactivateDialog.description", { name: deactivatingDevotee.displayName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setDeactivatingDevotee(null)} disabled={pendingId !== null}>
+              {tCommon("cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDeactivate} disabled={pendingId !== null}>
+              {t("deactivateDialog.confirm")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

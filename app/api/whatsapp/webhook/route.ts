@@ -53,7 +53,7 @@ interface InboundMessage {
 interface StatusUpdate {
   id?: string;
   status?: string;
-  errors?: Array<{ title?: string; message?: string }>;
+  errors?: Array<{ code?: number; title?: string; message?: string }>;
 }
 
 const KNOWN_STATUSES = new Set(["sent", "delivered", "read", "failed"]);
@@ -210,11 +210,13 @@ export async function POST(req: NextRequest) {
       for (const statusUpdate of statuses) {
         if (!statusUpdate.id || !statusUpdate.status || !KNOWN_STATUSES.has(statusUpdate.status)) continue;
         const errorReason = statusUpdate.errors?.[0]?.message ?? statusUpdate.errors?.[0]?.title;
+        const errorCode = statusUpdate.errors?.[0]?.code;
         try {
           await applyWebhookDeliveryStatus(
             statusUpdate.id,
             statusUpdate.status as "sent" | "delivered" | "read" | "failed",
             errorReason,
+            errorCode,
           );
         } catch (err) {
           // One malformed/failed status update should not fail the whole

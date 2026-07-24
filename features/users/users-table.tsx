@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { History, Upload, UserPlus, Users as UsersIcon } from "lucide-react";
+import { History, Pencil, Trash2, Upload, UserCog, UserPlus, Users as UsersIcon, UserX } from "lucide-react";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import type { RoleCode, SupportedLanguage } from "@/types/db";
 import { ROLE_CODES } from "@/types/db";
@@ -29,6 +29,7 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageHeader } from "@/components/page-header";
 import { ExportMenu } from "@/features/export/export-menu";
+import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
@@ -37,6 +38,8 @@ import { InviteUserDialog } from "./invite-user-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { ToggleUserStatusDialog } from "./toggle-user-status-dialog";
 import { UserActivityPanel } from "./user-activity-panel";
+import { EditUserDialog } from "./edit-user-dialog";
+import { DeleteUserDialog } from "./delete-user-dialog";
 
 const MotionTableRow = motion.create(TableRow);
 
@@ -68,7 +71,13 @@ export function UsersTable({
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [editingMember, setEditingMember] = useState<TenantMembershipListItem | null>(null);
+  const [deletingMember, setDeletingMember] = useState<TenantMembershipListItem | null>(null);
+  const [changingRoleMember, setChangingRoleMember] = useState<TenantMembershipListItem | null>(null);
+  const [togglingStatusMember, setTogglingStatusMember] = useState<TenantMembershipListItem | null>(null);
+  const [viewingActivityMember, setViewingActivityMember] = useState<TenantMembershipListItem | null>(null);
 
   function refresh() {
     router.refresh();
@@ -104,40 +113,41 @@ export function UsersTable({
     );
   }
 
-  function rowActions(member: TenantMembershipListItem, className: string): ReactNode {
+  function rowActionItems(member: TenantMembershipListItem) {
     const isActive = member.status === "active";
-    return (
-      <div className={className}>
-        <ChangeRoleDialog
-          member={member}
-          trigger={
-            <Button variant="outline" size="sm">
-              {t("changeRoleDialog.title")}
-            </Button>
-          }
-          onChanged={refresh}
-        />
-        {member.id !== currentMembershipId && (
-          <ToggleUserStatusDialog
-            member={member}
-            trigger={
-              <Button variant={isActive ? "destructive" : "success"} size="sm">
-                {isActive ? t("status.disableAction") : t("status.enableAction")}
-              </Button>
-            }
-            onChanged={refresh}
-          />
-        )}
-        <UserActivityPanel
-          member={member}
-          trigger={
-            <Button variant="secondary" size="sm">
-              {t("activityPanel.title")}
-            </Button>
-          }
-        />
-      </div>
-    );
+    const isSelf = member.id === currentMembershipId;
+    return [
+      {
+        label: tCommon("edit"),
+        icon: <Pencil className="size-4" />,
+        onClick: () => setEditingMember(member),
+      },
+      {
+        label: t("changeRoleDialog.title"),
+        icon: <UserCog className="size-4" />,
+        onClick: () => setChangingRoleMember(member),
+      },
+      {
+        label: t("activityPanel.title"),
+        icon: <History className="size-4" />,
+        onClick: () => setViewingActivityMember(member),
+      },
+      ...(isSelf
+        ? []
+        : [
+            {
+              label: isActive ? t("status.disableAction") : t("status.enableAction"),
+              icon: <UserX className="size-4" />,
+              onClick: () => setTogglingStatusMember(member),
+            },
+            {
+              label: tCommon("delete"),
+              icon: <Trash2 className="size-4" />,
+              variant: "destructive" as const,
+              onClick: () => setDeletingMember(member),
+            },
+          ]),
+    ];
   }
 
   return (
@@ -264,7 +274,7 @@ export function UsersTable({
                       pathname="/dashboard/users"
                       className="w-32"
                     />
-                    <TableHead className="w-80 text-right">{t("columns.actions")}</TableHead>
+                    <TableHead className="w-16 text-right">{t("columns.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
@@ -306,7 +316,9 @@ export function UsersTable({
                       <TableCell>
                         {member.lastSignedInAt ? formatDate(member.lastSignedInAt, locale) : t("status.never")}
                       </TableCell>
-                      <TableCell>{rowActions(member, "flex justify-end gap-2")}</TableCell>
+                      <TableCell className="text-right">
+                        <OverflowActionMenu items={rowActionItems(member)} />
+                      </TableCell>
                     </MotionTableRow>
                   ))}
                 </motion.tbody>
@@ -331,7 +343,10 @@ export function UsersTable({
                       <p className="truncate text-sm text-muted-foreground">{member.phoneNumber}</p>
                     </div>
                   </div>
-                  {statusBadge(member)}
+                  <div className="flex items-center gap-1">
+                    {statusBadge(member)}
+                    <OverflowActionMenu items={rowActionItems(member)} />
+                  </div>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1">
@@ -358,13 +373,82 @@ export function UsersTable({
                     </p>
                   </div>
                 </div>
-
-                {rowActions(member, "mt-4 flex flex-col gap-2")}
               </Card>
             ))}
             <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname="/dashboard/users" />
           </div>
         </>
+      )}
+
+      {editingMember && (
+        <EditUserDialog
+          member={editingMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingMember(null);
+          }}
+          onSaved={() => {
+            setEditingMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {deletingMember && (
+        <DeleteUserDialog
+          member={deletingMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeletingMember(null);
+          }}
+          onDeleted={() => {
+            setDeletingMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {changingRoleMember && (
+        <ChangeRoleDialog
+          member={changingRoleMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setChangingRoleMember(null);
+          }}
+          onChanged={() => {
+            setChangingRoleMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {togglingStatusMember && (
+        <ToggleUserStatusDialog
+          member={togglingStatusMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setTogglingStatusMember(null);
+          }}
+          onChanged={() => {
+            setTogglingStatusMember(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {viewingActivityMember && (
+        <UserActivityPanel
+          member={viewingActivityMember}
+          trigger={<span className="hidden" />}
+          open
+          onOpenChange={(open) => {
+            if (!open) setViewingActivityMember(null);
+          }}
+        />
       )}
     </div>
   );
