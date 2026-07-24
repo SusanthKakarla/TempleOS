@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { LabeledInput } from "@/components/ui/labeled-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function EditUserDialog({
@@ -94,7 +94,7 @@ export function EditUserDialog({
           <DialogDescription>{tDialog("description", { name: member.displayName })}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FloatingLabelInput
+          <LabeledInput
             id="edit-user-name"
             label={tDialog("fields.name")}
             icon={<User />}

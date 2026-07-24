@@ -335,7 +335,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   </Select>
                 </div>
               </div>
-              <FloatingLabelInput
+              <LabeledInput
                 id="address"
                 label={t("fields.address")}
                 value={address}
