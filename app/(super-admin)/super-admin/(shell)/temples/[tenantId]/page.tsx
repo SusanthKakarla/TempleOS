@@ -222,19 +222,24 @@ export default async function SuperAdminTempleDetailPage({
                         </TableCell>
                         <TableCell>{member.phoneNumber}</TableCell>
                         <TableCell>
-                          <div className="flex min-w-40 flex-wrap gap-1">
+                          <div className="flex min-w-40 flex-wrap items-center gap-1">
                             {member.roles.length > 0 ? (
-                              member.roles.map((role) => (
-                                <Badge
-                                  key={role}
-                                  variant={
-                                    role === "admin" ? "secondary" : "outline"
-                                  }
-                                >
-                                  {roles.find((item) => item.code === role)
-                                    ?.displayName ?? role}
-                                </Badge>
-                              ))
+                              <>
+                                {member.roles.slice(0, 2).map((role) => (
+                                  <Badge
+                                    key={role}
+                                    variant={
+                                      role === "admin" ? "secondary" : "outline"
+                                    }
+                                  >
+                                    {roles.find((item) => item.code === role)
+                                      ?.displayName ?? role}
+                                  </Badge>
+                                ))}
+                                {member.roles.length > 2 && (
+                                  <Badge variant="outline">+{member.roles.length - 2}</Badge>
+                                )}
+                              </>
                             ) : (
                               <Badge variant="outline">No roles</Badge>
                             )}

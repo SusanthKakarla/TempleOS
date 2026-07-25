@@ -37,6 +37,7 @@ import { ExportMenu } from "@/features/export/export-menu";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
+import { StickyToolbar } from "@/components/sticky-toolbar";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate } from "@/lib/date";
@@ -330,86 +331,89 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
-        actions={
-          <>
-            <Link
-              href="/dashboard/devotees/import"
-              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
-            >
-              <Upload className="size-4" />
-              {t("importButton")}
-            </Link>
-            <div className="hidden lg:block">
+      <StickyToolbar>
+        <PageHeader
+          title={t("pageHeader.title")}
+          subtitle={t("pageHeader.subtitle")}
+          actions={
+            <>
+              <Link
+                href="/dashboard/devotees/import"
+                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+              >
+                <Upload className="size-4" />
+                {t("importButton")}
+              </Link>
+              <div className="hidden lg:block">
+                <ExportMenu
+                  exportUrl="/api/devotees/export"
+                  filterParams={searchParams}
+                  selectedIds={selectedIds}
+                  moduleLabel="devotees"
+                />
+              </div>
+              <OverflowActionMenu
+                label="Import / Export"
+                items={[
+                  { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/devotees/import") },
+                  { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
+                ]}
+              />
+              {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
               <ExportMenu
                 exportUrl="/api/devotees/export"
                 filterParams={searchParams}
                 selectedIds={selectedIds}
                 moduleLabel="devotees"
+                open={exportOpen}
+                onOpenChange={setExportOpen}
+                hideTrigger
               />
-            </div>
-            <OverflowActionMenu
-              label="Import / Export"
-              items={[
-                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/devotees/import") },
-                { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
-              ]}
-            />
-            {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
-            <ExportMenu
-              exportUrl="/api/devotees/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="devotees"
-              open={exportOpen}
-              onOpenChange={setExportOpen}
-              hideTrigger
-            />
-          </>
-        }
-      />
+            </>
+          }
+        />
 
-      <ResponsiveSearchBar
-        pathname={PATHNAME}
-        placeholder={t("searchPlaceholder")}
-        filtersSlot={
-          <>
-            <FilterBottomSheet
-              title={tCommon("filters")}
-              activeCount={activeFilterCount}
-              onOpenChange={(open) => {
-                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-              }}
-              onReset={() => {
-                const reset: PendingFilters = {
-                  registrationType: "all",
-                  occasion: "all",
-                  isDonor: "all",
-                  whatsappOptIn: "all",
-                  status: "active",
-                };
-                setPendingFilters(reset);
-                applyFilters(reset);
-              }}
-              onApply={() => applyFilters(pendingFilters)}
-            >
-              {filterSheetContent}
-            </FilterBottomSheet>
-            <DevoteeFormDialog
-              mode="create"
-              trigger={
-                <Button className="shrink-0 gap-1.5">
-                  <UserPlus className="size-4" />
-                  <span className="hidden sm:inline">{t("addButton")}</span>
-                </Button>
-              }
-              onSaved={refresh}
-            />
-          </>
-        }
-      />
+        <ResponsiveSearchBar
+          pathname={PATHNAME}
+          placeholder={t("searchPlaceholder")}
+          sticky={false}
+          filtersSlot={
+            <>
+              <FilterBottomSheet
+                title={tCommon("filters")}
+                activeCount={activeFilterCount}
+                onOpenChange={(open) => {
+                  if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+                }}
+                onReset={() => {
+                  const reset: PendingFilters = {
+                    registrationType: "all",
+                    occasion: "all",
+                    isDonor: "all",
+                    whatsappOptIn: "all",
+                    status: "active",
+                  };
+                  setPendingFilters(reset);
+                  applyFilters(reset);
+                }}
+                onApply={() => applyFilters(pendingFilters)}
+              >
+                {filterSheetContent}
+              </FilterBottomSheet>
+              <DevoteeFormDialog
+                mode="create"
+                trigger={
+                  <Button className="shrink-0 gap-1.5">
+                    <UserPlus className="size-4" />
+                    <span className="hidden sm:inline">{t("addButton")}</span>
+                  </Button>
+                }
+                onSaved={refresh}
+              />
+            </>
+          }
+        />
+      </StickyToolbar>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

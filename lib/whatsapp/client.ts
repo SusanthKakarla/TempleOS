@@ -143,3 +143,30 @@ export function sendListMessage(
     },
   });
 }
+
+/**
+ * Sends a Meta-approved WhatsApp Message Template — the only send type Meta
+ * allows outside the 24h customer-service window. `bodyParams` are already
+ * resolved, ordered positional values (see lib/whatsapp/template-variable-resolver.ts);
+ * this is a raw Graph API primitive, same level as the 4 functions above —
+ * template lookup/validation/variable-resolution lives in
+ * lib/whatsapp/template-client.ts, not here.
+ */
+export function sendTemplateMessage(
+  phoneNumberId: string,
+  toPhone: string,
+  templateName: string,
+  languageCode: string,
+  bodyParams: string[],
+): Promise<SendMessageResult> {
+  return sendMessage(phoneNumberId, toPhone, {
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      ...(bodyParams.length > 0
+        ? { components: [{ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) }] }
+        : {}),
+    },
+  });
+}

@@ -218,13 +218,40 @@
       "timings": "Timings",
       "sevas": "Sevas",
       "contact": "Contact & Social",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "notificationSettings": "Notification Settings",
+      "automatedNotifications": "Automated Notifications",
+      "whatsappTemplates": "WhatsApp Templates"
     },
     "common": {
       "save": "Save",
       "saving": "Saving...",
       "edit": "Edit",
       "delete": "Delete"
+    },
+    "whatsappTemplateSetup": {
+      "setupButton": "Setup WhatsApp Templates",
+      "wizardTitle": "Setting up WhatsApp Templates",
+      "wizardDescription": "TempleOS will prepare the standard templates and check their approval status with Meta.",
+      "wizardWorking": "Working...",
+      "stepBootstrap": "Preparing TempleOS templates",
+      "stepSync": "Checking Meta",
+      "stepReady": "WhatsApp Ready",
+      "resultSummary": "{created} template(s) prepared · {approved} approved · {pending} still waiting on Meta.",
+      "setupSuccess": "WhatsApp template setup complete",
+      "setupError": "Setup failed. Please try again.",
+      "close": "Close",
+      "guideDialog": {
+        "menuItem": "View Meta setup guide",
+        "title": "Meta setup guide",
+        "description": "This template hasn't been approved yet. Submit it in Meta Business Manager using the details below, then use \"Sync status from Meta\" once it's reviewed.",
+        "recommendedName": "Recommended template name",
+        "recommendedCategory": "Recommended category",
+        "recommendedLanguage": "Language",
+        "recommendedBody": "Recommended body",
+        "noGuide": "No guide available for this template.",
+        "close": "Close"
+      }
     },
     "days": {
       "monday": "Mon",

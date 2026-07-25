@@ -5,7 +5,7 @@ import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile, useIsTablet } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,6 +67,7 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile()
+  const isTablet = useIsTablet()
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -87,6 +88,17 @@ function SidebarProvider({
     },
     [setOpenProp, open]
   )
+
+  // Tablet viewports default to the collapsed icon-only sidebar (desktop stays fully
+  // expanded, mobile uses the Sheet drawer). Only auto-collapses once on the first
+  // tablet-width render so it never fights a manual re-expand via SidebarTrigger.
+  const hasAutoCollapsedForTablet = React.useRef(false)
+  React.useEffect(() => {
+    if (isTablet && !hasAutoCollapsedForTablet.current && setOpenProp === undefined) {
+      hasAutoCollapsedForTablet.current = true
+      setOpen(false)
+    }
+  }, [isTablet, setOpen, setOpenProp])
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {

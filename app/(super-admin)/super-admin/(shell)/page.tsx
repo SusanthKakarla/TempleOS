@@ -91,7 +91,7 @@ export default async function SuperAdminDashboardPage() {
         </div>
 
         <section className="grid gap-4 lg:grid-cols-2">
-          <div className="glass-card rounded-2xl p-4">
+          <div className="rounded-2xl border p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium">
               <Server className="size-4 text-muted-foreground" />
               Platform Health
@@ -143,14 +143,20 @@ export default async function SuperAdminDashboardPage() {
             {recentActivity.length === 0 ? (
               <p className="text-sm text-muted-foreground">No platform activity yet.</p>
             ) : (
-              <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
-                {recentActivity.map((entry) => (
-                  <li key={entry.id} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 last:pb-0">
-                    <span className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</span>
-                    <span className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</span>
+              <ol className="max-h-96 overflow-y-auto text-sm">
+                {recentActivity.map((entry, index) => (
+                  <li key={entry.id} className="relative flex gap-3 pb-4 last:pb-0">
+                    {index !== recentActivity.length - 1 && (
+                      <span className="absolute top-3 left-1.25 h-full w-px bg-border" aria-hidden="true" />
+                    )}
+                    <span className="relative z-10 mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-background" aria-hidden="true" />
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</p>
+                      <p className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</p>
+                    </div>
                   </li>
                 ))}
-              </ul>
+              </ol>
             )}
           </div>
         </section>
@@ -182,12 +188,12 @@ export default async function SuperAdminDashboardPage() {
 
 function HealthTile({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
-    <Card className="glass-card rounded-xl p-3">
+    <Card className="glass-card h-full gap-1.5 overflow-visible rounded-2xl p-4 shadow-sm transition-shadow duration-300 hover:shadow-xl">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{label}</span>
         <Badge variant={ok ? "default" : "destructive"}>{ok ? "Healthy" : "Attention"}</Badge>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+      <p className="text-xs text-muted-foreground">{detail}</p>
     </Card>
   );
 }

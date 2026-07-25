@@ -30,6 +30,11 @@ interface NotificationRow {
   delivered_at: Date | null;
   read_at: Date | null;
   failure_reason: string | null;
+  delivery_strategy: "free_form" | "template" | null;
+  template_used: string | null;
+  conversation_status: "active" | "inactive" | "unknown" | null;
+  meta_error_code: number | null;
+  meta_error_category: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -56,6 +61,11 @@ function mapNotification(row: NotificationRow): Notification {
     deliveredAt: row.delivered_at ? row.delivered_at.toISOString() : null,
     readAt: row.read_at ? row.read_at.toISOString() : null,
     failureReason: row.failure_reason,
+    deliveryStrategy: row.delivery_strategy,
+    templateUsed: row.template_used,
+    conversationStatus: row.conversation_status,
+    metaErrorCode: row.meta_error_code,
+    metaErrorCategory: row.meta_error_category,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -126,12 +136,35 @@ export async function claimNotification(id: string): Promise<Notification | null
   return rows[0] ? mapNotification(rows[0]) : null;
 }
 
-export async function markNotificationSent(id: string, providerMessageId: string | null): Promise<void> {
+/** Optional delivery metadata the WhatsApp delivery-strategy layer (lib/whatsapp/) attaches — omitted entirely for in_app sends, which have no strategy/template/conversation concept. */
+export interface DeliveryMetadata {
+  deliveryStrategy?: "free_form" | "template";
+  templateUsed?: string | null;
+  conversationStatus?: "active" | "inactive" | "unknown";
+  metaErrorCode?: number | null;
+  metaErrorCategory?: string | null;
+}
+
+export async function markNotificationSent(
+  id: string,
+  providerMessageId: string | null,
+  delivery?: DeliveryMetadata,
+): Promise<void> {
   await getPool().query(
     `UPDATE notifications
-     SET delivery_status = 'sent', sent_at = now(), provider_message_id = $2, updated_at = now()
+     SET delivery_status = 'sent', sent_at = now(), provider_message_id = $2,
+         delivery_strategy = COALESCE($3, delivery_strategy),
+         template_used = COALESCE($4, template_used),
+         conversation_status = COALESCE($5, conversation_status),
+         updated_at = now()
      WHERE id = $1`,
-    [id, providerMessageId],
+    [
+      id,
+      providerMessageId,
+      delivery?.deliveryStrategy ?? null,
+      delivery?.templateUsed ?? null,
+      delivery?.conversationStatus ?? null,
+    ],
   );
 }
 
@@ -184,22 +217,64 @@ export function computeRetryState(attemptCountAfterFailure: number): {
  * state, rather than burning through 1/5/30-minute retries that can never
  * succeed.
  */
-export async function markNotificationPermanentlyFailed(id: string, reason: string): Promise<void> {
+export async function markNotificationPermanentlyFailed(
+  id: string,
+  reason: string,
+  delivery?: DeliveryMetadata,
+): Promise<void> {
   await getPool().query(
-    `UPDATE notifications SET delivery_status = 'failed', failure_reason = $2, updated_at = now() WHERE id = $1`,
-    [id, reason],
+    `UPDATE notifications
+     SET delivery_status = 'failed', failure_reason = $2,
+         delivery_strategy = COALESCE($3, delivery_strategy),
+         template_used = COALESCE($4, template_used),
+         conversation_status = COALESCE($5, conversation_status),
+         meta_error_code = COALESCE($6, meta_error_code),
+         meta_error_category = COALESCE($7, meta_error_category),
+         updated_at = now()
+     WHERE id = $1`,
+    [
+      id,
+      reason,
+      delivery?.deliveryStrategy ?? null,
+      delivery?.templateUsed ?? null,
+      delivery?.conversationStatus ?? null,
+      delivery?.metaErrorCode ?? null,
+      delivery?.metaErrorCategory ?? null,
+    ],
   );
 }
 
-export async function markNotificationFailed(id: string, attemptCountBefore: number, reason: string): Promise<void> {
+export async function markNotificationFailed(
+  id: string,
+  attemptCountBefore: number,
+  reason: string,
+  delivery?: DeliveryMetadata,
+): Promise<void> {
   const attemptCount = attemptCountBefore + 1;
   const { deliveryStatus, nextAttemptAt } = computeRetryState(attemptCount);
   await getPool().query(
     `UPDATE notifications
      SET attempt_count = $2, failure_reason = $3, delivery_status = $4,
-         next_attempt_at = COALESCE($5, next_attempt_at), updated_at = now()
+         next_attempt_at = COALESCE($5, next_attempt_at),
+         delivery_strategy = COALESCE($6, delivery_strategy),
+         template_used = COALESCE($7, template_used),
+         conversation_status = COALESCE($8, conversation_status),
+         meta_error_code = COALESCE($9, meta_error_code),
+         meta_error_category = COALESCE($10, meta_error_category),
+         updated_at = now()
      WHERE id = $1`,
-    [id, attemptCount, reason, deliveryStatus, nextAttemptAt],
+    [
+      id,
+      attemptCount,
+      reason,
+      deliveryStatus,
+      nextAttemptAt,
+      delivery?.deliveryStrategy ?? null,
+      delivery?.templateUsed ?? null,
+      delivery?.conversationStatus ?? null,
+      delivery?.metaErrorCode ?? null,
+      delivery?.metaErrorCategory ?? null,
+    ],
   );
 }
 
@@ -389,4 +464,87 @@ export async function listRecentNotifications(
 
   const { rows } = await getPool().query<NotificationRow & { recipient_name: string }>(query, params);
   return rows.map((row) => ({ ...mapNotification(row), recipientName: row.recipient_name }));
+}
+
+export interface WhatsAppDeliveryAnalytics {
+  templateDeliveries: number;
+  freeFormDeliveries: number;
+  deliverySuccessRate: number | null;
+  templateSuccessRate: number | null;
+  conversationWindowOpenRate: number | null;
+  retryRate: number | null;
+  permanentFailureRate: number | null;
+  averageDeliverySeconds: number | null;
+  topFailedTemplates: { templateUsed: string; count: number }[];
+  mostUsedTemplates: { templateUsed: string; count: number }[];
+}
+
+/** Powers the Automated Notifications analytics block — computed entirely from existing/additive notifications columns, no separate tracking table. */
+export async function getWhatsAppDeliveryAnalytics(tenantId: string): Promise<WhatsAppDeliveryAnalytics> {
+  const [summary, topFailed, mostUsed] = await Promise.all([
+    getPool().query<{
+      total_whatsapp: string;
+      template_deliveries: string;
+      free_form_deliveries: string;
+      delivered_count: string;
+      template_attempts: string;
+      template_delivered_count: string;
+      retrying_count: string;
+      failed_count: string;
+      conversation_active_count: string;
+      avg_delivery_seconds: string | null;
+    }>(
+      `SELECT
+         count(*) FILTER (WHERE channel = 'whatsapp') AS total_whatsapp,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_strategy = 'template') AS template_deliveries,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_strategy = 'free_form') AS free_form_deliveries,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_status IN ('sent', 'delivered')) AS delivered_count,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_strategy = 'template') AS template_attempts,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_strategy = 'template' AND delivery_status IN ('sent', 'delivered')) AS template_delivered_count,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_status = 'retrying') AS retrying_count,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND delivery_status = 'failed') AS failed_count,
+         count(*) FILTER (WHERE channel = 'whatsapp' AND conversation_status = 'active') AS conversation_active_count,
+         avg(extract(epoch FROM (sent_at - created_at))) FILTER (WHERE sent_at IS NOT NULL AND channel = 'whatsapp') AS avg_delivery_seconds
+       FROM notifications
+       WHERE tenant_id = $1`,
+      [tenantId],
+    ),
+    getPool().query<{ template_used: string; count: string }>(
+      `SELECT template_used, count(*) AS count FROM notifications
+       WHERE tenant_id = $1 AND template_used IS NOT NULL AND delivery_status = 'failed'
+       GROUP BY template_used ORDER BY count(*) DESC LIMIT 5`,
+      [tenantId],
+    ),
+    getPool().query<{ template_used: string; count: string }>(
+      `SELECT template_used, count(*) AS count FROM notifications
+       WHERE tenant_id = $1 AND template_used IS NOT NULL
+       GROUP BY template_used ORDER BY count(*) DESC LIMIT 5`,
+      [tenantId],
+    ),
+  ]);
+
+  const s = summary.rows[0];
+  const totalWhatsapp = Number(s?.total_whatsapp ?? 0);
+  const templateAttempts = Number(s?.template_attempts ?? 0);
+  const deliveredCount = Number(s?.delivered_count ?? 0);
+  const templateDeliveredCount = Number(s?.template_delivered_count ?? 0);
+  const retryingCount = Number(s?.retrying_count ?? 0);
+  const failedCount = Number(s?.failed_count ?? 0);
+  const conversationActiveCount = Number(s?.conversation_active_count ?? 0);
+
+  const rate = (numerator: number, denominator: number): number | null =>
+    denominator > 0 ? Math.round((numerator / denominator) * 100) : null;
+
+  return {
+    templateDeliveries: Number(s?.template_deliveries ?? 0),
+    freeFormDeliveries: Number(s?.free_form_deliveries ?? 0),
+    deliverySuccessRate: rate(deliveredCount, totalWhatsapp),
+    templateSuccessRate: rate(templateDeliveredCount, templateAttempts),
+    conversationWindowOpenRate: rate(conversationActiveCount, totalWhatsapp),
+    retryRate: rate(retryingCount, totalWhatsapp),
+    permanentFailureRate: rate(failedCount, totalWhatsapp),
+    averageDeliverySeconds: s?.avg_delivery_seconds !== null && s?.avg_delivery_seconds !== undefined ? Number(s.avg_delivery_seconds) : null,
+    topFailedTemplates: topFailed.rows.map((row) => ({ templateUsed: row.template_used, count: Number(row.count) })),
+    mostUsedTemplates: mostUsed.rows.map((row) => ({ templateUsed: row.template_used, count: Number(row.count) })),
+  };
 }

@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { MessageCircle, Settings2, BellRing } from "lucide-react";
+import { MessageCircle, Settings2 } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
 import { isFeatureEnabled } from "@/lib/db/tenant-features";
@@ -9,13 +9,20 @@ import { listSevas } from "@/lib/db/temple-sevas";
 import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import { listRecentNotifications, countNotificationsFiltered, countStuckRetryingNotifications } from "@/lib/db/notifications";
+import {
+  listRecentNotifications,
+  countNotificationsFiltered,
+  countStuckRetryingNotifications,
+  getWhatsAppDeliveryAnalytics,
+} from "@/lib/db/notifications";
 import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getNotificationMediaById, listNotificationMedia } from "@/lib/db/notification-media";
+import { listTemplatesForTenant } from "@/lib/db/whatsapp-message-templates";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
+import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
+import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
-import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -62,13 +69,14 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
-  const [tenant, specialDays, sevas, faqs, socialLinks, whatsappAccount, notificationData] = await Promise.all([
+  const [tenant, specialDays, sevas, faqs, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
     getTenantById(session.tenantId),
     listSpecialDays(session.tenantId),
     listSevas(session.tenantId),
     listFaqs(session.tenantId),
     listSocialLinks(session.tenantId),
     getWhatsAppAccountByTenant(session.tenantId),
+    listTemplatesForTenant(session.tenantId),
     notificationsEnabled
       ? Promise.all([
           listRecentNotifications(session.tenantId, { category, page: notifPage, pageSize: DEFAULT_PAGE_SIZE }),
@@ -78,6 +86,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
           resolveLinkedMedia(session.tenantId, "donation_thank_you"),
           listNotificationMedia(session.tenantId, "festival_greeting"),
           countStuckRetryingNotifications(session.tenantId),
+          getWhatsAppDeliveryAnalytics(session.tenantId),
         ])
       : null,
   ]);
@@ -101,6 +110,37 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
     />
   );
 
+  // NotificationSettingsContent/AutomatedNotificationList are async Server Components —
+  // they must be rendered here (in this Server Component page), not imported into
+  // ChatbotSettingsTabs, which is a Client Component ("use client", for the interactive
+  // Tabs state). Passing the already-rendered JSX down as props is the supported way to
+  // interleave server-rendered content inside a client component's tree.
+  const notificationSettingsSlot = notificationData && (
+    <NotificationSettingsContent
+      birthdayMedia={notificationData[2]}
+      anniversaryMedia={notificationData[3]}
+      donationMedia={notificationData[4]}
+      festivalMedia={notificationData[5]}
+      stuckRetrying={notificationData[6]}
+    />
+  );
+
+  const automatedNotificationsSlot = notificationData && (
+    <AutomatedNotificationList
+      notifications={notificationData[0]}
+      category={category}
+      page={notifPage}
+      pageSize={DEFAULT_PAGE_SIZE}
+      totalCount={notificationData[1]}
+      locale={locale}
+      pathname="/dashboard/chatbot-settings"
+      analytics={notificationData[7]}
+    />
+  );
+
+  // Deep-link into the automated-notifications tab when the URL params describe filtering it.
+  const defaultTab = category || notifPageParam ? "automatedNotifications" : "info";
+
   const chatbotConfigSection = (
     <SettingsSection
       icon={<Settings2 className="size-4.5" />}
@@ -108,33 +148,17 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       description={t("sections.chatbotConfig.description")}
       defaultOpen
     >
-      <ChatbotSettingsTabs tenant={tenant} specialDays={specialDays} sevas={sevas} faqs={faqs} socialLinks={socialLinks} />
-    </SettingsSection>
-  );
-
-  const notificationSectionDefaultOpen = Boolean(
-    category || notifPageParam || (notificationData && notificationData[6] > 0),
-  );
-
-  const notificationSection = notificationData && (
-    <SettingsSection
-      icon={<BellRing className="size-4.5" />}
-      title={t("sections.notificationSettings.title")}
-      description={t("sections.notificationSettings.description")}
-      defaultOpen={notificationSectionDefaultOpen}
-    >
-      <NotificationSettingsContent
-        automatedNotifications={notificationData[0]}
-        category={category}
-        notifPage={notifPage}
-        pageSize={DEFAULT_PAGE_SIZE}
-        automatedTotalCount={notificationData[1]}
-        birthdayMedia={notificationData[2]}
-        anniversaryMedia={notificationData[3]}
-        donationMedia={notificationData[4]}
-        festivalMedia={notificationData[5]}
-        stuckRetrying={notificationData[6]}
-        locale={locale}
+      <ChatbotSettingsTabs
+        tenant={tenant}
+        specialDays={specialDays}
+        sevas={sevas}
+        faqs={faqs}
+        socialLinks={socialLinks}
+        notificationSettingsSlot={notificationSettingsSlot}
+        automatedNotificationsSlot={automatedNotificationsSlot}
+        whatsappTemplates={whatsappTemplates}
+        whatsappConnected={isConnected}
+        defaultTab={defaultTab}
       />
     </SettingsSection>
   );
@@ -156,7 +180,6 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
       {!isConnected && whatsappConnectionCard}
 
       {chatbotConfigSection}
-      {notificationSection}
 
       {isConnected && whatsappConnectionCard}
     </div>

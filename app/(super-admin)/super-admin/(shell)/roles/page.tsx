@@ -81,26 +81,26 @@ export default async function SuperAdminRolesPage() {
                 <TableHead className="w-28">Code</TableHead>
                 <TableHead className="w-36">Label</TableHead>
                 <TableHead>Meaning</TableHead>
-                <TableHead className="w-72">Capabilities</TableHead>
+                <TableHead className="w-80">Capabilities</TableHead>
                 <TableHead className="w-24 text-right">State</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortRoles(roles).map((role) => (
                 <TableRow key={role.code}>
-                  <TableCell>
+                  <TableCell className="align-top">
                     <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                       {role.code}
                     </code>
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="align-top font-medium">
                     {role.displayName}
                   </TableCell>
-                  <TableCell className="max-w-md text-sm wrap-break-word text-muted-foreground">
+                  <TableCell className="max-w-md align-top text-sm wrap-break-word text-muted-foreground">
                     {role.description ?? "No description available."}
                   </TableCell>
-                  <TableCell className="w-72">
-                    <div className="flex flex-wrap gap-1">
+                  <TableCell className="w-80 align-top">
+                    <div className="flex flex-wrap gap-1.5">
                       {capabilitiesFor(role).map((capability) => (
                         <Badge key={capability} variant="outline">
                           {capability}
@@ -108,7 +108,7 @@ export default async function SuperAdminRolesPage() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="align-top text-right">
                     <Badge variant={role.active ? "secondary" : "outline"}>
                       {role.active ? "Active" : "Inactive"}
                     </Badge>
