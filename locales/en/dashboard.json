@@ -15,6 +15,7 @@
     "events": "Events",
     "devotees": "Devotees",
     "donations": "Donations",
+    "campaigns": "Campaigns",
     "conversations": "Conversations",
     "notifications": "Notifications",
     "chatbotSettings": "Chatbot Settings",
@@ -65,7 +66,8 @@
       "devotees": "devotees",
       "donations": "donations",
       "conversations": "conversations",
-      "users": "users"
+      "users": "users",
+      "campaigns": "campaigns"
     },
     "dialogTitle": "Export {module}",
     "dialogDescription": "Choose what to export and a format.",
@@ -446,6 +448,134 @@
       "send": "Send announcement",
       "sending": "Sending...",
       "errorFallback": "Failed to send announcement"
+    }
+  },
+  "campaigns": {
+    "pageHeader": {
+      "title": "Campaigns",
+      "subtitle": "Broadcast donation drives, festival greetings, and reminders to devotees."
+    },
+    "createButton": "Create campaign",
+    "searchPlaceholder": "Search campaigns...",
+    "selectAll": "Select all campaigns",
+    "columns": {
+      "title": "Title",
+      "type": "Type",
+      "status": "Status",
+      "schedule": "Schedule",
+      "actions": "Actions"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "typeLabel": "Type",
+      "allStatuses": "All statuses",
+      "allTypes": "All types"
+    },
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "archived": "Archived",
+      "cancelled": "Cancelled"
+    },
+    "types": {
+      "one_time": "One-Time",
+      "recurring": "Recurring",
+      "festival": "Festival",
+      "birthday": "Birthday",
+      "event_reminder": "Event Reminder",
+      "donation": "Donation",
+      "membership_renewal": "Membership Renewal",
+      "seva_reminder": "Seva Reminder",
+      "emergency": "Emergency"
+    },
+    "emptyState": {
+      "title": "No campaigns yet",
+      "description": "Create your first campaign to broadcast a donation drive, festival greeting, or reminder to devotees."
+    },
+    "actionItems": {
+      "viewDetails": "View details",
+      "duplicate": "Duplicate",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "archive": "Archive",
+      "delete": "Delete",
+      "sendNow": "Send now",
+      "schedule": "Schedule"
+    },
+    "confirm": {
+      "cancel": "Cancel this campaign? Already-sent messages aren't affected.",
+      "delete": "Delete this draft campaign? This can't be undone.",
+      "sendNow": "Send this campaign now?"
+    },
+    "deleteError": "Failed to delete campaign",
+    "statusChangeError": "Failed to update campaign",
+    "sendError": "Failed to send campaign",
+    "form": {
+      "createTitle": "Create Campaign",
+      "editTitle": "Edit Campaign",
+      "dialogDescription": "Broadcast a message to a chosen audience over WhatsApp.",
+      "titleLabel": "Campaign name",
+      "descriptionLabel": "Description",
+      "typeLabel": "Campaign type",
+      "messageSourceLabel": "Message",
+      "messageSourceTemplate": "Use a template",
+      "messageSourceCustom": "Write a custom message",
+      "templateLabel": "Template",
+      "customMessageLabel": "Message",
+      "audienceLabel": "Audience",
+      "audienceCountLoading": "Counting recipients…",
+      "audienceCount": "{count, plural, one {# devotee will receive this} other {# devotees will receive this}}",
+      "audienceUnsupported": "This audience isn't supported yet",
+      "languageLabel": "Language",
+      "linkedEventLabel": "Link to an event (optional)",
+      "linkedDonationPurposeLabel": "Track donations for (optional)",
+      "scheduleTypeLabel": "Send",
+      "scheduleTypeOneTime": "One-time",
+      "scheduleTypeRecurring": "Recurring",
+      "scheduledAtLabel": "Send at",
+      "recurrenceRuleLabel": "Repeats",
+      "save": "Save draft",
+      "saving": "Saving...",
+      "createError": "Failed to create campaign",
+      "updateError": "Failed to update campaign"
+    },
+    "audienceOptions": {
+      "all": "All devotees",
+      "active": "Active devotees",
+      "donors": "Donors",
+      "opted_in": "WhatsApp opted-in",
+      "language": "By language",
+      "family": "By family",
+      "event_attendees": "Event attendees (not available yet)"
+    },
+    "detail": {
+      "backLink": "All campaigns",
+      "tabs": {
+        "overview": "Overview",
+        "donations": "Donations",
+        "analytics": "Analytics"
+      },
+      "stats": {
+        "recipients": "Recipients",
+        "sent": "Sent",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "raised": "Raised",
+        "donors": "Donors"
+      },
+      "aboutTitle": "About this campaign",
+      "noDescription": "No description added.",
+      "donationsEmpty": "No donations recorded for this campaign yet.",
+      "notLinkedToDonations": "This campaign isn't linked to a donation purpose.",
+      "donationColumns": {
+        "donor": "Donor",
+        "amount": "Amount",
+        "date": "Date"
+      }
     }
   },
   "devotees": {

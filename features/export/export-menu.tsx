@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Scope = "all" | "filtered" | "selected";
-type ModuleLabelKey = "events" | "devotees" | "donations" | "conversations" | "users";
+type ModuleLabelKey = "events" | "devotees" | "donations" | "conversations" | "users" | "campaigns";
 
 interface ExportMenuProps {
   /** Base export API path, e.g. "/api/devotees/export". */

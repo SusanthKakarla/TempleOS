@@ -62,6 +62,7 @@ export const REAL_FEATURE_KEYS = [
   "whatsapp_chatbot",
   "user_management",
   "roles_permissions",
+  "campaigns",
 ] as const;
 export type RealFeatureKey = (typeof REAL_FEATURE_KEYS)[number];
 
@@ -270,7 +271,8 @@ export type NotificationCategory =
   | "family"
   | "platform"
   | "donation"
-  | "festival";
+  | "festival"
+  | "campaign";
 export type NotificationType =
   | "birthday_devotee"
   | "birthday_priest"
@@ -288,7 +290,8 @@ export type NotificationType =
   | "new_event"
   | "event_updated"
   | "event_cancelled"
-  | "event_announcement";
+  | "event_announcement"
+  | "campaign_broadcast";
 
 export interface NotificationTemplate {
   id: string;
@@ -332,6 +335,7 @@ export const NOTIFICATION_MEDIA_CATEGORIES = [
   "anniversary_greeting",
   "donation_thank_you",
   "festival_greeting",
+  "campaign_banner",
 ] as const;
 export type NotificationMediaCategory = (typeof NOTIFICATION_MEDIA_CATEGORIES)[number];
 
@@ -346,6 +350,70 @@ export interface NotificationMedia {
   width: number | null;
   height: number | null;
   fileSize: number;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const CAMPAIGN_STATUSES = [
+  "draft",
+  "scheduled",
+  "running",
+  "paused",
+  "completed",
+  "archived",
+  "cancelled",
+] as const;
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+
+/**
+ * A presentation label selecting a canned audience/template/trigger
+ * combination — not a different send mechanism. See lib/db/campaigns.ts.
+ */
+export const CAMPAIGN_TYPES = [
+  "one_time",
+  "recurring",
+  "festival",
+  "birthday",
+  "event_reminder",
+  "donation",
+  "membership_renewal",
+  "seva_reminder",
+  "emergency",
+] as const;
+export type CampaignType = (typeof CAMPAIGN_TYPES)[number];
+
+export type CampaignScheduleType = "one_time" | "recurring";
+
+/** Evaluated against devotees (+ events/donations where relevant) at send time — never snapshotted. */
+export type CampaignAudienceFilter =
+  | { type: "all" }
+  | { type: "active" }
+  | { type: "donors" }
+  | { type: "opted_in" }
+  | { type: "language"; language: SupportedLanguage }
+  | { type: "family"; familyId: string }
+  | { type: "event_attendees"; eventId: string };
+
+export interface Campaign {
+  id: string;
+  tenantId: string;
+  title: string;
+  description: string | null;
+  campaignType: CampaignType;
+  status: CampaignStatus;
+  channel: NotificationChannel;
+  templateKey: NotificationType | null;
+  customMessage: string | null;
+  audienceFilter: CampaignAudienceFilter;
+  bannerMediaId: string | null;
+  linkedEventId: string | null;
+  linkedDonationPurpose: string | null;
+  scheduleType: CampaignScheduleType;
+  scheduledAt: string | null;
+  recurrenceRule: string | null;
+  nextRunAt: string | null;
+  lastRunAt: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;

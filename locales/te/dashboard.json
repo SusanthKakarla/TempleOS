@@ -15,6 +15,7 @@
     "events": "కార్యక్రమాలు",
     "devotees": "భక్తులు",
     "donations": "విరాళాలు",
+    "campaigns": "ప్రచారాలు",
     "conversations": "సంభాషణలు",
     "notifications": "నోటిఫికేషన్‌లు",
     "chatbotSettings": "చాట్‌బాట్ సెట్టింగులు",
@@ -65,7 +66,8 @@
       "devotees": "devotees",
       "donations": "donations",
       "conversations": "సంభాషణలు",
-      "users": "వినియోగదారులు"
+      "users": "వినియోగదారులు",
+      "campaigns": "ప్రచారాలు"
     },
     "dialogTitle": "{module} ఎగుమతి చేయండి",
     "dialogDescription": "ఏమి ఎగుమతి చేయాలో మరియు ఫార్మాట్‌ను ఎంచుకోండి.",
@@ -449,6 +451,134 @@
       "send": "ప్రకటన పంపండి",
       "sending": "పంపుతోంది...",
       "errorFallback": "ప్రకటన పంపడంలో విఫలమైంది"
+    }
+  },
+  "campaigns": {
+    "pageHeader": {
+      "title": "ప్రచారాలు",
+      "subtitle": "విరాళ ప్రచారాలు, పండుగ శుభాకాంక్షలు మరియు రిమైండర్‌లను భక్తులకు ప్రసారం చేయండి."
+    },
+    "createButton": "ప్రచారం సృష్టించండి",
+    "searchPlaceholder": "ప్రచారాలను శోధించండి...",
+    "selectAll": "అన్ని ప్రచారాలను ఎంచుకోండి",
+    "columns": {
+      "title": "శీర్షిక",
+      "type": "రకం",
+      "status": "స్థితి",
+      "schedule": "షెడ్యూల్",
+      "actions": "చర్యలు"
+    },
+    "filters": {
+      "statusLabel": "స్థితి",
+      "typeLabel": "రకం",
+      "allStatuses": "అన్ని స్థితులు",
+      "allTypes": "అన్ని రకాలు"
+    },
+    "status": {
+      "draft": "డ్రాఫ్ట్",
+      "scheduled": "షెడ్యూల్ చేయబడింది",
+      "running": "నడుస్తోంది",
+      "paused": "నిలిపివేయబడింది",
+      "completed": "పూర్తయింది",
+      "archived": "ఆర్కైవ్ చేయబడింది",
+      "cancelled": "రద్దు చేయబడింది"
+    },
+    "types": {
+      "one_time": "ఒకసారి",
+      "recurring": "పునరావృతం",
+      "festival": "పండుగ",
+      "birthday": "పుట్టినరోజు",
+      "event_reminder": "కార్యక్రమ రిమైండర్",
+      "donation": "విరాళం",
+      "membership_renewal": "సభ్యత్వ పునరుద్ధరణ",
+      "seva_reminder": "సేవ రిమైండర్",
+      "emergency": "అత్యవసర ప్రకటన"
+    },
+    "emptyState": {
+      "title": "ఇంకా ప్రచారాలు లేవు",
+      "description": "భక్తులకు విరాళ ప్రచారం, పండుగ శుభాకాంక్షలు లేదా రిమైండర్ పంపడానికి మీ మొదటి ప్రచారాన్ని సృష్టించండి."
+    },
+    "actionItems": {
+      "viewDetails": "వివరాలు చూడండి",
+      "duplicate": "నకిలీ చేయండి",
+      "pause": "నిలిపివేయండి",
+      "resume": "కొనసాగించండి",
+      "cancel": "రద్దు చేయండి",
+      "archive": "ఆర్కైవ్ చేయండి",
+      "delete": "తొలగించండి",
+      "sendNow": "ఇప్పుడే పంపండి",
+      "schedule": "షెడ్యూల్ చేయండి"
+    },
+    "confirm": {
+      "cancel": "ఈ ప్రచారాన్ని రద్దు చేయాలా? ఇప్పటికే పంపిన సందేశాలపై ప్రభావం ఉండదు.",
+      "delete": "ఈ డ్రాఫ్ట్ ప్రచారాన్ని తొలగించాలా? దీన్ని రద్దు చేయలేరు.",
+      "sendNow": "ఈ ప్రచారాన్ని ఇప్పుడే పంపాలా?"
+    },
+    "deleteError": "ప్రచారాన్ని తొలగించడంలో విఫలమైంది",
+    "statusChangeError": "ప్రచారాన్ని నవీకరించడంలో విఫలమైంది",
+    "sendError": "ప్రచారాన్ని పంపడంలో విఫలమైంది",
+    "form": {
+      "createTitle": "ప్రచారం సృష్టించండి",
+      "editTitle": "ప్రచారాన్ని సవరించండి",
+      "dialogDescription": "ఎంచుకున్న ప్రేక్షకులకు వాట్సాప్ ద్వారా సందేశాన్ని ప్రసారం చేయండి.",
+      "titleLabel": "ప్రచార పేరు",
+      "descriptionLabel": "వివరణ",
+      "typeLabel": "ప్రచార రకం",
+      "messageSourceLabel": "సందేశం",
+      "messageSourceTemplate": "టెంప్లేట్ ఉపయోగించండి",
+      "messageSourceCustom": "అనుకూల సందేశం రాయండి",
+      "templateLabel": "టెంప్లేట్",
+      "customMessageLabel": "సందేశం",
+      "audienceLabel": "ప్రేక్షకులు",
+      "audienceCountLoading": "గ్రహీతలను లెక్కిస్తోంది…",
+      "audienceCount": "{count, plural, one {# భక్తుడు దీన్ని అందుకుంటారు} other {# భక్తులు దీన్ని అందుకుంటారు}}",
+      "audienceUnsupported": "ఈ ప్రేక్షక వర్గం ఇంకా అందుబాటులో లేదు",
+      "languageLabel": "భాష",
+      "linkedEventLabel": "కార్యక్రమానికి లింక్ చేయండి (ఐచ్ఛికం)",
+      "linkedDonationPurposeLabel": "దేని కోసం విరాళాలు ట్రాక్ చేయాలి (ఐచ్ఛికం)",
+      "scheduleTypeLabel": "పంపండి",
+      "scheduleTypeOneTime": "ఒకసారి",
+      "scheduleTypeRecurring": "పునరావృతం",
+      "scheduledAtLabel": "ఎప్పుడు పంపాలి",
+      "recurrenceRuleLabel": "పునరావృతం",
+      "save": "డ్రాఫ్ట్ సేవ్ చేయండి",
+      "saving": "సేవ్ చేస్తోంది...",
+      "createError": "ప్రచారాన్ని సృష్టించడంలో విఫలమైంది",
+      "updateError": "ప్రచారాన్ని నవీకరించడంలో విఫలమైంది"
+    },
+    "audienceOptions": {
+      "all": "అందరు భక్తులు",
+      "active": "క్రియాశీల భక్తులు",
+      "donors": "దాతలు",
+      "opted_in": "వాట్సాప్‌లో చేరినవారు",
+      "language": "భాష ప్రకారం",
+      "family": "కుటుంబం ప్రకారం",
+      "event_attendees": "కార్యక్రమ హాజరైనవారు (ఇంకా అందుబాటులో లేదు)"
+    },
+    "detail": {
+      "backLink": "అన్ని ప్రచారాలు",
+      "tabs": {
+        "overview": "అవలోకనం",
+        "donations": "విరాళాలు",
+        "analytics": "విశ్లేషణలు"
+      },
+      "stats": {
+        "recipients": "గ్రహీతలు",
+        "sent": "పంపబడింది",
+        "delivered": "డెలివరీ అయింది",
+        "failed": "విఫలమైంది",
+        "raised": "సేకరించింది",
+        "donors": "దాతలు"
+      },
+      "aboutTitle": "ఈ ప్రచారం గురించి",
+      "noDescription": "వివరణ జోడించలేదు.",
+      "donationsEmpty": "ఈ ప్రచారం కోసం ఇంకా విరాళాలు నమోదు కాలేదు.",
+      "notLinkedToDonations": "ఈ ప్రచారం ఏ విరాళ ప్రయోజనానికి లింక్ చేయబడలేదు.",
+      "donationColumns": {
+        "donor": "దాత",
+        "amount": "మొత్తం",
+        "date": "తేదీ"
+      }
     }
   },
   "devotees": {

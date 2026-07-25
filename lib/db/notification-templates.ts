@@ -417,6 +417,24 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: 'నమస్తే. {{templeName}} దేవాలయంలో రాబోయే కార్యక్రమం: {{eventTitle}}, {{eventDate}} న {{eventTime}}కి.\nరాబోయే కార్యక్రమాలు చూడటానికి "కార్యక్రమాలు" అని టైప్ చేయండి.',
   },
+  // Campaign broadcast — one shared template wrapping the admin-authored
+  // {{message}} body (mirrors festival_greeting's one-shared-template-with-a-
+  // variable approach), used only when a campaign has a templateKey rather
+  // than a raw customMessage (see lib/db/campaign-broadcasts.ts).
+  {
+    notificationType: "campaign_broadcast",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "📣 {{campaignTitle}}\n\n{{message}}\n\n— {{templeName}}",
+  },
+  {
+    notificationType: "campaign_broadcast",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "📣 {{campaignTitle}}\n\n{{message}}\n\n— {{templeName}}",
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

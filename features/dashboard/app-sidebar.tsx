@@ -9,6 +9,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Landmark,
+  Megaphone,
   Receipt,
   Settings2,
   ShieldCheck,
@@ -39,6 +40,13 @@ export const NAV_ITEMS = [
     icon: Receipt,
     gradient: "gradient-saffron-gold",
     featureKey: "donations",
+  },
+  {
+    href: "/dashboard/campaigns",
+    labelKey: "campaigns",
+    icon: Megaphone,
+    gradient: "gradient-maroon-orange",
+    featureKey: "campaigns",
   },
   {
     href: "/dashboard/chatbot-settings",

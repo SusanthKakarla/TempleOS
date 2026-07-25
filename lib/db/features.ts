@@ -78,6 +78,7 @@ const FEATURE_CATALOG_SEED: FeatureSeed[] = [
   { key: "whatsapp_chatbot", displayName: "WhatsApp Chatbot", description: "Temple info, timings, and FAQ content served by the WhatsApp bot.", icon: "Settings2", category: "module", defaultEnabled: true, sortOrder: 15 },
   { key: "user_management", displayName: "User Management", description: "Invite and manage staff who can sign in to this dashboard.", icon: "UserCog", category: "module", defaultEnabled: true, sortOrder: 16 },
   { key: "roles_permissions", displayName: "Roles & Permissions", description: "View the platform's role catalog and assign roles to staff.", icon: "ShieldCheck", category: "module", defaultEnabled: true, dependsOn: ["user_management"], sortOrder: 17 },
+  { key: "campaigns", displayName: "Campaigns", description: "Broadcast donation drives, festival greetings, and reminders to devotees.", icon: "Megaphone", category: "module", defaultEnabled: true, sortOrder: 18 },
 
   // Real but bundled — not independently routable, so not separately enforced.
   { key: "family_devotees", displayName: "Family Devotees", description: "Family relationship management, part of Devotees.", icon: "UsersRound", category: "module", defaultEnabled: true, dependsOn: ["devotees"], sortOrder: 20 },
