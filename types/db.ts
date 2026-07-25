@@ -232,6 +232,8 @@ export interface WhatsAppMessageTemplate {
   enabled: boolean;
   fallbackStrategy: string | null;
   description: string | null;
+  /** Copy-paste-ready recommended name/category/body/variable-legend for the admin to submit in Meta Business Manager themselves. Only set by the standard-template bootstrap — null for admin-created rows. */
+  submissionGuide: string | null;
   version: number;
   lastSyncedAt: string | null;
   createdAt: string;

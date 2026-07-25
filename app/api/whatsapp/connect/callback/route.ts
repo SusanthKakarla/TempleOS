@@ -9,6 +9,7 @@ import {
 } from "@/lib/whatsapp/embedded-signup";
 import { completeEmbeddedSignup, getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 import { createAuditLogEntry } from "@/lib/db/audit-log";
+import { bootstrapStandardTemplates } from "@/lib/whatsapp/template-bootstrap";
 
 export async function POST(req: NextRequest) {
   const auth = await requireTenantAdminSession();
@@ -66,6 +67,32 @@ export async function POST(req: NextRequest) {
     targetId: account.id,
     metadata: { metaPhoneNumberId: phoneNumberId, metaBusinessAccountId: wabaId },
   });
+
+  // Best-effort: a bootstrap failure must never fail the connection itself —
+  // the admin can always retry via the "Setup WhatsApp Templates" button,
+  // which calls the same idempotent bootstrap function.
+  try {
+    const bootstrap = await bootstrapStandardTemplates(session.tenantId);
+    await createAuditLogEntry({
+      actorType: "tenant_member",
+      actorId: session.membershipId,
+      tenantId: session.tenantId,
+      action: "whatsapp_templates.bootstrapped",
+      targetType: "whatsapp_account",
+      targetId: account.id,
+      metadata: { created: bootstrap.created.length, alreadyExisted: bootstrap.alreadyExisted.length },
+    });
+  } catch (err) {
+    await createAuditLogEntry({
+      actorType: "tenant_member",
+      actorId: session.membershipId,
+      tenantId: session.tenantId,
+      action: "whatsapp_templates.bootstrap_failed",
+      targetType: "whatsapp_account",
+      targetId: account.id,
+      metadata: { error: err instanceof Error ? err.message : "Unknown error" },
+    });
+  }
 
   return NextResponse.json({ account });
 }

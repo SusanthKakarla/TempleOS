@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, Send, Pencil, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BookOpen, Plus, RefreshCw, Send, Pencil, Sparkles, Trash2 } from "lucide-react";
 import type { WhatsAppMessageTemplate, WhatsAppTemplateMetaCategory } from "@/types/db";
+import { WhatsAppTemplateSetupWizard } from "./whatsapp-template-setup-wizard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -61,8 +63,15 @@ const emptyForm: TemplateFormState = {
   description: "",
 };
 
-export function WhatsAppTemplatesTab({ templates }: { templates: WhatsAppMessageTemplate[] }) {
+export function WhatsAppTemplatesTab({
+  templates,
+  whatsappConnected = false,
+}: {
+  templates: WhatsAppMessageTemplate[];
+  whatsappConnected?: boolean;
+}) {
   const router = useRouter();
+  const t = useTranslations("chatbotSettings.whatsappTemplateSetup");
   const [formOpen, setFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<WhatsAppMessageTemplate | null>(null);
   const [form, setForm] = useState<TemplateFormState>(emptyForm);
@@ -70,6 +79,9 @@ export function WhatsAppTemplatesTab({ templates }: { templates: WhatsAppMessage
   const [submitting, setSubmitting] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState<WhatsAppMessageTemplate | null>(null);
   const [testSendTemplate, setTestSendTemplate] = useState<WhatsAppMessageTemplate | null>(null);
+  const [guideTemplate, setGuideTemplate] = useState<WhatsAppMessageTemplate | null>(null);
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false);
+  const [setupWizardKey, setSetupWizardKey] = useState(0);
 
   function openCreate() {
     setEditingTemplate(null);
@@ -156,6 +168,9 @@ export function WhatsAppTemplatesTab({ templates }: { templates: WhatsAppMessage
       { label: "Edit", icon: <Pencil className="size-4" />, onClick: () => openEdit(template) },
       { label: "Sync status from Meta", icon: <RefreshCw className="size-4" />, onClick: () => handleSync(template) },
       { label: "Test send", icon: <Send className="size-4" />, onClick: () => setTestSendTemplate(template) },
+      ...(template.submissionGuide
+        ? [{ label: t("guideDialog.menuItem"), icon: <BookOpen className="size-4" />, onClick: () => setGuideTemplate(template) }]
+        : []),
       {
         label: "Delete",
         icon: <Trash2 className="size-4" />,
@@ -173,10 +188,25 @@ export function WhatsAppTemplatesTab({ templates }: { templates: WhatsAppMessage
           Meta Business Manager — this is what TempleOS falls back to when a recipient&apos;s 24h conversation window is
           closed.
         </p>
-        <Button className="shrink-0 gap-1.5" onClick={openCreate}>
-          <Plus className="size-4" />
-          Add Template
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          {whatsappConnected && (
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => {
+                setSetupWizardKey((k) => k + 1);
+                setSetupWizardOpen(true);
+              }}
+            >
+              <Sparkles className="size-4" />
+              {t("setupButton")}
+            </Button>
+          )}
+          <Button className="gap-1.5" onClick={openCreate}>
+            <Plus className="size-4" />
+            Add Template
+          </Button>
+        </div>
       </div>
 
       {templates.length === 0 ? (
@@ -343,6 +373,18 @@ export function WhatsAppTemplatesTab({ templates }: { templates: WhatsAppMessage
         <TestSendDialog template={testSendTemplate} onOpenChange={(open) => !open && setTestSendTemplate(null)} />
       )}
 
+      {setupWizardOpen && (
+        <WhatsAppTemplateSetupWizard
+          key={setupWizardKey}
+          onOpenChange={setSetupWizardOpen}
+          onCompleted={() => router.refresh()}
+        />
+      )}
+
+      {guideTemplate && (
+        <SubmissionGuideDialog template={guideTemplate} onOpenChange={(open) => !open && setGuideTemplate(null)} />
+      )}
+
       <AlertDialog open={deletingTemplate !== null} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -435,6 +477,51 @@ function TestSendDialog({
             <Send className="size-4" />
             {submitting ? "Sending..." : "Send test"}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Read-only, copy-paste-ready guidance for submitting this template directly in Meta Business Manager — TempleOS never submits templates to Meta itself. */
+function SubmissionGuideDialog({
+  template,
+  onOpenChange,
+}: {
+  template: WhatsAppMessageTemplate;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const t = useTranslations("chatbotSettings.whatsappTemplateSetup.guideDialog");
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div>
+            <p className="mb-1 font-medium">{t("recommendedName")}</p>
+            <code className="block rounded-md bg-muted px-2.5 py-1.5 text-xs">{template.metaTemplateName}</code>
+          </div>
+          <div>
+            <p className="mb-1 font-medium">{t("recommendedCategory")}</p>
+            <code className="block rounded-md bg-muted px-2.5 py-1.5 text-xs">{template.metaCategory}</code>
+          </div>
+          <div>
+            <p className="mb-1 font-medium">{t("recommendedLanguage")}</p>
+            <code className="block rounded-md bg-muted px-2.5 py-1.5 text-xs">{template.language}</code>
+          </div>
+          <div>
+            <p className="mb-1 font-medium">{t("recommendedBody")}</p>
+            <pre className="whitespace-pre-wrap rounded-md bg-muted px-2.5 py-1.5 text-xs">
+              {template.submissionGuide ?? t("noGuide")}
+            </pre>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>{t("close")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

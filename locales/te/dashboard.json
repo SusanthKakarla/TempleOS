@@ -227,6 +227,30 @@
       "edit": "సవరించండి",
       "delete": "తొలగించండి"
     },
+    "whatsappTemplateSetup": {
+      "setupButton": "WhatsApp టెంప్లేట్‌లను సెటప్ చేయండి",
+      "wizardTitle": "WhatsApp టెంప్లేట్‌లు సెటప్ అవుతున్నాయి",
+      "wizardDescription": "TempleOS ప్రామాణిక టెంప్లేట్‌లను సిద్ధం చేసి, Meta వద్ద వాటి ఆమోద స్థితిని తనిఖీ చేస్తుంది.",
+      "wizardWorking": "పని జరుగుతోంది...",
+      "stepBootstrap": "TempleOS టెంప్లేట్‌లను సిద్ధం చేస్తోంది",
+      "stepSync": "Metaను తనిఖీ చేస్తోంది",
+      "stepReady": "WhatsApp సిద్ధంగా ఉంది",
+      "resultSummary": "{created} టెంప్లేట్(లు) సిద్ధమయ్యాయి · {approved} ఆమోదించబడ్డాయి · {pending} ఇంకా Meta నుండి వేచి ఉన్నాయి.",
+      "setupSuccess": "WhatsApp టెంప్లేట్ సెటప్ పూర్తయింది",
+      "setupError": "సెటప్ విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+      "close": "మూసివేయండి",
+      "guideDialog": {
+        "menuItem": "Meta సెటప్ గైడ్ చూడండి",
+        "title": "Meta సెటప్ గైడ్",
+        "description": "ఈ టెంప్లేట్ ఇంకా ఆమోదించబడలేదు. దిగువ వివరాలను ఉపయోగించి దీన్ని Meta బిజినెస్ మేనేజర్‌లో సమర్పించండి, ఆపై సమీక్షించిన తర్వాత \"Sync status from Meta\" వాడండి.",
+        "recommendedName": "సిఫార్సు చేసిన టెంప్లేట్ పేరు",
+        "recommendedCategory": "సిఫార్సు చేసిన వర్గం",
+        "recommendedLanguage": "భాష",
+        "recommendedBody": "సిఫార్సు చేసిన వచనం",
+        "noGuide": "ఈ టెంప్లేట్ కోసం గైడ్ అందుబాటులో లేదు.",
+        "close": "మూసివేయండి"
+      }
+    },
     "days": {
       "monday": "సోమ",
       "tuesday": "మంగళ",

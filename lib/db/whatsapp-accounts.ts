@@ -58,6 +58,14 @@ export async function getWhatsAppAccountByTenant(tenantId: string): Promise<What
   return rows[0] ? mapAccount(rows[0]) : null;
 }
 
+/** Every tenant with a live WABA connection — used by the standard-template sync cron, not just the single-tenant lookups above. */
+export async function listConnectedWhatsAppAccounts(): Promise<WhatsAppAccount[]> {
+  const { rows } = await getPool().query<WhatsAppAccountRow>(
+    "SELECT * FROM whatsapp_accounts WHERE status = 'connected'",
+  );
+  return rows.map(mapAccount);
+}
+
 export interface UpsertWhatsAppAccountInput {
   phoneNumber: string;
   metaPhoneNumberId: string;

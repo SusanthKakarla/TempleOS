@@ -5,6 +5,7 @@ import {
   completeEmbeddedSignup,
   deleteWhatsAppAccount,
   disconnectWhatsAppAccount,
+  listConnectedWhatsAppAccounts,
   manuallyConnectWhatsAppAccount,
 } from "./whatsapp-accounts";
 
@@ -137,5 +138,15 @@ describe("WhatsApp accounts repository", () => {
     const result = await deleteWhatsAppAccount("tenant-without-account");
 
     expect(result).toBeNull();
+  });
+
+  it("lists only connected accounts across all tenants, for the template-sync cron", async () => {
+    query.mockResolvedValueOnce({ rows: [row, { ...row, id: "whatsapp-2", tenant_id: "tenant-2" }] });
+
+    const result = await listConnectedWhatsAppAccounts();
+
+    expect(result).toHaveLength(2);
+    expect(result[1].tenantId).toBe("tenant-2");
+    expect(String(query.mock.calls[0][0])).toContain("WHERE status = 'connected'");
   });
 });

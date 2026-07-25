@@ -23,6 +23,7 @@ export function ChatbotSettingsTabs({
   notificationSettingsSlot,
   automatedNotificationsSlot,
   whatsappTemplates,
+  whatsappConnected,
   defaultTab = "info",
 }: {
   tenant: Tenant;
@@ -41,6 +42,7 @@ export function ChatbotSettingsTabs({
   automatedNotificationsSlot: ReactNode | null;
   /** Plain data (not pre-rendered JSX) — WhatsAppTemplatesTab is itself a Client Component, so it's safe to import and render directly here, unlike the two Server Components above. */
   whatsappTemplates: WhatsAppMessageTemplate[];
+  whatsappConnected: boolean;
   defaultTab?: string;
 }) {
   const t = useTranslations("chatbotSettings.tabs");
@@ -92,7 +94,7 @@ export function ChatbotSettingsTabs({
       )}
 
       <TabsContent value="whatsappTemplates">
-        <WhatsAppTemplatesTab templates={whatsappTemplates} />
+        <WhatsAppTemplatesTab templates={whatsappTemplates} whatsappConnected={whatsappConnected} />
       </TabsContent>
     </Tabs>
   );

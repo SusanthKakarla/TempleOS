@@ -17,6 +17,7 @@ interface WhatsAppMessageTemplateRow {
   enabled: boolean;
   fallback_strategy: string | null;
   description: string | null;
+  submission_guide: string | null;
   version: number;
   last_synced_at: Date | null;
   created_at: Date;
@@ -36,6 +37,7 @@ function mapTemplate(row: WhatsAppMessageTemplateRow): WhatsAppMessageTemplate {
     enabled: row.enabled,
     fallbackStrategy: row.fallback_strategy,
     description: row.description,
+    submissionGuide: row.submission_guide,
     version: row.version,
     lastSyncedAt: row.last_synced_at ? row.last_synced_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
@@ -107,6 +109,40 @@ export async function createTemplate(
   return mapTemplate(rows[0]);
 }
 
+export interface InsertTemplateIfMissingInput extends CreateWhatsAppMessageTemplateInput {
+  submissionGuide: string | null;
+}
+
+/**
+ * Standard-template bootstrap only — `DO NOTHING` on conflict, never
+ * `DO UPDATE`, so re-running bootstrap (e.g. on WhatsApp reconnect) can never
+ * clobber an admin's later edits to a row it already created. Returns null
+ * when the (tenant, template_key, language) row already existed.
+ */
+export async function insertTemplateIfMissing(
+  tenantId: string,
+  input: InsertTemplateIfMissingInput,
+): Promise<WhatsAppMessageTemplate | null> {
+  const { rows } = await getPool().query<WhatsAppMessageTemplateRow>(
+    `INSERT INTO whatsapp_message_templates
+       (tenant_id, template_key, meta_template_name, language, meta_category, variables, description, submission_guide, enabled)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, false)
+     ON CONFLICT (tenant_id, template_key, language) DO NOTHING
+     RETURNING *`,
+    [
+      tenantId,
+      input.templateKey,
+      input.metaTemplateName,
+      input.language,
+      input.metaCategory,
+      JSON.stringify(input.variables),
+      input.description ?? null,
+      input.submissionGuide,
+    ],
+  );
+  return rows[0] ? mapTemplate(rows[0]) : null;
+}
+
 export interface UpdateWhatsAppMessageTemplateInput {
   metaTemplateName?: string;
   metaCategory?: WhatsAppTemplateMetaCategory;
@@ -152,6 +188,12 @@ export async function updateTemplate(
   return rows[0] ? mapTemplate(rows[0]) : null;
 }
 
+/**
+ * Auto-enables only on the transition INTO 'approved' (previous status was
+ * something else) — never re-enables a row an admin has since disabled, and
+ * never touches a row that was already approved. One-directional (false→true
+ * only), so this can never silently turn a live template off.
+ */
 export async function setApprovalStatus(
   tenantId: string,
   id: string,
@@ -159,12 +201,23 @@ export async function setApprovalStatus(
 ): Promise<WhatsAppMessageTemplate | null> {
   const { rows } = await getPool().query<WhatsAppMessageTemplateRow>(
     `UPDATE whatsapp_message_templates
-     SET approval_status = $3, last_synced_at = now(), updated_at = now()
+     SET approval_status = $3,
+         enabled = CASE WHEN $3 = 'approved' AND approval_status IS DISTINCT FROM 'approved'
+                        THEN true ELSE enabled END,
+         last_synced_at = now(), updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING *`,
     [tenantId, id, approvalStatus],
   );
   return rows[0] ? mapTemplate(rows[0]) : null;
+}
+
+export async function listPendingTemplatesForTenant(tenantId: string): Promise<WhatsAppMessageTemplate[]> {
+  const { rows } = await getPool().query<WhatsAppMessageTemplateRow>(
+    "SELECT * FROM whatsapp_message_templates WHERE tenant_id = $1 AND approval_status = 'pending' ORDER BY template_key, language",
+    [tenantId],
+  );
+  return rows.map(mapTemplate);
 }
 
 export async function deleteTemplate(tenantId: string, id: string): Promise<boolean> {

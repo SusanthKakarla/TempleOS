@@ -157,6 +157,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         notificationSettingsSlot={notificationSettingsSlot}
         automatedNotificationsSlot={automatedNotificationsSlot}
         whatsappTemplates={whatsappTemplates}
+        whatsappConnected={isConnected}
         defaultTab={defaultTab}
       />
     </SettingsSection>
