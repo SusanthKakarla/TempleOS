@@ -282,9 +282,53 @@ const CATALOG_SOURCE: Omit<StandardTemplateCatalogEntry, "description">[] = [
     appBody:
       "🎉 {{festivalName}} శుభాకాంక్షలు!\n\n🙏 {{templeName}} తరఫున మీకు మరియు మీ కుటుంబానికి ఆనందకరమైన {{festivalName}} శుభాకాంక్షలు.\n\n🌸 ఓం నమః శివాయ 🌸",
   },
+  // Donation campaign broadcast — goal/raised/link, used only for
+  // campaign_type='donation' campaigns with a goal_amount set (see
+  // lib/campaigns/donation-message.ts). Distinct from the generic
+  // campaign_broadcast key, which has no goal/raised/link variables.
+  {
+    templateKey: "donation_campaign_broadcast",
+    language: "en",
+    metaTemplateName: "donation_campaign_broadcast",
+    metaCategory: "UTILITY",
+    variables: [
+      "templeName",
+      "campaignTitle",
+      "campaignDescription",
+      "goalAmount",
+      "raisedAmount",
+      "raisedPercentage",
+      "startDate",
+      "endDate",
+      "donationLink",
+      "blessingMessage",
+    ],
+    appBody:
+      "🙏 Om Namah Shivaya 🙏\n\n{{templeName}} is organizing a new donation campaign.\n\n📢 Campaign\n{{campaignTitle}}\n\n📝 Description\n{{campaignDescription}}\n\n🎯 Goal\n{{goalAmount}}\n\n📈 Raised\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 Campaign Period\n{{startDate}} - {{endDate}}\n\n❤️ Support this sacred cause.\n🔗 Donate Now\n{{donationLink}}\n\n{{blessingMessage}}",
+  },
+  {
+    templateKey: "donation_campaign_broadcast",
+    language: "te",
+    metaTemplateName: "donation_campaign_broadcast",
+    metaCategory: "UTILITY",
+    variables: [
+      "templeName",
+      "campaignTitle",
+      "campaignDescription",
+      "goalAmount",
+      "raisedAmount",
+      "raisedPercentage",
+      "startDate",
+      "endDate",
+      "donationLink",
+      "blessingMessage",
+    ],
+    appBody:
+      "🙏 ఓం నమః శివాయ 🙏\n\n{{templeName}} ఒక కొత్త విరాళ కార్యక్రమాన్ని నిర్వహిస్తోంది.\n\n📢 కార్యక్రమం\n{{campaignTitle}}\n\n📝 వివరణ\n{{campaignDescription}}\n\n🎯 లక్ష్యం\n{{goalAmount}}\n\n📈 సేకరించినది\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 కార్యక్రమ వ్యవధి\n{{startDate}} - {{endDate}}\n\n❤️ ఈ పవిత్ర కార్యానికి మద్దతు ఇవ్వండి.\n🔗 ఇప్పుడు విరాళం ఇవ్వండి\n{{donationLink}}\n\n{{blessingMessage}}",
+  },
 ];
 
-/** 13 standard template keys × {en, te} = 26 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
+/** 14 standard template keys × {en, te} = 28 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
 export const STANDARD_TEMPLATE_CATALOG: StandardTemplateCatalogEntry[] = CATALOG_SOURCE.map((entry) => ({
   ...entry,
   description: `Standard TempleOS template for "${entry.templateKey}" (${entry.language}). Recommended starting point — adjust category/body/variables as needed before submitting in Meta Business Manager.`,

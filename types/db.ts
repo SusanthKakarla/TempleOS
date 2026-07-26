@@ -321,7 +321,8 @@ export type NotificationType =
   | "event_updated"
   | "event_cancelled"
   | "event_announcement"
-  | "campaign_broadcast";
+  | "campaign_broadcast"
+  | "donation_campaign_broadcast";
 
 export interface NotificationTemplate {
   id: string;
@@ -453,6 +454,12 @@ export interface Campaign {
   recurrenceRule: string | null;
   nextRunAt: string | null;
   lastRunAt: string | null;
+  goalAmount: string | null;
+  campaignStartDate: string | null;
+  campaignEndDate: string | null;
+  donationLinkOverride: string | null;
+  closingReminderSentAt: string | null;
+  targetReachedAnnouncedAt: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;

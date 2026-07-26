@@ -435,6 +435,25 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "📣 {{campaignTitle}}\n\n{{message}}\n\n— {{templeName}}",
   },
+  // Donation campaign broadcast — rich goal/raised/link body, used only when
+  // a campaign has campaignType='donation' and a goalAmount set (see
+  // lib/campaigns/donation-message.ts::buildDonationCampaignVars, the single
+  // place these variables are computed for both this free-form path and the
+  // Meta HSM template in standard-template-catalog.ts).
+  {
+    notificationType: "donation_campaign_broadcast",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Om Namah Shivaya 🙏\n\n{{templeName}} is organizing a new donation campaign.\n\n📢 Campaign\n{{campaignTitle}}\n\n📝 Description\n{{campaignDescription}}\n\n🎯 Goal\n{{goalAmount}}\n\n📈 Raised\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 Campaign Period\n{{startDate}} - {{endDate}}\n\n❤️ Support this sacred cause.\n🔗 Donate Now\n{{donationLink}}\n\n{{blessingMessage}}",
+  },
+  {
+    notificationType: "donation_campaign_broadcast",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 ఓం నమః శివాయ 🙏\n\n{{templeName}} ఒక కొత్త విరాళ కార్యక్రమాన్ని నిర్వహిస్తోంది.\n\n📢 కార్యక్రమం\n{{campaignTitle}}\n\n📝 వివరణ\n{{campaignDescription}}\n\n🎯 లక్ష్యం\n{{goalAmount}}\n\n📈 సేకరించినది\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 కార్యక్రమ వ్యవధి\n{{startDate}} - {{endDate}}\n\n❤️ ఈ పవిత్ర కార్యానికి మద్దతు ఇవ్వండి.\n🔗 ఇప్పుడు విరాళం ఇవ్వండి\n{{donationLink}}\n\n{{blessingMessage}}",
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

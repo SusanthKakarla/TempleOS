@@ -8,7 +8,8 @@
     "close": "Close",
     "search": "Search",
     "viewDetails": "View Details",
-    "filters": "Filters"
+    "filters": "Filters",
+    "loading": "Loading..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -531,7 +532,8 @@
       "archive": "Archive",
       "delete": "Delete",
       "sendNow": "Send now",
-      "schedule": "Schedule"
+      "schedule": "Schedule",
+      "preview": "Preview"
     },
     "confirm": {
       "cancel": "Cancel this campaign? Already-sent messages aren't affected.",
@@ -541,11 +543,14 @@
     "deleteError": "Failed to delete campaign",
     "statusChangeError": "Failed to update campaign",
     "sendError": "Failed to send campaign",
+    "scheduleError": "Failed to schedule campaign",
     "form": {
       "createTitle": "Create Campaign",
       "editTitle": "Edit Campaign",
       "dialogDescription": "Broadcast a message to a chosen audience over WhatsApp.",
       "titleLabel": "Campaign name",
+      "bannerLabel": "Campaign banner",
+      "bannerHint": "Shown as the image header on templates that support it; falls back to text-only otherwise.",
       "descriptionLabel": "Description",
       "typeLabel": "Campaign type",
       "messageSourceLabel": "Message",
@@ -560,11 +565,25 @@
       "languageLabel": "Language",
       "linkedEventLabel": "Link to an event (optional)",
       "linkedDonationPurposeLabel": "Track donations for (optional)",
+      "linkedDonationPurposeHint": "Must match the \"Purpose\" used when recording donations for this cause, so raised amount and donor count stay accurate.",
+      "goalAmountLabel": "Goal amount (₹)",
+      "startDateLabel": "Campaign start date",
+      "endDateLabel": "Campaign end date",
+      "donationLinkLabel": "Donation link (optional)",
+      "donationLinkPlaceholder": "Defaults to a demo donation link",
+      "donationLinkHint": "Leave blank to use the configured default demo link. Set this once a real payment gateway is connected.",
       "scheduleTypeLabel": "Send",
+      "scheduleTypeNow": "Send immediately",
+      "scheduleTypeLater": "Schedule for later",
       "scheduleTypeOneTime": "One-time",
       "scheduleTypeRecurring": "Recurring",
       "scheduledAtLabel": "Send at",
       "recurrenceRuleLabel": "Repeats",
+      "recurrenceOptions": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
       "save": "Save draft",
       "saving": "Saving...",
       "createError": "Failed to create campaign",
@@ -602,7 +621,11 @@
         "donor": "Donor",
         "amount": "Amount",
         "date": "Date"
-      }
+      },
+      "goalProgress": "{raised} raised of {goal} goal",
+      "goalReached": "Goal reached! 🎉",
+      "previewTitle": "Message preview",
+      "previewNotReady": "Preview isn't available yet."
     }
   },
   "devotees": {

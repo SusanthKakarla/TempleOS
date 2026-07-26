@@ -33,6 +33,10 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     scheduleType: source.scheduleType,
     scheduledAt: null,
     recurrenceRule: source.recurrenceRule,
+    goalAmount: source.goalAmount,
+    campaignStartDate: source.campaignStartDate,
+    campaignEndDate: source.campaignEndDate,
+    donationLinkOverride: source.donationLinkOverride,
     createdBy: session.membershipId,
   });
 

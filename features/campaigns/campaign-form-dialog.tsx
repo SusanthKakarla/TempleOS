@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactElement } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,10 +17,63 @@ import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Campaign, CampaignAudienceFilter, CampaignType, SupportedLanguage } from "@/types/db";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MediaUpload } from "@/features/media/media-upload";
+import { DateTimeField } from "@/features/events/date-time-field";
+import { formatDate } from "@/lib/date";
+import { RECURRENCE_RULES, type RecurrenceRule } from "@/lib/campaigns/recurrence";
+import type { Campaign, CampaignAudienceFilter, CampaignType, NotificationMedia, SupportedLanguage } from "@/types/db";
 import { CAMPAIGN_TYPES } from "@/types/db";
 
 type AudienceOptionType = "all" | "active" | "donors" | "opted_in" | "language";
+type ScheduleChoice = "now" | "later" | "recurring";
+
+/** Plain YYYY-MM-DD calendar date, no time-of-day — distinct from DateTimeField, which is for the full send-time timestamp. */
+function DateOnlyField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string | null;
+  onChange: (value: string | null) => void;
+}) {
+  const locale = useLocale() as SupportedLanguage;
+  const selected = value ? new Date(`${value}T00:00:00`) : undefined;
+
+  function handleSelect(date: Date | undefined) {
+    if (!date) {
+      onChange(null);
+      return;
+    }
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    onChange(`${y}-${m}-${d}`);
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Popover>
+        <PopoverTrigger
+          render={
+            <Button type="button" variant="outline" id={id} className="w-full justify-start gap-2 font-normal">
+              <CalendarIcon className="size-4 text-muted-foreground" />
+              {selected ? formatDate(selected, locale) : label}
+            </Button>
+          }
+        />
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={selected} onSelect={handleSelect} autoFocus />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 interface CampaignFormDialogProps {
   mode: "create" | "edit";
@@ -32,6 +86,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
   const t = useTranslations("campaigns.form");
   const tTypes = useTranslations("campaigns.types");
   const tAudience = useTranslations("campaigns.audienceOptions");
+  const tRecurrence = useTranslations("campaigns.form.recurrenceOptions");
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState(campaign?.title ?? "");
@@ -47,10 +102,24 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
     campaign?.audienceFilter.type === "language" ? campaign.audienceFilter.language : "en",
   );
   const [linkedDonationPurpose, setLinkedDonationPurpose] = useState(campaign?.linkedDonationPurpose ?? "");
+  const [banner, setBanner] = useState<NotificationMedia | null>(null);
+  const [goalAmount, setGoalAmount] = useState(campaign?.goalAmount ?? "");
+  const [campaignStartDate, setCampaignStartDate] = useState<string | null>(campaign?.campaignStartDate ?? null);
+  const [campaignEndDate, setCampaignEndDate] = useState<string | null>(campaign?.campaignEndDate ?? null);
+  const [donationLinkOverride, setDonationLinkOverride] = useState(campaign?.donationLinkOverride ?? "");
+  const [scheduleChoice, setScheduleChoice] = useState<ScheduleChoice>(
+    campaign?.scheduleType === "recurring" ? "recurring" : campaign?.scheduledAt ? "later" : "now",
+  );
+  const [scheduledAt, setScheduledAt] = useState(campaign?.scheduledAt?.slice(0, 16) ?? "");
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>(
+    (campaign?.recurrenceRule as RecurrenceRule | null) ?? "weekly",
+  );
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isDonation = campaignType === "donation";
 
   const audienceFilter: CampaignAudienceFilter =
     audienceType === "language" ? { type: "language", language: audienceLanguage } : { type: audienceType };
@@ -99,8 +168,15 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
         customMessage: customMessage || null,
         templateKey: null,
         audienceFilter,
+        bannerMediaId: banner?.id ?? campaign?.bannerMediaId ?? null,
         linkedDonationPurpose: linkedDonationPurpose || null,
-        scheduleType: "one_time" as const,
+        goalAmount: isDonation && goalAmount ? goalAmount : null,
+        campaignStartDate: isDonation ? campaignStartDate : null,
+        campaignEndDate: isDonation ? campaignEndDate : null,
+        donationLinkOverride: isDonation && donationLinkOverride ? donationLinkOverride : null,
+        scheduleType: scheduleChoice === "recurring" ? ("recurring" as const) : ("one_time" as const),
+        scheduledAt: scheduleChoice === "later" && scheduledAt ? scheduledAt : null,
+        recurrenceRule: scheduleChoice === "recurring" ? recurrenceRule : null,
       };
       const url = mode === "create" ? "/api/campaigns" : `/api/campaigns/${campaign?.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
@@ -138,6 +214,15 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+          />
+
+          <MediaUpload
+            category="campaign_banner"
+            title={title || undefined}
+            value={banner}
+            onChange={setBanner}
+            label={t("bannerLabel")}
+            hint={t("bannerHint")}
           />
 
           <div className="space-y-1.5">
@@ -211,14 +296,75 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
             </p>
           </div>
 
-          {campaignType === "donation" && (
-            <LabeledInput
-              id="campaign-donation-purpose"
-              label={t("linkedDonationPurposeLabel")}
-              value={linkedDonationPurpose}
-              onChange={(e) => setLinkedDonationPurpose(e.target.value)}
-            />
+          {isDonation && (
+            <div className="space-y-4 rounded-2xl border p-4">
+              <div className="space-y-1.5">
+                <LabeledInput
+                  id="campaign-donation-purpose"
+                  label={t("linkedDonationPurposeLabel")}
+                  value={linkedDonationPurpose}
+                  onChange={(e) => setLinkedDonationPurpose(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">{t("linkedDonationPurposeHint")}</p>
+              </div>
+              <LabeledInput
+                id="campaign-goal-amount"
+                label={t("goalAmountLabel")}
+                type="number"
+                min="0"
+                step="1"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(e.target.value)}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />
+                <DateOnlyField id="campaign-end-date" label={t("endDateLabel")} value={campaignEndDate} onChange={setCampaignEndDate} />
+              </div>
+              <div className="space-y-1.5">
+                <LabeledInput
+                  id="campaign-donation-link"
+                  label={t("donationLinkLabel")}
+                  value={donationLinkOverride}
+                  onChange={(e) => setDonationLinkOverride(e.target.value)}
+                  placeholder={t("donationLinkPlaceholder")}
+                />
+                <p className="text-xs text-muted-foreground">{t("donationLinkHint")}</p>
+              </div>
+            </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label>{t("scheduleTypeLabel")}</Label>
+            <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="now">{t("scheduleTypeNow")}</SelectItem>
+                <SelectItem value="later">{t("scheduleTypeLater")}</SelectItem>
+                <SelectItem value="recurring">{t("scheduleTypeRecurring")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {scheduleChoice === "later" && (
+              <div className="mt-2">
+                <DateTimeField id="campaign-scheduled-at" label={t("scheduledAtLabel")} value={scheduledAt} onChange={setScheduledAt} />
+              </div>
+            )}
+            {scheduleChoice === "recurring" && (
+              <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
+                <SelectTrigger className="mt-2 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_RULES.map((rule) => (
+                    <SelectItem key={rule} value={rule}>
+                      {tRecurrence(rule)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}

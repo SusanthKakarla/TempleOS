@@ -8,6 +8,23 @@ const nullableTrimmedString = z
   .nullable()
   .optional();
 
+const nullableDateOnlyString = z
+  .string()
+  .refine((value) => !Number.isNaN(Date.parse(value)), { message: "Must be a valid date" })
+  .nullable()
+  .optional();
+
+/** Accepts a plain number or numeric string, always stored/validated as a decimal string (matches how NUMERIC columns round-trip through pg). */
+const nullablePositiveAmountString = z
+  .union([z.string(), z.number()])
+  .transform((value) => String(value).trim())
+  .refine((value) => value.length === 0 || (!Number.isNaN(Number(value)) && Number(value) > 0), {
+    message: "Must be a positive amount",
+  })
+  .transform((value) => (value.length === 0 ? null : value))
+  .nullable()
+  .optional();
+
 export const campaignTypeSchema = z.enum(CAMPAIGN_TYPES);
 export const campaignChannelSchema = z.enum(["in_app", "whatsapp"]);
 export const campaignScheduleTypeSchema = z.enum(["one_time", "recurring"]);
@@ -40,6 +57,10 @@ export const createCampaignSchema = z.object({
     .nullable()
     .optional(),
   recurrenceRule: nullableTrimmedString,
+  goalAmount: nullablePositiveAmountString,
+  campaignStartDate: nullableDateOnlyString,
+  campaignEndDate: nullableDateOnlyString,
+  donationLinkOverride: nullableTrimmedString,
 });
 
 export const updateCampaignSchema = createCampaignSchema.partial();

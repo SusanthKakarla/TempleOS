@@ -25,13 +25,15 @@ const REAL_NOTIFICATION_TYPES = new Set([
   "event_updated",
   "event_cancelled",
   "event_announcement",
+  "campaign_broadcast",
+  "donation_campaign_broadcast",
 ]);
 
 describe("STANDARD_TEMPLATE_CATALOG", () => {
-  it("has exactly 26 entries: 13 template keys x {en, te}", () => {
-    expect(STANDARD_TEMPLATE_CATALOG).toHaveLength(26);
+  it("has exactly 28 entries: 14 template keys x {en, te}", () => {
+    expect(STANDARD_TEMPLATE_CATALOG).toHaveLength(28);
     const keys = new Set(STANDARD_TEMPLATE_CATALOG.map((e) => e.templateKey));
-    expect(keys.size).toBe(13);
+    expect(keys.size).toBe(14);
   });
 
   it("every templateKey is a real, currently-firing NotificationType — a typo here means the template silently never gets used", () => {
@@ -77,20 +79,20 @@ describe("bootstrapStandardTemplates", () => {
   it("is idempotent — a second call inserts nothing once every row already exists", async () => {
     const insertSpy = vi.spyOn(templatesDb, "insertTemplateIfMissing");
     insertSpy.mockResolvedValueOnce({ id: "t1" } as never); // first call: one created
-    for (let i = 1; i < 26; i++) {
+    for (let i = 1; i < 28; i++) {
       insertSpy.mockResolvedValueOnce(null as never); // rest already exist
     }
 
     const first = await bootstrapStandardTemplates("tenant-1");
     expect(first.created).toHaveLength(1);
-    expect(first.alreadyExisted).toHaveLength(25);
+    expect(first.alreadyExisted).toHaveLength(27);
 
     insertSpy.mockReset();
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < 28; i++) {
       insertSpy.mockResolvedValueOnce(null as never); // second run: everything already exists
     }
     const second = await bootstrapStandardTemplates("tenant-1");
     expect(second.created).toHaveLength(0);
-    expect(second.alreadyExisted).toHaveLength(26);
+    expect(second.alreadyExisted).toHaveLength(28);
   });
 });

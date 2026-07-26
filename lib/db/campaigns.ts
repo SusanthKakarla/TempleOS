@@ -21,9 +21,20 @@ interface CampaignRow {
   recurrence_rule: string | null;
   next_run_at: Date | null;
   last_run_at: Date | null;
+  goal_amount: string | null;
+  campaign_start_date: Date | null;
+  campaign_end_date: Date | null;
+  donation_link_override: string | null;
+  closing_reminder_sent_at: Date | null;
+  target_reached_announced_at: Date | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+/** DATE columns come back as midnight-UTC Date objects from `pg` — format as a plain YYYY-MM-DD, never a full timestamp, since these are calendar dates with no time-of-day meaning. */
+function toDateOnlyString(value: Date | null): string | null {
+  return value ? value.toISOString().slice(0, 10) : null;
 }
 
 function mapCampaign(row: CampaignRow): Campaign {
@@ -46,6 +57,12 @@ function mapCampaign(row: CampaignRow): Campaign {
     recurrenceRule: row.recurrence_rule,
     nextRunAt: row.next_run_at ? row.next_run_at.toISOString() : null,
     lastRunAt: row.last_run_at ? row.last_run_at.toISOString() : null,
+    goalAmount: row.goal_amount,
+    campaignStartDate: toDateOnlyString(row.campaign_start_date),
+    campaignEndDate: toDateOnlyString(row.campaign_end_date),
+    donationLinkOverride: row.donation_link_override,
+    closingReminderSentAt: row.closing_reminder_sent_at ? row.closing_reminder_sent_at.toISOString() : null,
+    targetReachedAnnouncedAt: row.target_reached_announced_at ? row.target_reached_announced_at.toISOString() : null,
     createdBy: row.created_by,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -155,6 +172,10 @@ export interface CreateCampaignInput {
   scheduleType: "one_time" | "recurring";
   scheduledAt: string | null;
   recurrenceRule: string | null;
+  goalAmount: string | null;
+  campaignStartDate: string | null;
+  campaignEndDate: string | null;
+  donationLinkOverride: string | null;
   createdBy: string;
 }
 
@@ -164,8 +185,9 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
     `INSERT INTO campaigns (
        tenant_id, title, description, campaign_type, channel, template_key, custom_message,
        audience_filter, banner_media_id, linked_event_id, linked_donation_purpose,
-       schedule_type, scheduled_at, recurrence_rule, created_by
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       schedule_type, scheduled_at, recurrence_rule,
+       goal_amount, campaign_start_date, campaign_end_date, donation_link_override, created_by
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
      RETURNING *`,
     [
       tenantId,
@@ -182,6 +204,10 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
       input.scheduleType,
       input.scheduledAt,
       input.recurrenceRule,
+      input.goalAmount,
+      input.campaignStartDate,
+      input.campaignEndDate,
+      input.donationLinkOverride,
       input.createdBy,
     ],
   );
@@ -201,6 +227,10 @@ export interface UpdateCampaignInput {
   scheduleType?: "one_time" | "recurring";
   scheduledAt?: string | null;
   recurrenceRule?: string | null;
+  goalAmount?: string | null;
+  campaignStartDate?: string | null;
+  campaignEndDate?: string | null;
+  donationLinkOverride?: string | null;
 }
 
 /** Draft-only edit surface — once a campaign leaves draft, only status transitions (updateCampaignStatus) are allowed, enforced by the API layer, not here. */
@@ -223,6 +253,10 @@ export async function updateCampaign(
          schedule_type = COALESCE($18, schedule_type),
          scheduled_at = CASE WHEN $19::boolean THEN $20 ELSE scheduled_at END,
          recurrence_rule = CASE WHEN $21::boolean THEN $22 ELSE recurrence_rule END,
+         goal_amount = CASE WHEN $23::boolean THEN $24::numeric ELSE goal_amount END,
+         campaign_start_date = CASE WHEN $25::boolean THEN $26::date ELSE campaign_start_date END,
+         campaign_end_date = CASE WHEN $27::boolean THEN $28::date ELSE campaign_end_date END,
+         donation_link_override = CASE WHEN $29::boolean THEN $30 ELSE donation_link_override END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING *`,
@@ -249,6 +283,14 @@ export async function updateCampaign(
       input.scheduledAt ?? null,
       "recurrenceRule" in input,
       input.recurrenceRule ?? null,
+      "goalAmount" in input,
+      input.goalAmount ?? null,
+      "campaignStartDate" in input,
+      input.campaignStartDate ?? null,
+      "campaignEndDate" in input,
+      input.campaignEndDate ?? null,
+      "donationLinkOverride" in input,
+      input.donationLinkOverride ?? null,
     ],
   );
   return rows[0] ? mapCampaign(rows[0]) : null;
@@ -306,4 +348,54 @@ export async function listDueCampaigns(limit = 50): Promise<Campaign[]> {
     [limit],
   );
   return rows.map(mapCampaign);
+}
+
+/** Running donation campaigns whose fundraising window ends tomorrow and haven't had a reminder sent yet — fires once per campaign, gated by closing_reminder_sent_at. */
+export async function listCampaignsNeedingClosingReminder(limit = 50): Promise<Campaign[]> {
+  const { rows } = await getPool().query<CampaignRow>(
+    `SELECT * FROM campaigns
+     WHERE status = 'running'
+       AND campaign_type = 'donation'
+       AND goal_amount IS NOT NULL
+       AND campaign_end_date = (now() AT TIME ZONE 'UTC')::date + INTERVAL '1 day'
+       AND closing_reminder_sent_at IS NULL
+     ORDER BY campaign_end_date ASC
+     LIMIT $1`,
+    [limit],
+  );
+  return rows.map(mapCampaign);
+}
+
+/** Running donation campaigns whose live-aggregated raised amount has met or passed their goal, not yet announced — fires once per campaign, gated by target_reached_announced_at. */
+export async function listCampaignsReachingGoal(limit = 50): Promise<Campaign[]> {
+  const { rows } = await getPool().query<CampaignRow>(
+    `SELECT c.* FROM campaigns c
+     WHERE c.status = 'running'
+       AND c.campaign_type = 'donation'
+       AND c.goal_amount IS NOT NULL
+       AND c.linked_donation_purpose IS NOT NULL
+       AND c.target_reached_announced_at IS NULL
+       AND COALESCE((
+         SELECT SUM(d.amount) FROM donations d
+         WHERE d.tenant_id = c.tenant_id AND d.purpose = c.linked_donation_purpose
+       ), 0) >= c.goal_amount
+     ORDER BY c.created_at ASC
+     LIMIT $1`,
+    [limit],
+  );
+  return rows.map(mapCampaign);
+}
+
+export async function markClosingReminderSent(tenantId: string, campaignId: string): Promise<void> {
+  await getPool().query("UPDATE campaigns SET closing_reminder_sent_at = now() WHERE tenant_id = $1 AND id = $2", [
+    tenantId,
+    campaignId,
+  ]);
+}
+
+export async function markTargetReachedAnnounced(tenantId: string, campaignId: string): Promise<void> {
+  await getPool().query("UPDATE campaigns SET target_reached_announced_at = now() WHERE tenant_id = $1 AND id = $2", [
+    tenantId,
+    campaignId,
+  ]);
 }

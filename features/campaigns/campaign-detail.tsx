@@ -4,17 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Archive, ArrowLeft, Copy, HandCoins, Pause, Play, Send, XCircle } from "lucide-react";
+import { Archive, ArrowLeft, CalendarClock, Copy, Eye, HandCoins, Pause, Play, Send, XCircle } from "lucide-react";
 import type { Campaign, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { formatDate, formatDateTime } from "@/lib/date";
 import { formatInr } from "@/lib/currency";
+import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
 
 interface CampaignAnalytics {
@@ -44,6 +47,11 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{ ready: boolean; reason?: string; previews?: Record<string, string> } | null>(
+    null,
+  );
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/campaigns/${campaign.id}/analytics`)
@@ -107,6 +115,35 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
     }
   }
 
+  async function handleSchedule() {
+    setError(null);
+    setPending(true);
+    try {
+      const response = await fetch(`/api/campaigns/${campaign.id}/schedule`, { method: "POST" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? t("scheduleError"));
+      }
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("scheduleError"));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handlePreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${campaign.id}/preview`);
+      const body = await response.json().catch(() => null);
+      setPreviewData(body);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   const delivery = analytics?.delivery;
 
   return (
@@ -136,6 +173,18 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
                 trigger={<Button variant="outline">{tCommon("edit")}</Button>}
                 onSaved={refresh}
               />
+            )}
+            {campaign.linkedDonationPurpose && (
+              <Button variant="outline" className="gap-1.5" onClick={handlePreview}>
+                <Eye className="size-4" />
+                {t("actionItems.preview")}
+              </Button>
+            )}
+            {(campaign.status === "draft" || campaign.status === "paused") && (
+              <Button variant="outline" className="gap-1.5" disabled={pending} onClick={handleSchedule}>
+                <CalendarClock className="size-4" />
+                {t("actionItems.schedule")}
+              </Button>
             )}
             {(campaign.status === "draft" || campaign.status === "scheduled" || campaign.status === "paused") && (
               <Button className="gap-1.5" disabled={pending} onClick={handleSendNow}>
@@ -212,6 +261,31 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
               <StatCard label={tDetail("stats.donors")} value={analytics?.donation?.donorCount ?? 0} />
               <StatCard label={tDetail("tabs.donations")} value={analytics?.donation?.donationCount ?? 0} />
             </div>
+            {campaign.goalAmount && (
+              <Card size="sm">
+                <CardContent className="space-y-2">
+                  {(() => {
+                    const goal = Number(campaign.goalAmount);
+                    const raised = Number(analytics?.donation?.totalAmount ?? 0);
+                    const rawPercentage = computeRaisedPercentage(raised, goal);
+                    const displayPercentage = Math.min(100, Math.round(rawPercentage));
+                    return (
+                      <>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {tDetail("goalProgress", { raised: formatInr(raised), goal: formatInr(goal) })}
+                          </span>
+                          <span className="font-medium tabular-nums">
+                            {rawPercentage >= 100 ? tDetail("goalReached") : `${displayPercentage}%`}
+                          </span>
+                        </div>
+                        <Progress value={displayPercentage} />
+                      </>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
             {!analytics || analytics.donations.length === 0 ? (
               <EmptyState icon={<HandCoins className="size-6" />} title={tDetail("donationsEmpty")} />
             ) : (
@@ -249,6 +323,32 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{tDetail("previewTitle")}</DialogTitle>
+          </DialogHeader>
+          {previewLoading ? (
+            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
+          ) : !previewData?.ready ? (
+            <p className="text-sm text-muted-foreground">{previewData?.reason ?? tDetail("previewNotReady")}</p>
+          ) : (
+            <div className="space-y-4">
+              {(["en", "te"] as const).map((language) => (
+                <div key={language} className="space-y-1.5">
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {language === "en" ? "English" : "తెలుగు"}
+                  </p>
+                  <div className="rounded-xl border bg-muted/40 p-4 text-sm whitespace-pre-wrap">
+                    {previewData.previews?.[language] || tDetail("previewNotReady")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

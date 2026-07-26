@@ -1,6 +1,8 @@
 import { getPool } from "./pool";
 import { getTemplate, renderTemplate } from "./notification-templates";
 import { buildDevoteeAudienceCondition } from "./campaign-audience";
+import { getCampaignDonationSummary } from "./campaign-analytics";
+import { buildDonationCampaignVars, isDonationCampaignReady } from "@/lib/campaigns/donation-message";
 import type { Campaign, SupportedLanguage, Tenant } from "@/types/db";
 
 const LANGUAGES: SupportedLanguage[] = ["en", "te"];
@@ -29,11 +31,28 @@ export async function enqueueCampaignBroadcast(tenant: Tenant, campaign: Campaig
     campaign.audienceFilter.type === "language" ? [campaign.audienceFilter.language] : LANGUAGES;
   const insertedIds: string[] = [];
 
+  // Computed once, not per-language — the raised total doesn't vary by
+  // recipient language, and this is a live aggregate over `donations`,
+  // never a stored counter (see lib/db/campaign-analytics.ts).
+  const useDonationTemplate = isDonationCampaignReady(campaign);
+  const donationSummary =
+    useDonationTemplate && campaign.linkedDonationPurpose
+      ? await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose)
+      : null;
+
   for (const language of languages) {
     let title: string | null;
     let message: string;
+    let notificationType: string = "campaign_broadcast";
 
-    if (campaign.templateKey) {
+    if (useDonationTemplate && donationSummary) {
+      const template = await getTemplate("donation_campaign_broadcast", campaign.channel, language);
+      if (!template) continue;
+      notificationType = "donation_campaign_broadcast";
+      const { vars } = buildDonationCampaignVars(tenant, campaign, donationSummary, language);
+      message = renderTemplate(template.body, vars);
+      title = template.title ? renderTemplate(template.title, vars) : null;
+    } else if (campaign.templateKey) {
       const template = await getTemplate(campaign.templateKey, campaign.channel, language);
       if (!template) continue;
       const vars = {
@@ -68,7 +87,7 @@ export async function enqueueCampaignBroadcast(tenant: Tenant, campaign: Campaig
        RETURNING id`,
       [
         tenant.id,
-        "campaign_broadcast",
+        notificationType,
         campaign.channel,
         title,
         message,

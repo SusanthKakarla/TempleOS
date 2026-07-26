@@ -61,6 +61,10 @@ export async function POST(req: NextRequest) {
     scheduleType: parsed.data.scheduleType,
     scheduledAt: parsed.data.scheduledAt ?? null,
     recurrenceRule: parsed.data.recurrenceRule ?? null,
+    goalAmount: parsed.data.goalAmount ?? null,
+    campaignStartDate: parsed.data.campaignStartDate ?? null,
+    campaignEndDate: parsed.data.campaignEndDate ?? null,
+    donationLinkOverride: parsed.data.donationLinkOverride ?? null,
     createdBy: session.membershipId,
   });
 

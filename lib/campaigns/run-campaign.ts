@@ -2,6 +2,7 @@ import { enqueueCampaignBroadcast } from "@/lib/db/campaign-broadcasts";
 import { processNotifications } from "@/lib/notifications/delivery";
 import { updateCampaignStatus } from "@/lib/db/campaigns";
 import { getCampaignDeliverySummary } from "@/lib/db/campaign-analytics";
+import { isDonationCampaignReady } from "./donation-message";
 import { computeNextRunAt } from "./recurrence";
 import type { Campaign, Tenant } from "@/types/db";
 
@@ -18,7 +19,10 @@ export type RunCampaignResult =
  * the existing enqueue → notifications table → delivery engine pipeline.
  */
 export async function runCampaignNow(tenant: Tenant, campaign: Campaign): Promise<RunCampaignResult> {
-  if (!campaign.templateKey && !campaign.customMessage) {
+  // A donation campaign with goal/dates/linked-purpose set has real content
+  // via the rich donation_campaign_broadcast template even with neither
+  // templateKey nor customMessage set — see enqueueCampaignBroadcast.
+  if (!campaign.templateKey && !campaign.customMessage && !isDonationCampaignReady(campaign)) {
     return { ok: false, reason: "no_content" };
   }
 
