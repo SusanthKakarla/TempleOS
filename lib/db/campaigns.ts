@@ -22,19 +22,17 @@ interface CampaignRow {
   next_run_at: Date | null;
   last_run_at: Date | null;
   goal_amount: string | null;
-  campaign_start_date: Date | null;
-  campaign_end_date: Date | null;
+  // DATE columns (OID 1082): lib/db/pool.ts registers a type parser that
+  // returns the raw "YYYY-MM-DD" string as-is rather than a JS Date, so no
+  // conversion is needed (or possible — these are already plain strings).
+  campaign_start_date: string | null;
+  campaign_end_date: string | null;
   donation_link_override: string | null;
   closing_reminder_sent_at: Date | null;
   target_reached_announced_at: Date | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
-}
-
-/** DATE columns come back as midnight-UTC Date objects from `pg` — format as a plain YYYY-MM-DD, never a full timestamp, since these are calendar dates with no time-of-day meaning. */
-function toDateOnlyString(value: Date | null): string | null {
-  return value ? value.toISOString().slice(0, 10) : null;
 }
 
 function mapCampaign(row: CampaignRow): Campaign {
@@ -58,8 +56,8 @@ function mapCampaign(row: CampaignRow): Campaign {
     nextRunAt: row.next_run_at ? row.next_run_at.toISOString() : null,
     lastRunAt: row.last_run_at ? row.last_run_at.toISOString() : null,
     goalAmount: row.goal_amount,
-    campaignStartDate: toDateOnlyString(row.campaign_start_date),
-    campaignEndDate: toDateOnlyString(row.campaign_end_date),
+    campaignStartDate: row.campaign_start_date,
+    campaignEndDate: row.campaign_end_date,
     donationLinkOverride: row.donation_link_override,
     closingReminderSentAt: row.closing_reminder_sent_at ? row.closing_reminder_sent_at.toISOString() : null,
     targetReachedAnnouncedAt: row.target_reached_announced_at ? row.target_reached_announced_at.toISOString() : null,
