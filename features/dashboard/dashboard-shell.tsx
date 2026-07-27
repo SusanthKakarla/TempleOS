@@ -29,8 +29,8 @@ export async function DashboardShell({
         <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
           <div className="flex h-full flex-col gap-3">
             <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />
-            <div className="glass-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
-              <div className="p-4 pb-20 sm:p-6 md:pb-6">
+            <div className="surface-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
+              <div className="p-4 sm:p-6">
                 <div className="mx-auto w-full max-w-400">{children}</div>
               </div>
               <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">

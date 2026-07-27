@@ -30,7 +30,8 @@ export function ActivityLogTable({
   }
 
   function actionLabel(action: string): string {
-    return t.has(`actionLabels.${action}`) ? t(`actionLabels.${action}`) : action;
+    const key = action.replace(/\./g, "_");
+    return t.has(`actionLabels.${key}`) ? t(`actionLabels.${key}`) : action;
   }
 
   if (entries.length === 0) {

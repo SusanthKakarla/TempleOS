@@ -67,136 +67,137 @@
 }
 
 /*
- * "ELITE" — enterprise-SaaS design language (Stripe/Linear/Apple-inspired),
- * replacing "Temple Red". Source hex values (converted to OKLCH below via
- * exact sRGB→OKLab math, no approximation):
- *   Primary: Purple #AB00FF        Secondary: Yellow #FBFF00
- *   Tertiary: Orange #C55B00       Neutral accent: Cyan #00E7EE
- *   Success: #22C55E   Warning: #F59E0B   Danger: #EF4444
- *   Background: #F8FAFC   Cards: White #FFFFFF
- *   Text: #111827   Secondary text: #6B7280   Dividers: #E5E7EB
+ * Midnight Blue / Deep Marigold — temple-first design language.
+ *   Primary: Midnight Blue #1A365D  → OKLCH(0.27 0.07 240)
+ *   Accent:  Deep Marigold #FF9933  → OKLCH(0.76 0.17 58)
+ *   Background: Cool off-white #F7FAFC → OKLCH(0.981 0.005 220)
+ *   Text: Deep slate #1A202C → OKLCH(0.18 0.02 240)
  *
- * Per spec: color guides actions, it doesn't decorate — the interface stays
- * ~70% neutral (background/card/text/borders below), with Purple reserved
- * for primary actions, Yellow for highlights/badges, Orange for
- * campaign/donation-specific accents, and Cyan for informational accents.
- * Dark mode keeps the same hues, lightened/desaturated slightly for
- * contrast on dark surfaces, rather than a separate showcase treatment.
+ * Color guides actions, it doesn't decorate. Interface stays ~70% neutral,
+ * with Midnight Blue for primary actions and Marigold for CTA highlights only.
  */
 :root {
-  --font-sans: var(--font-inter), var(--font-noto-telugu);
-  --font-heading: var(--font-inter), var(--font-noto-telugu);
-  --background: oklch(0.984 0.003 247.9);
-  --foreground: oklch(0.21 0.032 264.7);
+  --font-sans: var(--font-noto-sans), var(--font-noto-telugu);
+  --font-heading: var(--font-playfair), var(--font-noto-telugu), serif;
+
+  /* Midnight Blue palette — #1A365D primary, #FF9933 accent, #F7FAFC background */
+  --background: oklch(0.981 0.005 220);
+  --foreground: oklch(0.18 0.02 240);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.032 264.7);
+  --card-foreground: oklch(0.18 0.02 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.032 264.7);
-  --primary: oklch(0.583 0.299 307.3);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.965 0.212 110.9);
-  --secondary-foreground: oklch(0.21 0.032 264.7);
-  --muted: oklch(0.96 0.006 264.5);
-  --muted-foreground: oklch(0.551 0.023 264.4);
-  --accent: oklch(0.843 0.143 198.7);
-  --accent-foreground: oklch(0.21 0.032 264.7);
-  --destructive: oklch(0.637 0.208 25.3);
+  --popover-foreground: oklch(0.18 0.02 240);
+  --primary: oklch(0.27 0.07 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.01 220);
+  --secondary-foreground: oklch(0.27 0.07 240);
+  --muted: oklch(0.95 0.005 220);
+  --muted-foreground: oklch(0.52 0.03 220);
+  --accent: oklch(0.76 0.17 58);
+  --accent-foreground: oklch(0.18 0.02 240);
+  --destructive: oklch(0.55 0.217 28.1);
   --warning: oklch(0.769 0.165 70.1);
-  --border: oklch(0.928 0.006 264.5);
-  --input: oklch(0.928 0.006 264.5);
-  --ring: oklch(0.583 0.299 307.3);
-  --chart-1: oklch(0.583 0.299 307.3);
-  --chart-2: oklch(0.769 0.165 70.1);
-  --chart-3: oklch(0.843 0.143 198.7);
-  --chart-4: oklch(0.965 0.212 110.9);
-  --chart-5: oklch(0.723 0.192 149.6);
+  --border: oklch(0.89 0.01 220);
+  --input: oklch(0.89 0.01 220);
+  --ring: oklch(0.27 0.07 240);
+  --chart-1: oklch(0.27 0.07 240);
+  --chart-2: oklch(0.76 0.17 58);
+  --chart-3: oklch(0.52 0.03 220);
+  --chart-4: oklch(0.55 0.217 28.1);
+  --chart-5: oklch(0.6 0.02 220);
   --radius: 0.75rem;
-  --sidebar: oklch(0.97 0.004 264.5);
-  --sidebar-foreground: oklch(0.21 0.032 264.7);
-  --sidebar-primary: oklch(0.583 0.299 307.3);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.93 0.008 264.5);
-  --sidebar-accent-foreground: oklch(0.21 0.032 264.7);
-  --sidebar-border: oklch(0.9 0.006 264.5);
-  --sidebar-ring: oklch(0.583 0.299 307.3);
+  --sidebar: oklch(0.20 0.06 240);
+  --sidebar-foreground: oklch(0.95 0.01 220);
+  --sidebar-primary: oklch(0.76 0.17 58);
+  --sidebar-primary-foreground: oklch(0.18 0.02 240);
+  --sidebar-accent: oklch(0.25 0.06 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 220);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.76 0.17 58);
 
-  /* Temple palette, re-aliased to ELITE hues */
-  --saffron: oklch(0.593 0.157 49.7);
-  --saffron-foreground: oklch(1 0 0);
-  --gold: oklch(0.769 0.165 70.1);
-  --gold-foreground: oklch(0.21 0.032 264.7);
-  --maroon: oklch(0.583 0.299 307.3);
-  --maroon-foreground: oklch(1 0 0);
-  --emerald: oklch(0.723 0.192 149.6);
-  --emerald-foreground: oklch(1 0 0);
-  --royal-blue: oklch(0.843 0.143 198.7);
-  --royal-blue-foreground: oklch(0.21 0.032 264.7);
-  --olive: oklch(0.551 0.023 264.4);
-  --olive-foreground: oklch(1 0 0);
-  --warm-ivory: oklch(0.984 0.003 247.9);
-  --lotus-pink: oklch(0.965 0.212 110.9);
-  --lotus-pink-foreground: oklch(0.21 0.032 264.7);
+  /* Temple palette — kept for charts and decorative use */
+  --saffron: oklch(0.72 0.19 45);
+  --saffron-foreground: oklch(0.16 0.02 35);
+  --gold: oklch(0.8 0.16 85);
+  --gold-foreground: oklch(0.3 0.08 50);
+  --maroon: oklch(0.4 0.12 20);
+  --maroon-foreground: oklch(0.99 0.01 85);
+  --emerald: oklch(0.7 0.15 160);
+  --emerald-foreground: oklch(0.16 0.03 160);
+  --royal-blue: oklch(0.55 0.22 260);
+  --royal-blue-foreground: oklch(0.99 0.01 85);
+  --olive: oklch(0.47 0.09 122);
+  --olive-foreground: oklch(0.98 0.01 120);
+  --warm-ivory: oklch(0.98 0.01 220);
+  --lotus-pink: oklch(0.92 0.05 340);
+  --lotus-pink-foreground: oklch(0.27 0.07 240);
 
-  /* Single-purpose decorative tokens (see file header comment). */
-  --button-glow: oklch(0.583 0.299 307.3);
-  --blob-warm: oklch(0.965 0.212 110.9);
+  /* Single-purpose decorative tokens */
+  --button-glow: oklch(0.27 0.07 240);
+  --blob-warm: oklch(0.76 0.17 58 / 20%);
+  --persian-green: oklch(0.27 0.07 240);
+  --persian-green-foreground: oklch(0.99 0 0);
+  --fire-red: oklch(0.589 0.217 28.1);
+  --fire-red-foreground: oklch(0.99 0 0);
 }
 
 .dark {
-  --background: oklch(0.16 0.02 264.7);
-  --foreground: oklch(0.95 0.006 264.5);
-  --card: oklch(0.22 0.025 264.7);
-  --card-foreground: oklch(0.95 0.006 264.5);
-  --popover: oklch(0.22 0.025 264.7);
-  --popover-foreground: oklch(0.95 0.006 264.5);
-  --primary: oklch(0.66 0.26 307.3);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.965 0.212 110.9);
-  --secondary-foreground: oklch(0.16 0.02 264.7);
-  --muted: oklch(0.3 0.02 264.7);
-  --muted-foreground: oklch(0.72 0.015 264.5);
-  --accent: oklch(0.8 0.13 198.7);
-  --accent-foreground: oklch(0.16 0.02 264.7);
-  --destructive: oklch(0.7 0.2 25.3);
+  --background: oklch(0.14 0.03 240);
+  --foreground: oklch(0.95 0.01 220);
+  --card: oklch(0.18 0.035 240);
+  --card-foreground: oklch(0.95 0.01 220);
+  --popover: oklch(0.18 0.035 240);
+  --popover-foreground: oklch(0.95 0.01 220);
+  --primary: oklch(0.50 0.10 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.24 0.03 240);
+  --secondary-foreground: oklch(0.90 0.02 220);
+  --muted: oklch(0.22 0.025 240);
+  --muted-foreground: oklch(0.68 0.03 220);
+  --accent: oklch(0.76 0.17 58);
+  --accent-foreground: oklch(0.18 0.02 240);
+  --destructive: oklch(0.65 0.2 28.1);
   --warning: oklch(0.769 0.165 70.1);
-  --border: oklch(1 0.01 264.7 / 12%);
-  --input: oklch(1 0.01 264.7 / 15%);
-  --ring: oklch(0.66 0.26 307.3);
-  --chart-1: oklch(0.66 0.26 307.3);
-  --chart-2: oklch(0.769 0.165 70.1);
-  --chart-3: oklch(0.8 0.13 198.7);
-  --chart-4: oklch(0.965 0.212 110.9);
-  --chart-5: oklch(0.75 0.18 149.6);
-  --sidebar: oklch(0.19 0.022 264.7);
-  --sidebar-foreground: oklch(0.95 0.006 264.5);
-  --sidebar-primary: oklch(0.66 0.26 307.3);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.27 0.024 264.7);
-  --sidebar-accent-foreground: oklch(0.95 0.006 264.5);
-  --sidebar-border: oklch(1 0.01 264.7 / 10%);
-  --sidebar-ring: oklch(0.66 0.26 307.3);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.50 0.10 240);
+  --chart-1: oklch(0.50 0.10 240);
+  --chart-2: oklch(0.76 0.17 58);
+  --chart-3: oklch(0.68 0.03 220);
+  --chart-4: oklch(0.65 0.2 28.1);
+  --chart-5: oklch(0.6 0.02 220);
+  --sidebar: oklch(0.12 0.04 240);
+  --sidebar-foreground: oklch(0.95 0.01 220);
+  --sidebar-primary: oklch(0.76 0.17 58);
+  --sidebar-primary-foreground: oklch(0.18 0.02 240);
+  --sidebar-accent: oklch(0.20 0.05 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 220);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.76 0.17 58);
 
-  /* Temple palette, re-aliased to ELITE hues (adjusted for dark-mode contrast) */
-  --saffron: oklch(0.68 0.15 49.7);
-  --saffron-foreground: oklch(0.16 0.02 264.7);
-  --gold: oklch(0.769 0.165 70.1);
-  --gold-foreground: oklch(0.16 0.02 264.7);
-  --maroon: oklch(0.66 0.26 307.3);
-  --maroon-foreground: oklch(1 0 0);
-  --emerald: oklch(0.75 0.18 149.6);
-  --emerald-foreground: oklch(0.16 0.03 149);
-  --royal-blue: oklch(0.8 0.13 198.7);
-  --royal-blue-foreground: oklch(0.16 0.02 264.7);
-  --olive: oklch(0.62 0.02 264.4);
-  --olive-foreground: oklch(1 0 0);
-  /* Translucent tint, not a literal color — a literal light background would look wrong on a dark surface. */
-  --warm-ivory: oklch(1 0.01 264.7 / 6%);
-  --lotus-pink: oklch(0.965 0.212 110.9);
-  --lotus-pink-foreground: oklch(0.16 0.02 264.7);
+  /* Temple palette (brightened for dark-mode contrast) */
+  --saffron: oklch(0.72 0.19 45);
+  --saffron-foreground: oklch(0.16 0.02 35);
+  --gold: oklch(0.78 0.15 85);
+  --gold-foreground: oklch(0.2 0.04 50);
+  --maroon: oklch(0.58 0.15 20);
+  --maroon-foreground: oklch(1 0.005 85);
+  --emerald: oklch(0.72 0.16 160);
+  --emerald-foreground: oklch(0.16 0.03 160);
+  --royal-blue: oklch(0.5 0.2 260);
+  --royal-blue-foreground: oklch(0.98 0.01 85);
+  --olive: oklch(0.62 0.1 122);
+  --olive-foreground: oklch(0.16 0.02 120);
+  --warm-ivory: oklch(1 0.01 220 / 6%);
+  --lotus-pink: oklch(0.85 0.06 340);
+  --lotus-pink-foreground: oklch(0.95 0.01 220);
 
-  /* Single-purpose decorative tokens (see file header comment). */
-  --button-glow: oklch(0.66 0.26 307.3);
-  --blob-warm: oklch(0.965 0.212 110.9);
+  --button-glow: oklch(0.50 0.10 240);
+  --blob-warm: oklch(0.76 0.17 58 / 15%);
+  --persian-green: oklch(0.50 0.10 240);
+  --persian-green-foreground: oklch(0.99 0 0);
+  --fire-red: oklch(0.65 0.2 28.1);
+  --fire-red-foreground: oklch(0.98 0.01 220);
 }
 
 /*
@@ -208,8 +209,8 @@
  * by app/layout.tsx's getLocale()) fixes that with no JS and no new font load.
  */
 html[lang="te"] {
-  --font-sans: var(--font-noto-telugu), var(--font-inter);
-  --font-heading: var(--font-noto-telugu), var(--font-inter);
+  --font-sans: var(--font-noto-telugu), var(--font-noto-sans);
+  --font-heading: var(--font-noto-telugu), var(--font-playfair), serif;
 }
 
 @layer base {
@@ -228,48 +229,46 @@ html[lang="te"] {
 }
 
 @layer utilities {
-  .gradient-saffron-gold {
-    background-image: linear-gradient(135deg, var(--saffron), var(--gold));
-  }
-  .gradient-maroon-orange {
-    background-image: linear-gradient(135deg, var(--maroon), var(--saffron));
-  }
-  /* Legacy name retained (referenced across many components); colors are now
-     success green → highlight yellow, no blue or purple remains in the rendered output. */
-  .gradient-blue-purple {
-    background-image: linear-gradient(135deg, var(--emerald), var(--lotus-pink));
-  }
-  .gradient-green-emerald {
-    background-image: linear-gradient(135deg, var(--accent), var(--emerald));
-  }
-  /* Legacy name retained; colors are primary purple → cyan accent. */
-  .gradient-ocean-blue {
-    background-image: linear-gradient(135deg, var(--primary), var(--accent));
+  /* Marigold accent — the single CTA background. One per screen. */
+  .gradient-marigold {
+    background: var(--accent);
   }
 
-  /* Large translucent surfaces (conversation panes) */
+  /* Legacy gradient aliases — all mapped to simple, non-gradient fills so the
+     many existing call sites keep working without a visual regression while
+     components are migrated to the new token-based approach. */
+  .gradient-saffron-gold { background: var(--primary); }
+  .gradient-maroon-orange { background: var(--primary); }
+  .gradient-blue-purple { background: var(--primary); }
+  .gradient-green-emerald { background: var(--primary); }
+  .gradient-ocean-blue { background: var(--primary); }
+
+  /* Solid surface utilities — replace glassmorphism across the app */
+  .surface-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+  .surface-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px -1px oklch(0 0 0 / 8%);
+  }
+
+  /* Backward-compat aliases so un-migrated files keep rendering correctly.
+     These are intentionally identical to the surface- equivalents — no blur,
+     no transparency, just solid opaque surfaces. */
   .glass-panel {
-    background: color-mix(in oklch, var(--card) 55%, transparent);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+    background: var(--card);
+    border: 1px solid var(--border);
   }
-
-  /* Elevated cards (metric cards, settings cards) */
   .glass-card {
-    background: color-mix(in oklch, var(--warm-ivory) 70%, var(--card) 30%);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    border: 1px solid color-mix(in oklch, var(--foreground) 6%, transparent);
-    box-shadow: 0 4px 24px -4px color-mix(in oklch, var(--foreground) 12%, transparent);
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px -1px oklch(0 0 0 / 8%);
   }
-
-  /* Modal/popup surfaces — stronger opacity than .glass-panel so content stays legible over arbitrary pages */
   .glass-dialog {
-    background: color-mix(in oklch, var(--popover) 85%, var(--warm-ivory) 15%);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 12px 40px -8px color-mix(in oklch, var(--foreground) 20%, transparent);
+    background: var(--popover);
+    box-shadow: 0 12px 40px -8px oklch(0 0 0 / 15%);
   }
 
   @keyframes shimmer {
@@ -291,22 +290,7 @@ html[lang="te"] {
     animation: shimmer 1.5s ease-in-out infinite;
   }
 
-  @keyframes blob-drift {
-    0%, 100% {
-      transform: translate(0, 0) scale(1);
-    }
-    33% {
-      transform: translate(4%, 6%) scale(1.08);
-    }
-    66% {
-      transform: translate(-3%, -4%) scale(0.96);
-    }
-  }
-  .blob-drift {
-    animation: blob-drift 26s ease-in-out infinite;
-  }
-
-  /* Low-opacity static grain, layered over the ambient background blobs for texture. */
+  /* Low-opacity static grain for subtle background texture. */
   .noise-overlay {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     opacity: 0.04;
@@ -335,7 +319,6 @@ html[lang="te"] {
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer,
-  .blob-drift,
   .btn-ripple-span {
     animation: none;
   }
