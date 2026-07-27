@@ -51,25 +51,22 @@ export default async function DashboardHomePage() {
         subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <MetricCard
           label={t("metrics.totalDonations")}
           value={Number(donationSummary.totalThisMonth)}
           format="currency"
           icon={<HandCoins className="size-4.5" />}
-          gradient="gradient-saffron-gold"
         />
         <MetricCard
           label={t("metrics.upcomingEvents")}
           value={upcomingEvents}
           icon={<CalendarDays className="size-4.5" />}
-          gradient="gradient-maroon-orange"
         />
         <MetricCard
           label={t("metrics.totalDevotees")}
           value={totalDevotees}
           icon={<Users className="size-4.5" />}
-          gradient="gradient-blue-purple"
         />
       </div>
 

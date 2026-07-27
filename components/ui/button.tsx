@@ -52,6 +52,8 @@ function Button({
   variant = "default",
   size = "default",
   onPointerDown,
+  render,
+  nativeButton,
   children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
@@ -61,6 +63,8 @@ function Button({
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      render={render}
+      nativeButton={nativeButton ?? render === undefined}
       onPointerDown={(event) => {
         triggerRipple(event)
         onPointerDown?.(event)

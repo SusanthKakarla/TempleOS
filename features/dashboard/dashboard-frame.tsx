@@ -25,7 +25,7 @@ export function DashboardFrame({ sidebar, topbar, bottomNav, footerLabel, childr
       <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
         <div className="flex h-full flex-col gap-6">
           {topbar}
-          <div className="glass-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
+          <div className="surface-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
             <div className="p-4 pb-20 sm:p-6 md:pb-6">
               <div className="mx-auto w-full max-w-400">{children}</div>
             </div>

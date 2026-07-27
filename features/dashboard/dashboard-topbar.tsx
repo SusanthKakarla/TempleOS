@@ -61,7 +61,7 @@ export function DashboardTopbar({
   }
 
   return (
-    <header className="glass-panel relative z-10 flex h-14 shrink-0 items-center justify-between gap-2 rounded-3xl px-4 shadow-sm sm:px-6">
+    <header className="surface-panel relative z-10 flex h-14 shrink-0 items-center justify-between gap-2 rounded-3xl px-4 shadow-sm sm:px-6">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
         <Separator orientation="vertical" className="mr-1 h-5" />
@@ -85,7 +85,7 @@ export function DashboardTopbar({
                 className="flex items-center gap-2 rounded-full p-0.5 transition-colors hover:bg-accent"
               >
                 <Avatar className="size-8">
-                  <AvatarFallback className="gradient-saffron-gold text-xs font-semibold text-saffron-foreground">
+                  <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
                     {getInitials(displayName)}
                   </AvatarFallback>
                 </Avatar>

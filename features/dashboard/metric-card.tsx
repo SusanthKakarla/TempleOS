@@ -13,7 +13,8 @@ interface MetricCardProps {
   label: string;
   value: number;
   icon: ReactNode;
-  gradient: string;
+  /** @deprecated No longer used — kept for backward compatibility so existing call sites don't break. */
+  gradient?: string;
   /**
    * Display format for the animated count. A function prop isn't usable here
    * (this is a Client Component fed from Server Component pages, and
@@ -61,7 +62,7 @@ export function MetricCard({
   label,
   value,
   icon,
-  gradient,
+  gradient: _gradient,
   format = "number",
   trend,
   sparkline,
@@ -74,13 +75,13 @@ export function MetricCard({
 
   return (
     <motion.div
-      whileHover={{ y: -3 }}
+      whileHover={{ y: -2 }}
       transition={springSoft}
       className="h-full"
     >
       <Card
         className={cn(
-          "glass-card group h-full gap-3 overflow-visible rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-xl",
+          "surface-card group h-full gap-3 overflow-visible rounded-2xl transition-shadow duration-300 hover:shadow-md",
           compact ? "p-4" : "p-5",
           className,
         )}
@@ -89,9 +90,8 @@ export function MetricCard({
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <span
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+              "flex shrink-0 items-center justify-center rounded-lg text-primary",
               compact ? "size-8" : "size-10",
-              gradient,
             )}
           >
             {icon}

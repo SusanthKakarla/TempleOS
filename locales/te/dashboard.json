@@ -58,7 +58,8 @@
       "individualDevotees": "వ్యక్తిగత భక్తులు",
       "birthdaysThisWeek": "ఈ వారం పుట్టినరోజులు",
       "anniversariesThisWeek": "ఈ వారం వార్షికోత్సవాలు",
-      "scheduledNotifications": "షెడ్యూల్ చేసిన నోటిఫికేషన్‌లు"
+      "scheduledNotifications": "షెడ్యూల్ చేసిన నోటిఫికేషన్‌లు",
+      "atAGlance": "ఒక చూపులో"
     },
     "charts": {
       "donationsTrend": "విరాళాలు (గత 30 రోజులు)"
@@ -1084,6 +1085,7 @@
       "empty": "ఇంకా కార్యకలాపం లేదు.",
       "columns": { "action": "చర్య", "user": "వినియోగదారు", "changedBy": "ఎవరు మార్చారు", "timestamp": "సమయం" },
       "actionLabels": {
+<<<<<<< HEAD
         "tenant_member": {
           "invited": "వినియోగదారుని ఆహ్వానించారు",
           "roles_changed": "పాత్ర మార్చబడింది",
@@ -1092,6 +1094,12 @@
           "details_updated": "వివరాలు నవీకరించబడ్డాయి",
           "deleted": "వినియోగదారుని తొలగించారు"
         }
+=======
+        "tenant_member_invited": "వినియోగదారుని ఆహ్వానించారు",
+        "tenant_member_roles_changed": "పాత్ర మార్చబడింది",
+        "tenant_member_enabled": "వినియోగదారుని ప్రారంభించారు",
+        "tenant_member_disabled": "వినియోగదారుని నిలిపివేశారు"
+>>>>>>> 0af08b3 (landing page and small fixes)
       }
     },
     "importWizard": {
