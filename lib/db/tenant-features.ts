@@ -137,7 +137,12 @@ export async function setTenantFeature(
     tenantId,
     action: "tenant_feature.updated",
     targetType: "tenant_feature",
-    targetId: featureKey,
+    // featureKey (e.g. "events", "donations") is not a UUID — audit_log.target_id
+    // is a real UUID column, so passing it directly here throws on every
+    // toggle ("invalid input syntax for type uuid"), *after* the
+    // tenant_features row above has already committed. The feature key is
+    // still captured in metadata below.
+    targetId: null,
     metadata: { featureKey, oldValue: previousEnabled, newValue: enabled },
   });
 

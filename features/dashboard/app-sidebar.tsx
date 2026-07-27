@@ -11,7 +11,6 @@ import {
   Landmark,
   LayoutDashboard,
   Megaphone,
-  MessageCircle,
   Receipt,
   Settings2,
   ShieldCheck,
@@ -43,7 +42,6 @@ export const NAV_ITEMS = [
   { href: "/dashboard/donations", labelKey: "donations", icon: Receipt, featureKey: "donations" },
   { href: "/dashboard/campaigns", labelKey: "campaigns", icon: Megaphone, featureKey: "campaigns" },
   { href: "/dashboard/payments", labelKey: "payments", icon: CreditCard, featureKey: "donations" },
-  { href: "/dashboard/whatsapp-activity", labelKey: "conversations", icon: MessageCircle, featureKey: "conversations" },
   { href: "/dashboard/chatbot-settings", labelKey: "chatbotSettings", icon: Settings2, featureKey: "whatsapp_chatbot" },
 ] as const;
 
