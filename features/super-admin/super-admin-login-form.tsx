@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AmbientBackground } from "@/features/dashboard/ambient-background";
+import { ThemeBackdrop } from "@/components/theme/theme-backdrop";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
@@ -217,7 +217,7 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <AmbientBackground />
+      <ThemeBackdrop themeKey="login" />
       <MotionConfig reducedMotion="user">
         <motion.div
           variants={fadeInUp}

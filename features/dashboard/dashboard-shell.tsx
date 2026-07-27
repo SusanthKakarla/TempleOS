@@ -2,8 +2,8 @@ import type { SessionPayload } from "@/lib/auth/session";
 import { listTenantFeatures } from "@/lib/db/tenant-features";
 import { getTenantById } from "@/lib/db/tenants";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProvider, BackgroundManager } from "@/components/theme/theme-provider";
 import { AppSidebar } from "./app-sidebar";
-import { AmbientBackground } from "./ambient-background";
 import { DashboardTopbar } from "./dashboard-topbar";
 import { BottomNavBar } from "./bottom-nav-bar";
 import { MotionProvider } from "./motion-provider";
@@ -22,25 +22,27 @@ export async function DashboardShell({
   const enabledFeatures = new Set(features.filter((f) => f.enabled).map((f) => f.key));
 
   return (
-    <MotionProvider>
-      <SidebarProvider>
-        <AmbientBackground />
-        <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenant?.name ?? "TempleOS"} />
-        <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
-          <div className="flex h-full flex-col gap-3">
-            <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />
-            <div className="glass-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
-              <div className="p-4 pb-20 sm:p-6 md:pb-6">
-                <div className="mx-auto w-full max-w-400">{children}</div>
+    <ThemeProvider defaultThemeKey="dashboard">
+      <MotionProvider>
+        <SidebarProvider>
+          <BackgroundManager />
+          <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenant?.name ?? "TempleOS"} />
+          <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
+            <div className="flex h-full flex-col gap-3">
+              <DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />
+              <div className="glass-panel flex-1 overflow-x-hidden overflow-y-auto rounded-3xl shadow-sm">
+                <div className="p-4 pb-20 sm:p-6 md:pb-6">
+                  <div className="mx-auto w-full max-w-400">{children}</div>
+                </div>
+                <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
+                  TempleOS &middot; Pilot
+                </footer>
               </div>
-              <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
-                TempleOS &middot; Pilot
-              </footer>
             </div>
-          </div>
-        </SidebarInset>
-        <BottomNavBar />
-      </SidebarProvider>
-    </MotionProvider>
+          </SidebarInset>
+          <BottomNavBar />
+        </SidebarProvider>
+      </MotionProvider>
+    </ThemeProvider>
   );
 }
