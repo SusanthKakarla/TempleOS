@@ -16,10 +16,8 @@
   --color-gold-foreground: var(--gold-foreground);
   --color-maroon: var(--maroon);
   --color-maroon-foreground: var(--maroon-foreground);
-  --color-persian-green: var(--persian-green);
-  --color-persian-green-foreground: var(--persian-green-foreground);
-  --color-fire-red: var(--fire-red);
-  --color-fire-red-foreground: var(--fire-red-foreground);
+  --color-button-glow: var(--button-glow);
+  --color-blob-warm: var(--blob-warm);
   --color-emerald: var(--emerald);
   --color-emerald-foreground: var(--emerald-foreground);
   --color-royal-blue: var(--royal-blue);
@@ -69,141 +67,139 @@
 }
 
 /*
- * "Neon Tokyo" — cyberpunk design language, replacing the prior "Lotus Pond"
- * temple palette. Source hex values (converted to OKLCH below):
- *   Primary: Neon Pink #ff2d78     Secondary: Electric Cyan #00ffcc
- *   Accent:  Cyber Purple #bc13fe  Warning: #ffcc00   Error: #ff4444
- *   Dark-mode surfaces: bg #0a0e17, card #12141f, sidebar #0d1019 (near-black,
- *   so neon accents actually glow against the surface, per the reference art).
+ * "Temple Red" — premium enterprise-SaaS design language, replacing the
+ * prior "Neon Tokyo" palette. Source hex values (converted to OKLCH below):
+ *   Primary: Temple Red #B3261E    Secondary: Coral #FF7A5C
+ *   Blue Accent: #2563EB           Neutral Brown/Grey: #78716C
+ *   Success: #16A34A   Warning: #F59E0B   Error: #DC2626
+ *   Background: Very Light Neutral #FAF9F7   Cards: White #FFFFFF
  *
- * Light mode keeps its existing neutral background/surfaces — only the
- * accent tokens (primary/secondary/accent/warning/destructive) change. Dark
- * mode is the full "Neon Tokyo" showcase with near-black surfaces.
+ * Per spec: colors are used intentionally, not decoratively — page
+ * backgrounds stay a very light neutral, cards stay white with soft
+ * shadows/minimal borders, and only action buttons/status indicators/active
+ * states carry strong color. Dark mode keeps the same accent hues on dark
+ * warm-neutral surfaces rather than a separate showcase treatment.
  *
- * --persian-green / --fire-red are legacy token names from an earlier,
- * superseded redesign — kept only because a couple of components still
- * reference them (Button's hover glow, the dashboard ambient background
- * blob). Their values are aliased to the Neon Tokyo palette below so no
- * non-Neon-Tokyo color survives anywhere in the app.
+ * `--button-glow` / `--blob-warm` (previously `--persian-green` /
+ * `--fire-red`, legacy names from an earlier redesign) were renamed to
+ * describe their actual one-off uses (Button's hover glow, one ambient
+ * background blob) while every color in this file was already being
+ * touched for this migration.
  */
 :root {
   --font-sans: var(--font-plus-jakarta), var(--font-noto-telugu);
   --font-heading: var(--font-playfair), var(--font-noto-telugu), serif;
-  --background: oklch(0.973 0.005 145.5);
-  --foreground: oklch(26.908% 0.01699 170.874);
+  --background: oklch(0.982 0.003 84.6);
+  --foreground: oklch(0.225 0.017 31.4);
   --card: oklch(1 0 89.9);
-  --card-foreground: oklch(0.25 0.015 174.7);
+  --card-foreground: oklch(0.225 0.017 31.4);
   --popover: oklch(1 0 89.9);
-  --popover-foreground: oklch(0.25 0.015 174.7);
-  --primary: oklch(0.657 0.241 6.9);
-  --primary-foreground: oklch(0.146 0.004 285.9);
-  --secondary: oklch(0.89 0.174 171.3);
-  --secondary-foreground: oklch(0.146 0.004 285.9);
-  --muted: oklch(0.94 0.01 150);
-  --muted-foreground: oklch(0.46 0.02 170);
-  --accent: oklch(0.608 0.297 312.1);
+  --popover-foreground: oklch(0.225 0.017 31.4);
+  --primary: oklch(0.501 0.178 28.7);
+  --primary-foreground: oklch(1 0 89.9);
+  --secondary: oklch(0.729 0.169 34.1);
+  --secondary-foreground: oklch(0.225 0.017 31.4);
+  --muted: oklch(0.95 0.004 60);
+  --muted-foreground: oklch(0.553 0.012 58.1);
+  --accent: oklch(0.546 0.215 262.9);
   --accent-foreground: oklch(1 0 89.9);
-  --destructive: oklch(0.664 0.223 25.7);
-  --warning: oklch(0.865 0.177 90.4);
-  --border: oklch(0.89 0.02 150);
-  --input: oklch(0.89 0.02 150);
-  --ring: oklch(0.657 0.241 6.9);
-  --chart-1: oklch(0.657 0.241 6.9);
-  --chart-2: oklch(0.89 0.174 171.3);
-  --chart-3: oklch(0.608 0.297 312.1);
-  --chart-4: oklch(0.865 0.177 90.4);
-  --chart-5: oklch(0.664 0.223 25.7);
+  --destructive: oklch(0.577 0.215 27.3);
+  --warning: oklch(0.769 0.165 70.1);
+  --border: oklch(0.923 0.003 48.7);
+  --input: oklch(0.923 0.003 48.7);
+  --ring: oklch(0.501 0.178 28.7);
+  --chart-1: oklch(0.501 0.178 28.7);
+  --chart-2: oklch(0.729 0.169 34.1);
+  --chart-3: oklch(0.546 0.215 262.9);
+  --chart-4: oklch(0.769 0.165 70.1);
+  --chart-5: oklch(0.627 0.170 149.2);
   --radius: 0.75rem;
-  --sidebar: oklch(0.96 0.01 150);
-  --sidebar-foreground: oklch(0.25 0.015 174.7);
-  --sidebar-primary: oklch(0.657 0.241 6.9);
-  --sidebar-primary-foreground: oklch(0.146 0.004 285.9);
-  --sidebar-accent: oklch(0.92 0.02 150);
-  --sidebar-accent-foreground: oklch(0.25 0.02 174);
-  --sidebar-border: oklch(0.88 0.02 150);
-  --sidebar-ring: oklch(0.657 0.241 6.9);
+  --sidebar: oklch(0.96 0.004 60);
+  --sidebar-foreground: oklch(0.225 0.017 31.4);
+  --sidebar-primary: oklch(0.501 0.178 28.7);
+  --sidebar-primary-foreground: oklch(1 0 89.9);
+  --sidebar-accent: oklch(0.93 0.006 50);
+  --sidebar-accent-foreground: oklch(0.225 0.017 31.4);
+  --sidebar-border: oklch(0.9 0.004 55);
+  --sidebar-ring: oklch(0.501 0.178 28.7);
 
-  /* Temple palette, re-aliased to Neon Tokyo hues */
-  --saffron: oklch(0.657 0.241 6.9);
-  --saffron-foreground: oklch(0.146 0.004 285.9);
-  --gold: oklch(0.865 0.177 90.4);
-  --gold-foreground: oklch(0.146 0.004 285.9);
-  --maroon: oklch(0.664 0.223 25.7);
-  --maroon-foreground: oklch(0.146 0.004 285.9);
-  --emerald: oklch(0.89 0.174 171.3);
-  --emerald-foreground: oklch(0.146 0.004 285.9);
-  --royal-blue: oklch(0.608 0.297 312.1);
+  /* Temple palette, re-aliased to Temple Red hues */
+  --saffron: oklch(0.729 0.169 34.1);
+  --saffron-foreground: oklch(0.225 0.017 31.4);
+  --gold: oklch(0.769 0.165 70.1);
+  --gold-foreground: oklch(0.225 0.017 31.4);
+  --maroon: oklch(0.501 0.178 28.7);
+  --maroon-foreground: oklch(1 0 89.9);
+  --emerald: oklch(0.627 0.170 149.2);
+  --emerald-foreground: oklch(1 0 89.9);
+  --royal-blue: oklch(0.546 0.215 262.9);
   --royal-blue-foreground: oklch(1 0 89.9);
-  --olive: oklch(0.865 0.177 90.4);
-  --olive-foreground: oklch(0.146 0.004 285.9);
-  --warm-ivory: oklch(0.97 0.006 280);
-  --lotus-pink: oklch(0.657 0.241 6.9);
-  --lotus-pink-foreground: oklch(0.146 0.004 285.9);
+  --olive: oklch(0.553 0.012 58.1);
+  --olive-foreground: oklch(1 0 89.9);
+  --warm-ivory: oklch(0.982 0.003 84.6);
+  --lotus-pink: oklch(0.729 0.169 34.1);
+  --lotus-pink-foreground: oklch(0.225 0.017 31.4);
 
-  /* Legacy tokens, aliased to Neon Tokyo equivalents — see file header comment. */
-  --persian-green: oklch(0.657 0.241 6.9);
-  --persian-green-foreground: oklch(0.146 0.004 285.9);
-  --fire-red: oklch(0.657 0.241 6.9);
-  --fire-red-foreground: oklch(0.146 0.004 285.9);
+  /* Single-purpose decorative tokens (see file header comment). */
+  --button-glow: oklch(0.501 0.178 28.7);
+  --blob-warm: oklch(0.729 0.169 34.1);
 }
 
 .dark {
-  --background: oklch(0.164 0.02 265.8);
-  --foreground: oklch(0.95 0.01 275);
-  --card: oklch(0.195 0.022 276.1);
-  --card-foreground: oklch(0.95 0.01 275);
-  --popover: oklch(0.195 0.022 276.1);
-  --popover-foreground: oklch(0.95 0.01 275);
-  --primary: oklch(0.657 0.241 6.9);
-  --primary-foreground: oklch(0.146 0.004 285.9);
-  --secondary: oklch(0.89 0.174 171.3);
-  --secondary-foreground: oklch(0.146 0.004 285.9);
-  --muted: oklch(0.227 0.03 275.1);
-  --muted-foreground: oklch(0.65 0.02 275);
-  --accent: oklch(0.608 0.297 312.1);
+  --background: oklch(0.16 0.012 40);
+  --foreground: oklch(0.95 0.005 60);
+  --card: oklch(0.205 0.014 35);
+  --card-foreground: oklch(0.95 0.005 60);
+  --popover: oklch(0.205 0.014 35);
+  --popover-foreground: oklch(0.95 0.005 60);
+  --primary: oklch(0.58 0.19 28.7);
+  --primary-foreground: oklch(1 0 89.9);
+  --secondary: oklch(0.729 0.169 34.1);
+  --secondary-foreground: oklch(0.16 0.012 40);
+  --muted: oklch(0.28 0.014 40);
+  --muted-foreground: oklch(0.68 0.01 55);
+  --accent: oklch(0.62 0.19 262.9);
   --accent-foreground: oklch(1 0 89.9);
-  --destructive: oklch(0.664 0.223 25.7);
-  --warning: oklch(0.865 0.177 90.4);
-  --border: oklch(1 0.02 280 / 12%);
-  --input: oklch(1 0.02 280 / 15%);
-  --ring: oklch(0.657 0.241 6.9);
-  --chart-1: oklch(0.657 0.241 6.9);
-  --chart-2: oklch(0.89 0.174 171.3);
-  --chart-3: oklch(0.608 0.297 312.1);
-  --chart-4: oklch(0.865 0.177 90.4);
-  --chart-5: oklch(0.664 0.223 25.7);
-  --sidebar: oklch(0.174 0.019 270.1);
-  --sidebar-foreground: oklch(0.95 0.01 275);
-  --sidebar-primary: oklch(0.657 0.241 6.9);
-  --sidebar-primary-foreground: oklch(0.146 0.004 285.9);
-  --sidebar-accent: oklch(0.24 0.03 275);
-  --sidebar-accent-foreground: oklch(0.95 0.01 275);
-  --sidebar-border: oklch(1 0.02 275 / 10%);
-  --sidebar-ring: oklch(0.657 0.241 6.9);
+  --destructive: oklch(0.65 0.2 27.3);
+  --warning: oklch(0.769 0.165 70.1);
+  --border: oklch(1 0.01 40 / 12%);
+  --input: oklch(1 0.01 40 / 15%);
+  --ring: oklch(0.58 0.19 28.7);
+  --chart-1: oklch(0.58 0.19 28.7);
+  --chart-2: oklch(0.729 0.169 34.1);
+  --chart-3: oklch(0.62 0.19 262.9);
+  --chart-4: oklch(0.769 0.165 70.1);
+  --chart-5: oklch(0.68 0.17 149.2);
+  --sidebar: oklch(0.17 0.013 35);
+  --sidebar-foreground: oklch(0.95 0.005 60);
+  --sidebar-primary: oklch(0.58 0.19 28.7);
+  --sidebar-primary-foreground: oklch(1 0 89.9);
+  --sidebar-accent: oklch(0.25 0.015 35);
+  --sidebar-accent-foreground: oklch(0.95 0.005 60);
+  --sidebar-border: oklch(1 0.01 35 / 10%);
+  --sidebar-ring: oklch(0.58 0.19 28.7);
 
-  /* Temple palette (same neon values — already max vividness, no dark-mode brightening needed) */
-  --saffron: oklch(0.657 0.241 6.9);
-  --saffron-foreground: oklch(0.146 0.004 285.9);
-  --gold: oklch(0.865 0.177 90.4);
-  --gold-foreground: oklch(0.146 0.004 285.9);
-  --maroon: oklch(0.664 0.223 25.7);
-  --maroon-foreground: oklch(0.146 0.004 285.9);
-  --emerald: oklch(0.89 0.174 171.3);
-  --emerald-foreground: oklch(0.146 0.004 285.9);
-  --royal-blue: oklch(0.608 0.297 312.1);
+  /* Temple palette, re-aliased to Temple Red hues (brightened for dark-mode contrast) */
+  --saffron: oklch(0.729 0.169 34.1);
+  --saffron-foreground: oklch(0.16 0.012 40);
+  --gold: oklch(0.769 0.165 70.1);
+  --gold-foreground: oklch(0.16 0.012 40);
+  --maroon: oklch(0.58 0.19 28.7);
+  --maroon-foreground: oklch(1 0 89.9);
+  --emerald: oklch(0.68 0.17 149.2);
+  --emerald-foreground: oklch(0.16 0.03 149);
+  --royal-blue: oklch(0.62 0.19 262.9);
   --royal-blue-foreground: oklch(1 0 89.9);
-  --olive: oklch(0.865 0.177 90.4);
-  --olive-foreground: oklch(0.146 0.004 285.9);
+  --olive: oklch(0.62 0.012 58.1);
+  --olive-foreground: oklch(1 0 89.9);
   /* Translucent tint, not a literal ivory color — a literal warm-ivory would look wrong on a dark surface. */
-  --warm-ivory: oklch(1 0.02 280 / 6%);
-  --lotus-pink: oklch(0.657 0.241 6.9);
-  --lotus-pink-foreground: oklch(0.146 0.004 285.9);
+  --warm-ivory: oklch(1 0.02 60 / 6%);
+  --lotus-pink: oklch(0.729 0.169 34.1);
+  --lotus-pink-foreground: oklch(0.16 0.012 40);
 
-  /* Legacy tokens, aliased to Neon Tokyo equivalents — see file header comment. */
-  --persian-green: oklch(0.657 0.241 6.9);
-  --persian-green-foreground: oklch(0.146 0.004 285.9);
-  --fire-red: oklch(0.657 0.241 6.9);
-  --fire-red-foreground: oklch(0.146 0.004 285.9);
+  /* Single-purpose decorative tokens (see file header comment). */
+  --button-glow: oklch(0.58 0.19 28.7);
+  --blob-warm: oklch(0.729 0.169 34.1);
 }
 
 /*

@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, Cake, Heart, MessageCircle, Phone, Sparkles, User, UserRound, Users, UsersRound } from "lucide-react";
+import { Bell, Cake, ChevronDown, Heart, MessageCircle, Phone, Sparkles, User, UserRound, Users, UsersRound } from "lucide-react";
 import type { Devotee, DevoteeFamily, Gender, MaritalStatus, SupportedLanguage } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from "@/types/db";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const NO_FAMILY_VALUE = "__none__";
 
@@ -68,6 +70,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
   const [families, setFamilies] = useState<DevoteeFamily[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   function resetToDevotee() {
     setRegistrationType(mode === "edit" ? "individual" : null);
@@ -225,22 +228,6 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 />
               </div>
             </div>
-            <LabeledInput
-              id="birthStar"
-              label={t("fields.birthStar")}
-              icon={<Sparkles />}
-              value={birthStar}
-              onChange={(e) => setBirthStar(e.target.value)}
-            />
-          </div>
-          <LabeledInput
-            id="ancestralLineage"
-            label={t("fields.gothram")}
-            icon={<Users />}
-            value={ancestralLineage}
-            onChange={(e) => setAncestralLineage(e.target.value)}
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="gender">{t("fields.gender")}</Label>
               <Select value={gender || undefined} onValueChange={(v) => setGender((v as Gender) ?? "")} items={genderItems}>
@@ -257,83 +244,33 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="maritalStatus">{t("fields.maritalStatus")}</Label>
-              <Select
-                value={maritalStatus || undefined}
-                onValueChange={(v) => setMaritalStatus((v as MaritalStatus) ?? "")}
-                items={maritalStatusItems}
-              >
-                <SelectTrigger id="maritalStatus" className="w-full">
-                  <Heart className="size-4 text-muted-foreground" />
-                  <SelectValue placeholder={t("fields.maritalStatusPlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {MARITAL_STATUS_OPTIONS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {t(`maritalStatusOptions.${value}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="weddingAnniversary">{t("fields.weddingAnniversary")}</Label>
-            <div className="relative">
-              <Heart className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="weddingAnniversary"
-                type="date"
-                value={weddingAnniversary}
-                onChange={(e) => setWeddingAnniversary(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+
           {mode === "edit" && (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="preferredLanguage">{t("fields.preferredLanguage")}</Label>
-                  <Select
-                    value={preferredLanguage || undefined}
-                    onValueChange={(v) => setPreferredLanguage((v as SupportedLanguage) ?? "")}
-                    items={{ en: t("languageOptions.en"), te: t("languageOptions.te") }}
-                  >
-                    <SelectTrigger id="preferredLanguage" className="w-full">
-                      <SelectValue placeholder={t("fields.preferredLanguagePlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">{t("languageOptions.en")}</SelectItem>
-                      <SelectItem value="te">{t("languageOptions.te")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="familyId">{t("fields.family")}</Label>
-                  <Select
-                    value={familyId || NO_FAMILY_VALUE}
-                    onValueChange={(v) => setFamilyId(v === NO_FAMILY_VALUE ? "" : (v ?? ""))}
-                    items={Object.fromEntries([
-                      [NO_FAMILY_VALUE, t("fields.noFamily")],
-                      ...families.map((f) => [f.id, f.familyName]),
-                    ])}
-                  >
-                    <SelectTrigger id="familyId" className="w-full">
-                      <Users className="size-4 text-muted-foreground" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_FAMILY_VALUE}>{t("fields.noFamily")}</SelectItem>
-                      {families.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.familyName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="familyId">{t("fields.family")}</Label>
+                <Select
+                  value={familyId || NO_FAMILY_VALUE}
+                  onValueChange={(v) => setFamilyId(v === NO_FAMILY_VALUE ? "" : (v ?? ""))}
+                  items={Object.fromEntries([
+                    [NO_FAMILY_VALUE, t("fields.noFamily")],
+                    ...families.map((f) => [f.id, f.familyName]),
+                  ])}
+                >
+                  <SelectTrigger id="familyId" className="w-full">
+                    <Users className="size-4 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_FAMILY_VALUE}>{t("fields.noFamily")}</SelectItem>
+                    {families.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.familyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <LabeledInput
                 id="address"
@@ -341,36 +278,115 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t("fields.notes")}</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="size-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">{t("whatsappStatus.label")}</p>
-                    <p className="text-xs text-muted-foreground">{t("whatsappStatus.description")}</p>
-                  </div>
-                </div>
-                <Badge variant={devotee?.whatsappOptInStatus ? "default" : "secondary"}>
-                  {devotee?.whatsappOptInStatus ? tDevoteesRoot("optedIn") : tDevoteesRoot("notOptedIn")}
-                </Badge>
-              </div>
-            </>
-          )}
-          {mode === "edit" && (
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <Bell className="size-4 text-saffron" />
-                <div>
-                  <p className="text-sm font-medium">{t("eventNotifications.label")}</p>
-                  <p className="text-xs text-muted-foreground">{t("eventNotifications.description")}</p>
-                </div>
-              </div>
-              <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
             </div>
           )}
+
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground">
+              {t("advancedOptions")}
+              <ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <LabeledInput
+                  id="birthStar"
+                  label={t("fields.birthStar")}
+                  icon={<Sparkles />}
+                  value={birthStar}
+                  onChange={(e) => setBirthStar(e.target.value)}
+                />
+                <LabeledInput
+                  id="ancestralLineage"
+                  label={t("fields.gothram")}
+                  icon={<Users />}
+                  value={ancestralLineage}
+                  onChange={(e) => setAncestralLineage(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="maritalStatus">{t("fields.maritalStatus")}</Label>
+                  <Select
+                    value={maritalStatus || undefined}
+                    onValueChange={(v) => setMaritalStatus((v as MaritalStatus) ?? "")}
+                    items={maritalStatusItems}
+                  >
+                    <SelectTrigger id="maritalStatus" className="w-full">
+                      <Heart className="size-4 text-muted-foreground" />
+                      <SelectValue placeholder={t("fields.maritalStatusPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MARITAL_STATUS_OPTIONS.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`maritalStatusOptions.${value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weddingAnniversary">{t("fields.weddingAnniversary")}</Label>
+                  <div className="relative">
+                    <Heart className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="weddingAnniversary"
+                      type="date"
+                      value={weddingAnniversary}
+                      onChange={(e) => setWeddingAnniversary(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </div>
+              {mode === "edit" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="preferredLanguage">{t("fields.preferredLanguage")}</Label>
+                    <Select
+                      value={preferredLanguage || undefined}
+                      onValueChange={(v) => setPreferredLanguage((v as SupportedLanguage) ?? "")}
+                      items={{ en: t("languageOptions.en"), te: t("languageOptions.te") }}
+                    >
+                      <SelectTrigger id="preferredLanguage" className="w-full">
+                        <SelectValue placeholder={t("fields.preferredLanguagePlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">{t("languageOptions.en")}</SelectItem>
+                        <SelectItem value="te">{t("languageOptions.te")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">{t("fields.notes")}</Label>
+                    <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="size-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{t("whatsappStatus.label")}</p>
+                        <p className="text-xs text-muted-foreground">{t("whatsappStatus.description")}</p>
+                      </div>
+                    </div>
+                    <Badge variant={devotee?.whatsappOptInStatus ? "default" : "secondary"}>
+                      {devotee?.whatsappOptInStatus ? tDevoteesRoot("optedIn") : tDevoteesRoot("notOptedIn")}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Bell className="size-4 text-saffron" />
+                      <div>
+                        <p className="text-sm font-medium">{t("eventNotifications.label")}</p>
+                        <p className="text-xs text-muted-foreground">{t("eventNotifications.description")}</p>
+                      </div>
+                    </div>
+                    <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
+                  </div>
+                </>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

@@ -118,10 +118,8 @@ describe("buildMenuMessage", () => {
     expect(rowTitles).toEqual([
       "Events",
       "Contact",
-      "Timings",
       "History",
       "Sevas",
-      "FAQ",
       "Donate",
       "Language",
     ]);
@@ -129,10 +127,8 @@ describe("buildMenuMessage", () => {
     expect(rowIds).toEqual([
       "events",
       "contact",
-      "timings",
       "history",
       "sevas",
-      "faq",
       "donation_info",
       "change_language",
     ]);
@@ -149,10 +145,8 @@ describe("buildMenuMessage", () => {
     expect(rowTitles).toEqual([
       t("te", "menuRowEventsTitle"),
       t("te", "menuRowContactTitle"),
-      t("te", "menuRowTimingsTitle"),
       t("te", "menuRowHistoryTitle"),
       t("te", "menuRowSevasTitle"),
-      t("te", "menuRowFaqTitle"),
       t("te", "menuRowDonationInfoTitle"),
       t("te", "menuRowChangeLanguageTitle"),
     ]);

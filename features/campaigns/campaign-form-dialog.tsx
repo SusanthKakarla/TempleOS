@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactElement } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,9 +23,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { MediaUpload } from "@/features/media/media-upload";
 import { DateTimeField } from "@/features/events/date-time-field";
 import { formatDate } from "@/lib/date";
+import { cn } from "@/lib/utils";
 import { RECURRENCE_RULES, type RecurrenceRule } from "@/lib/campaigns/recurrence";
-import type { Campaign, CampaignAudienceFilter, CampaignType, NotificationMedia, SupportedLanguage } from "@/types/db";
-import { CAMPAIGN_TYPES } from "@/types/db";
+import type { Campaign, CampaignAudienceFilter, NotificationMedia, SupportedLanguage } from "@/types/db";
+
+/** TempleOS only ever runs donation campaigns today (confirmed before this simplification) — the campaign-type selector was removed from the UI, not the data model. Every campaign is still created with this literal value. */
+const CAMPAIGN_TYPE = "donation" as const;
 
 type AudienceOptionType = "all" | "active" | "donors" | "opted_in" | "language";
 type ScheduleChoice = "now" | "later" | "recurring";
@@ -84,14 +88,12 @@ interface CampaignFormDialogProps {
 
 export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: CampaignFormDialogProps) {
   const t = useTranslations("campaigns.form");
-  const tTypes = useTranslations("campaigns.types");
   const tAudience = useTranslations("campaigns.audienceOptions");
   const tRecurrence = useTranslations("campaigns.form.recurrenceOptions");
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState(campaign?.title ?? "");
   const [description, setDescription] = useState(campaign?.description ?? "");
-  const [campaignType, setCampaignType] = useState<CampaignType>(campaign?.campaignType ?? "one_time");
   const [customMessage, setCustomMessage] = useState(campaign?.customMessage ?? "");
   const [audienceType, setAudienceType] = useState<AudienceOptionType>(
     campaign && campaign.audienceFilter.type !== "family" && campaign.audienceFilter.type !== "event_attendees"
@@ -117,12 +119,18 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const isDonation = campaignType === "donation";
+  const [submitting, setSubmitting] = useState<false | "draft" | "send">(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const audienceFilter: CampaignAudienceFilter =
     audienceType === "language" ? { type: "language", language: audienceLanguage } : { type: audienceType };
+
+  /** Mirrors the same status gate campaign-detail.tsx's standalone "Send now" button already uses — don't offer a re-send action here on a campaign that's already running/completed/archived/cancelled. */
+  const canSendNow =
+    mode === "create" ||
+    campaign?.status === "draft" ||
+    campaign?.status === "scheduled" ||
+    campaign?.status === "paused";
 
   useEffect(() => {
     if (!open) return;
@@ -152,28 +160,28 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fetch only when the audience selection changes
   }, [open, audienceType, audienceLanguage]);
 
-  async function handleSubmit() {
+  async function handleSubmit(andSend: boolean) {
     setError(null);
     if (!title.trim()) {
       setError(t("titleLabel") + " is required");
       return;
     }
-    setSubmitting(true);
+    setSubmitting(andSend ? "send" : "draft");
     try {
       const payload = {
         title,
         description: description || null,
-        campaignType,
+        campaignType: CAMPAIGN_TYPE,
         channel: "whatsapp" as const,
         customMessage: customMessage || null,
         templateKey: null,
         audienceFilter,
         bannerMediaId: banner?.id ?? campaign?.bannerMediaId ?? null,
         linkedDonationPurpose: linkedDonationPurpose || null,
-        goalAmount: isDonation && goalAmount ? goalAmount : null,
-        campaignStartDate: isDonation ? campaignStartDate : null,
-        campaignEndDate: isDonation ? campaignEndDate : null,
-        donationLinkOverride: isDonation && donationLinkOverride ? donationLinkOverride : null,
+        goalAmount: goalAmount || null,
+        campaignStartDate,
+        campaignEndDate,
+        donationLinkOverride: donationLinkOverride || null,
         scheduleType: scheduleChoice === "recurring" ? ("recurring" as const) : ("one_time" as const),
         scheduledAt: scheduleChoice === "later" && scheduledAt ? scheduledAt : null,
         recurrenceRule: scheduleChoice === "recurring" ? recurrenceRule : null,
@@ -189,6 +197,16 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? (mode === "create" ? t("createError") : t("updateError")));
       }
+
+      if (andSend) {
+        const savedId = mode === "create" ? ((await response.json()) as { campaign: Campaign }).campaign.id : campaign!.id;
+        const sendResponse = await fetch(`/api/campaigns/${savedId}/send`, { method: "POST" });
+        if (!sendResponse.ok) {
+          const body = (await sendResponse.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? t("sendError"));
+        }
+      }
+
       setOpen(false);
       onSaved();
     } catch (err) {
@@ -235,143 +253,138 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>{t("typeLabel")}</Label>
-            <Select value={campaignType} onValueChange={(v) => setCampaignType((v as CampaignType) ?? "one_time")}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CAMPAIGN_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {tTypes(type)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="campaign-message">{t("customMessageLabel")}</Label>
-            <Textarea
-              id="campaign-message"
-              value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
-              placeholder={t("customMessageLabel")}
-              className="min-h-24"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t("audienceLabel")}</Label>
-            <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(["all", "active", "donors", "opted_in", "language"] as const).map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {tAudience(option)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {audienceType === "language" && (
-              <Select value={audienceLanguage} onValueChange={(v) => setAudienceLanguage((v as SupportedLanguage) ?? "en")}>
-                <SelectTrigger className="mt-2 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="te">తెలుగు</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            <p className="text-sm text-muted-foreground">
-              {audienceLoading
-                ? t("audienceCountLoading")
-                : audienceCount === null
-                  ? t("audienceUnsupported")
-                  : t("audienceCount", { count: audienceCount })}
-            </p>
-          </div>
-
-          {isDonation && (
-            <div className="space-y-4 rounded-2xl border p-4">
-              <div className="space-y-1.5">
-                <LabeledInput
-                  id="campaign-donation-purpose"
-                  label={t("linkedDonationPurposeLabel")}
-                  value={linkedDonationPurpose}
-                  onChange={(e) => setLinkedDonationPurpose(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">{t("linkedDonationPurposeHint")}</p>
-              </div>
+          <div className="space-y-4 rounded-2xl border p-4">
+            <div className="space-y-1.5">
               <LabeledInput
-                id="campaign-goal-amount"
-                label={t("goalAmountLabel")}
-                type="number"
-                min="0"
-                step="1"
-                value={goalAmount}
-                onChange={(e) => setGoalAmount(e.target.value)}
+                id="campaign-donation-purpose"
+                label={t("linkedDonationPurposeLabel")}
+                value={linkedDonationPurpose}
+                onChange={(e) => setLinkedDonationPurpose(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />
-                <DateOnlyField id="campaign-end-date" label={t("endDateLabel")} value={campaignEndDate} onChange={setCampaignEndDate} />
-              </div>
-              <div className="space-y-1.5">
-                <LabeledInput
-                  id="campaign-donation-link"
-                  label={t("donationLinkLabel")}
-                  value={donationLinkOverride}
-                  onChange={(e) => setDonationLinkOverride(e.target.value)}
-                  placeholder={t("donationLinkPlaceholder")}
-                />
-                <p className="text-xs text-muted-foreground">{t("donationLinkHint")}</p>
-              </div>
+              <p className="text-xs text-muted-foreground">{t("linkedDonationPurposeHint")}</p>
             </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label>{t("scheduleTypeLabel")}</Label>
-            <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="now">{t("scheduleTypeNow")}</SelectItem>
-                <SelectItem value="later">{t("scheduleTypeLater")}</SelectItem>
-                <SelectItem value="recurring">{t("scheduleTypeRecurring")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {scheduleChoice === "later" && (
-              <div className="mt-2">
-                <DateTimeField id="campaign-scheduled-at" label={t("scheduledAtLabel")} value={scheduledAt} onChange={setScheduledAt} />
-              </div>
-            )}
-            {scheduleChoice === "recurring" && (
-              <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
-                <SelectTrigger className="mt-2 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_RULES.map((rule) => (
-                    <SelectItem key={rule} value={rule}>
-                      {tRecurrence(rule)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <LabeledInput
+              id="campaign-goal-amount"
+              label={t("goalAmountLabel")}
+              type="number"
+              min="0"
+              step="1"
+              value={goalAmount}
+              onChange={(e) => setGoalAmount(e.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />
+              <DateOnlyField id="campaign-end-date" label={t("endDateLabel")} value={campaignEndDate} onChange={setCampaignEndDate} />
+            </div>
+            <div className="space-y-1.5">
+              <LabeledInput
+                id="campaign-donation-link"
+                label={t("donationLinkLabel")}
+                value={donationLinkOverride}
+                onChange={(e) => setDonationLinkOverride(e.target.value)}
+                placeholder={t("donationLinkPlaceholder")}
+              />
+              <p className="text-xs text-muted-foreground">{t("donationLinkHint")}</p>
+            </div>
           </div>
+
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground">
+              {t("advancedOptions")}
+              <ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="campaign-message">{t("customMessageLabel")}</Label>
+                <Textarea
+                  id="campaign-message"
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder={t("customMessageLabel")}
+                  className="min-h-24"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t("audienceLabel")}</Label>
+                <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["all", "active", "donors", "opted_in", "language"] as const).map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {tAudience(option)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {audienceType === "language" && (
+                  <Select value={audienceLanguage} onValueChange={(v) => setAudienceLanguage((v as SupportedLanguage) ?? "en")}>
+                    <SelectTrigger className="mt-2 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="te">తెలుగు</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {audienceLoading
+                    ? t("audienceCountLoading")
+                    : audienceCount === null
+                      ? t("audienceUnsupported")
+                      : t("audienceCount", { count: audienceCount })}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t("scheduleTypeLabel")}</Label>
+                <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="now">{t("scheduleTypeNow")}</SelectItem>
+                    <SelectItem value="later">{t("scheduleTypeLater")}</SelectItem>
+                    <SelectItem value="recurring">{t("scheduleTypeRecurring")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {scheduleChoice === "later" && (
+                  <div className="mt-2">
+                    <DateTimeField id="campaign-scheduled-at" label={t("scheduledAtLabel")} value={scheduledAt} onChange={setScheduledAt} />
+                  </div>
+                )}
+                {scheduleChoice === "recurring" && (
+                  <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
+                    <SelectTrigger className="mt-2 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RECURRENCE_RULES.map((rule) => (
+                        <SelectItem key={rule} value={rule}>
+                          {tRecurrence(rule)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? t("saving") : t("save")}
+        <DialogFooter className={cn("gap-2", canSendNow ? "grid grid-cols-2" : "")}>
+          <Button variant={canSendNow ? "outline" : "default"} onClick={() => handleSubmit(false)} disabled={submitting !== false}>
+            {submitting === "draft" ? t("saving") : t("save")}
           </Button>
+          {canSendNow && (
+            <Button onClick={() => handleSubmit(true)} disabled={submitting !== false}>
+              {submitting === "send" ? t("sending") : t("sendNow")}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

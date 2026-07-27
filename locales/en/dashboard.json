@@ -586,6 +586,10 @@
       },
       "save": "Save draft",
       "saving": "Saving...",
+      "advancedOptions": "Advanced options",
+      "sendNow": "Send now",
+      "sending": "Sending...",
+      "sendError": "Failed to send campaign",
       "createError": "Failed to create campaign",
       "updateError": "Failed to update campaign"
     },
@@ -759,6 +763,7 @@
         "label": "WhatsApp status",
         "description": "Set automatically when a devotee messages the temple WhatsApp number — can't be set manually."
       },
+      "advancedOptions": "Advanced options",
       "errorFallback": "Failed to save devotee"
     },
     "familyForm": {
@@ -950,6 +955,8 @@
         "devotee": "Devotee",
         "devoteePlaceholder": "Select a devotee",
         "amount": "Amount (₹)",
+        "customAmount": "Custom",
+        "customAmountPlaceholder": "Enter amount",
         "paymentMethod": "Payment method",
         "purpose": "Purpose",
         "purposePlaceholder": "Describe the purpose",

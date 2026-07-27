@@ -91,8 +91,8 @@ export default async function SuperAdminDashboardPage() {
         </div>
 
         <section className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
               <Server className="size-4 text-muted-foreground" />
               Platform Health
             </div>
@@ -130,7 +130,7 @@ export default async function SuperAdminDashboardPage() {
                 />
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Storage and background-worker monitoring aren&apos;t tracked in this app yet — nothing fabricated here.
             </p>
           </div>

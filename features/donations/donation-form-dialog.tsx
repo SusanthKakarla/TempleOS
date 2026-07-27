@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dateTimeLocalValueToIso, isoToDateTimeLocalValue } from "@/features/events/datetime-local";
 import { DateTimeField } from "@/features/events/date-time-field";
+import { formatInr } from "@/lib/currency";
 import {
   DONATION_PURPOSE_OTHER,
   DONATION_PURPOSE_PRESET_KEYS,
@@ -28,12 +28,16 @@ import {
   PAYMENT_METHOD_OPTIONS,
 } from "./donation-options";
 
+const AMOUNT_PRESETS = [101, 501, 1001, 5001] as const;
+
 interface DonationFormDialogProps {
   mode: "create" | "edit";
   donation?: Donation;
   devotees: Devotee[];
   /** Pre-selects a devotee and locks the picker â€” used from a devotee's own detail page. */
   fixedDevoteeId?: string;
+  /** Pre-selects a purpose and locks the picker â€” used when recording a donation against a specific campaign's linked purpose. */
+  fixedPurpose?: string;
   trigger: ReactElement;
   onSaved: () => void;
   /** Controlled open state â€” lets a caller open this dialog from elsewhere (e.g. tapping a mobile row, or an overflow menu item) instead of `trigger`. Omit for the default self-managed behavior; `trigger` still renders (pass a visually-hidden element if unused). */
@@ -54,6 +58,7 @@ export function DonationFormDialog({
   donation,
   devotees,
   fixedDevoteeId,
+  fixedPurpose,
   trigger,
   onSaved,
   open: controlledOpen,
@@ -68,7 +73,8 @@ export function DonationFormDialog({
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
   const [amount, setAmount] = useState(donation?.amount ?? "");
-  const initialPurpose = initialPurposeState(donation?.purpose);
+  const isCustomAmount = !(AMOUNT_PRESETS as readonly number[]).some((preset) => String(preset) === amount);
+  const initialPurpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
   const [purposePreset, setPurposePreset] = useState(initialPurpose.preset);
   const [customPurpose, setCustomPurpose] = useState(initialPurpose.custom);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(donation?.paymentMethod ?? "cash");
@@ -82,7 +88,7 @@ export function DonationFormDialog({
   function resetToDonation() {
     setDevoteeId(donation?.devoteeId ?? fixedDevoteeId ?? "");
     setAmount(donation?.amount ?? "");
-    const purpose = initialPurposeState(donation?.purpose);
+    const purpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
     setPurposePreset(purpose.preset);
     setCustomPurpose(purpose.custom);
     setPaymentMethod(donation?.paymentMethod ?? "cash");
@@ -192,37 +198,66 @@ export function DonationFormDialog({
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <LabeledInput
-              id="amount"
-              label={tForm("fields.amount")}
-              icon={<IndianRupee />}
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">{tForm("fields.paymentMethod")}</Label>
-              <Select
-                value={paymentMethod}
-                onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
-                items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
+          <div className="space-y-2">
+            <Label>{tForm("fields.amount")}</Label>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {AMOUNT_PRESETS.map((preset) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  variant={amount === String(preset) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAmount(String(preset))}
+                >
+                  {formatInr(preset)}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant={isCustomAmount ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAmount("")}
               >
-                <SelectTrigger id="paymentMethod" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHOD_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {t(`paymentMethods.${option.value}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {tForm("fields.customAmount")}
+              </Button>
             </div>
+            {isCustomAmount && (
+              <div className="relative">
+                <IndianRupee className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pl-9"
+                  placeholder={tForm("fields.customAmountPlaceholder")}
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">{tForm("fields.paymentMethod")}</Label>
+            <Select
+              value={paymentMethod}
+              onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+              items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
+            >
+              <SelectTrigger id="paymentMethod" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHOD_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {t(`paymentMethods.${option.value}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -230,6 +265,7 @@ export function DonationFormDialog({
             <Select
               value={purposePreset}
               onValueChange={(value) => setPurposePreset(value ?? "")}
+              disabled={Boolean(fixedPurpose)}
               items={Object.fromEntries([
                 ...DONATION_PURPOSE_PRESETS.map((preset) => [preset, purposeLabel(preset)]),
                 [DONATION_PURPOSE_OTHER, t("purposePresets.other")],

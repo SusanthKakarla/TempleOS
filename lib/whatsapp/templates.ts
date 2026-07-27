@@ -28,7 +28,12 @@ export interface WhatsAppButtonMessage {
   buttons: InteractiveButton[];
 }
 
-/** The main menu — a WhatsApp List Message (up to 10 rows; this uses 8, one section). */
+/**
+ * The main menu — a WhatsApp List Message (up to 10 rows; this uses 6, one section).
+ * FAQ and Timings are intentionally omitted from the menu to keep it to 6 options —
+ * both remain reachable by typing "faq"/"timings" and their admin content management
+ * in Chatbot Settings is untouched.
+ */
 export function buildMenuMessage(tenant: Tenant, lang: SupportedLanguage): WhatsAppListMessage {
   const greeting = tenant.welcomeMessage?.trim() || t(lang, "menuGreetingFallback", { temple: tenant.name });
 
@@ -41,10 +46,8 @@ export function buildMenuMessage(tenant: Tenant, lang: SupportedLanguage): Whats
         rows: [
           { id: "events", title: t(lang, "menuRowEventsTitle"), description: t(lang, "menuRowEventsDescription") },
           { id: "contact", title: t(lang, "menuRowContactTitle"), description: t(lang, "menuRowContactDescription") },
-          { id: "timings", title: t(lang, "menuRowTimingsTitle"), description: t(lang, "menuRowTimingsDescription") },
           { id: "history", title: t(lang, "menuRowHistoryTitle"), description: t(lang, "menuRowHistoryDescription") },
           { id: "sevas", title: t(lang, "menuRowSevasTitle"), description: t(lang, "menuRowSevasDescription") },
-          { id: "faq", title: t(lang, "menuRowFaqTitle"), description: t(lang, "menuRowFaqDescription") },
           {
             id: "donation_info",
             title: t(lang, "menuRowDonationInfoTitle"),
