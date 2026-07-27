@@ -166,7 +166,7 @@ export function DonationFormDialog({
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? tForm("createTitle") : tForm("editTitle")}</DialogTitle>
           <DialogDescription>
@@ -175,7 +175,10 @@ export function DonationFormDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="devoteeId">{tForm("fields.devotee")}</Label>
+            <Label htmlFor="devoteeId" className="justify-between">
+              <span>{tForm("fields.devotee")}</span>
+              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+            </Label>
             <Select
               value={devoteeId}
               onValueChange={(value) => setDevoteeId(value ?? "")}
@@ -184,7 +187,7 @@ export function DonationFormDialog({
                 devotees.map((devotee) => [devotee.id, `${devotee.displayName} Â· ${devotee.whatsappPhone}`]),
               )}
             >
-              <SelectTrigger id="devoteeId" className="w-full">
+              <SelectTrigger id="devoteeId" size="lg" className="w-full">
                 <User className="size-4 text-muted-foreground" />
                 <SelectValue placeholder={tForm("fields.devoteePlaceholder")} />
               </SelectTrigger>
@@ -199,7 +202,10 @@ export function DonationFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>{tForm("fields.amount")}</Label>
+            <Label className="justify-between">
+              <span>{tForm("fields.amount")}</span>
+              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+            </Label>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {AMOUNT_PRESETS.map((preset) => (
                 <Button
@@ -231,6 +237,7 @@ export function DonationFormDialog({
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  inputSize="lg"
                   className="pl-9"
                   placeholder={tForm("fields.customAmountPlaceholder")}
                   required
@@ -247,7 +254,7 @@ export function DonationFormDialog({
               onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
               items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
             >
-              <SelectTrigger id="paymentMethod" className="w-full">
+              <SelectTrigger id="paymentMethod" size="lg" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -261,7 +268,10 @@ export function DonationFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purpose">{tForm("fields.purpose")}</Label>
+            <Label htmlFor="purpose" className="justify-between">
+              <span>{tForm("fields.purpose")}</span>
+              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+            </Label>
             <Select
               value={purposePreset}
               onValueChange={(value) => setPurposePreset(value ?? "")}
@@ -271,7 +281,7 @@ export function DonationFormDialog({
                 [DONATION_PURPOSE_OTHER, t("purposePresets.other")],
               ])}
             >
-              <SelectTrigger id="purpose" className="w-full">
+              <SelectTrigger id="purpose" size="lg" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -293,6 +303,7 @@ export function DonationFormDialog({
                   placeholder={tForm("fields.purposePlaceholder")}
                   value={customPurpose}
                   onChange={(e) => setCustomPurpose(e.target.value)}
+                  inputSize="lg"
                   required
                 />
               </>
@@ -305,6 +316,8 @@ export function DonationFormDialog({
             value={donatedAt}
             onChange={setDonatedAt}
             required
+            requiredLabel={tCommon("required")}
+            size="lg"
           />
 
           <div className="space-y-2">
@@ -314,7 +327,7 @@ export function DonationFormDialog({
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" size="xl" disabled={submitting}>
               {submitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>

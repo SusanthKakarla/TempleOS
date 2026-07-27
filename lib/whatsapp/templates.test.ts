@@ -15,6 +15,7 @@ import {
   buildMenuMessage,
   buildNewEventNotification,
   buildSevasMessage,
+  buildTempleInfoMessage,
   buildTimingsMessage,
   buildUnknownMessage,
   getTenantLocalDateISO,
@@ -117,8 +118,7 @@ describe("buildMenuMessage", () => {
     const rowTitles = message.sections.flatMap((s) => s.rows.map((r) => r.title));
     expect(rowTitles).toEqual([
       "Events",
-      "Contact",
-      "History",
+      "Temple Information",
       "Sevas",
       "Donate",
       "Language",
@@ -126,7 +126,6 @@ describe("buildMenuMessage", () => {
     const rowIds = message.sections.flatMap((s) => s.rows.map((r) => r.id));
     expect(rowIds).toEqual([
       "events",
-      "contact",
       "history",
       "sevas",
       "donation_info",
@@ -144,8 +143,7 @@ describe("buildMenuMessage", () => {
     const rowTitles = message.sections.flatMap((s) => s.rows.map((r) => r.title));
     expect(rowTitles).toEqual([
       t("te", "menuRowEventsTitle"),
-      t("te", "menuRowContactTitle"),
-      t("te", "menuRowHistoryTitle"),
+      t("te", "menuRowTempleInfoTitle"),
       t("te", "menuRowSevasTitle"),
       t("te", "menuRowDonationInfoTitle"),
       t("te", "menuRowChangeLanguageTitle"),
@@ -331,6 +329,30 @@ describe("buildHistoryMessage", () => {
 
   it("falls back with a Telugu message when history is not set and lang is Telugu", () => {
     expect(buildHistoryMessage(tenant, "te")).toBe(t("te", "historyFallback"));
+  });
+});
+
+describe("buildTempleInfoMessage", () => {
+  it("merges history and contact details into one reply", () => {
+    const message = buildTempleInfoMessage({ ...tenant, history: "Built in 1850." }, "en");
+    expect(message).toContain("Built in 1850.");
+    expect(message).toContain(tenant.defaultContactPhone);
+    expect(message).toContain(t("en", "templeInfoContactHeader"));
+  });
+
+  it("includes social links when provided", () => {
+    const socialLinks: TempleSocialLink[] = [
+      {
+        id: "link-1",
+        tenantId: tenant.id,
+        platform: "facebook",
+        url: "https://facebook.com/mytemple",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    const message = buildTempleInfoMessage(tenant, "en", socialLinks);
+    expect(message).toContain("Facebook: https://facebook.com/mytemple");
   });
 });
 

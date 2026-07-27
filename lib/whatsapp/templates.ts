@@ -29,10 +29,11 @@ export interface WhatsAppButtonMessage {
 }
 
 /**
- * The main menu — a WhatsApp List Message (up to 10 rows; this uses 6, one section).
- * FAQ and Timings are intentionally omitted from the menu to keep it to 6 options —
- * both remain reachable by typing "faq"/"timings" and their admin content management
- * in Chatbot Settings is untouched.
+ * The main menu — a WhatsApp List Message (up to 10 rows; this uses 5, one section).
+ * FAQ and Timings are omitted entirely to keep the menu short (both remain reachable
+ * by typing "faq"/"timings"); History and Contact are merged into one "Temple
+ * Information" row (id stays "history" — see buildTempleInfoMessage) rather than
+ * shown as two separate rows. All content management in Chatbot Settings is untouched.
  */
 export function buildMenuMessage(tenant: Tenant, lang: SupportedLanguage): WhatsAppListMessage {
   const greeting = tenant.welcomeMessage?.trim() || t(lang, "menuGreetingFallback", { temple: tenant.name });
@@ -45,8 +46,11 @@ export function buildMenuMessage(tenant: Tenant, lang: SupportedLanguage): Whats
         title: t(lang, "menuSectionTitle"),
         rows: [
           { id: "events", title: t(lang, "menuRowEventsTitle"), description: t(lang, "menuRowEventsDescription") },
-          { id: "contact", title: t(lang, "menuRowContactTitle"), description: t(lang, "menuRowContactDescription") },
-          { id: "history", title: t(lang, "menuRowHistoryTitle"), description: t(lang, "menuRowHistoryDescription") },
+          {
+            id: "history",
+            title: t(lang, "menuRowTempleInfoTitle"),
+            description: t(lang, "menuRowTempleInfoDescription"),
+          },
           { id: "sevas", title: t(lang, "menuRowSevasTitle"), description: t(lang, "menuRowSevasDescription") },
           {
             id: "donation_info",
@@ -255,6 +259,17 @@ export function buildTimingsMessage(
 
 export function buildHistoryMessage(tenant: Tenant, lang: SupportedLanguage): string {
   return tenant.history?.trim() || t(lang, "historyFallback");
+}
+
+/** The menu's "Temple Information" row — history and contact details merged into one reply. */
+export function buildTempleInfoMessage(
+  tenant: Tenant,
+  lang: SupportedLanguage,
+  socialLinks: TempleSocialLink[] = [],
+): string {
+  const history = buildHistoryMessage(tenant, lang);
+  const contact = buildContactMessage(tenant, lang, socialLinks);
+  return `${history}\n\n*${t(lang, "templeInfoContactHeader")}*\n${contact}`;
 }
 
 export function buildDonationInfoMessage(tenant: Tenant, lang: SupportedLanguage): string {

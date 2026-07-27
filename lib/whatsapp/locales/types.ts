@@ -16,12 +16,10 @@ export interface LocaleDictionary {
   menuSectionTitle: string;
   menuRowEventsTitle: string;
   menuRowEventsDescription: string;
-  menuRowContactTitle: string;
-  menuRowContactDescription: string;
   menuRowTimingsTitle: string;
   menuRowTimingsDescription: string;
-  menuRowHistoryTitle: string;
-  menuRowHistoryDescription: string;
+  menuRowTempleInfoTitle: string;
+  menuRowTempleInfoDescription: string;
   menuRowSevasTitle: string;
   menuRowSevasDescription: string;
   menuRowFaqTitle: string;
@@ -49,6 +47,7 @@ export interface LocaleDictionary {
   timingsEveningLabel: string;
 
   historyFallback: string;
+  templeInfoContactHeader: string;
 
   sevasEmpty: string;
   sevasHeader: string; // params: temple

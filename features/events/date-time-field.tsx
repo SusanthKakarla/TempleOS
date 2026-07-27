@@ -31,12 +31,17 @@ export function DateTimeField({
   value,
   onChange,
   required,
+  requiredLabel,
+  size = "default",
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  /** Text shown next to the label when `required` is set (e.g. the localized word for "Required") — omit to show no indicator at all. */
+  requiredLabel?: string;
+  size?: "default" | "lg";
 }) {
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("events.formDialog");
@@ -56,7 +61,12 @@ export function DateTimeField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="justify-between">
+        <span>{label}</span>
+        {required && requiredLabel && (
+          <span className="text-xs font-normal text-muted-foreground">{requiredLabel}</span>
+        )}
+      </Label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Popover>
           <PopoverTrigger
@@ -64,6 +74,7 @@ export function DateTimeField({
               <Button
                 type="button"
                 variant="outline"
+                size={size === "lg" ? "xl" : "default"}
                 id={id}
                 className="flex-1 justify-start gap-2 font-normal"
               >
@@ -82,6 +93,7 @@ export function DateTimeField({
             type="time"
             value={timePart}
             onChange={(e) => handleTimeChange(e.target.value)}
+            inputSize={size}
             className="pl-8 [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
             required={required}
           />

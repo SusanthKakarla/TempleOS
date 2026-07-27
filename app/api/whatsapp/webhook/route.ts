@@ -19,10 +19,10 @@ import {
   buildEventsMessage,
   buildFaqMessage,
   buildHelpMessage,
-  buildHistoryMessage,
   buildLanguagePickerMessage,
   buildMenuMessage,
   buildSevasMessage,
+  buildTempleInfoMessage,
   buildTimingsMessage,
   buildUnknownMessage,
   getTenantLocalDateISO,
@@ -162,7 +162,8 @@ async function handleInboundMessage(
         const specialDay = await getSpecialDayForDate(tenantId, todayIso);
         replyText = buildTimingsMessage(tenant, specialDay, lang);
       } else if (command === "history") {
-        replyText = buildHistoryMessage(tenant, lang);
+        const socialLinks = await listSocialLinks(tenantId);
+        replyText = buildTempleInfoMessage(tenant, lang, socialLinks);
       } else if (command === "sevas") {
         const sevas = await listSevas(tenantId);
         replyText = buildSevasMessage(tenant, sevas, lang);

@@ -6,12 +6,10 @@ export const en: LocaleDictionary = {
   menuSectionTitle: "Options",
   menuRowEventsTitle: "Events",
   menuRowEventsDescription: "Upcoming temple events",
-  menuRowContactTitle: "Contact",
-  menuRowContactDescription: "Phone, address, map",
   menuRowTimingsTitle: "Timings",
   menuRowTimingsDescription: "Today's opening hours",
-  menuRowHistoryTitle: "History",
-  menuRowHistoryDescription: "About our temple",
+  menuRowTempleInfoTitle: "Temple Information",
+  menuRowTempleInfoDescription: "History, contact & directions",
   menuRowSevasTitle: "Sevas",
   menuRowSevasDescription: "Poojas and rituals offered",
   menuRowFaqTitle: "FAQ",
@@ -39,6 +37,7 @@ export const en: LocaleDictionary = {
   timingsEveningLabel: "Evening:",
 
   historyFallback: "Temple history has not been added yet. Please contact the temple office.",
+  templeInfoContactHeader: "Contact & Directions",
 
   sevasEmpty: "No sevas are listed yet. Please contact the temple office for seva information.",
   sevasHeader: "Sevas at {temple}:",
@@ -55,7 +54,7 @@ export const en: LocaleDictionary = {
     'Reply with a number, or type a word like "events" or "timings".\n' +
     'Type "menu" anytime to see all options.\n' +
     'Type "language" to switch between English and Telugu.\n\n' +
-    "A temple volunteer is also happy to help — see the Contact option in the menu.",
+    "A temple volunteer is also happy to help — see the Temple Information option in the menu.",
 
   dayMonday: "Monday",
   dayTuesday: "Tuesday",

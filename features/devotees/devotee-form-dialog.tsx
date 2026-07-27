@@ -162,7 +162,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{registrationType === null ? t("registrationType.title") : mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
           <DialogDescription>
@@ -204,7 +204,9 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             icon={<User />}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            inputSize="lg"
             required
+            requiredLabel={tCommon("required")}
           />
           <LabeledInput
             id="whatsappPhone"
@@ -212,7 +214,9 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             icon={<Phone />}
             value={whatsappPhone}
             onChange={(e) => setWhatsappPhone(e.target.value)}
+            inputSize="lg"
             required
+            requiredLabel={tCommon("required")}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -224,6 +228,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
+                  inputSize="lg"
                   className="pl-9"
                 />
               </div>
@@ -231,7 +236,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             <div className="space-y-2">
               <Label htmlFor="gender">{t("fields.gender")}</Label>
               <Select value={gender || undefined} onValueChange={(v) => setGender((v as Gender) ?? "")} items={genderItems}>
-                <SelectTrigger id="gender" className="w-full">
+                <SelectTrigger id="gender" size="lg" className="w-full">
                   <UserRound className="size-4 text-muted-foreground" />
                   <SelectValue placeholder={t("fields.genderPlaceholder")} />
                 </SelectTrigger>
@@ -258,7 +263,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                     ...families.map((f) => [f.id, f.familyName]),
                   ])}
                 >
-                  <SelectTrigger id="familyId" className="w-full">
+                  <SelectTrigger id="familyId" size="lg" className="w-full">
                     <Users className="size-4 text-muted-foreground" />
                     <SelectValue />
                   </SelectTrigger>
@@ -277,6 +282,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 label={t("fields.address")}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                inputSize="lg"
               />
             </div>
           )}
@@ -294,6 +300,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   icon={<Sparkles />}
                   value={birthStar}
                   onChange={(e) => setBirthStar(e.target.value)}
+                  inputSize="lg"
                 />
                 <LabeledInput
                   id="ancestralLineage"
@@ -301,6 +308,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   icon={<Users />}
                   value={ancestralLineage}
                   onChange={(e) => setAncestralLineage(e.target.value)}
+                  inputSize="lg"
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -311,7 +319,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                     onValueChange={(v) => setMaritalStatus((v as MaritalStatus) ?? "")}
                     items={maritalStatusItems}
                   >
-                    <SelectTrigger id="maritalStatus" className="w-full">
+                    <SelectTrigger id="maritalStatus" size="lg" className="w-full">
                       <Heart className="size-4 text-muted-foreground" />
                       <SelectValue placeholder={t("fields.maritalStatusPlaceholder")} />
                     </SelectTrigger>
@@ -333,6 +341,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                       type="date"
                       value={weddingAnniversary}
                       onChange={(e) => setWeddingAnniversary(e.target.value)}
+                      inputSize="lg"
                       className="pl-9"
                     />
                   </div>
@@ -347,7 +356,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                       onValueChange={(v) => setPreferredLanguage((v as SupportedLanguage) ?? "")}
                       items={{ en: t("languageOptions.en"), te: t("languageOptions.te") }}
                     >
-                      <SelectTrigger id="preferredLanguage" className="w-full">
+                      <SelectTrigger id="preferredLanguage" size="lg" className="w-full">
                         <SelectValue placeholder={t("fields.preferredLanguagePlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -389,7 +398,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" size="xl" disabled={submitting}>
               {submitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>

@@ -9,7 +9,8 @@
     "search": "Search",
     "viewDetails": "View Details",
     "filters": "Filters",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "required": "Required"
   },
   "nav": {
     "dashboard": "Dashboard",

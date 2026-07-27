@@ -6,12 +6,10 @@ export const te: LocaleDictionary = {
   menuSectionTitle: "ఎంపికలు",
   menuRowEventsTitle: "కార్యక్రమాలు",
   menuRowEventsDescription: "రాబోయే దేవాలయ కార్యక్రమాలు",
-  menuRowContactTitle: "సంప్రదించండి",
-  menuRowContactDescription: "ఫోన్, చిరునామా, మ్యాప్",
   menuRowTimingsTitle: "సమయాలు",
   menuRowTimingsDescription: "నేటి తెరిచే సమయాలు",
-  menuRowHistoryTitle: "చరిత్ర",
-  menuRowHistoryDescription: "మా దేవాలయం గురించి",
+  menuRowTempleInfoTitle: "దేవాలయ సమాచారం",
+  menuRowTempleInfoDescription: "చరిత్ర, సంప్రదింపు & మార్గదర్శకత్వం",
   menuRowSevasTitle: "సేవలు",
   menuRowSevasDescription: "పూజలు మరియు సేవలు",
   menuRowFaqTitle: "ప్రశ్నలు",
@@ -39,6 +37,7 @@ export const te: LocaleDictionary = {
   timingsEveningLabel: "సాయంత్రం:",
 
   historyFallback: "దేవాలయ చరిత్ర ఇంకా జోడించలేదు. దయచేసి దేవాలయ కార్యాలయాన్ని సంప్రదించండి.",
+  templeInfoContactHeader: "సంప్రదింపు & మార్గదర్శకత్వం",
 
   sevasEmpty: "ఇంకా సేవలు జాబితా చేయలేదు. సేవా వివరాల కోసం దయచేసి దేవాలయ కార్యాలయాన్ని సంప్రదించండి.",
   sevasHeader: "{temple} దేవాలయంలో సేవలు:",
@@ -55,7 +54,7 @@ export const te: LocaleDictionary = {
     'సంఖ్యతో రిప్లై ఇవ్వండి, లేదా "కార్యక్రమాలు" లేదా "సమయాలు" వంటి పదాన్ని టైప్ చేయండి.\n' +
     'అన్ని ఎంపికలను చూడటానికి ఎప్పుడైనా "మెను" అని టైప్ చేయండి.\n' +
     'ఇంగ్లీష్ మరియు తెలుగు మధ్య మారడానికి "భాష" అని టైప్ చేయండి.\n\n' +
-    "దేవాలయ వాలంటీర్ కూడా సహాయం చేయడానికి సంతోషిస్తారు — మెనులోని సంప్రదించండి ఎంపికను చూడండి.",
+    "దేవాలయ వాలంటీర్ కూడా సహాయం చేయడానికి సంతోషిస్తారు — మెనులోని దేవాలయ సమాచారం ఎంపికను చూడండి.",
 
   dayMonday: "సోమవారం",
   dayTuesday: "మంగళవారం",

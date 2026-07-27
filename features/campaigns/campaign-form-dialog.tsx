@@ -65,7 +65,7 @@ function DateOnlyField({
       <Popover>
         <PopoverTrigger
           render={
-            <Button type="button" variant="outline" id={id} className="w-full justify-start gap-2 font-normal">
+            <Button type="button" variant="outline" size="xl" id={id} className="w-full justify-start gap-2 font-normal">
               <CalendarIcon className="size-4 text-muted-foreground" />
               {selected ? formatDate(selected, locale) : label}
             </Button>
@@ -90,6 +90,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
   const t = useTranslations("campaigns.form");
   const tAudience = useTranslations("campaigns.audienceOptions");
   const tRecurrence = useTranslations("campaigns.form.recurrenceOptions");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState(campaign?.title ?? "");
@@ -219,7 +220,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
           <DialogDescription>{t("dialogDescription")}</DialogDescription>
@@ -231,7 +232,9 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
             label={t("titleLabel")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            inputSize="lg"
             required
+            requiredLabel={tCommon("required")}
           />
 
           <MediaUpload
@@ -260,6 +263,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
                 label={t("linkedDonationPurposeLabel")}
                 value={linkedDonationPurpose}
                 onChange={(e) => setLinkedDonationPurpose(e.target.value)}
+                inputSize="lg"
               />
               <p className="text-xs text-muted-foreground">{t("linkedDonationPurposeHint")}</p>
             </div>
@@ -271,6 +275,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
               step="1"
               value={goalAmount}
               onChange={(e) => setGoalAmount(e.target.value)}
+              inputSize="lg"
             />
             <div className="grid grid-cols-2 gap-3">
               <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />
@@ -283,6 +288,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
                 value={donationLinkOverride}
                 onChange={(e) => setDonationLinkOverride(e.target.value)}
                 placeholder={t("donationLinkPlaceholder")}
+                inputSize="lg"
               />
               <p className="text-xs text-muted-foreground">{t("donationLinkHint")}</p>
             </div>
@@ -308,7 +314,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
               <div className="space-y-1.5">
                 <Label>{t("audienceLabel")}</Label>
                 <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger size="lg" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -321,7 +327,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
                 </Select>
                 {audienceType === "language" && (
                   <Select value={audienceLanguage} onValueChange={(v) => setAudienceLanguage((v as SupportedLanguage) ?? "en")}>
-                    <SelectTrigger className="mt-2 w-full">
+                    <SelectTrigger size="lg" className="mt-2 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -342,7 +348,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
               <div className="space-y-1.5">
                 <Label>{t("scheduleTypeLabel")}</Label>
                 <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger size="lg" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -358,7 +364,7 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
                 )}
                 {scheduleChoice === "recurring" && (
                   <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
-                    <SelectTrigger className="mt-2 w-full">
+                    <SelectTrigger size="lg" className="mt-2 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -377,11 +383,16 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
 
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter className={cn("gap-2", canSendNow ? "grid grid-cols-2" : "")}>
-          <Button variant={canSendNow ? "outline" : "default"} onClick={() => handleSubmit(false)} disabled={submitting !== false}>
+          <Button
+            variant={canSendNow ? "outline" : "default"}
+            size="xl"
+            onClick={() => handleSubmit(false)}
+            disabled={submitting !== false}
+          >
             {submitting === "draft" ? t("saving") : t("save")}
           </Button>
           {canSendNow && (
-            <Button onClick={() => handleSubmit(true)} disabled={submitting !== false}>
+            <Button size="xl" onClick={() => handleSubmit(true)} disabled={submitting !== false}>
               {submitting === "send" ? t("sending") : t("sendNow")}
             </Button>
           )}
