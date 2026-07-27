@@ -30,6 +30,13 @@ const knownFlags = new Set([
   "whatsapp-phone",
   "meta-phone-number-id",
   "meta-business-account-id",
+  "razorpay-key-id",
+  "razorpay-key-secret",
+  "razorpay-webhook-secret",
+  "payment-business-name",
+  "payment-merchant-name",
+  "payment-contact-email",
+  "payment-contact-phone",
   "actor-super-admin-id",
   "actor-phone",
   "actor-name",
@@ -89,6 +96,30 @@ export function buildProvisionTempleRawInput(args: CliArgs, env: Env) {
     );
   }
 
+  const razorpayKeyId = valueFor(args, env, "razorpay-key-id", "RAZORPAY_KEY_ID");
+  const razorpayKeySecret = valueFor(args, env, "razorpay-key-secret", "RAZORPAY_KEY_SECRET");
+  const paymentBusinessName = valueFor(args, env, "payment-business-name", "PAYMENT_BUSINESS_NAME");
+  const paymentMerchantName = valueFor(args, env, "payment-merchant-name", "PAYMENT_MERCHANT_NAME");
+  const paymentContactEmail = valueFor(args, env, "payment-contact-email", "PAYMENT_CONTACT_EMAIL");
+  const paymentContactPhone = valueFor(args, env, "payment-contact-phone", "PAYMENT_CONTACT_PHONE");
+  const paymentValues = [
+    razorpayKeyId,
+    razorpayKeySecret,
+    paymentBusinessName,
+    paymentMerchantName,
+    paymentContactEmail,
+    paymentContactPhone,
+  ];
+  const hasAnyPaymentValue = paymentValues.some(Boolean);
+  const hasAllPaymentValues = paymentValues.every(Boolean);
+
+  if (hasAnyPaymentValue && !hasAllPaymentValues) {
+    throw new CliInputError(
+      "paymentAccount",
+      "Provide --razorpay-key-id, --razorpay-key-secret, --payment-business-name, --payment-merchant-name, --payment-contact-email, and --payment-contact-phone together.",
+    );
+  }
+
   const tenant: Record<string, string | null> = {
     name: valueFor(args, env, "tenant-name", "TEMPLE_NAME") ?? "",
     slug: valueFor(args, env, "tenant-slug", "TEMPLE_SLUG") ?? "",
@@ -115,6 +146,20 @@ export function buildProvisionTempleRawInput(args: CliArgs, env: Env) {
             phoneNumber: whatsappPhone,
             metaPhoneNumberId,
             metaBusinessAccountId,
+          },
+        }
+      : {}),
+    ...(hasAllPaymentValues
+      ? {
+          paymentAccount: {
+            providerKey: "razorpay",
+            keyId: razorpayKeyId,
+            keySecret: razorpayKeySecret,
+            webhookSecret: valueFor(args, env, "razorpay-webhook-secret", "RAZORPAY_WEBHOOK_SECRET") ?? null,
+            businessName: paymentBusinessName,
+            merchantName: paymentMerchantName,
+            contactEmail: paymentContactEmail,
+            contactPhone: paymentContactPhone,
           },
         }
       : {}),
@@ -170,6 +215,7 @@ export async function runProvisionTempleCli(
     output.stdout(`First member phone: ${parsed.data.firstMember.phoneNumber}`);
     output.stdout(`Assigned roles: ${result.roles.join(", ")}`);
     output.stdout(`WhatsApp linkage: ${result.whatsappAccount ? "linked" : "not linked"}`);
+    output.stdout(`Payment provider: ${result.paymentAccount ? result.paymentAccount.providerKey : "not connected"}`);
     return 0;
   } catch (err) {
     printCliError(err, output);
@@ -256,6 +302,7 @@ function usageText(): string {
     "  --actor-super-admin-id <id> --actor-phone <phone> --actor-name <name>",
     "Optional: --contact-phone <phone> --address <address> --role <code> --roles <codes>",
     "Optional WhatsApp: --whatsapp-phone <phone> --meta-phone-number-id <id> --meta-business-account-id <id>",
+    "Optional Payment: --razorpay-key-id <id> --razorpay-key-secret <secret> --razorpay-webhook-secret <secret> --payment-business-name <name> --payment-merchant-name <name> --payment-contact-email <email> --payment-contact-phone <phone>",
     "Env fallbacks: TEMPLE_NAME, TEMPLE_SLUG, TEMPLE_SUBDOMAIN, TEMPLE_TIMEZONE, FIRST_MEMBER_PHONE, FIRST_MEMBER_DISPLAY_NAME, SUPER_ADMIN_ID, SUPER_ADMIN_PHONE_NUMBER, SUPER_ADMIN_DISPLAY_NAME",
   ].join("\n");
 }

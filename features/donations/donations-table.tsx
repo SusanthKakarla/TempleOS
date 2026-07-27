@@ -286,7 +286,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <StickyToolbar>
       <PageHeader
         title={t("pageHeader.title")}

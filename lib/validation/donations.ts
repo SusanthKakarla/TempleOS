@@ -11,7 +11,7 @@ const nullableTrimmedString = z
   .nullable()
   .optional();
 
-export const paymentMethodSchema = z.enum(["cash", "upi", "bank_transfer", "cheque", "other"]);
+export const paymentMethodSchema = z.enum(["cash", "upi", "bank_transfer", "cheque", "other", "razorpay"]);
 
 /** A donor with no devotee record — see migrations/024_donation_manual_donor.sql. */
 export const manualDonorSchema = z.object({

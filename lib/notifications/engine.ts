@@ -6,7 +6,7 @@ import { getTenantMediaIdForType } from "@/lib/db/tenant-notification-media";
 import { getTenantById } from "@/lib/db/tenants";
 import type { Notification, NotificationCategory, NotificationChannel, NotificationType, SupportedLanguage } from "@/types/db";
 
-type Recipient = { personId: string } | { devoteeId: string };
+type Recipient = { personId: string } | { devoteeId: string } | { phone: string };
 
 export interface EnqueueNotificationInput {
   tenantId: string;
@@ -19,6 +19,10 @@ export interface EnqueueNotificationInput {
 
 function isPersonRecipient(recipient: Recipient): recipient is { personId: string } {
   return "personId" in recipient;
+}
+
+function isPhoneRecipient(recipient: Recipient): recipient is { phone: string } {
+  return "phone" in recipient;
 }
 
 /**
@@ -53,7 +57,9 @@ export async function enqueueNotification(input: EnqueueNotificationInput): Prom
     const notification = await createNotification({
       tenantId: input.tenantId,
       recipientPersonId: isPersonRecipient(input.recipient) ? input.recipient.personId : undefined,
-      recipientDevoteeId: isPersonRecipient(input.recipient) ? undefined : input.recipient.devoteeId,
+      recipientDevoteeId:
+        !isPersonRecipient(input.recipient) && !isPhoneRecipient(input.recipient) ? input.recipient.devoteeId : undefined,
+      recipientPhone: isPhoneRecipient(input.recipient) ? input.recipient.phone : undefined,
       notificationType: input.notificationType,
       channel,
       category: input.category,
@@ -81,6 +87,13 @@ async function eligibleChannels(
     if (preference?.inAppEnabled ?? true) channels.push("in_app");
     if (preference?.whatsappEnabled ?? true) channels.push("whatsapp");
     return channels;
+  }
+
+  // A raw phone number (e.g. a Razorpay checkout donor) has no devotee/person
+  // record to gate against — no opt-in check applies since they proactively
+  // completed an action (a payment) that this message is a direct receipt for.
+  if (isPhoneRecipient(recipient)) {
+    return ["whatsapp"];
   }
 
   const devotee = await getDevoteeById(tenantId, recipient.devoteeId);

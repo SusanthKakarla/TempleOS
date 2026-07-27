@@ -14,6 +14,7 @@ interface NotificationRow {
   tenant_id: string;
   recipient_person_id: string | null;
   recipient_devotee_id: string | null;
+  recipient_phone: string | null;
   notification_type: NotificationType;
   channel: NotificationChannel;
   category: NotificationCategory;
@@ -45,6 +46,7 @@ function mapNotification(row: NotificationRow): Notification {
     tenantId: row.tenant_id,
     recipientPersonId: row.recipient_person_id,
     recipientDevoteeId: row.recipient_devotee_id,
+    recipientPhone: row.recipient_phone,
     notificationType: row.notification_type,
     channel: row.channel,
     category: row.category,
@@ -75,6 +77,7 @@ export interface CreateNotificationInput {
   tenantId: string;
   recipientPersonId?: string;
   recipientDevoteeId?: string;
+  recipientPhone?: string;
   notificationType: NotificationType;
   channel: NotificationChannel;
   category: NotificationCategory;
@@ -88,14 +91,15 @@ export interface CreateNotificationInput {
 export async function createNotification(input: CreateNotificationInput): Promise<Notification> {
   const { rows } = await getPool().query<NotificationRow>(
     `INSERT INTO notifications
-       (tenant_id, recipient_person_id, recipient_devotee_id, notification_type, channel, category,
+       (tenant_id, recipient_person_id, recipient_devotee_id, recipient_phone, notification_type, channel, category,
         title, message, language, metadata, media_id, delivery_status, next_attempt_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, 'pending', now())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, 'pending', now())
      RETURNING *`,
     [
       input.tenantId,
       input.recipientPersonId ?? null,
       input.recipientDevoteeId ?? null,
+      input.recipientPhone ?? null,
       input.notificationType,
       input.channel,
       input.category,

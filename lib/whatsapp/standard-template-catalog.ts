@@ -326,9 +326,29 @@ const CATALOG_SOURCE: Omit<StandardTemplateCatalogEntry, "description">[] = [
     appBody:
       "🙏 ఓం నమః శివాయ 🙏\n\n{{templeName}} ఒక కొత్త విరాళ కార్యక్రమాన్ని నిర్వహిస్తోంది.\n\n📢 కార్యక్రమం\n{{campaignTitle}}\n\n📝 వివరణ\n{{campaignDescription}}\n\n🎯 లక్ష్యం\n{{goalAmount}}\n\n📈 సేకరించినది\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 కార్యక్రమ వ్యవధి\n{{startDate}} - {{endDate}}\n\n❤️ ఈ పవిత్ర కార్యానికి మద్దతు ఇవ్వండి.\n🔗 ఇప్పుడు విరాళం ఇవ్వండి\n{{donationLink}}\n\n{{blessingMessage}}",
   },
+  // Donation receipt — sent to a raw phone number captured at Razorpay
+  // checkout (no devotee/person record exists for an online donor).
+  {
+    templateKey: "donation_receipt",
+    language: "en",
+    metaTemplateName: "donation_receipt",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "campaign", "receiptNumber", "transactionId", "date", "receiptLink"],
+    appBody:
+      "🙏 Thank you for supporting {{templeName}}.\n\nYour donation of ₹{{amount}} has been received successfully.\n\nCampaign:\n{{campaign}}\n\nReceipt: {{receiptNumber}}\nTransaction ID: {{transactionId}}\nDate: {{date}}\n\nDownload your receipt:\n{{receiptLink}}\n\nMay the blessings of the deity always be with you.",
+  },
+  {
+    templateKey: "donation_receipt",
+    language: "te",
+    metaTemplateName: "donation_receipt",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "campaign", "receiptNumber", "transactionId", "date", "receiptLink"],
+    appBody:
+      "🙏 {{templeName}}కి మద్దతు ఇచ్చినందుకు ధన్యవాదాలు.\n\nమీ ₹{{amount}} విరాళం విజయవంతంగా అందింది.\n\nకార్యక్రమం:\n{{campaign}}\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\nతేదీ: {{date}}\n\nమీ రసీదును డౌన్‌లోడ్ చేసుకోండి:\n{{receiptLink}}\n\nదేవుని ఆశీర్వాదాలు మీకు ఎల్లప్పుడూ తోడుగా ఉండాలి.",
+  },
 ];
 
-/** 14 standard template keys × {en, te} = 28 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
+/** 15 standard template keys × {en, te} = 30 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
 export const STANDARD_TEMPLATE_CATALOG: StandardTemplateCatalogEntry[] = CATALOG_SOURCE.map((entry) => ({
   ...entry,
   description: `Standard TempleOS template for "${entry.templateKey}" (${entry.language}). Recommended starting point — adjust category/body/variables as needed before submitting in Meta Business Manager.`,

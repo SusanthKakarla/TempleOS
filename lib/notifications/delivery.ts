@@ -112,6 +112,9 @@ export async function applyWebhookDeliveryStatus(
 }
 
 async function resolveRecipientPhone(notification: Notification): Promise<string | null> {
+  if (notification.recipientPhone) {
+    return notification.recipientPhone;
+  }
   if (notification.recipientDevoteeId) {
     const devotee = await getDevoteeById(notification.tenantId, notification.recipientDevoteeId);
     return devotee?.whatsappPhone ?? null;

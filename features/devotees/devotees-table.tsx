@@ -330,7 +330,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <StickyToolbar>
         <PageHeader
           title={t("pageHeader.title")}

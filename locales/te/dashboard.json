@@ -18,6 +18,7 @@
     "devotees": "భక్తులు",
     "donations": "విరాళాలు",
     "campaigns": "ప్రచారాలు",
+    "payments": "చెల్లింపులు",
     "conversations": "సంభాషణలు",
     "notifications": "నోటిఫికేషన్‌లు",
     "chatbotSettings": "చాట్‌బాట్ సెట్టింగులు",
@@ -30,6 +31,7 @@
   "topbar": {
     "accountMenu": "ఖాతా మెనూ",
     "notificationPreferences": "నోటిఫికేషన్ ప్రాధాన్యతలు",
+    "appSettings": "సెట్టింగ్‌లు",
     "signOut": "సైన్ అవుట్",
     "signingOut": "సైన్ అవుట్ అవుతోంది...",
     "language": "భాష",
@@ -1253,5 +1255,101 @@
     },
     "channels": { "inApp": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
     "saveError": "ప్రాధాన్యతను సేవ్ చేయడంలో విఫలమైంది"
+  },
+  "settings": {
+    "pageHeader": {
+      "title": "సెట్టింగ్‌లు",
+      "subtitle": "మీ TempleOS అప్లికేషన్ ప్రాధాన్యతలను నిర్వహించండి."
+    },
+    "applicationSection": "అప్లికేషన్",
+    "paymentsSection": "చెల్లింపులు",
+    "paymentsLinkTitle": "చెల్లింపు ప్రొవైడర్",
+    "paymentsLinkDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి Razorpayని కనెక్ట్ చేయండి."
+  },
+  "paymentSettings": {
+    "pageHeader": {
+      "title": "చెల్లింపు సెట్టింగ్‌లు",
+      "subtitle": "దాతలు ఆన్‌లైన్‌లో చెల్లించడానికి ఒక చెల్లింపు ప్రొవైడర్‌ను కనెక్ట్ చేయండి."
+    },
+    "connection": {
+      "cardTitle": "Razorpay",
+      "cardDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం స్వంత Razorpay ఖాతాను కనెక్ట్ చేయండి.",
+      "statusConnected": "కనెక్ట్ చేయబడింది",
+      "statusNotConnected": "కనెక్ట్ చేయలేదు",
+      "validated": "ధృవీకరించబడింది",
+      "validationPending": "ధృవీకరణ పెండింగ్‌లో ఉంది",
+      "fields": {
+        "keyId": "Razorpay Key ID",
+        "keySecret": "Razorpay Key Secret",
+        "webhookSecret": "వెబ్‌హుక్ సీక్రెట్ (ఐచ్ఛికం)",
+        "businessName": "వ్యాపార పేరు",
+        "merchantName": "మర్చంట్ పేరు",
+        "contactEmail": "సంప్రదింపు ఇమెయిల్",
+        "contactPhone": "సంప్రదింపు ఫోన్",
+        "validationStatus": "ధృవీకరణ స్థితి"
+      },
+      "connectButton": "Razorpay కనెక్ట్ చేయండి",
+      "connecting": "కనెక్ట్ చేస్తోంది...",
+      "disconnectButton": "డిస్‌కనెక్ట్ చేయండి",
+      "disconnecting": "డిస్‌కనెక్ట్ చేస్తోంది...",
+      "disconnectConfirm": "ఈ చెల్లింపు ఖాతాను డిస్‌కనెక్ట్ చేయాలా? మీరు మళ్లీ కనెక్ట్ చేసే వరకు ఆన్‌లైన్ విరాళాలు పనిచేయవు.",
+      "connectSuccess": "Razorpay విజయవంతంగా కనెక్ట్ అయింది.",
+      "connectError": "Razorpay కనెక్ట్ చేయడంలో విఫలమైంది.",
+      "disconnectSuccess": "Razorpay డిస్‌కనెక్ట్ చేయబడింది.",
+      "disconnectError": "డిస్‌కనెక్ట్ చేయడంలో విఫలమైంది."
+    }
+  },
+  "paymentsDashboard": {
+    "pageHeader": {
+      "title": "చెల్లింపులు",
+      "subtitle": "మీ కనెక్ట్ చేయబడిన చెల్లింపు ప్రొవైడర్ ద్వారా స్వీకరించిన ఆన్‌లైన్ విరాళాలు."
+    },
+    "providerConnected": "{provider} కనెక్ట్ చేయబడింది",
+    "providerNotConnected": "చెల్లింపు ప్రొవైడర్ కనెక్ట్ చేయలేదు",
+    "metrics": {
+      "todayDonations": "ఈరోజు విరాళాలు",
+      "campaignRevenue": "ప్రచార ఆదాయం",
+      "pending": "పెండింగ్‌లో ఉంది",
+      "failed": "విఫలమైంది"
+    },
+    "table": {
+      "donor": "దాత",
+      "amount": "మొత్తం",
+      "status": "స్థితి",
+      "date": "తేదీ",
+      "receipt": "రసీదు",
+      "download": "డౌన్‌లోడ్"
+    },
+    "status": {
+      "created": "సృష్టించబడింది",
+      "authorized": "అధీకృతం",
+      "captured": "స్వీకరించబడింది",
+      "failed": "విఫలమైంది",
+      "refunded": "వాపసు చేయబడింది"
+    },
+    "anonymousDonor": "అనామక దాత",
+    "emptyState": {
+      "title": "ఇంకా చెల్లింపులు లేవు",
+      "description": "మీ కనెక్ట్ చేయబడిన ప్రొవైడర్ చెల్లింపులను స్వీకరించడం ప్రారంభించిన తర్వాత ఆన్‌లైన్ విరాళాలు ఇక్కడ కనిపిస్తాయి."
+    }
+  },
+  "pwaInstall": {
+    "installAction": "📲 TempleOS ఇన్‌స్టాల్ చేయండి",
+    "installedToast": "TempleOS విజయవంతంగా ఇన్‌స్టాల్ అయింది.",
+    "bannerTitle": "TempleOS ఇన్‌స్టాల్ చేయండి",
+    "bannerDescription": "వేగవంతమైన, పూర్తి-స్క్రీన్, యాప్ లాంటి అనుభవం కోసం TempleOSని మీ పరికరానికి జోడించండి.",
+    "dismiss": "మూసివేయండి",
+    "statusTitle": "ఇన్‌స్టాలేషన్ స్థితి",
+    "statusInstalled": "ఇన్‌స్టాల్ చేయబడింది",
+    "statusNotInstalled": "ఇన్‌స్టాల్ చేయలేదు",
+    "statusInstalledDescription": "TempleOS ఈ పరికరంలో ఇన్‌స్టాల్ చేయబడింది.",
+    "statusUnsupported": "ఈ బ్రౌజర్ యాప్ ఇన్‌స్టాలేషన్‌కు మద్దతు ఇవ్వదు. Chrome, Edge, లేదా iOSలో Safari ప్రయత్నించండి.",
+    "iosDialog": {
+      "title": "iPhone/iPadలో TempleOS ఇన్‌స్టాల్ చేయండి",
+      "description": "Safari వన్-టాప్ ఇన్‌స్టాల్‌లకు మద్దతు ఇవ్వదు — బదులుగా TempleOSని మీ హోమ్ స్క్రీన్‌కు జోడించండి:",
+      "step1": "Safari టూల్‌బార్‌లోని షేర్ ఐకాన్‌ను నొక్కండి",
+      "step2": "క్రిందికి స్క్రోల్ చేసి \"Add to Home Screen\" నొక్కండి",
+      "close": "సరే"
+    }
   }
 }

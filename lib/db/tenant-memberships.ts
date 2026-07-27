@@ -387,6 +387,22 @@ export async function listActiveMemberPhonesForTenant(
   return new Set(rows.map((row) => row.phone_number));
 }
 
+/** Active admins' personIds — used to fan out an in-app notification (e.g. "a donation just came in") to everyone with dashboard access, not just one person. */
+export async function listActiveAdminPersonIdsForTenant(
+  tenantId: string,
+  client: QueryClient = getPool(),
+): Promise<string[]> {
+  const { rows } = await client.query<{ person_id: string }>(
+    `SELECT DISTINCT tm.person_id
+     FROM tenant_memberships tm
+     JOIN tenant_membership_roles tmr ON tmr.membership_id = tm.id
+     JOIN role_definitions rd ON rd.id = tmr.role_definition_id
+     WHERE tm.tenant_id = $1 AND tm.status = 'active' AND rd.code = 'admin'`,
+    [tenantId],
+  );
+  return rows.map((row) => row.person_id);
+}
+
 export async function touchLastSignedIn(
   membershipId: string,
   client: QueryClient = getPool(),

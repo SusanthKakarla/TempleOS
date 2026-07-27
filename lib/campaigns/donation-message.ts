@@ -25,18 +25,24 @@ type DonationCampaignFields = Pick<
   | "campaignEndDate"
   | "donationLinkOverride"
   | "linkedDonationPurpose"
+  | "slug"
+  | "donationToken"
 >;
 
 /**
- * `campaign.donationLinkOverride` wins if set; otherwise a base URL read from
- * config (never hardcoded — swappable for a real payment gateway later
- * without touching any notification logic), defaulting to a demo endpoint
- * for the current testing phase.
+ * `campaign.donationLinkOverride` wins if set (an admin-supplied full URL,
+ * e.g. a third-party gateway link); otherwise builds the real checkout URL
+ * `{base}/{tenantSlug}/{campaignSlug}/{donationToken}` — the token is
+ * unguessable and stable per campaign (every donor who receives this link
+ * reuses the same one; it is not a single-use capability token).
  */
-export function buildDonationLink(campaign: Pick<Campaign, "id" | "donationLinkOverride">): string {
+export function buildDonationLink(
+  tenant: Pick<Tenant, "slug">,
+  campaign: Pick<Campaign, "donationLinkOverride" | "slug" | "donationToken">,
+): string {
   if (campaign.donationLinkOverride) return campaign.donationLinkOverride;
   const base = process.env.DONATION_LINK_BASE_URL?.trim() || DEFAULT_DONATION_LINK_BASE_URL;
-  return `${base.replace(/\/+$/, "")}/${campaign.id}`;
+  return `${base.replace(/\/+$/, "")}/${tenant.slug}/${campaign.slug}/${campaign.donationToken}`;
 }
 
 /** Uncapped — a campaign can exceed 100% of its goal; callers decide how to display that (see raisedPercentage below, which IS capped for the template). */
@@ -85,7 +91,7 @@ export interface DonationCampaignVarsResult {
  * will happily render empty date strings if called without that guarantee.
  */
 export function buildDonationCampaignVars(
-  tenant: Pick<Tenant, "name">,
+  tenant: Pick<Tenant, "name" | "slug">,
   campaign: DonationCampaignFields,
   donationSummary: { totalAmount: number },
   language: SupportedLanguage,
@@ -104,7 +110,7 @@ export function buildDonationCampaignVars(
     raisedPercentage: String(Math.min(100, Math.round(rawPercentage))),
     startDate: campaign.campaignStartDate ? formatDate(campaign.campaignStartDate, language) : "",
     endDate: campaign.campaignEndDate ? formatDate(campaign.campaignEndDate, language) : "",
-    donationLink: buildDonationLink(campaign),
+    donationLink: buildDonationLink(tenant, campaign),
     blessingMessage: campaign.customMessage?.trim() || DEFAULT_BLESSING_MESSAGE[language],
   };
 

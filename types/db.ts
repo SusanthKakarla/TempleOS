@@ -211,6 +211,68 @@ export interface WhatsAppAccount {
   updatedAt: string;
 }
 
+export type PaymentProviderKey = "razorpay" | "stripe" | "cashfree" | "phonepe" | "payu";
+export type PaymentProviderStatus = "active" | "coming_soon";
+
+export interface PaymentProvider {
+  key: PaymentProviderKey;
+  label: string;
+  status: PaymentProviderStatus;
+}
+
+export type PaymentAccountStatus = "connected" | "disabled";
+
+/** A tenant's own connected payment account — never the secret material (see PaymentAccountWithCredentials for the one place that needs it). */
+export interface TenantPaymentAccount {
+  id: string;
+  tenantId: string;
+  providerKey: PaymentProviderKey;
+  businessName: string;
+  merchantName: string;
+  contactEmail: string;
+  contactPhone: string;
+  status: PaymentAccountStatus;
+  isActive: boolean;
+  lastValidatedAt: string | null;
+  lastValidationError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentTransactionStatus = "created" | "authorized" | "captured" | "failed" | "refunded";
+
+export interface PaymentTransaction {
+  id: string;
+  tenantId: string;
+  paymentAccountId: string;
+  campaignId: string | null;
+  donationId: string | null;
+  providerKey: PaymentProviderKey;
+  providerOrderId: string;
+  providerPaymentId: string | null;
+  amount: number;
+  currency: string;
+  status: PaymentTransactionStatus;
+  donorName: string;
+  donorPhone: string | null;
+  donorEmail: string | null;
+  isAnonymous: boolean;
+  receiptNumber: string | null;
+  receiptUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentWebhookLog {
+  id: string;
+  tenantId: string | null;
+  providerKey: string;
+  signatureValid: boolean;
+  eventType: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 export type WhatsAppTemplateApprovalStatus = "pending" | "approved" | "rejected" | "disabled";
 export type WhatsAppTemplateMetaCategory = "UTILITY" | "MARKETING" | "AUTHENTICATION";
 
@@ -322,7 +384,9 @@ export type NotificationType =
   | "event_cancelled"
   | "event_announcement"
   | "campaign_broadcast"
-  | "donation_campaign_broadcast";
+  | "donation_campaign_broadcast"
+  | "donation_receipt"
+  | "payment_captured";
 
 export interface NotificationTemplate {
   id: string;
@@ -340,6 +404,7 @@ export interface Notification {
   tenantId: string;
   recipientPersonId: string | null;
   recipientDevoteeId: string | null;
+  recipientPhone: string | null;
   notificationType: NotificationType;
   channel: NotificationChannel;
   category: NotificationCategory;
@@ -460,6 +525,8 @@ export interface Campaign {
   donationLinkOverride: string | null;
   closingReminderSentAt: string | null;
   targetReachedAnnouncedAt: string | null;
+  slug: string;
+  donationToken: string;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -672,7 +739,7 @@ export interface WhatsAppInteraction {
   createdAt: string;
 }
 
-export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other";
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other" | "razorpay";
 
 export interface Donation {
   id: string;

@@ -151,6 +151,7 @@ const provisionedTemple = {
   },
   roles: ["admin" as const],
   whatsappAccount: null,
+  paymentAccount: null,
 };
 
 function request(body: unknown): Request {

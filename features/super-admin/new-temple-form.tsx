@@ -11,6 +11,7 @@ import {
   CalendarHeart,
   CheckCircle2,
   Contact,
+  CreditCard,
   Download,
   FileBarChart,
   Globe2,
@@ -66,8 +67,11 @@ const STEPS = [
   { key: "domain", title: "Domain", icon: Globe2 },
   { key: "firstMember", title: "First Member", icon: UserRound },
   { key: "whatsapp", title: "WhatsApp", icon: ShieldCheck },
+  { key: "payment", title: "Payment", icon: CreditCard },
   { key: "features", title: "Feature Access", icon: LayoutGrid },
 ] as const;
+
+const FUTURE_PAYMENT_PROVIDERS = ["Stripe", "Cashfree", "PhonePe", "PayU"] as const;
 
 const FEATURE_ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -428,6 +432,102 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
             <Card className="glass-card rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
+                  <CreditCard className="size-4 text-primary" />
+                  Payment Integration
+                </CardTitle>
+                <CardDescription>Optional — connect the temple&apos;s own Razorpay account for online donations.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Payment provider</Label>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <label
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+                        form.paymentProviderKey === "razorpay" && "border-primary bg-primary/5",
+                      )}
+                    >
+                      <Checkbox
+                        checked={form.paymentProviderKey === "razorpay"}
+                        onCheckedChange={(checked) => updateField("paymentProviderKey", checked ? "razorpay" : "")}
+                      />
+                      <span>Razorpay</span>
+                    </label>
+                    {FUTURE_PAYMENT_PROVIDERS.map((name) => (
+                      <label
+                        key={name}
+                        className="flex cursor-not-allowed items-center gap-2 rounded-lg border px-3 py-2 text-sm opacity-50"
+                        title="Coming soon"
+                      >
+                        <Checkbox checked={false} disabled />
+                        <span className="flex flex-col">
+                          {name}
+                          <span className="text-xs text-muted-foreground">Coming soon</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {form.paymentProviderKey === "razorpay" && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <LabeledInput
+                      id="razorpay-key-id"
+                      label="Razorpay Key ID"
+                      error={errors.fieldErrors.razorpayKeyId}
+                      value={form.razorpayKeyId}
+                      onChange={(event) => updateField("razorpayKeyId", event.target.value)}
+                    />
+                    <LabeledInput
+                      id="razorpay-key-secret"
+                      label="Razorpay Key Secret"
+                      type="password"
+                      error={errors.fieldErrors.razorpayKeySecret}
+                      value={form.razorpayKeySecret}
+                      onChange={(event) => updateField("razorpayKeySecret", event.target.value)}
+                    />
+                    <LabeledInput
+                      id="payment-business-name"
+                      label="Business name"
+                      error={errors.fieldErrors.paymentBusinessName}
+                      value={form.paymentBusinessName}
+                      onChange={(event) => updateField("paymentBusinessName", event.target.value)}
+                    />
+                    <LabeledInput
+                      id="payment-merchant-name"
+                      label="Merchant name"
+                      error={errors.fieldErrors.paymentMerchantName}
+                      value={form.paymentMerchantName}
+                      onChange={(event) => updateField("paymentMerchantName", event.target.value)}
+                    />
+                    <LabeledInput
+                      id="payment-contact-email"
+                      label="Contact email"
+                      error={errors.fieldErrors.paymentContactEmail}
+                      value={form.paymentContactEmail}
+                      onChange={(event) => updateField("paymentContactEmail", event.target.value)}
+                    />
+                    <LabeledInput
+                      id="payment-contact-phone"
+                      label="Contact phone"
+                      icon={<Phone />}
+                      error={errors.fieldErrors.paymentContactPhone}
+                      value={form.paymentContactPhone}
+                      onChange={(event) => updateField("paymentContactPhone", event.target.value)}
+                    />
+                  </div>
+                )}
+                {errors.sectionErrors.paymentAccount && (
+                  <p className="text-sm text-destructive">{errors.sectionErrors.paymentAccount}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {step === 5 && (
+            <Card className="glass-card rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <LayoutGrid className="size-4 text-primary" />
                   Feature Access
                 </CardTitle>
@@ -494,6 +594,10 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted-foreground">WhatsApp</span>
                 <Badge variant="outline">{created.whatsappAccount ? "Linked" : "Unlinked"}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Payment Provider</span>
+                <Badge variant="outline">{created.paymentAccount ? "Connected" : "Not connected"}</Badge>
               </div>
             </CardContent>
           </Card>

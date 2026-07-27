@@ -20,6 +20,12 @@ const stableValidationMessages = new Set([
   "Subdomain is reserved.",
   "Subdomain cannot produce a tenant hostname.",
   "Timezone must be a valid IANA timezone",
+  "Enter a valid Razorpay Key ID",
+  "Razorpay Key Secret is required",
+  "Business name is required",
+  "Merchant name is required",
+  "Enter a valid contact email",
+  "Contact phone is required",
 ]);
 
 export async function GET() {

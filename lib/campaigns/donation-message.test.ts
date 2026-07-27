@@ -18,6 +18,8 @@ const baseCampaign: Pick<
   | "campaignEndDate"
   | "donationLinkOverride"
   | "linkedDonationPurpose"
+  | "slug"
+  | "donationToken"
 > = {
   id: "campaign-1",
   title: "Temple Roof Restoration",
@@ -28,9 +30,11 @@ const baseCampaign: Pick<
   campaignEndDate: "2026-01-31",
   donationLinkOverride: null,
   linkedDonationPurpose: "roof_restoration",
+  slug: "temple-roof-restoration-abcd1234",
+  donationToken: "test-token-123",
 };
 
-const tenant: Pick<Tenant, "name"> = { name: "Sri Venkateswara Temple" };
+const tenant: Pick<Tenant, "name" | "slug"> = { name: "Sri Venkateswara Temple", slug: "sri-venkateswara" };
 
 describe("isDonationCampaignReady", () => {
   it("is true when goal, both dates, and a linked purpose are all set", () => {
@@ -76,23 +80,25 @@ describe("buildDonationLink", () => {
     process.env.DONATION_LINK_BASE_URL = ORIGINAL_ENV;
   });
 
+  const campaign = { donationLinkOverride: null, slug: "temple-roof-restoration-abcd1234", donationToken: "test-token-123" };
+
   it("prefers the campaign's own override when set", () => {
-    expect(buildDonationLink({ id: "campaign-1", donationLinkOverride: "https://pay.example.com/custom" })).toBe(
+    expect(buildDonationLink(tenant, { ...campaign, donationLinkOverride: "https://pay.example.com/custom" })).toBe(
       "https://pay.example.com/custom",
     );
   });
 
-  it("falls back to DONATION_LINK_BASE_URL + campaign id when no override is set", () => {
+  it("falls back to DONATION_LINK_BASE_URL + tenantSlug/campaignSlug/token when no override is set", () => {
     process.env.DONATION_LINK_BASE_URL = "https://gateway.example.com/donate/";
-    expect(buildDonationLink({ id: "campaign-1", donationLinkOverride: null })).toBe(
-      "https://gateway.example.com/donate/campaign-1",
+    expect(buildDonationLink(tenant, campaign)).toBe(
+      "https://gateway.example.com/donate/sri-venkateswara/temple-roof-restoration-abcd1234/test-token-123",
     );
   });
 
   it("falls back to the demo URL when the env var is unset", () => {
     delete process.env.DONATION_LINK_BASE_URL;
-    expect(buildDonationLink({ id: "campaign-1", donationLinkOverride: null })).toBe(
-      "https://demo.trytempleos.com/donate/campaign-1",
+    expect(buildDonationLink(tenant, campaign)).toBe(
+      "https://demo.trytempleos.com/donate/sri-venkateswara/temple-roof-restoration-abcd1234/test-token-123",
     );
   });
 });
@@ -114,7 +120,7 @@ describe("buildDonationCampaignVars", () => {
     expect(goalReached).toBe(true);
     expect(vars.templeName).toBe("Sri Venkateswara Temple");
     expect(vars.campaignTitle).toBe("Temple Roof Restoration");
-    expect(vars.donationLink).toBe("https://demo.trytempleos.com/donate/campaign-1");
+    expect(vars.donationLink).toBe("https://demo.trytempleos.com/donate/sri-venkateswara/temple-roof-restoration-abcd1234/test-token-123");
   });
 
   it("goalReached is false below the goal", () => {

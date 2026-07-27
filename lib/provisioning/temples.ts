@@ -17,10 +17,19 @@ import {
 } from "@/lib/db/tenants";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
+import { linkPaymentAccountForProvisioning } from "@/lib/db/tenant-payment-accounts";
 import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
-import { isRoleCode, type FeatureKey, type RoleCode, type Tenant, type TenantDomain, type WhatsAppAccount } from "@/types/db";
+import {
+  isRoleCode,
+  type FeatureKey,
+  type RoleCode,
+  type Tenant,
+  type TenantDomain,
+  type TenantPaymentAccount,
+  type WhatsAppAccount,
+} from "@/types/db";
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
@@ -53,6 +62,17 @@ export interface LinkWhatsAppAccountInput {
   metaBusinessAccountId: string;
 }
 
+export interface LinkPaymentAccountInput {
+  providerKey: "razorpay";
+  keyId: string;
+  keySecret: string;
+  webhookSecret: string | null;
+  businessName: string;
+  merchantName: string;
+  contactEmail: string;
+  contactPhone: string;
+}
+
 export interface ProvisionTempleInput {
   tenant: {
     name: string;
@@ -71,6 +91,7 @@ export interface ProvisionTempleInput {
     roles: RoleCode[];
   };
   whatsappAccount?: LinkWhatsAppAccountInput;
+  paymentAccount?: LinkPaymentAccountInput;
   /** Omitted or empty means "use each feature's own default_enabled" — see initializeTenantFeatures. */
   featureKeys?: FeatureKey[];
 }
@@ -81,6 +102,7 @@ export interface ProvisionTempleResult {
   firstMember: TenantMembershipWithRoles;
   roles: RoleCode[];
   whatsappAccount: WhatsAppAccount | null;
+  paymentAccount: TenantPaymentAccount | null;
 }
 
 export interface UpdateProvisionedTempleInput {
@@ -196,6 +218,21 @@ const rawProvisionTempleSchema = z.object({
       phoneNumber: z.string().trim().min(1, "WhatsApp phone number is required"),
       metaPhoneNumberId: z.string().trim().min(1, "Meta phone number ID is required"),
       metaBusinessAccountId: z.string().trim().min(1, "Meta business account ID is required"),
+    })
+    .nullish(),
+  paymentAccount: z
+    .object({
+      providerKey: z.literal("razorpay"),
+      keyId: z
+        .string()
+        .trim()
+        .regex(/^rzp_(test|live)_[A-Za-z0-9]+$/, "Enter a valid Razorpay Key ID"),
+      keySecret: z.string().trim().min(1, "Razorpay Key Secret is required"),
+      webhookSecret: z.string().trim().nullable().optional(),
+      businessName: z.string().trim().min(1, "Business name is required"),
+      merchantName: z.string().trim().min(1, "Merchant name is required"),
+      contactEmail: z.string().trim().email("Enter a valid contact email"),
+      contactPhone: z.string().trim().min(1, "Contact phone is required"),
     })
     .nullish(),
   featureKeys: z.array(z.string()).optional(),
@@ -318,6 +355,20 @@ export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidati
               phoneNumber: whatsappPhone,
               metaPhoneNumberId: parsed.data.whatsappAccount.metaPhoneNumberId,
               metaBusinessAccountId: parsed.data.whatsappAccount.metaBusinessAccountId,
+            },
+          }
+        : {}),
+      ...(parsed.data.paymentAccount
+        ? {
+            paymentAccount: {
+              providerKey: parsed.data.paymentAccount.providerKey,
+              keyId: parsed.data.paymentAccount.keyId,
+              keySecret: parsed.data.paymentAccount.keySecret,
+              webhookSecret: parsed.data.paymentAccount.webhookSecret ?? null,
+              businessName: parsed.data.paymentAccount.businessName,
+              merchantName: parsed.data.paymentAccount.merchantName,
+              contactEmail: parsed.data.paymentAccount.contactEmail,
+              contactPhone: parsed.data.paymentAccount.contactPhone,
             },
           }
         : {}),
@@ -460,6 +511,9 @@ export async function provisionTemple(
           client,
         )
       : null;
+    const paymentAccount = canonicalInput.paymentAccount
+      ? await linkPaymentAccountForProvisioning(tenant.id, canonicalInput.paymentAccount, client)
+      : null;
 
     await initializeTenantFeatures(tenant.id, canonicalInput.featureKeys ?? null, client);
 
@@ -478,6 +532,7 @@ export async function provisionTemple(
           firstPersonId: person.id,
           roles: canonicalInput.firstMember.roles,
           whatsappAccountId: whatsappAccount?.id ?? null,
+          paymentAccountId: paymentAccount?.id ?? null,
           featureKeys: canonicalInput.featureKeys ?? null,
         },
       },
@@ -491,6 +546,7 @@ export async function provisionTemple(
       firstMember,
       roles: canonicalInput.firstMember.roles,
       whatsappAccount,
+      paymentAccount,
     };
   } catch (err) {
     try {
@@ -868,6 +924,8 @@ function conflictFieldFromConstraint(constraint: string | undefined): string | u
       return "whatsappAccount.metaPhoneNumberId";
     case "whatsapp_accounts_meta_business_account_id_connected_key":
       return "whatsappAccount.metaBusinessAccountId";
+    case "tenant_payment_accounts_tenant_id_provider_key_key":
+      return "paymentAccount.tenantId";
     default:
       return undefined;
   }

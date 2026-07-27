@@ -1,6 +1,25 @@
+import { randomBytes } from "node:crypto";
 import { getPool } from "./pool";
 import type { Campaign, CampaignAudienceFilter, CampaignStatus, CampaignType, NotificationChannel, NotificationType } from "@/types/db";
 import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
+
+function slugifyTitle(title: string): string {
+  const normalized = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (normalized || "campaign").slice(0, 54);
+}
+
+/** Globally unique (not per-tenant) — matches tenants.slug's own scope, since the donation URL is /donate/{tenantSlug}/{campaignSlug}/{token}. */
+function generateCampaignSlug(title: string): string {
+  return `${slugifyTitle(title)}-${randomBytes(4).toString("hex")}`;
+}
+
+/** Stable per campaign (many donors reuse the same link) — an unguessable identifier, not a single-use token. */
+function generateDonationToken(): string {
+  return randomBytes(16).toString("base64url");
+}
 
 interface CampaignRow {
   id: string;
@@ -30,6 +49,8 @@ interface CampaignRow {
   donation_link_override: string | null;
   closing_reminder_sent_at: Date | null;
   target_reached_announced_at: Date | null;
+  slug: string;
+  donation_token: string;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
@@ -61,6 +82,8 @@ function mapCampaign(row: CampaignRow): Campaign {
     donationLinkOverride: row.donation_link_override,
     closingReminderSentAt: row.closing_reminder_sent_at ? row.closing_reminder_sent_at.toISOString() : null,
     targetReachedAnnouncedAt: row.target_reached_announced_at ? row.target_reached_announced_at.toISOString() : null,
+    slug: row.slug,
+    donationToken: row.donation_token,
     createdBy: row.created_by,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -156,6 +179,15 @@ export async function getCampaignById(tenantId: string, campaignId: string): Pro
   return rows[0] ? mapCampaign(rows[0]) : null;
 }
 
+/** Public donation-page lookup (tenant already resolved from the URL's tenantSlug segment). */
+export async function getCampaignBySlugForTenant(tenantId: string, slug: string): Promise<Campaign | null> {
+  const { rows } = await getPool().query<CampaignRow>(
+    "SELECT * FROM campaigns WHERE tenant_id = $1 AND slug = $2",
+    [tenantId, slug],
+  );
+  return rows[0] ? mapCampaign(rows[0]) : null;
+}
+
 export interface CreateCampaignInput {
   title: string;
   description: string | null;
@@ -184,8 +216,9 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
        tenant_id, title, description, campaign_type, channel, template_key, custom_message,
        audience_filter, banner_media_id, linked_event_id, linked_donation_purpose,
        schedule_type, scheduled_at, recurrence_rule,
-       goal_amount, campaign_start_date, campaign_end_date, donation_link_override, created_by
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+       goal_amount, campaign_start_date, campaign_end_date, donation_link_override, created_by,
+       slug, donation_token
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      RETURNING *`,
     [
       tenantId,
@@ -207,6 +240,8 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
       input.campaignEndDate,
       input.donationLinkOverride,
       input.createdBy,
+      generateCampaignSlug(input.title),
+      generateDonationToken(),
     ],
   );
   return mapCampaign(rows[0]);

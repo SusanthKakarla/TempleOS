@@ -454,6 +454,42 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "🙏 ఓం నమః శివాయ 🙏\n\n{{templeName}} ఒక కొత్త విరాళ కార్యక్రమాన్ని నిర్వహిస్తోంది.\n\n📢 కార్యక్రమం\n{{campaignTitle}}\n\n📝 వివరణ\n{{campaignDescription}}\n\n🎯 లక్ష్యం\n{{goalAmount}}\n\n📈 సేకరించినది\n{{raisedAmount}} ({{raisedPercentage}}%)\n\n📅 కార్యక్రమ వ్యవధి\n{{startDate}} - {{endDate}}\n\n❤️ ఈ పవిత్ర కార్యానికి మద్దతు ఇవ్వండి.\n🔗 ఇప్పుడు విరాళం ఇవ్వండి\n{{donationLink}}\n\n{{blessingMessage}}",
   },
+  // Donation receipt — sent to the phone captured at Razorpay checkout, a
+  // raw-phone recipient (see lib/notifications/engine.ts's `{ phone }`
+  // recipient kind) since there is no devotee/person record for an online donor.
+  {
+    notificationType: "donation_receipt",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Thank you for supporting {{templeName}}.\n\nYour donation of ₹{{amount}} has been received successfully.\n\nCampaign:\n{{campaign}}\n\nReceipt: {{receiptNumber}}\nTransaction ID: {{transactionId}}\nDate: {{date}}\n\nDownload your receipt:\n{{receiptLink}}\n\nMay the blessings of the deity always be with you.",
+  },
+  {
+    notificationType: "donation_receipt",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 {{templeName}}కి మద్దతు ఇచ్చినందుకు ధన్యవాదాలు.\n\nమీ ₹{{amount}} విరాళం విజయవంతంగా అందింది.\n\nకార్యక్రమం:\n{{campaign}}\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\nతేదీ: {{date}}\n\nమీ రసీదును డౌన్‌లోడ్ చేసుకోండి:\n{{receiptLink}}\n\nదేవుని ఆశీర్వాదాలు మీకు ఎల్లప్పుడూ తోడుగా ఉండాలి.",
+  },
+  // Payment captured — in-app only, fanned out to every active admin so the
+  // dashboard's Notification Center reflects a new online donation (this app
+  // has no real-time push infra; the existing bell is the "notify dashboard"
+  // mechanism). Deliberately never has a whatsapp variant — donation_receipt
+  // (above) is what the donor themself receives.
+  {
+    notificationType: "payment_captured",
+    channel: "in_app",
+    language: "en",
+    title: "New online donation",
+    body: "A donation was just received via {{templeName}}'s online payment link.",
+  },
+  {
+    notificationType: "payment_captured",
+    channel: "in_app",
+    language: "te",
+    title: "కొత్త ఆన్‌లైన్ విరాళం",
+    body: "{{templeName}} ఆన్‌లైన్ చెల్లింపు లింక్ ద్వారా ఒక విరాళం అందింది.",
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

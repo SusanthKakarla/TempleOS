@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { InstallButton } from "@/components/pwa/install-button";
 import { SUPER_ADMIN_NAV_ITEMS } from "./super-admin-sidebar";
 
 function getInitials(name: string): string {
@@ -90,6 +91,7 @@ export function SuperAdminTopbar({
               <p className="font-medium">{displayName}</p>
               <p className="text-xs font-normal text-muted-foreground">{phoneNumber}</p>
             </DropdownMenuLabel>
+            <InstallButton variant="menu-item" />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
               <LogOut />

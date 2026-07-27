@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
+  CreditCard,
   LayoutDashboard,
   Megaphone,
   Receipt,
@@ -46,6 +47,13 @@ export const NAV_ITEMS = [
     icon: Megaphone,
     gradient: "gradient-maroon-orange",
     featureKey: "campaigns",
+  },
+  {
+    href: "/dashboard/payments",
+    labelKey: "payments",
+    icon: CreditCard,
+    gradient: "gradient-blue-purple",
+    featureKey: "donations",
   },
   {
     href: "/dashboard/chatbot-settings",

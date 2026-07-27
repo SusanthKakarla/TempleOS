@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Settings } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { InstallButton } from "@/components/pwa/install-button";
 import { LanguageSwitcher } from "./language-switcher";
 import { NAV_ITEMS } from "./app-sidebar";
 
@@ -101,6 +102,11 @@ export function DashboardTopbar({
               <Bell />
               {tTopbar("notificationPreferences")}
             </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/dashboard/settings" />}>
+              <Settings />
+              {tTopbar("appSettings")}
+            </DropdownMenuItem>
+            <InstallButton variant="menu-item" />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
               <LogOut />

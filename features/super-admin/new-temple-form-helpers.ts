@@ -1,4 +1,4 @@
-import type { FeatureKey, RoleCode, Tenant, TenantDomain, WhatsAppAccount } from "@/types/db";
+import type { FeatureKey, RoleCode, Tenant, TenantDomain, TenantPaymentAccount, WhatsAppAccount } from "@/types/db";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
 export const PRODUCT_DOMAIN = "trytempleos.com";
@@ -32,6 +32,14 @@ export interface NewTempleFormState {
   whatsappPhoneNumber: string;
   metaPhoneNumberId: string;
   metaBusinessAccountId: string;
+  paymentProviderKey: "" | "razorpay";
+  razorpayKeyId: string;
+  razorpayKeySecret: string;
+  razorpayWebhookSecret: string;
+  paymentBusinessName: string;
+  paymentMerchantName: string;
+  paymentContactEmail: string;
+  paymentContactPhone: string;
   featureKeys: FeatureKey[];
 }
 
@@ -56,6 +64,16 @@ export interface ProvisionTemplePayload {
     metaPhoneNumberId: string;
     metaBusinessAccountId: string;
   };
+  paymentAccount?: {
+    providerKey: "razorpay";
+    keyId: string;
+    keySecret: string;
+    webhookSecret: string | null;
+    businessName: string;
+    merchantName: string;
+    contactEmail: string;
+    contactPhone: string;
+  };
   featureKeys: FeatureKey[];
 }
 
@@ -66,6 +84,7 @@ export interface ProvisionTempleSuccess {
     firstMember: TenantMembershipWithRoles;
     roles: RoleCode[];
     whatsappAccount: WhatsAppAccount | null;
+    paymentAccount: TenantPaymentAccount | null;
   };
 }
 
@@ -87,6 +106,12 @@ const renderedFieldKeys = new Set([
   "whatsappPhoneNumber",
   "metaPhoneNumberId",
   "metaBusinessAccountId",
+  "razorpayKeyId",
+  "razorpayKeySecret",
+  "paymentBusinessName",
+  "paymentMerchantName",
+  "paymentContactEmail",
+  "paymentContactPhone",
 ]);
 
 export type BuildProvisionTemplePayloadResult =
@@ -106,6 +131,14 @@ export const DEFAULT_NEW_TEMPLE_FORM_STATE: NewTempleFormState = {
   whatsappPhoneNumber: "",
   metaPhoneNumberId: "",
   metaBusinessAccountId: "",
+  paymentProviderKey: "",
+  razorpayKeyId: "",
+  razorpayKeySecret: "",
+  razorpayWebhookSecret: "",
+  paymentBusinessName: "",
+  paymentMerchantName: "",
+  paymentContactEmail: "",
+  paymentContactPhone: "",
   featureKeys: [],
 };
 
@@ -158,6 +191,21 @@ export function validateNewTempleForm(state: NewTempleFormState): BuildProvision
       "Provide WhatsApp phone, Meta phone number ID, and Meta business account ID together.";
   }
 
+  const paymentValues = [
+    state.razorpayKeyId.trim(),
+    state.razorpayKeySecret.trim(),
+    state.paymentBusinessName.trim(),
+    state.paymentMerchantName.trim(),
+    state.paymentContactEmail.trim(),
+    state.paymentContactPhone.trim(),
+  ];
+  const hasAnyPaymentValue = paymentValues.some(Boolean);
+  const hasAllPaymentValues = paymentValues.every(Boolean);
+  if (hasAnyPaymentValue && !hasAllPaymentValues) {
+    sectionErrors.paymentAccount =
+      "Provide the Razorpay Key ID, Key Secret, business name, merchant name, contact email, and contact phone together.";
+  }
+
   if (Object.keys(fieldErrors).length > 0 || Object.keys(sectionErrors).length > 0) {
     return { ok: false, fieldErrors, sectionErrors };
   }
@@ -186,6 +234,20 @@ export function validateNewTempleForm(state: NewTempleFormState): BuildProvision
               phoneNumber: state.whatsappPhoneNumber.trim(),
               metaPhoneNumberId: state.metaPhoneNumberId.trim(),
               metaBusinessAccountId: state.metaBusinessAccountId.trim(),
+            },
+          }
+        : {}),
+      ...(hasAllPaymentValues
+        ? {
+            paymentAccount: {
+              providerKey: "razorpay" as const,
+              keyId: state.razorpayKeyId.trim(),
+              keySecret: state.razorpayKeySecret.trim(),
+              webhookSecret: nullableTrim(state.razorpayWebhookSecret),
+              businessName: state.paymentBusinessName.trim(),
+              merchantName: state.paymentMerchantName.trim(),
+              contactEmail: state.paymentContactEmail.trim(),
+              contactPhone: state.paymentContactPhone.trim(),
             },
           }
         : {}),
@@ -266,6 +328,18 @@ export function fieldKeyFromPath(path: string[]): string | null {
       return "metaPhoneNumberId";
     case "whatsappAccount.metaBusinessAccountId":
       return "metaBusinessAccountId";
+    case "paymentAccount.keyId":
+      return "razorpayKeyId";
+    case "paymentAccount.keySecret":
+      return "razorpayKeySecret";
+    case "paymentAccount.businessName":
+      return "paymentBusinessName";
+    case "paymentAccount.merchantName":
+      return "paymentMerchantName";
+    case "paymentAccount.contactEmail":
+      return "paymentContactEmail";
+    case "paymentAccount.contactPhone":
+      return "paymentContactPhone";
     default:
       return null;
   }

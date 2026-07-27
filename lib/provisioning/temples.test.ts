@@ -475,6 +475,7 @@ describe("canonical temple provisioning contract", () => {
       firstMember: createdMembership,
       roles: ["admin", "priest"],
       whatsappAccount: linkedWhatsAppAccount,
+      paymentAccount: null,
     });
   });
 

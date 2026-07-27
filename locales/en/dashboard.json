@@ -18,6 +18,7 @@
     "devotees": "Devotees",
     "donations": "Donations",
     "campaigns": "Campaigns",
+    "payments": "Payments",
     "conversations": "Conversations",
     "notifications": "Notifications",
     "chatbotSettings": "Chatbot Settings",
@@ -30,6 +31,7 @@
   "topbar": {
     "accountMenu": "Account menu",
     "notificationPreferences": "Notification Preferences",
+    "appSettings": "Settings",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
     "language": "Language",
@@ -1239,5 +1241,101 @@
     },
     "channels": { "inApp": "In-app", "whatsapp": "WhatsApp" },
     "saveError": "Failed to save preference"
+  },
+  "settings": {
+    "pageHeader": {
+      "title": "Settings",
+      "subtitle": "Manage your TempleOS application preferences."
+    },
+    "applicationSection": "Application",
+    "paymentsSection": "Payments",
+    "paymentsLinkTitle": "Payment Provider",
+    "paymentsLinkDescription": "Connect Razorpay to accept online donations."
+  },
+  "paymentSettings": {
+    "pageHeader": {
+      "title": "Payment Settings",
+      "subtitle": "Connect a payment provider so donors can pay online."
+    },
+    "connection": {
+      "cardTitle": "Razorpay",
+      "cardDescription": "Connect your temple's own Razorpay account to accept online donations.",
+      "statusConnected": "Connected",
+      "statusNotConnected": "Not connected",
+      "validated": "Verified",
+      "validationPending": "Verification pending",
+      "fields": {
+        "keyId": "Razorpay Key ID",
+        "keySecret": "Razorpay Key Secret",
+        "webhookSecret": "Webhook Secret (optional)",
+        "businessName": "Business name",
+        "merchantName": "Merchant name",
+        "contactEmail": "Contact email",
+        "contactPhone": "Contact phone",
+        "validationStatus": "Verification status"
+      },
+      "connectButton": "Connect Razorpay",
+      "connecting": "Connecting...",
+      "disconnectButton": "Disconnect",
+      "disconnecting": "Disconnecting...",
+      "disconnectConfirm": "Disconnect this payment account? Online donations will stop working until you reconnect.",
+      "connectSuccess": "Razorpay connected successfully.",
+      "connectError": "Failed to connect Razorpay.",
+      "disconnectSuccess": "Razorpay disconnected.",
+      "disconnectError": "Failed to disconnect."
+    }
+  },
+  "paymentsDashboard": {
+    "pageHeader": {
+      "title": "Payments",
+      "subtitle": "Online donations received through your connected payment provider."
+    },
+    "providerConnected": "{provider} connected",
+    "providerNotConnected": "No payment provider connected",
+    "metrics": {
+      "todayDonations": "Today's Donations",
+      "campaignRevenue": "Campaign Revenue",
+      "pending": "Pending",
+      "failed": "Failed"
+    },
+    "table": {
+      "donor": "Donor",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "receipt": "Receipt",
+      "download": "Download"
+    },
+    "status": {
+      "created": "Created",
+      "authorized": "Authorized",
+      "captured": "Captured",
+      "failed": "Failed",
+      "refunded": "Refunded"
+    },
+    "anonymousDonor": "Anonymous donor",
+    "emptyState": {
+      "title": "No payments yet",
+      "description": "Online donations will appear here once your connected provider starts receiving payments."
+    }
+  },
+  "pwaInstall": {
+    "installAction": "📲 Install TempleOS",
+    "installedToast": "TempleOS installed successfully.",
+    "bannerTitle": "Install TempleOS",
+    "bannerDescription": "Add TempleOS to your device for a faster, full-screen, app-like experience.",
+    "dismiss": "Dismiss",
+    "statusTitle": "Installation Status",
+    "statusInstalled": "Installed",
+    "statusNotInstalled": "Not installed",
+    "statusInstalledDescription": "TempleOS is installed on this device.",
+    "statusUnsupported": "This browser doesn't support app installation. Try Chrome, Edge, or Safari on iOS.",
+    "iosDialog": {
+      "title": "Install TempleOS on iPhone/iPad",
+      "description": "Safari doesn't support one-tap installs — add TempleOS to your Home Screen instead:",
+      "step1": "Tap the Share icon in Safari's toolbar",
+      "step2": "Scroll down and tap \"Add to Home Screen\"",
+      "close": "Got it"
+    }
   }
 }

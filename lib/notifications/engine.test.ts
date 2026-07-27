@@ -46,6 +46,7 @@ describe("enqueueNotification", () => {
       tenantId: input.tenantId,
       recipientPersonId: input.recipientPersonId ?? null,
       recipientDevoteeId: input.recipientDevoteeId ?? null,
+      recipientPhone: input.recipientPhone ?? null,
       notificationType: input.notificationType,
       channel: input.channel,
       category: input.category,
@@ -89,6 +90,25 @@ describe("enqueueNotification", () => {
     expect(created[0].channel).toBe("whatsapp");
     expect(getTemplate).toHaveBeenCalledWith("birthday_devotee", "whatsapp", "en");
     expect(getTemplate).not.toHaveBeenCalledWith("birthday_devotee", "in_app", "en");
+  });
+
+  it("enqueues WhatsApp unconditionally for a raw-phone recipient — no devotee/person, no opt-in gate", async () => {
+    vi.mocked(getTemplate).mockResolvedValue(whatsappTemplate);
+
+    const created = await enqueueNotification({
+      tenantId: "tenant-1",
+      recipient: { phone: "+919876543210" },
+      notificationType: "donation_receipt",
+      category: "donation",
+      language: "en",
+      templateVars: {},
+    });
+
+    expect(created).toHaveLength(1);
+    expect(created[0].channel).toBe("whatsapp");
+    expect(created[0].recipientPhone).toBe("+919876543210");
+    expect(getDevoteeById).not.toHaveBeenCalled();
+    expect(getPreference).not.toHaveBeenCalled();
   });
 
   it("enqueues nothing for a devotee who hasn't opted in to WhatsApp", async () => {

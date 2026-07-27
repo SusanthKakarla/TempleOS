@@ -5,6 +5,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { InstallProvider } from "@/components/pwa/install-provider";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,6 +43,11 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#5a6b3a" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TempleOS",
   },
   openGraph: {
     title: "TempleOS Admin",
@@ -129,8 +136,11 @@ export default async function RootLayout({
         </Script>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <TooltipProvider delay={200}>
-            {children}
-            <Toaster />
+            <InstallProvider>
+              {children}
+              <Toaster />
+            </InstallProvider>
+            <ServiceWorkerRegister />
           </TooltipProvider>
         </NextIntlClientProvider>
       </body>

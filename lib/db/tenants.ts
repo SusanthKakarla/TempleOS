@@ -239,6 +239,12 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   return rows[0] ? mapTenant(rows[0]) : null;
 }
 
+/** Public-facing lookup (the donation page resolves a tenant from its URL slug, not a session). */
+export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
+  const { rows } = await getPool().query<TenantRow>("SELECT * FROM tenants WHERE slug = $1", [slug]);
+  return rows[0] ? mapTenant(rows[0]) : null;
+}
+
 /**
  * NOT tenant-scoped by design — used only by the daily-birthday-check and
  * event-reminder cron sweeps (app/api/cron/*), which run outside any admin
