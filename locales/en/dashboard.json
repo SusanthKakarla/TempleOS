@@ -1071,7 +1071,6 @@
       "empty": "No activity yet.",
       "columns": { "action": "Action", "user": "User", "changedBy": "Changed By", "timestamp": "Timestamp" },
       "actionLabels": {
-<<<<<<< HEAD
         "tenant_member": {
           "invited": "User invited",
           "roles_changed": "Role changed",
@@ -1080,12 +1079,6 @@
           "details_updated": "Details updated",
           "deleted": "User deleted"
         }
-=======
-        "tenant_member_invited": "User invited",
-        "tenant_member_roles_changed": "Role changed",
-        "tenant_member_enabled": "User enabled",
-        "tenant_member_disabled": "User disabled"
->>>>>>> 0af08b3 (landing page and small fixes)
       }
     },
     "importWizard": {
