@@ -212,7 +212,7 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
   const isLastStep = step === STEPS.length - 1;
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="glass-card flex items-center gap-1 rounded-2xl p-1.5">
           {STEPS.map((s, index) => {
