@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { cn } from "@/lib/utils";
 import { springSnappy } from "@/lib/motion";
 
@@ -32,9 +33,7 @@ export function SuperAdminSidebar() {
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5 px-1">
-          <div className="gradient-ocean-blue flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-foreground shadow-sm">
-            <Landmark className="size-4.5" />
-          </div>
+          <BrandMark variant="icon" size={32} />
           <div className="group-data-[collapsible=icon]:hidden">
             <span className="block font-heading text-lg leading-tight font-semibold tracking-tight">TempleOS</span>
             <span className="block text-[0.65rem] leading-tight font-medium tracking-wide text-muted-foreground uppercase">

@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AmbientBackground } from "@/features/dashboard/ambient-background";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { CountryCodeSelect } from "@/features/auth/country-code-select";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
@@ -228,6 +229,7 @@ export function SuperAdminLoginForm({ redirectPath }: SuperAdminLoginFormProps) 
         >
           <Card className="glass-card rounded-2xl">
             <CardHeader className="gap-2 pb-2">
+              <BrandMark variant="icon" size={44} className="mb-1" />
               <Badge variant="outline" className="w-fit gap-1.5 border-secondary/40 text-secondary uppercase tracking-wide">
                 Platform Console
               </Badge>

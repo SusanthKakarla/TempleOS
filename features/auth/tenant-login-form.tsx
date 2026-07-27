@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CountryCode } from "libphonenumber-js";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { motion, MotionConfig } from "framer-motion";
-import { Landmark } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { devLog, getFirebaseErrorMessage } from "@/lib/firebase/errors";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
@@ -231,10 +231,8 @@ export function TenantLoginForm() {
         className="w-full max-w-md"
       >
         <Card className="glass-card rounded-2xl">
-          <CardHeader className="items-center gap-2 pb-2 text-center">
-            <span className="gradient-saffron-gold flex size-10 items-center justify-center rounded-xl text-saffron-foreground">
-              <Landmark className="size-5" aria-hidden="true" />
-            </span>
+          <CardHeader className="items-center gap-3 pb-2 text-center">
+            <BrandMark variant="icon" size={56} />
             <CardTitle className="text-2xl font-semibold">{tenantName ?? "TempleOS Admin"}</CardTitle>
             <CardDescription className="text-base">
               {step === "phone"

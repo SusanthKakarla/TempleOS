@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Landmark, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { BrandMark } from "@/components/brand/brand-mark";
 
 const productItems = ["Devotee Registration", "Seva Bookings", "Donations", "WhatsApp Announcements"];
 
@@ -18,9 +19,7 @@ export function SiteFooter() {
         <div className="grid gap-8 sm:grid-cols-3">
           <div className="space-y-3">
             <Link href="/" className="flex items-center gap-2 font-heading text-base font-semibold">
-              <span className="gradient-saffron-gold flex size-7 items-center justify-center rounded-lg text-saffron-foreground">
-                <Landmark className="size-4" aria-hidden="true" />
-              </span>
+              <BrandMark variant="icon" size={28} />
               TempleOS
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">

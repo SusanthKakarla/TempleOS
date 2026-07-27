@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Telugu } from "next/font/google";
 import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
@@ -22,9 +22,49 @@ const notoSansTelugu = Noto_Sans_Telugu({
   subsets: ["telugu"],
 });
 
+const SITE_DESCRIPTION = "Temple event and devotee management dashboard";
+
 export const metadata: Metadata = {
-  title: "TempleOS Admin",
-  description: "Temple event and devotee management dashboard",
+  title: {
+    default: "TempleOS Admin",
+    template: "%s · TempleOS",
+  },
+  description: SITE_DESCRIPTION,
+  icons: {
+    // favicon.ico itself is auto-detected by Next.js from public/favicon.ico —
+    // listing it again here would just duplicate that <link> tag.
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#5a6b3a" }],
+  },
+  openGraph: {
+    title: "TempleOS Admin",
+    description: SITE_DESCRIPTION,
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TempleOS" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TempleOS Admin",
+    description: SITE_DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  other: {
+    "msapplication-config": "/browserconfig.xml",
+    "msapplication-TileColor": "#f8fafc",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d16" },
+  ],
 };
 
 // Sets the light/dark class on <html> before hydration, so there's no flash

@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import {
   CalendarDays,
   LayoutDashboard,
-  Landmark,
   Megaphone,
   Receipt,
   Settings2,
@@ -26,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { cn } from "@/lib/utils";
 import { springSnappy } from "@/lib/motion";
 
@@ -91,9 +91,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="px-3 py-4">
         <div className="flex min-w-0 items-center gap-2.5 px-1">
-          <div className="gradient-ocean-blue flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-foreground shadow-sm">
-            <Landmark className="size-4.5" />
-          </div>
+          <BrandMark variant="icon" size={32} />
           <span
             title={tenantName}
             className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden"
