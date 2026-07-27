@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
+import { StickyToolbar } from "@/components/sticky-toolbar";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -229,6 +230,7 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
 
   return (
     <div className="space-y-4">
+      <StickyToolbar>
       <PageHeader
         title={t("pageHeader.title")}
         subtitle={t("pageHeader.subtitle")}
@@ -267,6 +269,7 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
       <ResponsiveSearchBar
         pathname={PATHNAME}
         placeholder={t("searchPlaceholder")}
+        sticky={false}
         filtersSlot={
           <FilterBottomSheet
             title={tCommon("filters")}
@@ -324,6 +327,7 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
           </FilterBottomSheet>
         }
       />
+      </StickyToolbar>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

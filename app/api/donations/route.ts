@@ -48,7 +48,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const donation = await createDonation(session.tenantId, {
-      devoteeId: parsed.data.devoteeId,
+      devoteeId: parsed.data.devoteeId ?? null,
+      manualDonor: parsed.data.manualDonor
+        ? {
+            name: parsed.data.manualDonor.name,
+            phone: parsed.data.manualDonor.phone ?? null,
+            email: parsed.data.manualDonor.email ?? null,
+            address: parsed.data.manualDonor.address ?? null,
+            isAnonymous: parsed.data.manualDonor.isAnonymous,
+          }
+        : null,
       amount: parsed.data.amount,
       purpose: parsed.data.purpose,
       paymentMethod: parsed.data.paymentMethod,
@@ -59,9 +68,10 @@ export async function POST(req: NextRequest) {
 
     // Thank-you WhatsApp message (migrations/016_notification_media.sql adds
     // the reusable banner support). Fire-and-forget, same pattern as
-    // devotee_registered in app/api/devotees/route.ts.
+    // devotee_registered in app/api/devotees/route.ts. Manual (non-registered)
+    // donors have no WhatsApp record to message — skipped for them.
     const [devotee, tenant] = await Promise.all([
-      getDevoteeById(session.tenantId, donation.devoteeId),
+      donation.devoteeId ? getDevoteeById(session.tenantId, donation.devoteeId) : null,
       getTenantById(session.tenantId),
     ]);
     const allNotificationIds: string[] = [];

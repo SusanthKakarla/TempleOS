@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
+import { StickyToolbar } from "@/components/sticky-toolbar";
 import { EmptyState } from "@/components/empty-state";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -133,7 +134,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   }
 
   async function handleDelete(donation: DonationWithDonor) {
-    if (!window.confirm(t("confirmDelete", { amount: formatInr(donation.amount), name: donation.donorName }))) {
+    if (!window.confirm(t("confirmDelete", { amount: formatInr(donation.amount), name: donorDisplayName(donation) }))) {
       return;
     }
     setError(null);
@@ -181,11 +182,15 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
 
   function donationActionItems(donation: DonationWithDonor) {
     return [
-      {
-        label: tCommon("viewDetails"),
-        icon: <Eye className="size-4" />,
-        onClick: () => router.push(`/dashboard/devotees/${donation.devoteeId}`),
-      },
+      ...(donation.devoteeId
+        ? [
+            {
+              label: tCommon("viewDetails"),
+              icon: <Eye className="size-4" />,
+              onClick: () => router.push(`/dashboard/devotees/${donation.devoteeId}`),
+            },
+          ]
+        : []),
       {
         label: tCommon("edit"),
         icon: <Pencil className="size-4" />,
@@ -200,6 +205,11 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         onClick: () => handleDelete(donation),
       },
     ];
+  }
+
+  /** Manual (non-registered) donors have no devotee record — no link, and "Anonymous" overrides the stored name for display only (the real name is still kept for record-keeping). */
+  function donorDisplayName(donation: DonationWithDonor): string {
+    return donation.isAnonymous ? t("anonymousDonor") : donation.donorName;
   }
 
   const filterSheetContent = (
@@ -277,6 +287,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
 
   return (
     <div className="space-y-4">
+      <StickyToolbar>
       <PageHeader
         title={t("pageHeader.title")}
         subtitle={t("pageHeader.subtitle")}
@@ -302,28 +313,10 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <MetricCard
-          label={t("summary.totalThisMonth")}
-          value={Number(summary.totalThisMonth)}
-          format="currency"
-          icon={<HandCoins className="size-4.5" />}
-          gradient="gradient-saffron-gold"
-          compact
-        />
-        <MetricCard
-          label={t("summary.totalAllTime")}
-          value={Number(summary.totalAllTime)}
-          format="currency"
-          icon={<CalendarRange className="size-4.5" />}
-          gradient="gradient-green-emerald"
-          compact
-        />
-      </div>
-
       <ResponsiveSearchBar
         pathname={PATHNAME}
         placeholder={t("searchPlaceholder")}
+        sticky={false}
         filtersSlot={
           <>
             <FilterBottomSheet
@@ -355,6 +348,26 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
           </>
         }
       />
+      </StickyToolbar>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <MetricCard
+          label={t("summary.totalThisMonth")}
+          value={Number(summary.totalThisMonth)}
+          format="currency"
+          icon={<HandCoins className="size-4.5" />}
+          gradient="gradient-saffron-gold"
+          compact
+        />
+        <MetricCard
+          label={t("summary.totalAllTime")}
+          value={Number(summary.totalAllTime)}
+          format="currency"
+          icon={<CalendarRange className="size-4.5" />}
+          gradient="gradient-green-emerald"
+          compact
+        />
+      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -411,10 +424,21 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                         />
                       </TableCell>
                       <TableCell>
-                        <Link href={`/dashboard/devotees/${donation.devoteeId}`} className="font-medium hover:underline">
-                          {donation.donorName}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">{donation.donorPhone}</p>
+                        {donation.devoteeId ? (
+                          <Link href={`/dashboard/devotees/${donation.devoteeId}`} className="font-medium hover:underline">
+                            {donorDisplayName(donation)}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{donorDisplayName(donation)}</span>
+                        )}
+                        {donation.donorPhone && !donation.isAnonymous && (
+                          <p className="text-xs text-muted-foreground">{donation.donorPhone}</p>
+                        )}
+                        {!donation.devoteeId && (
+                          <Badge variant="outline" className="mt-0.5 text-[0.65rem]">
+                            {t("manualDonorBadge")}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium tabular-nums">{formatInr(donation.amount)}</TableCell>
                       <TableCell>{donation.purpose}</TableCell>
@@ -452,8 +476,8 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                       stopPropagation={false}
                       trigger={
                         <TableRow className="h-14 cursor-pointer">
-                          <TableCell className="max-w-32 truncate py-3" title={donation.donorName}>
-                            {donation.donorName}
+                          <TableCell className="max-w-32 truncate py-3" title={donorDisplayName(donation)}>
+                            {donorDisplayName(donation)}
                           </TableCell>
                           <TableCell className="py-3 text-base font-bold tabular-nums">{formatInr(donation.amount)}</TableCell>
                           <TableCell className="py-3">

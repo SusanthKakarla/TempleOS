@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { Plus, Trash2, UsersRound } from "lucide-react";
+import { ChevronDown, Plus, Trash2, UsersRound } from "lucide-react";
 import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS, RELATIONSHIP_CODES } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 interface MemberDraft {
   id?: string;
@@ -75,6 +77,7 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
   );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState<Record<number, boolean>>({});
 
   function updateMember(index: number, patch: Partial<MemberDraft>) {
     setMembers((prev) => prev.map((m, i) => (i === index ? { ...m, ...patch } : m)));
@@ -269,6 +272,15 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor={`member-${index}-phone`}>{t("fields.mobileNumber")}</Label>
+                    <Input
+                      id={`member-${index}-phone`}
+                      value={member.whatsappPhone}
+                      onChange={(e) => updateMember(index, { whatsappPhone: e.target.value })}
+                      placeholder={t("fields.mobileNumberPlaceholder")}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor={`member-${index}-relationship`}>{t("fields.relationship")}</Label>
                     <Select
                       value={member.relationship || undefined}
@@ -286,6 +298,15 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`member-${index}-dob`}>{t("fields.dateOfBirth")}</Label>
+                    <Input
+                      id={`member-${index}-dob`}
+                      type="date"
+                      value={member.dateOfBirth}
+                      onChange={(e) => updateMember(index, { dateOfBirth: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor={`member-${index}-gender`}>{t("fields.gender")}</Label>
@@ -306,69 +327,65 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${index}-maritalStatus`}>{t("fields.maritalStatus")}</Label>
-                    <Select
-                      value={member.maritalStatus || undefined}
-                      onValueChange={(v) => updateMember(index, { maritalStatus: (v as MaritalStatus) ?? "" })}
-                      items={maritalStatusItems}
-                    >
-                      <SelectTrigger id={`member-${index}-maritalStatus`} className="w-full">
-                        <SelectValue placeholder={t("fields.maritalStatusPlaceholder")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MARITAL_STATUS_OPTIONS.map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {t(`maritalStatusOptions.${value}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${index}-dob`}>{t("fields.dateOfBirth")}</Label>
-                    <Input
-                      id={`member-${index}-dob`}
-                      type="date"
-                      value={member.dateOfBirth}
-                      onChange={(e) => updateMember(index, { dateOfBirth: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${index}-anniversary`}>{t("fields.weddingAnniversary")}</Label>
-                    <Input
-                      id={`member-${index}-anniversary`}
-                      type="date"
-                      value={member.weddingAnniversary}
-                      onChange={(e) => updateMember(index, { weddingAnniversary: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${index}-birthStar`}>{t("fields.birthStar")}</Label>
-                    <Input
-                      id={`member-${index}-birthStar`}
-                      value={member.birthStar}
-                      onChange={(e) => updateMember(index, { birthStar: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${index}-gothram`}>{t("fields.gothram")}</Label>
-                    <Input
-                      id={`member-${index}-gothram`}
-                      value={member.ancestralLineage}
-                      onChange={(e) => updateMember(index, { ancestralLineage: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor={`member-${index}-phone`}>{t("fields.mobileNumber")}</Label>
-                    <Input
-                      id={`member-${index}-phone`}
-                      value={member.whatsappPhone}
-                      onChange={(e) => updateMember(index, { whatsappPhone: e.target.value })}
-                      placeholder={t("fields.mobileNumberPlaceholder")}
-                    />
-                  </div>
                 </div>
+
+                <Collapsible
+                  open={advancedOpen[index] ?? false}
+                  onOpenChange={(open) => setAdvancedOpen((prev) => ({ ...prev, [index]: open }))}
+                >
+                  <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground">
+                    {t("additionalInformation")}
+                    <ChevronDown className={cn("size-4 transition-transform", advancedOpen[index] && "rotate-180")} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`member-${index}-maritalStatus`}>{t("fields.maritalStatus")}</Label>
+                        <Select
+                          value={member.maritalStatus || undefined}
+                          onValueChange={(v) => updateMember(index, { maritalStatus: (v as MaritalStatus) ?? "" })}
+                          items={maritalStatusItems}
+                        >
+                          <SelectTrigger id={`member-${index}-maritalStatus`} className="w-full">
+                            <SelectValue placeholder={t("fields.maritalStatusPlaceholder")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MARITAL_STATUS_OPTIONS.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {t(`maritalStatusOptions.${value}`)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`member-${index}-anniversary`}>{t("fields.weddingAnniversary")}</Label>
+                        <Input
+                          id={`member-${index}-anniversary`}
+                          type="date"
+                          value={member.weddingAnniversary}
+                          onChange={(e) => updateMember(index, { weddingAnniversary: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`member-${index}-birthStar`}>{t("fields.birthStar")}</Label>
+                        <Input
+                          id={`member-${index}-birthStar`}
+                          value={member.birthStar}
+                          onChange={(e) => updateMember(index, { birthStar: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`member-${index}-gothram`}>{t("fields.gothram")}</Label>
+                        <Input
+                          id={`member-${index}-gothram`}
+                          value={member.ancestralLineage}
+                          onChange={(e) => updateMember(index, { ancestralLineage: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           ))}

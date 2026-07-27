@@ -779,6 +779,7 @@
       "addMember": "Add member",
       "removeMember": "Remove member",
       "memberNumber": "Member {number}",
+      "additionalInformation": "Additional information",
       "fields": {
         "familyName": "Family name",
         "address": "Address (optional)",
@@ -934,6 +935,8 @@
     "emptyState": { "title": "No donations found", "description": "Record a donation to start tracking donor history." },
     "confirmDelete": "Delete this {amount} donation from {name}? This cannot be undone.",
     "deleteError": "Failed to delete donation",
+    "anonymousDonor": "Anonymous donor",
+    "manualDonorBadge": "Not registered",
     "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other" },
     "purposePresets": {
       "generalDonation": "General Donation",
@@ -955,6 +958,9 @@
       "fields": {
         "devotee": "Devotee",
         "devoteePlaceholder": "Select a devotee",
+        "donationFor": "Donation for",
+        "existingDevotee": "Existing devotee",
+        "manualDonor": "Manual donor",
         "amount": "Amount (₹)",
         "customAmount": "Custom",
         "customAmountPlaceholder": "Enter amount",
@@ -966,9 +972,19 @@
       },
       "errors": {
         "selectDevotee": "Select a devotee",
+        "enterDonorName": "Enter the donor's name",
         "invalidAmount": "Enter a valid amount greater than zero",
         "enterPurpose": "Enter a purpose",
         "dateRequired": "Donation date is required"
+      },
+      "manualDonor": {
+        "name": "Donor name",
+        "phone": "Mobile number",
+        "phonePlaceholder": "Recommended",
+        "email": "Email (optional)",
+        "address": "Address (optional)",
+        "anonymous": "Anonymous donation",
+        "hint": "This donation stays linked to this donor's details only — no devotee record is created unless you choose to save them as one later."
       },
       "errorFallback": "Failed to save donation"
     }

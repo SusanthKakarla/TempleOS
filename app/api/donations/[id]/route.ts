@@ -24,7 +24,18 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const donation = await updateDonation(session.tenantId, id, parsed.data);
+    const donation = await updateDonation(session.tenantId, id, {
+      ...parsed.data,
+      manualDonor: parsed.data.manualDonor
+        ? {
+            name: parsed.data.manualDonor.name,
+            phone: parsed.data.manualDonor.phone ?? null,
+            email: parsed.data.manualDonor.email ?? null,
+            address: parsed.data.manualDonor.address ?? null,
+            isAnonymous: parsed.data.manualDonor.isAnonymous,
+          }
+        : undefined,
+    });
     if (!donation) {
       return NextResponse.json({ error: "Donation not found" }, { status: 404 });
     }

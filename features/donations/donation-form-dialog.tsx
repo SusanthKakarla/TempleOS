@@ -27,8 +27,22 @@ import {
   DONATION_PURPOSE_PRESETS,
   PAYMENT_METHOD_OPTIONS,
 } from "./donation-options";
+import { BLANK_MANUAL_DONOR, ManualDonorFields, type ManualDonorValue } from "./manual-donor-fields";
 
 const AMOUNT_PRESETS = [101, 501, 1001, 5001] as const;
+
+type DonorMode = "devotee" | "manual";
+
+function initialManualDonor(donation: Donation | undefined): ManualDonorValue {
+  if (!donation?.manualDonorName) return BLANK_MANUAL_DONOR;
+  return {
+    name: donation.manualDonorName,
+    phone: donation.manualDonorPhone ?? "",
+    email: donation.manualDonorEmail ?? "",
+    address: donation.manualDonorAddress ?? "",
+    isAnonymous: donation.isAnonymous,
+  };
+}
 
 interface DonationFormDialogProps {
   mode: "create" | "edit";
@@ -71,7 +85,9 @@ export function DonationFormDialog({
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
+  const [donorMode, setDonorMode] = useState<DonorMode>(donation?.manualDonorName ? "manual" : "devotee");
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
+  const [manualDonor, setManualDonor] = useState<ManualDonorValue>(() => initialManualDonor(donation));
   const [amount, setAmount] = useState(donation?.amount ?? "");
   const isCustomAmount = !(AMOUNT_PRESETS as readonly number[]).some((preset) => String(preset) === amount);
   const initialPurpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
@@ -86,7 +102,9 @@ export function DonationFormDialog({
   const [submitting, setSubmitting] = useState(false);
 
   function resetToDonation() {
+    setDonorMode(donation?.manualDonorName ? "manual" : "devotee");
     setDevoteeId(donation?.devoteeId ?? fixedDevoteeId ?? "");
+    setManualDonor(initialManualDonor(donation));
     setAmount(donation?.amount ?? "");
     const purpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
     setPurposePreset(purpose.preset);
@@ -101,8 +119,12 @@ export function DonationFormDialog({
     formEvent.preventDefault();
     setError(null);
 
-    if (!devoteeId) {
+    if (donorMode === "devotee" && !devoteeId) {
       setError(tForm("errors.selectDevotee"));
+      return;
+    }
+    if (donorMode === "manual" && !manualDonor.name.trim()) {
+      setError(tForm("errors.enterDonorName"));
       return;
     }
     const amountNumber = Number(amount);
@@ -129,7 +151,17 @@ export function DonationFormDialog({
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          devoteeId,
+          devoteeId: donorMode === "devotee" ? devoteeId : null,
+          manualDonor:
+            donorMode === "manual"
+              ? {
+                  name: manualDonor.name.trim(),
+                  phone: manualDonor.phone.trim() || null,
+                  email: manualDonor.email.trim() || null,
+                  address: manualDonor.address.trim() || null,
+                  isAnonymous: manualDonor.isAnonymous,
+                }
+              : null,
           amount: amountNumber,
           purpose,
           paymentMethod,
@@ -175,30 +207,58 @@ export function DonationFormDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="devoteeId" className="justify-between">
-              <span>{tForm("fields.devotee")}</span>
-              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+            <Label className="justify-between">
+              <span>{tForm("fields.donationFor")}</span>
             </Label>
-            <Select
-              value={devoteeId}
-              onValueChange={(value) => setDevoteeId(value ?? "")}
-              disabled={Boolean(fixedDevoteeId)}
-              items={Object.fromEntries(
-                devotees.map((devotee) => [devotee.id, `${devotee.displayName} Â· ${devotee.whatsappPhone}`]),
-              )}
-            >
-              <SelectTrigger id="devoteeId" size="lg" className="w-full">
-                <User className="size-4 text-muted-foreground" />
-                <SelectValue placeholder={tForm("fields.devoteePlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {devotees.map((devotee) => (
-                  <SelectItem key={devotee.id} value={devotee.id}>
-                    {devotee.displayName} Â· {devotee.whatsappPhone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!fixedDevoteeId && (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={donorMode === "devotee" ? "default" : "outline"}
+                  onClick={() => setDonorMode("devotee")}
+                >
+                  {tForm("fields.existingDevotee")}
+                </Button>
+                <Button
+                  type="button"
+                  variant={donorMode === "manual" ? "default" : "outline"}
+                  onClick={() => setDonorMode("manual")}
+                >
+                  {tForm("fields.manualDonor")}
+                </Button>
+              </div>
+            )}
+
+            {donorMode === "devotee" ? (
+              <div className="space-y-2">
+                <Label htmlFor="devoteeId" className="justify-between">
+                  <span>{tForm("fields.devotee")}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+                </Label>
+                <Select
+                  value={devoteeId}
+                  onValueChange={(value) => setDevoteeId(value ?? "")}
+                  disabled={Boolean(fixedDevoteeId)}
+                  items={Object.fromEntries(
+                    devotees.map((devotee) => [devotee.id, `${devotee.displayName} Â· ${devotee.whatsappPhone}`]),
+                  )}
+                >
+                  <SelectTrigger id="devoteeId" size="lg" className="w-full">
+                    <User className="size-4 text-muted-foreground" />
+                    <SelectValue placeholder={tForm("fields.devoteePlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {devotees.map((devotee) => (
+                      <SelectItem key={devotee.id} value={devotee.id}>
+                        {devotee.displayName} Â· {devotee.whatsappPhone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <ManualDonorFields value={manualDonor} onChange={setManualDonor} requiredLabel={tCommon("required")} />
+            )}
           </div>
 
           <div className="space-y-2">

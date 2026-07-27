@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Megaphone, Pencil, RotateCcw, Trash2, XCircle } from "lucide-react";
 import type { Event, EventStatus, SupportedLanguage } from "@/types/db";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,14 +89,14 @@ export function EventCard({
               {t("publishedLabel")}
             </label>
           )}
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1">
             <EventFormDialog
               mode="edit"
               event={event}
               onSaved={onSaved}
               trigger={
-                <Button variant="ghost" size="sm" disabled={pending}>
-                  {tCommon("edit")}
+                <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={tCommon("edit")}>
+                  <Pencil className="size-4" />
                 </Button>
               }
             />
@@ -105,23 +105,41 @@ export function EventCard({
                 event={event}
                 onAnnounced={onSaved}
                 trigger={
-                  <Button variant="ghost" size="sm" disabled={pending}>
-                    {t("buttons.announce")}
+                  <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={t("buttons.announce")}>
+                    <Megaphone className="size-4" />
                   </Button>
                 }
               />
             )}
             {event.status === "cancelled" ? (
-              <Button variant="ghost" size="sm" disabled={pending} onClick={() => onReopen(event)}>
-                {t("buttons.reopen")}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={pending}
+                onClick={() => onReopen(event)}
+                aria-label={t("buttons.reopen")}
+              >
+                <RotateCcw className="size-4" />
               </Button>
             ) : (
-              <Button variant="ghost" size="sm" disabled={pending} onClick={() => onCancel(event)}>
-                {tCommon("cancel")}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={pending}
+                onClick={() => onCancel(event)}
+                aria-label={tCommon("cancel")}
+              >
+                <XCircle className="size-4" />
               </Button>
             )}
-            <Button variant="destructive" size="sm" disabled={pending} onClick={() => onDelete(event)}>
-              {tCommon("delete")}
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              disabled={pending}
+              onClick={() => onDelete(event)}
+              aria-label={tCommon("delete")}
+            >
+              <Trash2 className="size-4" />
             </Button>
           </div>
         </CardFooter>

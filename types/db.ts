@@ -677,21 +677,28 @@ export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other
 export interface Donation {
   id: string;
   tenantId: string;
-  devoteeId: string;
+  /** Null when this donation has no registered devotee — see manualDonor*. Exactly one of devoteeId / manualDonorName is ever set. */
+  devoteeId: string | null;
   amount: string; // NUMERIC comes back from pg as a string to avoid float precision loss on money
   purpose: string;
   paymentMethod: PaymentMethod;
   notes: string | null;
   donatedAt: string;
   recordedBy: string | null;
+  /** Snapshot of a non-registered donor, preserved even if they're never turned into a devotee. Null when devoteeId is set. */
+  manualDonorName: string | null;
+  manualDonorPhone: string | null;
+  manualDonorEmail: string | null;
+  manualDonorAddress: string | null;
+  isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-/** listDonations() joins devotees so the table doesn't need N+1 lookups. */
+/** listDonations() joins devotees (when present) so the table doesn't need N+1 lookups; falls back to the manual-donor snapshot otherwise. */
 export interface DonationWithDonor extends Donation {
   donorName: string;
-  donorPhone: string;
+  donorPhone: string | null;
 }
 
 export interface DonationSummary {

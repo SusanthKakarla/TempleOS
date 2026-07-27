@@ -75,34 +75,34 @@ export default async function SuperAdminRolesPage() {
           </p>
         </div>
         <div className="hidden md:block">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-28">Code</TableHead>
-                <TableHead className="w-36">Label</TableHead>
-                <TableHead>Meaning</TableHead>
-                <TableHead className="w-80">Capabilities</TableHead>
-                <TableHead className="w-24 text-right">State</TableHead>
+                <TableHead className="w-[10%]">Code</TableHead>
+                <TableHead className="w-[15%]">Label</TableHead>
+                <TableHead className="w-[35%]">Meaning</TableHead>
+                <TableHead className="w-[28%]">Capabilities</TableHead>
+                <TableHead className="w-[12%] text-right">State</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortRoles(roles).map((role) => (
                 <TableRow key={role.code}>
                   <TableCell className="align-top">
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs break-all">
                       {role.code}
                     </code>
                   </TableCell>
-                  <TableCell className="align-top font-medium">
+                  <TableCell className="align-top font-medium wrap-break-word whitespace-normal">
                     {role.displayName}
                   </TableCell>
-                  <TableCell className="max-w-md align-top text-sm wrap-break-word text-muted-foreground">
+                  <TableCell className="align-top text-sm wrap-break-word whitespace-normal text-muted-foreground">
                     {role.description ?? "No description available."}
                   </TableCell>
-                  <TableCell className="w-80 align-top">
+                  <TableCell className="align-top">
                     <div className="flex flex-wrap gap-1.5">
                       {capabilitiesFor(role).map((capability) => (
-                        <Badge key={capability} variant="outline">
+                        <Badge key={capability} variant="outline" className="whitespace-normal">
                           {capability}
                         </Badge>
                       ))}

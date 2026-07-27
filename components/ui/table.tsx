@@ -30,7 +30,7 @@ function useCanScrollRight(ref: React.RefObject<HTMLDivElement | null>) {
   return canScrollRight
 }
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({ className, containerClassName, ...props }: React.ComponentProps<"table"> & { containerClassName?: string }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const canScrollRight = useCanScrollRight(containerRef)
 
@@ -38,7 +38,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     <div
       ref={containerRef}
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full max-h-[70vh] overflow-auto", containerClassName)}
     >
       <table
         data-slot="table"

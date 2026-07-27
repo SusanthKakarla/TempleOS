@@ -90,75 +90,73 @@ export default async function SuperAdminDashboardPage() {
           <MetricCard label="Total Conversations" value={activityCounts.totalConversations} icon={<MessageCircle className="size-4.5" />} gradient="gradient-blue-purple" />
         </div>
 
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Server className="size-4 text-muted-foreground" />
-              Platform Health
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <HealthTile
-                label="Database"
-                ok={dbHealth.ok}
-                detail={dbHealth.ok ? `${dbHealth.latencyMs}ms` : "Unreachable"}
-              />
-              <HealthTile
-                label="WhatsApp"
-                ok={whatsappHealth.connected > 0 && whatsappSendHealth.recentFailureCount === 0}
-                detail={
-                  whatsappSendHealth.recentFailureCount > 0
-                    ? `${whatsappSendHealth.recentFailureCount} failed in 24h: ${whatsappSendHealth.lastFailureReason?.slice(0, 80) ?? "Unknown error"}`
-                    : `${whatsappHealth.connected}/${whatsappHealth.total} temples connected`
-                }
-              />
-              <HealthTile
-                label="Notification Queue"
-                ok={pendingNotifications < 100}
-                detail={`${pendingNotifications} pending`}
-              />
-              <HealthTile
-                label="Stuck Retries"
-                ok={stuckRetrying === 0}
-                detail={stuckRetrying === 0 ? "None overdue" : `${stuckRetrying} retrying past 1h — retry cron may be down`}
-              />
-              {cronJobs.map((job) => (
-                <HealthTile
-                  key={job.job}
-                  label={CRON_JOB_LABELS[job.job] ?? job.job}
-                  ok={!job.overdue}
-                  detail={job.lastRunAt ? `Last ran ${formatTimestamp(job.lastRunAt)}` : "Never ran"}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Storage and background-worker monitoring aren&apos;t tracked in this app yet — nothing fabricated here.
-            </p>
+        <section className="glass-card rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Server className="size-4 text-muted-foreground" />
+            Platform Health
           </div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <HealthTile
+              label="Database"
+              ok={dbHealth.ok}
+              detail={dbHealth.ok ? `${dbHealth.latencyMs}ms` : "Unreachable"}
+            />
+            <HealthTile
+              label="WhatsApp"
+              ok={whatsappHealth.connected > 0 && whatsappSendHealth.recentFailureCount === 0}
+              detail={
+                whatsappSendHealth.recentFailureCount > 0
+                  ? `${whatsappSendHealth.recentFailureCount} failed in 24h: ${whatsappSendHealth.lastFailureReason?.slice(0, 80) ?? "Unknown error"}`
+                  : `${whatsappHealth.connected}/${whatsappHealth.total} temples connected`
+              }
+            />
+            <HealthTile
+              label="Notification Queue"
+              ok={pendingNotifications < 100}
+              detail={`${pendingNotifications} pending`}
+            />
+            <HealthTile
+              label="Stuck Retries"
+              ok={stuckRetrying === 0}
+              detail={stuckRetrying === 0 ? "None overdue" : `${stuckRetrying} retrying past 1h — retry cron may be down`}
+            />
+            {cronJobs.map((job) => (
+              <HealthTile
+                key={job.job}
+                label={CRON_JOB_LABELS[job.job] ?? job.job}
+                ok={!job.overdue}
+                detail={job.lastRunAt ? `Last ran ${formatTimestamp(job.lastRunAt)}` : "Never ran"}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Storage and background-worker monitoring aren&apos;t tracked in this app yet — nothing fabricated here.
+          </p>
+        </section>
 
-          <div className="glass-card rounded-2xl p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-              <Database className="size-4 text-muted-foreground" />
-              Live Activity
-            </div>
-            {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No platform activity yet.</p>
-            ) : (
-              <ol className="max-h-96 overflow-y-auto text-sm">
-                {recentActivity.map((entry, index) => (
-                  <li key={entry.id} className="relative flex gap-3 pb-4 last:pb-0">
-                    {index !== recentActivity.length - 1 && (
-                      <span className="absolute top-3 left-1.25 h-full w-px bg-border" aria-hidden="true" />
-                    )}
-                    <span className="relative z-10 mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-background" aria-hidden="true" />
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</p>
-                      <p className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
+        <section className="glass-card rounded-2xl p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <Database className="size-4 text-muted-foreground" />
+            Live Activity
           </div>
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No platform activity yet.</p>
+          ) : (
+            <ol className="max-h-96 overflow-y-auto text-sm">
+              {recentActivity.map((entry, index) => (
+                <li key={entry.id} className="relative flex gap-3 pb-4 last:pb-0">
+                  {index !== recentActivity.length - 1 && (
+                    <span className="absolute top-3 left-1.25 h-full w-px bg-border" aria-hidden="true" />
+                  )}
+                  <span className="relative z-10 mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-background" aria-hidden="true" />
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <p className="font-medium">{formatTitle(entry.action.replace(/\./g, " "))}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimestamp(entry.createdAt)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <section className="glass-card rounded-2xl p-4">

@@ -6,20 +6,25 @@ import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 interface DonationRow {
   id: string;
   tenant_id: string;
-  devotee_id: string;
+  devotee_id: string | null;
   amount: string;
   purpose: string;
   payment_method: PaymentMethod;
   notes: string | null;
   donated_at: Date;
   recorded_by: string | null;
+  manual_donor_name: string | null;
+  manual_donor_phone: string | null;
+  manual_donor_email: string | null;
+  manual_donor_address: string | null;
+  is_anonymous: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
 interface DonationWithDonorRow extends DonationRow {
   donor_name: string;
-  donor_phone: string;
+  donor_phone: string | null;
 }
 
 function mapDonation(row: DonationRow): Donation {
@@ -33,6 +38,11 @@ function mapDonation(row: DonationRow): Donation {
     notes: row.notes,
     donatedAt: row.donated_at.toISOString(),
     recordedBy: row.recorded_by,
+    manualDonorName: row.manual_donor_name,
+    manualDonorPhone: row.manual_donor_phone,
+    manualDonorEmail: row.manual_donor_email,
+    manualDonorAddress: row.manual_donor_address,
+    isAnonymous: row.is_anonymous,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -46,9 +56,11 @@ function mapDonationWithDonor(row: DonationWithDonorRow): DonationWithDonor {
  * Recomputes is_donor/total_donated_amount/last_donation_at on the devotee
  * from the donations table (the source of truth), rather than incrementally
  * patching them — avoids drift across edits/deletes. Always called inside
- * the same transaction as the donation write it follows.
+ * the same transaction as the donation write it follows. No-op for manual
+ * (non-registered) donors — there's no devotee row to update.
  */
-async function recomputeDevoteeDonationCache(client: PoolClient, devoteeId: string): Promise<void> {
+async function recomputeDevoteeDonationCache(client: PoolClient, devoteeId: string | null): Promise<void> {
+  if (!devoteeId) return;
   await client.query(
     `UPDATE devotees SET
        is_donor = EXISTS (SELECT 1 FROM donations WHERE devotee_id = $1),
@@ -60,8 +72,19 @@ async function recomputeDevoteeDonationCache(client: PoolClient, devoteeId: stri
   );
 }
 
+/** Present exactly when the donation has no registered devotee — see the CHECK constraint in migrations/024_donation_manual_donor.sql. */
+export interface ManualDonorInput {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  isAnonymous: boolean;
+}
+
 export interface CreateDonationInput {
-  devoteeId: string;
+  /** Exactly one of devoteeId / manualDonor must be set. */
+  devoteeId: string | null;
+  manualDonor: ManualDonorInput | null;
   amount: number;
   purpose: string;
   paymentMethod: PaymentMethod;
@@ -75,8 +98,11 @@ export async function createDonation(tenantId: string, input: CreateDonationInpu
   try {
     await client.query("BEGIN");
     const { rows } = await client.query<DonationRow>(
-      `INSERT INTO donations (tenant_id, devotee_id, amount, purpose, payment_method, notes, donated_at, recorded_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO donations (
+         tenant_id, devotee_id, amount, purpose, payment_method, notes, donated_at, recorded_by,
+         manual_donor_name, manual_donor_phone, manual_donor_email, manual_donor_address, is_anonymous
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         tenantId,
@@ -87,6 +113,11 @@ export async function createDonation(tenantId: string, input: CreateDonationInpu
         input.notes,
         input.donatedAt,
         input.recordedBy,
+        input.manualDonor?.name ?? null,
+        input.manualDonor?.phone ?? null,
+        input.manualDonor?.email ?? null,
+        input.manualDonor?.address ?? null,
+        input.manualDonor?.isAnonymous ?? false,
       ],
     );
     await recomputeDevoteeDonationCache(client, input.devoteeId);
@@ -101,7 +132,10 @@ export async function createDonation(tenantId: string, input: CreateDonationInpu
 }
 
 export interface UpdateDonationInput {
+  /** Switches this donation to an existing devotee (clears any manual-donor snapshot). Omit to leave the donor unchanged. */
   devoteeId?: string;
+  /** Switches this donation to a manual donor (clears devotee_id). Omit to leave the donor unchanged. */
+  manualDonor?: ManualDonorInput;
   amount?: number;
   purpose?: string;
   paymentMethod?: PaymentMethod;
@@ -118,7 +152,7 @@ export async function updateDonation(
   try {
     await client.query("BEGIN");
 
-    const existing = await client.query<{ devotee_id: string }>(
+    const existing = await client.query<{ devotee_id: string | null }>(
       "SELECT devotee_id FROM donations WHERE tenant_id = $1 AND id = $2",
       [tenantId, donationId],
     );
@@ -128,21 +162,58 @@ export async function updateDonation(
     }
     const previousDevoteeId = existing.rows[0].devotee_id;
 
+    // Donor-source switch is all-or-nothing: providing either field
+    // reassigns the full donor identity, never a partial mix of the two.
+    const switchingToDevotee = input.devoteeId !== undefined;
+    const switchingToManual = input.manualDonor !== undefined;
+
     const { rows } = await client.query<DonationRow>(
       `UPDATE donations
-       SET devotee_id = COALESCE($3, devotee_id),
-           amount = COALESCE($4, amount),
-           purpose = COALESCE($5, purpose),
-           payment_method = COALESCE($6, payment_method),
-           notes = CASE WHEN $7::boolean THEN $8 ELSE notes END,
-           donated_at = COALESCE($9, donated_at),
+       SET devotee_id = CASE
+             WHEN $3::boolean THEN $4
+             WHEN $5::boolean THEN NULL
+             ELSE devotee_id
+           END,
+           manual_donor_name = CASE
+             WHEN $5::boolean THEN $6
+             WHEN $3::boolean THEN NULL
+             ELSE manual_donor_name
+           END,
+           manual_donor_phone = CASE
+             WHEN $5::boolean THEN $7
+             WHEN $3::boolean THEN NULL
+             ELSE manual_donor_phone
+           END,
+           manual_donor_email = CASE
+             WHEN $5::boolean THEN $8
+             WHEN $3::boolean THEN NULL
+             ELSE manual_donor_email
+           END,
+           manual_donor_address = CASE
+             WHEN $5::boolean THEN $9
+             WHEN $3::boolean THEN NULL
+             ELSE manual_donor_address
+           END,
+           is_anonymous = CASE WHEN $5::boolean THEN $10 ELSE is_anonymous END,
+           amount = COALESCE($11, amount),
+           purpose = COALESCE($12, purpose),
+           payment_method = COALESCE($13, payment_method),
+           notes = CASE WHEN $14::boolean THEN $15 ELSE notes END,
+           donated_at = COALESCE($16, donated_at),
            updated_at = now()
        WHERE tenant_id = $1 AND id = $2
        RETURNING *`,
       [
         tenantId,
         donationId,
+        switchingToDevotee,
         input.devoteeId ?? null,
+        switchingToManual,
+        input.manualDonor?.name ?? null,
+        input.manualDonor?.phone ?? null,
+        input.manualDonor?.email ?? null,
+        input.manualDonor?.address ?? null,
+        input.manualDonor?.isAnonymous ?? false,
         input.amount ?? null,
         input.purpose ?? null,
         input.paymentMethod ?? null,
@@ -172,7 +243,7 @@ export async function deleteDonation(tenantId: string, donationId: string): Prom
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");
-    const { rows } = await client.query<{ devotee_id: string }>(
+    const { rows } = await client.query<{ devotee_id: string | null }>(
       "DELETE FROM donations WHERE tenant_id = $1 AND id = $2 RETURNING devotee_id",
       [tenantId, donationId],
     );
@@ -214,7 +285,7 @@ export interface ListDonationsFilter {
 const DONATION_SORT_COLUMNS: Record<NonNullable<ListDonationsFilter["sort"]>, string> = {
   date: "d.donated_at",
   amount: "d.amount",
-  donor: "dev.display_name",
+  donor: "COALESCE(dev.display_name, d.manual_donor_name)",
 };
 
 function buildDonationConditions(
@@ -225,7 +296,10 @@ function buildDonationConditions(
 
   if (filter.search && filter.search.trim()) {
     params.push(`%${filter.search.trim()}%`);
-    conditions.push(`(dev.display_name ILIKE $${params.length + 1} OR dev.whatsapp_phone ILIKE $${params.length + 1})`);
+    conditions.push(
+      `(dev.display_name ILIKE $${params.length + 1} OR dev.whatsapp_phone ILIKE $${params.length + 1}
+        OR d.manual_donor_name ILIKE $${params.length + 1} OR d.manual_donor_phone ILIKE $${params.length + 1})`,
+    );
   }
   if (filter.devoteeId) {
     params.push(filter.devoteeId);
@@ -257,9 +331,11 @@ export async function listDonations(
   const sortColumn = filter.sort ? DONATION_SORT_COLUMNS[filter.sort] : "d.donated_at";
   const dir = filter.dir === "asc" ? "ASC" : "DESC";
 
-  let query = `SELECT d.*, dev.display_name AS donor_name, dev.whatsapp_phone AS donor_phone
+  let query = `SELECT d.*,
+       COALESCE(dev.display_name, d.manual_donor_name) AS donor_name,
+       COALESCE(dev.whatsapp_phone, d.manual_donor_phone) AS donor_phone
      FROM donations d
-     JOIN devotees dev ON dev.id = d.devotee_id
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
      WHERE ${conditions.join(" AND ")}
      ORDER BY ${sortColumn} ${dir}`;
 
@@ -282,7 +358,7 @@ export async function countDonationsFiltered(
   const { rows } = await getPool().query<{ count: string }>(
     `SELECT count(*) AS count
      FROM donations d
-     JOIN devotees dev ON dev.id = d.devotee_id
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
      WHERE ${conditions.join(" AND ")}`,
     params,
   );
@@ -293,9 +369,11 @@ export async function countDonationsFiltered(
 export async function listDonationsByIds(tenantId: string, ids: string[]): Promise<DonationWithDonor[]> {
   if (ids.length === 0) return [];
   const { rows } = await getPool().query<DonationWithDonorRow>(
-    `SELECT d.*, dev.display_name AS donor_name, dev.whatsapp_phone AS donor_phone
+    `SELECT d.*,
+       COALESCE(dev.display_name, d.manual_donor_name) AS donor_name,
+       COALESCE(dev.whatsapp_phone, d.manual_donor_phone) AS donor_phone
      FROM donations d
-     JOIN devotees dev ON dev.id = d.devotee_id
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
      WHERE d.tenant_id = $1 AND d.id = ANY($2::uuid[])
      ORDER BY d.donated_at DESC`,
     [tenantId, ids],
