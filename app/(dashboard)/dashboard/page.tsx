@@ -9,7 +9,6 @@ import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
-import { SetPageTheme } from "@/components/theme/theme-provider";
 
 const CHART_DAYS = 30;
 
@@ -47,7 +46,6 @@ export default async function DashboardHomePage() {
 
   return (
     <div className="space-y-6">
-      <SetPageTheme themeKey="dashboard" />
       <PageHeader
         title={`${t("namaste")} ${tenant ? `— ${tenant.name}` : ""}`}
         subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}

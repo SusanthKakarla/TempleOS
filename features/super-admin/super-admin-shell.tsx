@@ -1,6 +1,6 @@
 import type { SuperAdmin } from "@/types/db";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ThemeBackdrop } from "@/components/theme/theme-backdrop";
+import { AmbientBackground } from "@/features/dashboard/ambient-background";
 import { MotionProvider } from "@/features/dashboard/motion-provider";
 import { SuperAdminSidebar } from "./super-admin-sidebar";
 import { SuperAdminTopbar } from "./super-admin-topbar";
@@ -16,7 +16,7 @@ export function SuperAdminShell({
   return (
     <MotionProvider>
       <SidebarProvider>
-        <ThemeBackdrop themeKey="superAdmin" />
+        <AmbientBackground />
         <SuperAdminSidebar />
         <SidebarInset className="h-svh overflow-hidden bg-muted/20 p-3">
           <div className="flex h-full flex-col gap-3">
