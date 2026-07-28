@@ -26,7 +26,13 @@ export async function DashboardShell({
         sidebar={
           <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenant?.name ?? "TempleOS"} />
         }
-        topbar={<DashboardTopbar displayName={session.displayName} phoneNumber={session.phoneNumber} />}
+        topbar={
+          <DashboardTopbar
+            displayName={session.displayName}
+            phoneNumber={session.phoneNumber}
+            enabledFeatures={enabledFeatures}
+          />
+        }
         bottomNav={<BottomNavBar />}
         footerLabel="Pilot"
       >

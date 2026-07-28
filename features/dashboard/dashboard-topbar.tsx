@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, LogOut, Settings } from "lucide-react";
+import { Bell, LogOut, Settings, UserCog } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -36,9 +36,12 @@ function getInitials(name: string): string {
 export function DashboardTopbar({
   displayName,
   phoneNumber,
+  enabledFeatures,
 }: {
   displayName: string;
   phoneNumber: string;
+  /** Feature keys enabled for this tenant — undefined means "don't filter". Mirrors AppSidebar's own prop. */
+  enabledFeatures?: Set<string>;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -106,6 +109,12 @@ export function DashboardTopbar({
               <Settings />
               {tTopbar("appSettings")}
             </DropdownMenuItem>
+            {(!enabledFeatures || enabledFeatures.has("user_management")) && (
+              <DropdownMenuItem render={<Link href="/dashboard/users" />}>
+                <UserCog />
+                {t("userManagement")}
+              </DropdownMenuItem>
+            )}
             <InstallButton variant="menu-item" />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>

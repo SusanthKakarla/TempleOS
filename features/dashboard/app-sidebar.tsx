@@ -12,7 +12,6 @@ import {
   Receipt,
   Settings2,
   ShieldCheck,
-  UserCog,
   Users,
 } from "lucide-react";
 import {
@@ -36,7 +35,6 @@ export const NAV_ITEMS = [
   { href: "/dashboard/donations", labelKey: "donations", icon: Receipt, featureKey: "donations" },
   { href: "/dashboard/campaigns", labelKey: "campaigns", icon: Megaphone, featureKey: "campaigns" },
   { href: "/dashboard/chatbot-settings", labelKey: "chatbotSettings", icon: Settings2, featureKey: "whatsapp_chatbot" },
-  { href: "/dashboard/users", labelKey: "userManagement", icon: UserCog, featureKey: "user_management" },
 ] as const;
 
 const SUPER_ADMIN_NAV_ITEM = {
