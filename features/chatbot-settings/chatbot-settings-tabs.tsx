@@ -24,6 +24,7 @@ export function ChatbotSettingsTabs({
   automatedNotificationsSlot,
   whatsappTemplates,
   whatsappConnected,
+  whatsappConnectionSlot,
   defaultTab = "info",
 }: {
   tenant: Tenant;
@@ -43,12 +44,16 @@ export function ChatbotSettingsTabs({
   /** Plain data (not pre-rendered JSX) — WhatsAppTemplatesTab is itself a Client Component, so it's safe to import and render directly here, unlike the two Server Components above. */
   whatsappTemplates: WhatsAppMessageTemplate[];
   whatsappConnected: boolean;
+  /** Pre-rendered WhatsApp connection card from the server page (client component rendered server-side with URL param data). */
+  whatsappConnectionSlot: ReactNode;
   defaultTab?: string;
 }) {
   const t = useTranslations("chatbotSettings.tabs");
   return (
     <Tabs defaultValue={defaultTab} className="gap-4">
-      <TabsList variant="line" scrollable className="w-full">
+      <div className="relative">
+        <TabsList variant="line" scrollable className="w-full pr-8">
+
         <TabsTrigger value="info">{t("info")}</TabsTrigger>
         <TabsTrigger value="timings">{t("timings")}</TabsTrigger>
         <TabsTrigger value="sevas">{t("sevas")}</TabsTrigger>
@@ -61,15 +66,19 @@ export function ChatbotSettingsTabs({
           </>
         )}
         <TabsTrigger value="whatsappTemplates">{t("whatsappTemplates")}</TabsTrigger>
-      </TabsList>
+        </TabsList>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent" />
+      </div>
 
-      <TabsContent value="info" className="space-y-4">
+      <TabsContent value="info" className="space-y-6">
         <TempleInfoForm tenant={tenant} />
+        <div className="border-t" />
         <NotificationPreferencesForm tenant={tenant} />
       </TabsContent>
 
-      <TabsContent value="timings" className="space-y-4">
+      <TabsContent value="timings" className="space-y-6">
         <TempleTimingsForm tenant={tenant} />
+        <div className="border-t" />
         <SpecialDaysTable specialDays={specialDays} />
       </TabsContent>
 
@@ -77,8 +86,9 @@ export function ChatbotSettingsTabs({
         <SevasTable sevas={sevas} />
       </TabsContent>
 
-      <TabsContent value="contact" className="space-y-4">
+      <TabsContent value="contact" className="space-y-6">
         <ContactForm tenant={tenant} />
+        <div className="border-t" />
         <SocialLinksForm socialLinks={socialLinks} />
       </TabsContent>
 
@@ -93,7 +103,8 @@ export function ChatbotSettingsTabs({
         </>
       )}
 
-      <TabsContent value="whatsappTemplates">
+      <TabsContent value="whatsappTemplates" className="space-y-6">
+        {whatsappConnectionSlot}
         <WhatsAppTemplatesTab templates={whatsappTemplates} whatsappConnected={whatsappConnected} />
       </TabsContent>
     </Tabs>

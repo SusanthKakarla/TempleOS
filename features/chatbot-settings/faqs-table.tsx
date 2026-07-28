@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import { HelpCircle, Plus } from "lucide-react";
 import type { TempleFaq } from "@/types/db";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { FaqFormDialog } from "./faq-form-dialog";
@@ -43,11 +42,11 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
   }
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader className="flex-row items-center justify-between">
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <CardTitle>{tForm("cardTitle")}</CardTitle>
-          <CardDescription>{tForm("cardDescription")}</CardDescription>
+          <p className="font-heading text-sm font-semibold">{tForm("cardTitle")}</p>
+          <p className="text-sm text-muted-foreground">{tForm("cardDescription")}</p>
         </div>
         <FaqFormDialog
           mode="create"
@@ -59,8 +58,8 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
           }
           onSaved={refresh}
         />
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+      <div className="space-y-3">
         {error && <p className="text-sm text-destructive">{error}</p>}
         {faqs.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
@@ -104,7 +103,7 @@ export function FaqsTable({ faqs }: { faqs: TempleFaq[] }) {
             <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={faqs.length} onPageChange={setPage} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

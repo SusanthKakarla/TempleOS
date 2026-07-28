@@ -7,7 +7,6 @@ import { CalendarDays, Plus } from "lucide-react";
 import type { SupportedLanguage, TempleSpecialDay } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -85,11 +84,11 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
   }
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader className="flex-row items-center justify-between">
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <CardTitle>{t("cardTitle")}</CardTitle>
-          <CardDescription>{t("cardDescription")}</CardDescription>
+          <p className="font-heading text-sm font-semibold">{t("cardTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("cardDescription")}</p>
         </div>
         <SpecialDayFormDialog
           mode="create"
@@ -101,8 +100,8 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
           }
           onSaved={refresh}
         />
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div>
         {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
         {specialDays.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
@@ -205,7 +204,7 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

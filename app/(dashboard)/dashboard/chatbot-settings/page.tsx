@@ -22,6 +22,8 @@ import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-setting
 import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
+import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
+import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
@@ -90,7 +92,14 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   if (!tenant) return null;
 
   const isConnected = whatsappAccount !== null && whatsappAccount.status === "connected";
-
+  const whatsappConnectionSlot = (
+    <WhatsAppConnectionCard
+      account={whatsappAccount}
+      initialConnectResult={initialConnectResult}
+      initialCancelled={initialCancelled}
+      compact={false}
+    />
+  );
   // NotificationSettingsContent/AutomatedNotificationList are async Server Components —
   // they must be rendered here (in this Server Component page), not imported into
   // ChatbotSettingsTabs, which is a Client Component ("use client", for the interactive
@@ -122,13 +131,10 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   // Deep-link into the automated-notifications tab when the URL params describe filtering it.
   const defaultTab = category || notifPageParam ? "automatedNotifications" : "info";
 
-  const chatbotConfigSection = (
-    <SettingsSection
-      icon={<Settings2 className="size-4.5" />}
-      title={t("sections.chatbotConfig.title")}
-      description={t("sections.chatbotConfig.description")}
-      defaultOpen
-    >
+  return (
+    <div className="space-y-6">
+      <PageHeader title={t("pageHeader.title")} />
+
       <ChatbotSettingsTabs
         tenant={tenant}
         specialDays={specialDays}
@@ -139,6 +145,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         automatedNotificationsSlot={automatedNotificationsSlot}
         whatsappTemplates={whatsappTemplates}
         whatsappConnected={isConnected}
+        whatsappConnectionSlot={whatsappConnectionSlot}
         defaultTab={defaultTab}
       />
     </SettingsSection>

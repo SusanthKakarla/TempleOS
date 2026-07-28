@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Bell } from "lucide-react";
 import type { Tenant } from "@/types/db";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ToggleRow {
   key: "notifyOnNewEvent" | "notifyOnEventUpdated" | "notifyOnEventCancelled";
@@ -54,15 +52,12 @@ export function NotificationPreferencesForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="size-4.5 text-saffron" />
-          {tForm("cardTitle")}
-        </CardTitle>
-        <CardDescription>{tForm("cardDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="space-y-4">
+      <div>
+        <p className="font-heading text-sm font-semibold">{tForm("cardTitle")}</p>
+        <p className="text-sm text-muted-foreground">{tForm("cardDescription")}</p>
+      </div>
+      <div className="space-y-3">
         {ROWS.map((row) => (
           <div key={row.key} className="flex items-center justify-between rounded-lg border p-3">
             <div>
@@ -76,7 +71,7 @@ export function NotificationPreferencesForm({ tenant }: { tenant: Tenant }) {
             />
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
