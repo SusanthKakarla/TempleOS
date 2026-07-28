@@ -78,29 +78,6 @@ export async function linkPaymentAccountForProvisioning(
   return account;
 }
 
-/** Tenant-admin self-service connect (Payment Settings page) — deactivates any prior active account for this tenant first, since only one may be active. */
-export async function connectPaymentAccount(
-  tenantId: string,
-  input: PaymentAccountCredentialsInput,
-): Promise<TenantPaymentAccount> {
-  const client = await getPool().connect();
-  try {
-    await client.query("BEGIN");
-    await client.query(
-      "UPDATE tenant_payment_accounts SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND is_active = true",
-      [tenantId],
-    );
-    const account = await linkPaymentAccountForProvisioning(tenantId, input, client);
-    await client.query("COMMIT");
-    return account;
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 export interface PartnerPaymentAccountInput {
   providerKey: PaymentProviderKey;
   razorpayAccountId: string;
@@ -182,18 +159,6 @@ export async function disconnectPaymentAccount(tenantId: string, accountId: stri
     [tenantId, accountId],
   );
   return rows[0] ? mapAccount(rows[0]) : null;
-}
-
-export async function recordPaymentAccountValidation(
-  accountId: string,
-  result: { ok: true } | { ok: false; error: string },
-): Promise<void> {
-  await getPool().query(
-    `UPDATE tenant_payment_accounts
-     SET last_validated_at = now(), last_validation_error = $2, updated_at = now()
-     WHERE id = $1`,
-    [accountId, result.ok ? null : result.error],
-  );
 }
 
 interface CredentialsRow {

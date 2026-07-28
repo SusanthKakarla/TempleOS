@@ -1233,28 +1233,17 @@
       "validated": "Verified",
       "validationPending": "Verification pending",
       "fields": {
-        "keyId": "Razorpay Key ID",
-        "keySecret": "Razorpay Key Secret",
-        "webhookSecret": "Webhook Secret (optional)",
         "validationStatus": "Verification status",
         "connectionMethod": "Connection method"
       },
       "method": {
-        "label": "How would you like to connect?",
-        "manualLabel": "Manual API Keys",
-        "manualDescription": "Paste your own Razorpay Key ID, Key Secret, and Webhook Secret.",
-        "partnerLabel": "Connect via Razorpay",
         "partnerDescription": "Log into your Razorpay account and grant access — no keys to copy or paste.",
         "manualValue": "Manual API Keys",
         "partnerValue": "Connect via Razorpay"
       },
-      "connectButton": "Connect Razorpay",
-      "connecting": "Connecting...",
       "disconnectButton": "Disconnect",
       "disconnecting": "Disconnecting...",
       "disconnectConfirm": "Disconnect this payment account? Online donations will stop working until you reconnect.",
-      "connectSuccess": "Razorpay connected successfully.",
-      "connectError": "Failed to connect Razorpay.",
       "disconnectSuccess": "Razorpay disconnected.",
       "disconnectError": "Failed to disconnect.",
       "oauth": {

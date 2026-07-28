@@ -1247,28 +1247,17 @@
       "validated": "ధృవీకరించబడింది",
       "validationPending": "ధృవీకరణ పెండింగ్‌లో ఉంది",
       "fields": {
-        "keyId": "Razorpay Key ID",
-        "keySecret": "Razorpay Key Secret",
-        "webhookSecret": "వెబ్‌హుక్ సీక్రెట్ (ఐచ్ఛికం)",
         "validationStatus": "ధృవీకరణ స్థితి",
         "connectionMethod": "కనెక్షన్ పద్ధతి"
       },
       "method": {
-        "label": "మీరు ఎలా కనెక్ట్ చేయాలనుకుంటున్నారు?",
-        "manualLabel": "మాన్యువల్ API కీలు",
-        "manualDescription": "మీ స్వంత Razorpay Key ID, Key Secret, మరియు వెబ్‌హుక్ సీక్రెట్‌ను పేస్ట్ చేయండి.",
-        "partnerLabel": "Razorpay ద్వారా కనెక్ట్ చేయండి",
         "partnerDescription": "మీ Razorpay ఖాతాలోకి లాగిన్ అయ్యి యాక్సెస్ మంజూరు చేయండి — కాపీ/పేస్ట్ చేయాల్సిన కీలు లేవు.",
         "manualValue": "మాన్యువల్ API కీలు",
         "partnerValue": "Razorpay ద్వారా కనెక్ట్ చేయబడింది"
       },
-      "connectButton": "Razorpay కనెక్ట్ చేయండి",
-      "connecting": "కనెక్ట్ చేస్తోంది...",
       "disconnectButton": "డిస్‌కనెక్ట్ చేయండి",
       "disconnecting": "డిస్‌కనెక్ట్ చేస్తోంది...",
       "disconnectConfirm": "ఈ చెల్లింపు ఖాతాను డిస్‌కనెక్ట్ చేయాలా? మీరు మళ్లీ కనెక్ట్ చేసే వరకు ఆన్‌లైన్ విరాళాలు పనిచేయవు.",
-      "connectSuccess": "Razorpay విజయవంతంగా కనెక్ట్ అయింది.",
-      "connectError": "Razorpay కనెక్ట్ చేయడంలో విఫలమైంది.",
       "disconnectSuccess": "Razorpay డిస్‌కనెక్ట్ చేయబడింది.",
       "disconnectError": "డిస్‌కనెక్ట్ చేయడంలో విఫలమైంది.",
       "oauth": {

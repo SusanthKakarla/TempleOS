@@ -102,15 +102,6 @@ export function parseWebhookEvent(providerKey: PaymentProviderKey, rawBody: stri
   return getAdapter(providerKey).parseWebhookEvent(rawBody);
 }
 
-/** Best-effort credential check — never blocks provisioning/connect, only records an outcome (mirrors the WhatsApp template-bootstrap's non-blocking posture). Manual-connect-only: called with the raw form input before it's ever encrypted. */
-export async function validateCredentials(
-  providerKey: PaymentProviderKey,
-  creds: { keyId: string; keySecret: string; webhookSecret: string | null },
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const decrypted: DecryptedCredentials = { mode: "api_key", ...creds };
-  return getAdapter(providerKey).validateCredentials(decrypted);
-}
-
 export async function fetchOrderPaymentForTenant(
   tenantId: string,
   providerOrderId: string,
