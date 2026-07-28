@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { razorpayAdapter } from "./razorpay-adapter";
 import type { DecryptedCredentials } from "../provider";
 
@@ -18,6 +18,51 @@ const oauthCreds: DecryptedCredentials = {
   publicToken: "test_public_token",
   webhookSecret: "test_webhook_secret",
 };
+
+describe("razorpayAdapter.validateCredentials", () => {
+  afterEach(() => {
+    vi.doUnmock("razorpay");
+    vi.resetModules();
+  });
+
+  it("surfaces the Razorpay API's own error description, not a generic fallback", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = {
+          all: vi.fn().mockRejectedValue({
+            statusCode: 401,
+            error: { code: "BAD_REQUEST_ERROR", description: "Authentication failed" },
+          }),
+        };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.validateCredentials(creds);
+    expect(result).toEqual({ ok: false, error: "Authentication failed" });
+  });
+
+  it("falls back to a generic message when the thrown value has no description", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { all: vi.fn().mockRejectedValue({ statusCode: 500 }) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.validateCredentials(creds);
+    expect(result).toEqual({ ok: false, error: "Could not verify Razorpay credentials" });
+  });
+
+  it("returns ok: true when the API call succeeds", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { all: vi.fn().mockResolvedValue({ items: [] }) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.validateCredentials(creds);
+    expect(result).toEqual({ ok: true });
+  });
+});
 
 describe("razorpayAdapter.verifyCheckoutSignature", () => {
   it("accepts a signature computed as HMAC-SHA256(orderId|paymentId, keySecret)", () => {

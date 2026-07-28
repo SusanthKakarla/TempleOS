@@ -86,6 +86,24 @@ function resolveSigningSecret(creds: DecryptedCredentials): string | null {
   return process.env.RAZORPAY_PARTNER_CLIENT_SECRET ?? null;
 }
 
+/**
+ * The `razorpay` package's API layer never throws a real `Error` for
+ * HTTP-level failures — it throws a plain object shaped
+ * `{ statusCode, error: { code, description, ... } }` (confirmed by reading
+ * node_modules/razorpay/dist/api.js's `normalizeError`). Checking only
+ * `err instanceof Error` therefore missed the actual reason (e.g. "The api
+ * key/secret provided is invalid") on every real API rejection, falling
+ * through to a generic, unhelpful message instead.
+ */
+function extractRazorpayErrorMessage(err: unknown): string {
+  if (err && typeof err === "object" && "error" in err) {
+    const inner = (err as { error?: { description?: string } }).error;
+    if (inner?.description) return inner.description;
+  }
+  if (err instanceof Error) return err.message;
+  return "Could not verify Razorpay credentials";
+}
+
 export const razorpayAdapter: PaymentProviderAdapter = {
   key: "razorpay",
 
@@ -95,8 +113,7 @@ export const razorpayAdapter: PaymentProviderAdapter = {
       await client.orders.all({ count: 1 });
       return { ok: true } as const;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not verify Razorpay credentials";
-      return { ok: false, error: message } as const;
+      return { ok: false, error: extractRazorpayErrorMessage(err) } as const;
     }
   },
 
