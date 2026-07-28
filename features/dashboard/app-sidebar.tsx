@@ -82,7 +82,7 @@ export function AppSidebar({
   const userManagementActive = userManagementChildren.some((child) => pathname?.startsWith(child.href));
 
   return (
-    <Sidebar collapsible="icon" variant="floating">
+    <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5 px-1">
           <div className="bg-accent flex size-8 shrink-0 items-center justify-center rounded-lg text-accent-foreground shadow-sm">
