@@ -8,7 +8,6 @@ import { Mail, MapPin, Phone, Link as LinkIcon } from "lucide-react";
 import type { Tenant } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { LabeledInput } from "@/components/ui/labeled-input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ContactForm({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
@@ -47,50 +46,40 @@ export function ContactForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader>
-        <CardTitle>{tForm("cardTitle")}</CardTitle>
-        <CardDescription>{tForm("cardDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
-          <LabeledInput
-            id="contact-phone"
-            label={tForm("fields.phone")}
-            icon={<Phone />}
-            value={defaultContactPhone}
-            onChange={(e) => setDefaultContactPhone(e.target.value)}
-          />
-          <LabeledInput
-            id="contact-email"
-            label={tForm("fields.email")}
-            icon={<Mail />}
-            type="email"
-            value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
-          />
-          <LabeledInput
-            id="contact-address"
-            label={tForm("fields.address")}
-            icon={<MapPin />}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-          <LabeledInput
-            id="contact-maps"
-            label={tForm("fields.mapsLink")}
-            icon={<LinkIcon />}
-            value={googleMapsLink}
-            onChange={(e) => setGoogleMapsLink(e.target.value)}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </form>
-      </CardContent>
-      <CardFooter>
-        <Button type="submit" form="contact-form" disabled={submitting}>
-          {submitting ? t("common.saving") : t("common.save")}
-        </Button>
-      </CardFooter>
-    </Card>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <LabeledInput
+        id="contact-phone"
+        label={tForm("fields.phone")}
+        icon={<Phone />}
+        value={defaultContactPhone}
+        onChange={(e) => setDefaultContactPhone(e.target.value)}
+      />
+      <LabeledInput
+        id="contact-email"
+        label={tForm("fields.email")}
+        icon={<Mail />}
+        type="email"
+        value={contactEmail}
+        onChange={(e) => setContactEmail(e.target.value)}
+      />
+      <LabeledInput
+        id="contact-address"
+        label={tForm("fields.address")}
+        icon={<MapPin />}
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
+      <LabeledInput
+        id="contact-maps"
+        label={tForm("fields.mapsLink")}
+        icon={<LinkIcon />}
+        value={googleMapsLink}
+        onChange={(e) => setGoogleMapsLink(e.target.value)}
+      />
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <Button type="submit" disabled={submitting}>
+        {submitting ? t("common.saving") : t("common.save")}
+      </Button>
+    </form>
   );
 }

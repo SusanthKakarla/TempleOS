@@ -7,7 +7,6 @@ import { HandCoins, Plus } from "lucide-react";
 import type { TempleSeva } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -64,11 +63,11 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
   }
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader className="flex-row items-center justify-between">
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <CardTitle>{tForm("cardTitle")}</CardTitle>
-          <CardDescription>{tForm("cardDescription")}</CardDescription>
+          <p className="font-heading text-sm font-semibold">{tForm("cardTitle")}</p>
+          <p className="text-sm text-muted-foreground">{tForm("cardDescription")}</p>
         </div>
         <SevaFormDialog
           mode="create"
@@ -80,8 +79,8 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
           }
           onSaved={refresh}
         />
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div>
         {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
         {sevas.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
@@ -191,7 +190,7 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

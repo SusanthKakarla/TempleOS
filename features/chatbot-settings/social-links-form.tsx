@@ -8,7 +8,6 @@ import { Globe, Link as LinkIcon } from "lucide-react";
 import type { SocialPlatform, TempleSocialLink } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { LabeledInput } from "@/components/ui/labeled-input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // lucide-react no longer ships trademarked brand/logo icons, so every
 // platform uses the same generic link glyph and is distinguished by label.
@@ -98,12 +97,12 @@ export function SocialLinksForm({ socialLinks }: { socialLinks: TempleSocialLink
   const urlByPlatform = new Map(socialLinks.map((link) => [link.platform, link.url]));
 
   return (
-    <Card className="glass-card overflow-hidden rounded-2xl">
-      <CardHeader>
-        <CardTitle>{tForm("cardTitle")}</CardTitle>
-        <CardDescription>{tForm("cardDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="space-y-4">
+      <div>
+        <p className="font-heading text-sm font-semibold">{tForm("cardTitle")}</p>
+        <p className="text-sm text-muted-foreground">{tForm("cardDescription")}</p>
+      </div>
+      <div className="space-y-3">
         {PLATFORMS.map((platform) => (
           <SocialLinkRow
             key={platform.value}
@@ -117,7 +116,7 @@ export function SocialLinksForm({ socialLinks }: { socialLinks: TempleSocialLink
             savingLabel={tCommon("saving")}
           />
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
