@@ -36,10 +36,6 @@ export interface NewTempleFormState {
   razorpayKeyId: string;
   razorpayKeySecret: string;
   razorpayWebhookSecret: string;
-  paymentBusinessName: string;
-  paymentMerchantName: string;
-  paymentContactEmail: string;
-  paymentContactPhone: string;
   featureKeys: FeatureKey[];
 }
 
@@ -69,10 +65,6 @@ export interface ProvisionTemplePayload {
     keyId: string;
     keySecret: string;
     webhookSecret: string | null;
-    businessName: string;
-    merchantName: string;
-    contactEmail: string;
-    contactPhone: string;
   };
   featureKeys: FeatureKey[];
 }
@@ -108,10 +100,6 @@ const renderedFieldKeys = new Set([
   "metaBusinessAccountId",
   "razorpayKeyId",
   "razorpayKeySecret",
-  "paymentBusinessName",
-  "paymentMerchantName",
-  "paymentContactEmail",
-  "paymentContactPhone",
 ]);
 
 export type BuildProvisionTemplePayloadResult =
@@ -135,10 +123,6 @@ export const DEFAULT_NEW_TEMPLE_FORM_STATE: NewTempleFormState = {
   razorpayKeyId: "",
   razorpayKeySecret: "",
   razorpayWebhookSecret: "",
-  paymentBusinessName: "",
-  paymentMerchantName: "",
-  paymentContactEmail: "",
-  paymentContactPhone: "",
   featureKeys: [],
 };
 
@@ -191,19 +175,11 @@ export function validateNewTempleForm(state: NewTempleFormState): BuildProvision
       "Provide WhatsApp phone, Meta phone number ID, and Meta business account ID together.";
   }
 
-  const paymentValues = [
-    state.razorpayKeyId.trim(),
-    state.razorpayKeySecret.trim(),
-    state.paymentBusinessName.trim(),
-    state.paymentMerchantName.trim(),
-    state.paymentContactEmail.trim(),
-    state.paymentContactPhone.trim(),
-  ];
+  const paymentValues = [state.razorpayKeyId.trim(), state.razorpayKeySecret.trim()];
   const hasAnyPaymentValue = paymentValues.some(Boolean);
   const hasAllPaymentValues = paymentValues.every(Boolean);
   if (hasAnyPaymentValue && !hasAllPaymentValues) {
-    sectionErrors.paymentAccount =
-      "Provide the Razorpay Key ID, Key Secret, business name, merchant name, contact email, and contact phone together.";
+    sectionErrors.paymentAccount = "Provide both the Razorpay Key ID and Key Secret together.";
   }
 
   if (Object.keys(fieldErrors).length > 0 || Object.keys(sectionErrors).length > 0) {
@@ -244,10 +220,6 @@ export function validateNewTempleForm(state: NewTempleFormState): BuildProvision
               keyId: state.razorpayKeyId.trim(),
               keySecret: state.razorpayKeySecret.trim(),
               webhookSecret: nullableTrim(state.razorpayWebhookSecret),
-              businessName: state.paymentBusinessName.trim(),
-              merchantName: state.paymentMerchantName.trim(),
-              contactEmail: state.paymentContactEmail.trim(),
-              contactPhone: state.paymentContactPhone.trim(),
             },
           }
         : {}),
@@ -332,14 +304,6 @@ export function fieldKeyFromPath(path: string[]): string | null {
       return "razorpayKeyId";
     case "paymentAccount.keySecret":
       return "razorpayKeySecret";
-    case "paymentAccount.businessName":
-      return "paymentBusinessName";
-    case "paymentAccount.merchantName":
-      return "paymentMerchantName";
-    case "paymentAccount.contactEmail":
-      return "paymentContactEmail";
-    case "paymentAccount.contactPhone":
-      return "paymentContactPhone";
     default:
       return null;
   }

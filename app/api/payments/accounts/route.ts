@@ -39,10 +39,6 @@ export async function POST(req: NextRequest) {
     keyId: parsed.data.keyId,
     keySecret: parsed.data.keySecret,
     webhookSecret: parsed.data.webhookSecret ?? null,
-    businessName: parsed.data.businessName,
-    merchantName: parsed.data.merchantName,
-    contactEmail: parsed.data.contactEmail,
-    contactPhone: parsed.data.contactPhone,
   });
 
   await PaymentAuditService.accountConnected(session.tenantId, session.membershipId, account.id, account.providerKey);

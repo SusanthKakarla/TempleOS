@@ -1,4 +1,4 @@
-import type { PaymentProviderAdapter, PaymentProviderKey } from "./provider";
+import type { DecryptedCredentials, PaymentProviderAdapter, PaymentProviderKey } from "./provider";
 import { razorpayAdapter } from "./adapters/razorpay-adapter";
 import {
   getActivePaymentAccountForTenant,
@@ -46,7 +46,12 @@ export async function createOrderForTenant(
   const creds = await getDecryptedCredentialsForAccount(active.account.id);
   if (!creds) return null;
   const order = await active.adapter.createOrder(creds, input);
-  return { account: active.account, providerOrderId: order.providerOrderId, keyId: creds.keyId };
+  // Checkout.js needs a public-facing key: the tenant's own key_id in manual
+  // mode, or the Partner-issued public_token in OAuth mode (Razorpay docs:
+  // "public_token can replace key_id for public-facing implementations such
+  // as Razorpay Checkout").
+  const keyId = creds.mode === "api_key" ? creds.keyId : (creds.publicToken ?? "");
+  return { account: active.account, providerOrderId: order.providerOrderId, keyId };
 }
 
 export async function verifyCheckoutSignatureForAccount(
@@ -57,6 +62,29 @@ export async function verifyCheckoutSignatureForAccount(
   const creds = await getDecryptedCredentialsForAccount(accountId);
   if (!creds) return false;
   return getAdapter(providerKey).verifyCheckoutSignature(creds, input);
+}
+
+/**
+ * Partner (OAuth) webhooks are signed with the Partner application's own
+ * webhook secret — a single platform-wide value, not any one tenant's
+ * stored secret — so this reuses the adapter's HMAC verification directly
+ * instead of resolving a tenant's credentials first (there is no tenant to
+ * resolve yet at this point; that only happens after the payload is
+ * trusted). No new signature-verification code, same `verifyWebhookSignature`
+ * every other Razorpay webhook already uses.
+ */
+export function verifyPartnerWebhookSignature(rawBody: string, signatureHeader: string): boolean {
+  const webhookSecret = process.env.RAZORPAY_PARTNER_WEBHOOK_SECRET ?? null;
+  if (!webhookSecret) return false;
+  const creds: DecryptedCredentials = {
+    mode: "oauth",
+    accessToken: "",
+    refreshToken: "",
+    accessTokenExpiresAt: new Date(0).toISOString(),
+    publicToken: null,
+    webhookSecret,
+  };
+  return getAdapter("razorpay").verifyWebhookSignature(creds, rawBody, signatureHeader);
 }
 
 export async function verifyWebhookSignatureForAccount(
@@ -74,10 +102,22 @@ export function parseWebhookEvent(providerKey: PaymentProviderKey, rawBody: stri
   return getAdapter(providerKey).parseWebhookEvent(rawBody);
 }
 
-/** Best-effort credential check — never blocks provisioning/connect, only records an outcome (mirrors the WhatsApp template-bootstrap's non-blocking posture). */
+/** Best-effort credential check — never blocks provisioning/connect, only records an outcome (mirrors the WhatsApp template-bootstrap's non-blocking posture). Manual-connect-only: called with the raw form input before it's ever encrypted. */
 export async function validateCredentials(
   providerKey: PaymentProviderKey,
   creds: { keyId: string; keySecret: string; webhookSecret: string | null },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  return getAdapter(providerKey).validateCredentials(creds);
+  const decrypted: DecryptedCredentials = { mode: "api_key", ...creds };
+  return getAdapter(providerKey).validateCredentials(decrypted);
+}
+
+export async function fetchOrderPaymentForTenant(
+  tenantId: string,
+  providerOrderId: string,
+): Promise<{ capturedPaymentId: string | null; amountPaise: number | null } | null> {
+  const active = await getActiveProviderForTenant(tenantId);
+  if (!active) return null;
+  const creds = await getDecryptedCredentialsForAccount(active.account.id);
+  if (!creds) return null;
+  return active.adapter.fetchOrderPayment(creds, providerOrderId);
 }

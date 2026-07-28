@@ -18,14 +18,11 @@
     "devotees": "భక్తులు",
     "donations": "విరాళాలు",
     "campaigns": "ప్రచారాలు",
-    "payments": "చెల్లింపులు",
     "conversations": "సంభాషణలు",
     "notifications": "నోటిఫికేషన్‌లు",
     "chatbotSettings": "చాట్‌బాట్ సెట్టింగులు",
     "admins": "నిర్వాహకులు",
     "userManagement": "వినియోగదారుల నిర్వహణ",
-    "users": "వినియోగదారులు",
-    "rolesAndPermissions": "పాత్రలు & అనుమతులు",
     "more": "మరిన్ని"
   },
   "topbar": {
@@ -182,7 +179,7 @@
     "sections": {
       "chatbotConfig": {
         "title": "చాట్‌బాట్ కాన్ఫిగరేషన్",
-        "description": "చాట్‌బాట్ భక్తులకు సమాధానాలు ఇవ్వడానికి ఉపయోగించే దేవాలయ సమాచారం, వేళలు, సేవలు, సంప్రదింపు వివరాలు మరియు తరచుగా అడిగే ప్రశ్నలు."
+        "description": "చాట్‌బాట్ భక్తులకు సమాధానాలు ఇవ్వడానికి ఉపయోగించే దేవాలయ సమాచారం, వేళలు, సేవలు మరియు సంప్రదింపు వివరాలు."
       },
       "notificationSettings": {
         "title": "నోటిఫికేషన్ సెట్టింగులు",
@@ -223,7 +220,6 @@
       "timings": "వేళలు",
       "sevas": "సేవలు",
       "contact": "సంప్రదింపు & సోషల్",
-      "faq": "ప్రశ్నలు",
       "notificationSettings": "నోటిఫికేషన్ సెట్టింగ్‌లు",
       "automatedNotifications": "ఆటోమేటెడ్ నోటిఫికేషన్‌లు",
       "whatsappTemplates": "WhatsApp టెంప్లేట్‌లు"
@@ -402,21 +398,6 @@
       "linkSaved": "{platform} లింక్ సేవ్ చేయబడింది",
       "linkSaveError": "{platform} లింక్‌ను సేవ్ చేయడంలో విఫలమైంది",
       "linkClearError": "{platform} లింక్‌ను క్లియర్ చేయడంలో విఫలమైంది"
-    },
-    "faqsTable": {
-      "cardTitle": "ప్రశ్నలు",
-      "cardDescription": "వాట్సాప్ చాట్‌బాట్ ప్రశ్నల ఎంపిక ద్వారా సమాధానం ఇవ్వబడుతుంది (మొదటి 5 చూపబడతాయి).",
-      "addButton": "ప్రశ్న జోడించండి",
-      "emptyState": "ఇంకా ప్రశ్నలు జోడించలేదు.",
-      "deleteConfirm": "ఈ ప్రశ్నను తొలగించాలా? దీన్ని రద్దు చేయలేరు.",
-      "deleteError": "ప్రశ్నను తొలగించడంలో విఫలమైంది"
-    },
-    "faqFormDialog": {
-      "titleCreate": "ప్రశ్న జోడించండి",
-      "titleEdit": "ప్రశ్నను సవరించండి",
-      "description": "వాట్సాప్ చాట్‌బాట్ ప్రశ్నల ఎంపిక ద్వారా సమాధానం ఇవ్వబడుతుంది.",
-      "fields": { "question": "ప్రశ్న", "answer": "సమాధానం" },
-      "errorFallback": "ప్రశ్నను సేవ్ చేయడంలో విఫలమైంది"
     }
   },
   "events": {
@@ -1133,29 +1114,6 @@
       "importError": "దిగుమతి విఫలమైంది"
     }
   },
-  "rolesAndPermissions": {
-    "pageHeader": {
-      "title": "పాత్రలు & అనుమతులు",
-      "subtitle": "ప్లాట్‌ఫారమ్ నిర్వచించిన పాత్రలు. మీరు పాత్రలను కేటాయించవచ్చు లేదా తొలగించవచ్చు, కానీ వాటిని సృష్టించలేరు, పేరు మార్చలేరు, తొలగించలేరు లేదా సవరించలేరు."
-    },
-    "readOnlyBadge": "స్థిరం",
-    "permissionCount": "{count, plural, one {# అనుమతి} other {# అనుమతులు}}",
-    "assignedUsers": "{count, plural, one {# వినియోగదారు} other {# వినియోగదారులు}}",
-    "noPermissions": "డాష్‌బోర్డ్ అనుమతి లేదు",
-    "capabilities": {
-      "dashboardAccess": "డాష్‌బోర్డ్ యాక్సెస్",
-      "manageTenantMembers": "సభ్యుల నిర్వహణ",
-      "manageTenantRoles": "పాత్ర కేటాయింపు",
-      "identityMarker": "గుర్తింపు గుర్తు",
-      "tenantRelationshipMarker": "ఆలయ సంబంధం"
-    },
-    "roleDetailDialog": {
-      "capabilitiesTitle": "సామర్థ్యాలు",
-      "restrictionsTitle": "పరిమితులు",
-      "restrictionsText": "పాత్రలు ప్లాట్‌ఫారమ్ ద్వారా నిర్వచించబడ్డాయి. ఆలయ అడ్మిన్‌లు ఈ పాత్రను కేటాయించవచ్చు లేదా తొలగించవచ్చు, కానీ దాని పేరు మార్చలేరు, తొలగించలేరు లేదా అది ఏమి చేయగలదో మార్చలేరు.",
-      "usersTitle": "ఈ పాత్ర ఉన్న వినియోగదారులు"
-    }
-  },
   "notifications": {
     "pageHeader": {
       "title": "నోటిఫికేషన్ కేంద్రం",
@@ -1292,11 +1250,17 @@
         "keyId": "Razorpay Key ID",
         "keySecret": "Razorpay Key Secret",
         "webhookSecret": "వెబ్‌హుక్ సీక్రెట్ (ఐచ్ఛికం)",
-        "businessName": "వ్యాపార పేరు",
-        "merchantName": "మర్చంట్ పేరు",
-        "contactEmail": "సంప్రదింపు ఇమెయిల్",
-        "contactPhone": "సంప్రదింపు ఫోన్",
-        "validationStatus": "ధృవీకరణ స్థితి"
+        "validationStatus": "ధృవీకరణ స్థితి",
+        "connectionMethod": "కనెక్షన్ పద్ధతి"
+      },
+      "method": {
+        "label": "మీరు ఎలా కనెక్ట్ చేయాలనుకుంటున్నారు?",
+        "manualLabel": "మాన్యువల్ API కీలు",
+        "manualDescription": "మీ స్వంత Razorpay Key ID, Key Secret, మరియు వెబ్‌హుక్ సీక్రెట్‌ను పేస్ట్ చేయండి.",
+        "partnerLabel": "Razorpay ద్వారా కనెక్ట్ చేయండి",
+        "partnerDescription": "మీ Razorpay ఖాతాలోకి లాగిన్ అయ్యి యాక్సెస్ మంజూరు చేయండి — కాపీ/పేస్ట్ చేయాల్సిన కీలు లేవు.",
+        "manualValue": "మాన్యువల్ API కీలు",
+        "partnerValue": "Razorpay ద్వారా కనెక్ట్ చేయబడింది"
       },
       "connectButton": "Razorpay కనెక్ట్ చేయండి",
       "connecting": "కనెక్ట్ చేస్తోంది...",
@@ -1306,41 +1270,14 @@
       "connectSuccess": "Razorpay విజయవంతంగా కనెక్ట్ అయింది.",
       "connectError": "Razorpay కనెక్ట్ చేయడంలో విఫలమైంది.",
       "disconnectSuccess": "Razorpay డిస్‌కనెక్ట్ చేయబడింది.",
-      "disconnectError": "డిస్‌కనెక్ట్ చేయడంలో విఫలమైంది."
-    }
-  },
-  "paymentsDashboard": {
-    "pageHeader": {
-      "title": "చెల్లింపులు",
-      "subtitle": "మీ కనెక్ట్ చేయబడిన చెల్లింపు ప్రొవైడర్ ద్వారా స్వీకరించిన ఆన్‌లైన్ విరాళాలు."
-    },
-    "providerConnected": "{provider} కనెక్ట్ చేయబడింది",
-    "providerNotConnected": "చెల్లింపు ప్రొవైడర్ కనెక్ట్ చేయలేదు",
-    "metrics": {
-      "todayDonations": "ఈరోజు విరాళాలు",
-      "campaignRevenue": "ప్రచార ఆదాయం",
-      "pending": "పెండింగ్‌లో ఉంది",
-      "failed": "విఫలమైంది"
-    },
-    "table": {
-      "donor": "దాత",
-      "amount": "మొత్తం",
-      "status": "స్థితి",
-      "date": "తేదీ",
-      "receipt": "రసీదు",
-      "download": "డౌన్‌లోడ్"
-    },
-    "status": {
-      "created": "సృష్టించబడింది",
-      "authorized": "అధీకృతం",
-      "captured": "స్వీకరించబడింది",
-      "failed": "విఫలమైంది",
-      "refunded": "వాపసు చేయబడింది"
-    },
-    "anonymousDonor": "అనామక దాత",
-    "emptyState": {
-      "title": "ఇంకా చెల్లింపులు లేవు",
-      "description": "మీ కనెక్ట్ చేయబడిన ప్రొవైడర్ చెల్లింపులను స్వీకరించడం ప్రారంభించిన తర్వాత ఆన్‌లైన్ విరాళాలు ఇక్కడ కనిపిస్తాయి."
+      "disconnectError": "డిస్‌కనెక్ట్ చేయడంలో విఫలమైంది.",
+      "oauth": {
+        "connectButton": "Razorpay కనెక్ట్ చేయండి",
+        "redirecting": "Razorpay‌కు దారి మళ్లిస్తోంది...",
+        "startError": "Razorpay Connect ప్రారంభించడం సాధ్యం కాలేదు.",
+        "connected": "Razorpay విజయవంతంగా కనెక్ట్ అయింది.",
+        "error": "Razorpay కనెక్షన్ విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి."
+      }
     }
   },
   "pwaInstall": {

@@ -8,10 +8,8 @@ interface PaymentAccountRow {
   id: string;
   tenant_id: string;
   provider_key: PaymentProviderKey;
-  business_name: string;
-  merchant_name: string;
-  contact_email: string;
-  contact_phone: string;
+  connection_method: "manual" | "partner";
+  razorpay_account_id: string | null;
   status: "connected" | "disabled";
   is_active: boolean;
   last_validated_at: Date | null;
@@ -25,10 +23,8 @@ function mapAccount(row: PaymentAccountRow): TenantPaymentAccount {
     id: row.id,
     tenantId: row.tenant_id,
     providerKey: row.provider_key,
-    businessName: row.business_name,
-    merchantName: row.merchant_name,
-    contactEmail: row.contact_email,
-    contactPhone: row.contact_phone,
+    connectionMethod: row.connection_method,
+    razorpayAccountId: row.razorpay_account_id,
     status: row.status,
     isActive: row.is_active,
     lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,
@@ -36,6 +32,14 @@ function mapAccount(row: PaymentAccountRow): TenantPaymentAccount {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
+}
+
+/** Every tenant with a live, active connection — used by the nightly reconciliation cron, not just the single-tenant lookups below. */
+export async function listActiveConnectedPaymentAccounts(): Promise<TenantPaymentAccount[]> {
+  const { rows } = await getPool().query<PaymentAccountRow>(
+    "SELECT * FROM tenant_payment_accounts WHERE status = 'connected' AND is_active = true",
+  );
+  return rows.map(mapAccount);
 }
 
 export async function getActivePaymentAccountForTenant(tenantId: string): Promise<TenantPaymentAccount | null> {
@@ -51,10 +55,6 @@ export interface PaymentAccountCredentialsInput {
   keyId: string;
   keySecret: string;
   webhookSecret: string | null;
-  businessName: string;
-  merchantName: string;
-  contactEmail: string;
-  contactPhone: string;
 }
 
 /** Provisioning-time link (new tenant, no prior payment account to deactivate) — mirrors `linkWhatsAppAccountForProvisioning`. */
@@ -64,11 +64,10 @@ export async function linkPaymentAccountForProvisioning(
   client: QueryClient,
 ): Promise<TenantPaymentAccount> {
   const { rows } = await client.query<PaymentAccountRow>(
-    `INSERT INTO tenant_payment_accounts
-       (tenant_id, provider_key, business_name, merchant_name, contact_email, contact_phone, status, is_active)
-     VALUES ($1, $2, $3, $4, $5, $6, 'connected', true)
+    `INSERT INTO tenant_payment_accounts (tenant_id, provider_key, status, is_active)
+     VALUES ($1, $2, 'connected', true)
      RETURNING *`,
-    [tenantId, input.providerKey, input.businessName, input.merchantName, input.contactEmail, input.contactPhone],
+    [tenantId, input.providerKey],
   );
   const account = mapAccount(rows[0]);
   await client.query(
@@ -102,6 +101,78 @@ export async function connectPaymentAccount(
   }
 }
 
+export interface PartnerPaymentAccountInput {
+  providerKey: PaymentProviderKey;
+  razorpayAccountId: string;
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: Date;
+  publicToken: string | null;
+}
+
+/** OAuth-connect equivalent of `connectPaymentAccount` — deactivates any prior active account for this tenant, then inserts a `connection_method = 'partner'` account/credentials pair instead of a manual key/secret one. */
+export async function linkPartnerPaymentAccountForTenant(
+  tenantId: string,
+  input: PartnerPaymentAccountInput,
+): Promise<TenantPaymentAccount> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "UPDATE tenant_payment_accounts SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND is_active = true",
+      [tenantId],
+    );
+    const { rows } = await client.query<PaymentAccountRow>(
+      `INSERT INTO tenant_payment_accounts
+         (tenant_id, provider_key, connection_method, razorpay_account_id, status, is_active)
+       VALUES ($1, $2, 'partner', $3, 'connected', true)
+       RETURNING *`,
+      [tenantId, input.providerKey, input.razorpayAccountId],
+    );
+    const account = mapAccount(rows[0]);
+    await client.query(
+      `INSERT INTO tenant_payment_credentials
+         (payment_account_id, encrypted_access_token, encrypted_refresh_token, access_token_expires_at, public_token)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        account.id,
+        encryptSecret(input.accessToken),
+        encryptSecret(input.refreshToken),
+        input.accessTokenExpiresAt,
+        input.publicToken,
+      ],
+    );
+    await client.query("COMMIT");
+    return account;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Partner mode only — used by the reconciliation cron's token-refresh step and the partner webhook's tenant resolution. */
+export async function updateOAuthTokensForAccount(
+  accountId: string,
+  tokens: { accessToken: string; refreshToken: string; accessTokenExpiresAt: Date },
+): Promise<void> {
+  await getPool().query(
+    `UPDATE tenant_payment_credentials
+     SET encrypted_access_token = $2, encrypted_refresh_token = $3, access_token_expires_at = $4
+     WHERE payment_account_id = $1`,
+    [accountId, encryptSecret(tokens.accessToken), encryptSecret(tokens.refreshToken), tokens.accessTokenExpiresAt],
+  );
+}
+
+export async function getPaymentAccountByRazorpayAccountId(razorpayAccountId: string): Promise<TenantPaymentAccount | null> {
+  const { rows } = await getPool().query<PaymentAccountRow>(
+    "SELECT * FROM tenant_payment_accounts WHERE razorpay_account_id = $1 AND is_active = true",
+    [razorpayAccountId],
+  );
+  return rows[0] ? mapAccount(rows[0]) : null;
+}
+
 export async function disconnectPaymentAccount(tenantId: string, accountId: string): Promise<TenantPaymentAccount | null> {
   const { rows } = await getPool().query<PaymentAccountRow>(
     `UPDATE tenant_payment_accounts
@@ -126,22 +197,39 @@ export async function recordPaymentAccountValidation(
 }
 
 interface CredentialsRow {
-  key_id: string;
-  encrypted_key_secret: string;
+  key_id: string | null;
+  encrypted_key_secret: string | null;
   encrypted_webhook_secret: string | null;
+  encrypted_access_token: string | null;
+  encrypted_refresh_token: string | null;
+  access_token_expires_at: Date | null;
+  public_token: string | null;
 }
 
-/** The only function that ever decrypts credentials — used exclusively by PaymentProviderService. */
+/** The only function that ever decrypts credentials — used exclusively by PaymentProviderService. Branches on which columns are populated: `tenant_payment_credentials_mode_check` guarantees exactly one shape ever exists per row. */
 export async function getDecryptedCredentialsForAccount(accountId: string): Promise<DecryptedCredentials | null> {
   const { rows } = await getPool().query<CredentialsRow>(
-    "SELECT key_id, encrypted_key_secret, encrypted_webhook_secret FROM tenant_payment_credentials WHERE payment_account_id = $1",
+    `SELECT key_id, encrypted_key_secret, encrypted_webhook_secret, encrypted_access_token, encrypted_refresh_token, access_token_expires_at, public_token
+     FROM tenant_payment_credentials WHERE payment_account_id = $1`,
     [accountId],
   );
   const row = rows[0];
   if (!row) return null;
+  const webhookSecret = row.encrypted_webhook_secret ? decryptSecret(row.encrypted_webhook_secret) : null;
+  if (row.encrypted_access_token && row.encrypted_refresh_token) {
+    return {
+      mode: "oauth",
+      accessToken: decryptSecret(row.encrypted_access_token),
+      refreshToken: decryptSecret(row.encrypted_refresh_token),
+      accessTokenExpiresAt: (row.access_token_expires_at as Date).toISOString(),
+      publicToken: row.public_token,
+      webhookSecret,
+    };
+  }
   return {
-    keyId: row.key_id,
-    keySecret: decryptSecret(row.encrypted_key_secret),
-    webhookSecret: row.encrypted_webhook_secret ? decryptSecret(row.encrypted_webhook_secret) : null,
+    mode: "api_key",
+    keyId: row.key_id as string,
+    keySecret: decryptSecret(row.encrypted_key_secret as string),
+    webhookSecret,
   };
 }

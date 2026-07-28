@@ -1,11 +1,21 @@
 import { createHmac } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { razorpayAdapter } from "./razorpay-adapter";
 import type { DecryptedCredentials } from "../provider";
 
 const creds: DecryptedCredentials = {
+  mode: "api_key",
   keyId: "rzp_test_abc123",
   keySecret: "test_key_secret",
+  webhookSecret: "test_webhook_secret",
+};
+
+const oauthCreds: DecryptedCredentials = {
+  mode: "oauth",
+  accessToken: "test_access_token",
+  refreshToken: "test_refresh_token",
+  accessTokenExpiresAt: new Date().toISOString(),
+  publicToken: "test_public_token",
   webhookSecret: "test_webhook_secret",
 };
 
@@ -34,6 +44,31 @@ describe("razorpayAdapter.verifyCheckoutSignature", () => {
         providerPaymentId: "pay_DIFFERENT",
         signature,
       }),
+    ).toBe(false);
+  });
+});
+
+describe("razorpayAdapter.verifyCheckoutSignature (OAuth/Partner mode)", () => {
+  const originalSecret = process.env.RAZORPAY_PARTNER_CLIENT_SECRET;
+
+  afterEach(() => {
+    process.env.RAZORPAY_PARTNER_CLIENT_SECRET = originalSecret;
+  });
+
+  it("signs against RAZORPAY_PARTNER_CLIENT_SECRET instead of a per-tenant key secret", () => {
+    process.env.RAZORPAY_PARTNER_CLIENT_SECRET = "partner_client_secret";
+    const providerOrderId = "order_abc";
+    const providerPaymentId = "pay_xyz";
+    const signature = createHmac("sha256", "partner_client_secret").update(`${providerOrderId}|${providerPaymentId}`).digest("hex");
+
+    expect(razorpayAdapter.verifyCheckoutSignature(oauthCreds, { providerOrderId, providerPaymentId, signature })).toBe(true);
+  });
+
+  it("returns false when RAZORPAY_PARTNER_CLIENT_SECRET is not configured", () => {
+    delete process.env.RAZORPAY_PARTNER_CLIENT_SECRET;
+    const signature = createHmac("sha256", "anything").update("order_abc|pay_xyz").digest("hex");
+    expect(
+      razorpayAdapter.verifyCheckoutSignature(oauthCreds, { providerOrderId: "order_abc", providerPaymentId: "pay_xyz", signature }),
     ).toBe(false);
   });
 });
@@ -71,7 +106,18 @@ describe("razorpayAdapter.parseWebhookEvent", () => {
       providerPaymentId: "pay_123",
       providerRefundId: null,
       amountPaise: 50000,
+      providerAccountId: null,
     });
+  });
+
+  it("extracts account_id for a Partner (OAuth) webhook event", () => {
+    const rawBody = JSON.stringify({
+      event: "payment.captured",
+      account_id: "acc_partner_123",
+      payload: { payment: { entity: { id: "pay_123", order_id: "order_456", amount: 50000 } } },
+    });
+    const event = razorpayAdapter.parseWebhookEvent(rawBody);
+    expect(event.providerAccountId).toBe("acc_partner_123");
   });
 
   it("parses a refund.processed event", () => {
@@ -85,9 +131,36 @@ describe("razorpayAdapter.parseWebhookEvent", () => {
     expect(event.providerRefundId).toBe("rfnd_1");
   });
 
+  it("parses a refund.failed event", () => {
+    const rawBody = JSON.stringify({
+      event: "refund.failed",
+      payload: { refund: { entity: { id: "rfnd_2", payment_id: "pay_456", amount: 10000 } } },
+    });
+    const event = razorpayAdapter.parseWebhookEvent(rawBody);
+    expect(event.type).toBe("refund.failed");
+    expect(event.providerRefundId).toBe("rfnd_2");
+  });
+
+  it("parses a payment_link.paid event (never emitted by this app today, kept for forward-compatibility)", () => {
+    const rawBody = JSON.stringify({
+      event: "payment_link.paid",
+      payload: { payment: { entity: { id: "pay_789", order_id: "order_789", amount: 30000 } } },
+    });
+    const event = razorpayAdapter.parseWebhookEvent(rawBody);
+    expect(event.type).toBe("payment.link.paid");
+    expect(event.providerOrderId).toBe("order_789");
+  });
+
   it("returns an all-null event for malformed JSON instead of throwing", () => {
     const event = razorpayAdapter.parseWebhookEvent("not json");
-    expect(event).toEqual({ type: null, providerOrderId: null, providerPaymentId: null, providerRefundId: null, amountPaise: null });
+    expect(event).toEqual({
+      type: null,
+      providerOrderId: null,
+      providerPaymentId: null,
+      providerRefundId: null,
+      amountPaise: null,
+      providerAccountId: null,
+    });
   });
 
   it("returns type: null for an unrecognized event name", () => {

@@ -23,61 +23,11 @@ function mapFaq(row: TempleFaqRow): TempleFaq {
   };
 }
 
+/** The only remaining consumer is the WhatsApp bot's "faq" command (app/api/whatsapp/webhook/route.ts) — the admin management UI/API for FAQs has been removed. */
 export async function listFaqs(tenantId: string): Promise<TempleFaq[]> {
   const { rows } = await getPool().query<TempleFaqRow>(
     "SELECT * FROM temple_faqs WHERE tenant_id = $1 ORDER BY display_order ASC, created_at ASC",
     [tenantId],
   );
   return rows.map(mapFaq);
-}
-
-export async function getFaqById(tenantId: string, id: string): Promise<TempleFaq | null> {
-  const { rows } = await getPool().query<TempleFaqRow>(
-    "SELECT * FROM temple_faqs WHERE tenant_id = $1 AND id = $2",
-    [tenantId, id],
-  );
-  return rows[0] ? mapFaq(rows[0]) : null;
-}
-
-export interface CreateFaqInput {
-  question: string;
-  answer: string;
-}
-
-/** display_order is server-computed (append to the end), never client-supplied. */
-export async function createFaq(tenantId: string, input: CreateFaqInput): Promise<TempleFaq> {
-  const { rows } = await getPool().query<TempleFaqRow>(
-    `INSERT INTO temple_faqs (tenant_id, question, answer, display_order)
-     VALUES ($1, $2, $3, (SELECT COALESCE(MAX(display_order), -1) + 1 FROM temple_faqs WHERE tenant_id = $1))
-     RETURNING *`,
-    [tenantId, input.question, input.answer],
-  );
-  return mapFaq(rows[0]);
-}
-
-export type UpdateFaqInput = Partial<CreateFaqInput>;
-
-export async function updateFaq(
-  tenantId: string,
-  id: string,
-  input: UpdateFaqInput,
-): Promise<TempleFaq | null> {
-  const { rows } = await getPool().query<TempleFaqRow>(
-    `UPDATE temple_faqs
-     SET question = COALESCE($3, question),
-         answer = COALESCE($4, answer),
-         updated_at = now()
-     WHERE tenant_id = $1 AND id = $2
-     RETURNING *`,
-    [tenantId, id, input.question ?? null, input.answer ?? null],
-  );
-  return rows[0] ? mapFaq(rows[0]) : null;
-}
-
-export async function deleteFaq(tenantId: string, id: string): Promise<boolean> {
-  const result = await getPool().query("DELETE FROM temple_faqs WHERE tenant_id = $1 AND id = $2", [
-    tenantId,
-    id,
-  ]);
-  return (result.rowCount ?? 0) > 0;
 }

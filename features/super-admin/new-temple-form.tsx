@@ -119,6 +119,11 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<ProvisionTempleSuccess["temple"] | null>(null);
   const [step, setStep] = useState(0);
+  // UI-only — never submitted. "Connect via Razorpay" can't complete during
+  // provisioning (it requires a live browser redirect through Razorpay), so
+  // choosing it here just skips the manual key form; the temple admin
+  // finishes the actual connection later from Settings > Payments.
+  const [paymentConnectionMethod, setPaymentConnectionMethod] = useState<"manual" | "partner">("manual");
   const hostname = useMemo(() => fullHostnamePreview(form.subdomain), [form.subdomain]);
 
   function toggleFeature(feature: Feature) {
@@ -470,51 +475,66 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
                 </div>
 
                 {form.paymentProviderKey === "razorpay" && (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <LabeledInput
-                      id="razorpay-key-id"
-                      label="Razorpay Key ID"
-                      error={errors.fieldErrors.razorpayKeyId}
-                      value={form.razorpayKeyId}
-                      onChange={(event) => updateField("razorpayKeyId", event.target.value)}
-                    />
-                    <LabeledInput
-                      id="razorpay-key-secret"
-                      label="Razorpay Key Secret"
-                      type="password"
-                      error={errors.fieldErrors.razorpayKeySecret}
-                      value={form.razorpayKeySecret}
-                      onChange={(event) => updateField("razorpayKeySecret", event.target.value)}
-                    />
-                    <LabeledInput
-                      id="payment-business-name"
-                      label="Business name"
-                      error={errors.fieldErrors.paymentBusinessName}
-                      value={form.paymentBusinessName}
-                      onChange={(event) => updateField("paymentBusinessName", event.target.value)}
-                    />
-                    <LabeledInput
-                      id="payment-merchant-name"
-                      label="Merchant name"
-                      error={errors.fieldErrors.paymentMerchantName}
-                      value={form.paymentMerchantName}
-                      onChange={(event) => updateField("paymentMerchantName", event.target.value)}
-                    />
-                    <LabeledInput
-                      id="payment-contact-email"
-                      label="Contact email"
-                      error={errors.fieldErrors.paymentContactEmail}
-                      value={form.paymentContactEmail}
-                      onChange={(event) => updateField("paymentContactEmail", event.target.value)}
-                    />
-                    <LabeledInput
-                      id="payment-contact-phone"
-                      label="Contact phone"
-                      icon={<Phone />}
-                      error={errors.fieldErrors.paymentContactPhone}
-                      value={form.paymentContactPhone}
-                      onChange={(event) => updateField("paymentContactPhone", event.target.value)}
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Connection method</Label>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label
+                          className={cn(
+                            "flex cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 text-sm",
+                            paymentConnectionMethod === "manual" && "border-primary bg-primary/5",
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Checkbox
+                              checked={paymentConnectionMethod === "manual"}
+                              onCheckedChange={(checked) => checked && setPaymentConnectionMethod("manual")}
+                            />
+                            Manual API Keys
+                          </span>
+                        </label>
+                        <label
+                          className={cn(
+                            "flex cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 text-sm",
+                            paymentConnectionMethod === "partner" && "border-primary bg-primary/5",
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Checkbox
+                              checked={paymentConnectionMethod === "partner"}
+                              onCheckedChange={(checked) => checked && setPaymentConnectionMethod("partner")}
+                            />
+                            Connect via Razorpay
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {paymentConnectionMethod === "manual" ? (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <LabeledInput
+                          id="razorpay-key-id"
+                          label="Razorpay Key ID"
+                          error={errors.fieldErrors.razorpayKeyId}
+                          value={form.razorpayKeyId}
+                          onChange={(event) => updateField("razorpayKeyId", event.target.value)}
+                        />
+                        <LabeledInput
+                          id="razorpay-key-secret"
+                          label="Razorpay Key Secret"
+                          type="password"
+                          error={errors.fieldErrors.razorpayKeySecret}
+                          value={form.razorpayKeySecret}
+                          onChange={(event) => updateField("razorpayKeySecret", event.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                        The temple admin will connect Razorpay themselves from Settings → Payments after this temple
+                        is created — Partner Connect requires a live sign-in to Razorpay, which can&apos;t happen
+                        during provisioning.
+                      </p>
+                    )}
                   </div>
                 )}
                 {errors.sectionErrors.paymentAccount && (

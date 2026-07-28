@@ -18,8 +18,6 @@ const tenantDashboardApiRoutes = [
   "app/api/temple-special-days/[id]/route.ts",
   "app/api/temple-sevas/route.ts",
   "app/api/temple-sevas/[id]/route.ts",
-  "app/api/temple-faqs/route.ts",
-  "app/api/temple-faqs/[id]/route.ts",
   "app/api/temple-social-links/[platform]/route.ts",
   "app/api/users/route.ts",
   "app/api/users/[membershipId]/roles/route.ts",

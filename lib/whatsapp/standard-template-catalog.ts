@@ -346,9 +346,28 @@ const CATALOG_SOURCE: Omit<StandardTemplateCatalogEntry, "description">[] = [
     appBody:
       "🙏 {{templeName}}కి మద్దతు ఇచ్చినందుకు ధన్యవాదాలు.\n\nమీ ₹{{amount}} విరాళం విజయవంతంగా అందింది.\n\nకార్యక్రమం:\n{{campaign}}\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\nతేదీ: {{date}}\n\nమీ రసీదును డౌన్‌లోడ్ చేసుకోండి:\n{{receiptLink}}\n\nదేవుని ఆశీర్వాదాలు మీకు ఎల్లప్పుడూ తోడుగా ఉండాలి.",
   },
+  // Payment refunded — donor-facing confirmation when a captured donation is refunded.
+  {
+    templateKey: "payment_refunded",
+    language: "en",
+    metaTemplateName: "payment_refunded",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "receiptNumber", "transactionId"],
+    appBody:
+      "🙏 Your donation of ₹{{amount}} to {{templeName}} has been refunded.\n\nReceipt: {{receiptNumber}}\nTransaction ID: {{transactionId}}\n\nIf you have any questions, please contact the temple directly.",
+  },
+  {
+    templateKey: "payment_refunded",
+    language: "te",
+    metaTemplateName: "payment_refunded",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "receiptNumber", "transactionId"],
+    appBody:
+      "🙏 {{templeName}}కి మీరు చేసిన ₹{{amount}} విరాళం వాపసు చేయబడింది.\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\n\nమీకు ఏవైనా ప్రశ్నలు ఉంటే, దయచేసి నేరుగా దేవాలయాన్ని సంప్రదించండి.",
+  },
 ];
 
-/** 15 standard template keys × {en, te} = 30 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
+/** 16 standard template keys × {en, te} = 32 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
 export const STANDARD_TEMPLATE_CATALOG: StandardTemplateCatalogEntry[] = CATALOG_SOURCE.map((entry) => ({
   ...entry,
   description: `Standard TempleOS template for "${entry.templateKey}" (${entry.language}). Recommended starting point — adjust category/body/variables as needed before submitting in Meta Business Manager.`,

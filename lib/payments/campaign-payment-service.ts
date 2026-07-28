@@ -6,9 +6,11 @@ import {
   attachDonationAndReceipt,
   getPaymentTransactionById,
   getTransactionByProviderOrderId,
+  getTransactionByProviderPaymentId,
   markTransactionCapturedIfNotAlready,
   updateTransactionStatus,
 } from "@/lib/db/payment-transactions";
+import { upsertRefundStatusFromWebhook } from "@/lib/db/payment-refunds";
 import { generateAndStoreReceipt } from "@/lib/receipts/receipt-service";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
@@ -16,16 +18,18 @@ import { formatInr } from "@/lib/currency";
 import { PaymentAuditService } from "./payment-audit";
 
 /**
- * Applies a webhook-reported status change to the transaction it belongs to.
- * `captured` is idempotent by construction (see markTransactionCapturedIfNotAlready);
- * authorized/failed/refunded are plain, side-effect-free status updates —
- * capture (money actually received) is the only status that creates a
- * donation/receipt/notification.
+ * Applies a webhook-reported payment-status change to the transaction it
+ * belongs to. `captured` is idempotent by construction (see
+ * markTransactionCapturedIfNotAlready); authorized/failed are plain,
+ * side-effect-free status updates — capture (money actually received) is
+ * the only status that creates a donation/receipt/notification. Refund
+ * events are handled separately by applyRefundEvent, keyed by payment id
+ * (not order id) against the payment_refunds table.
  */
 export async function applyPaymentEvent(
   paymentAccountId: string,
   providerOrderId: string,
-  event: { type: "authorized" | "captured" | "failed" | "refunded"; providerPaymentId: string | null },
+  event: { type: "authorized" | "captured" | "failed"; providerPaymentId: string | null },
 ): Promise<void> {
   const transaction = await getTransactionByProviderOrderId(paymentAccountId, providerOrderId);
   if (!transaction) return; // unknown order — nothing to apply (already logged at the webhook-log level)
@@ -39,11 +43,6 @@ export async function applyPaymentEvent(
     await PaymentAuditService.transactionFailed(transaction.tenantId, transaction.id);
     return;
   }
-  if (event.type === "refunded") {
-    await updateTransactionStatus(transaction.id, "refunded", event.providerPaymentId);
-    await PaymentAuditService.transactionRefunded(transaction.tenantId, transaction.id);
-    return;
-  }
 
   // captured
   if (!event.providerPaymentId) return;
@@ -52,6 +51,89 @@ export async function applyPaymentEvent(
 
   await PaymentAuditService.transactionCaptured(captured.tenantId, captured.id, captured.amount);
   await runCaptureSideEffects(captured.id);
+}
+
+/**
+ * Applies a webhook-reported refund status change. Idempotent via
+ * upsertRefundStatusFromWebhook's status-transition CAS (mirrors the same
+ * pattern markTransactionCapturedIfNotAlready uses for captures) — a
+ * redelivered event, or one that arrives after the admin-initiated refund
+ * flow already recorded the same outcome, is a no-op. A refund with no
+ * matching TempleOS-initiated row (issued directly in the Razorpay
+ * dashboard) is still recorded, not dropped.
+ */
+export async function applyRefundEvent(
+  paymentAccountId: string,
+  providerPaymentId: string,
+  providerRefundId: string,
+  status: "processed" | "failed",
+  amountPaise: number | null,
+): Promise<void> {
+  const transaction = await getTransactionByProviderPaymentId(paymentAccountId, providerPaymentId);
+  if (!transaction) return;
+
+  const refund = await upsertRefundStatusFromWebhook(
+    transaction.tenantId,
+    transaction.id,
+    providerRefundId,
+    amountPaise != null ? amountPaise / 100 : transaction.amount,
+    status,
+  );
+  if (!refund) return; // already in this status — redelivered event, nothing further to do
+
+  if (status === "failed") {
+    await PaymentAuditService.refundFailed(transaction.tenantId, refund.id);
+    return;
+  }
+
+  await updateTransactionStatus(transaction.id, "refunded", providerPaymentId);
+  await PaymentAuditService.transactionRefunded(transaction.tenantId, transaction.id);
+  await runRefundSideEffects(transaction.id, refund.amount);
+}
+
+/** Confirms the refund to the donor over WhatsApp (raw-phone recipient, same as the original receipt) — no PDF regeneration, see the audit/gap report for why. */
+async function runRefundSideEffects(transactionId: string, refundAmount: number): Promise<void> {
+  const transaction = await getPaymentTransactionById(transactionId);
+  if (!transaction) return;
+
+  const tenant = await getTenantById(transaction.tenantId);
+  if (!tenant) return;
+
+  const notificationIds: string[] = [];
+
+  if (transaction.donorPhone) {
+    const created = await enqueueNotification({
+      tenantId: transaction.tenantId,
+      recipient: { phone: transaction.donorPhone },
+      notificationType: "payment_refunded",
+      category: "donation",
+      language: "en",
+      templateVars: {
+        templeName: tenant.name,
+        amount: formatInr(refundAmount),
+        receiptNumber: transaction.receiptNumber ?? transaction.id,
+        transactionId: transaction.id,
+      },
+    });
+    notificationIds.push(...created.map((n) => n.id));
+  }
+
+  const adminPersonIds = await listActiveAdminPersonIdsForTenant(transaction.tenantId);
+  for (const personId of adminPersonIds) {
+    const created = await enqueueNotification({
+      tenantId: transaction.tenantId,
+      recipient: { personId },
+      notificationType: "payment_refunded",
+      category: "donation",
+      language: "en",
+      templateVars: { templeName: tenant.name, amount: formatInr(refundAmount) },
+    });
+    notificationIds.push(...created.filter((n) => n.channel === "in_app").map((n) => n.id));
+  }
+
+  if (notificationIds.length > 0) {
+    await processNotifications(notificationIds);
+  }
 }
 
 /**

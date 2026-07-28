@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getActivePaymentAccountForTenant,
   getDecryptedCredentialsForAccount,
@@ -7,6 +7,7 @@ import {
   createOrderForTenant,
   getActiveProviderForTenant,
   parseWebhookEvent,
+  verifyPartnerWebhookSignature,
   verifyWebhookSignatureForAccount,
 } from "./payment-provider-service";
 
@@ -15,14 +16,21 @@ vi.mock("@/lib/db/tenant-payment-accounts", () => ({
   getDecryptedCredentialsForAccount: vi.fn(),
 }));
 
+// createOrderForTenant goes through the real RazorpayAdapter (this file tests
+// the service layer's public-key selection, not the adapter itself) — mocked
+// here purely to avoid a real network call to Razorpay's API in a unit test.
+vi.mock("razorpay", () => ({
+  default: class MockRazorpay {
+    orders = { create: vi.fn().mockResolvedValue({ id: "order_mock_1" }) };
+  },
+}));
+
 const account = {
   id: "acct-1",
   tenantId: "tenant-1",
   providerKey: "razorpay" as const,
-  businessName: "Temple Trust",
-  merchantName: "Temple Trust",
-  contactEmail: "a@b.com",
-  contactPhone: "+911234567890",
+  connectionMethod: "manual" as const,
+  razorpayAccountId: null,
   status: "connected" as const,
   isActive: true,
   lastValidatedAt: null,
@@ -68,5 +76,40 @@ describe("PaymentProviderService", () => {
 
   it("throws for an unregistered provider key (e.g. stripe — framework-ready but no adapter written yet)", () => {
     expect(() => parseWebhookEvent("stripe", "{}")).toThrow('No payment provider adapter registered for "stripe"');
+  });
+
+  it("createOrderForTenant returns the Partner public_token as the checkout key for OAuth-connected tenants", async () => {
+    vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue({ ...account, connectionMethod: "partner" });
+    vi.mocked(getDecryptedCredentialsForAccount).mockResolvedValue({
+      mode: "oauth",
+      accessToken: "at",
+      refreshToken: "rt",
+      accessTokenExpiresAt: new Date().toISOString(),
+      publicToken: "rzp_public_token",
+      webhookSecret: null,
+    });
+    const result = await createOrderForTenant("tenant-1", { amountPaise: 10000, currency: "INR", receiptRef: "r1" });
+    expect(result?.keyId).toBe("rzp_public_token");
+  });
+});
+
+describe("verifyPartnerWebhookSignature", () => {
+  const originalSecret = process.env.RAZORPAY_PARTNER_WEBHOOK_SECRET;
+
+  afterEach(() => {
+    process.env.RAZORPAY_PARTNER_WEBHOOK_SECRET = originalSecret;
+  });
+
+  it("returns false when RAZORPAY_PARTNER_WEBHOOK_SECRET is not configured", () => {
+    delete process.env.RAZORPAY_PARTNER_WEBHOOK_SECRET;
+    expect(verifyPartnerWebhookSignature("{}", "anything")).toBe(false);
+  });
+
+  it("verifies against RAZORPAY_PARTNER_WEBHOOK_SECRET when configured", async () => {
+    const { createHmac } = await import("node:crypto");
+    process.env.RAZORPAY_PARTNER_WEBHOOK_SECRET = "partner_webhook_secret";
+    const rawBody = JSON.stringify({ event: "payment.captured", account_id: "acc_1" });
+    const signature = createHmac("sha256", "partner_webhook_secret").update(rawBody).digest("hex");
+    expect(verifyPartnerWebhookSignature(rawBody, signature)).toBe(true);
   });
 });

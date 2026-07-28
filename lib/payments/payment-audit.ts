@@ -68,4 +68,37 @@ export const PaymentAuditService = {
       metadata: {},
     });
   },
+  refundFailed(tenantId: string, refundId: string) {
+    return createAuditLogEntry({
+      actorType: "system",
+      actorId: tenantId,
+      tenantId,
+      action: "payment_refund.failed",
+      targetType: "payment_refund",
+      targetId: refundId,
+      metadata: {},
+    });
+  },
+  reconciliationRunCompleted(tenantId: string, logId: string, mismatchesFound: number, autoResolved: number) {
+    return createAuditLogEntry({
+      actorType: "system",
+      actorId: tenantId,
+      tenantId,
+      action: "payment_reconciliation.run_completed",
+      targetType: "payment_reconciliation_log",
+      targetId: logId,
+      metadata: { mismatchesFound, autoResolved },
+    });
+  },
+  oauthTokenRefreshFailed(tenantId: string, accountId: string, error: string) {
+    return createAuditLogEntry({
+      actorType: "system",
+      actorId: tenantId,
+      tenantId,
+      action: "payment_account.oauth_token_refresh_failed",
+      targetType: "payment_account",
+      targetId: accountId,
+      metadata: { error },
+    });
+  },
 };

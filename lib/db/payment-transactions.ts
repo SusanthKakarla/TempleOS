@@ -102,6 +102,33 @@ export async function getPaymentTransactionById(id: string): Promise<PaymentTran
   return rows[0] ? mapTransaction(rows[0]) : null;
 }
 
+/** Refund webhook events reference the payment id, not the order id — this is the lookup that path needs. */
+export async function getTransactionByProviderPaymentId(
+  paymentAccountId: string,
+  providerPaymentId: string,
+): Promise<PaymentTransaction | null> {
+  const { rows } = await getPool().query<PaymentTransactionRow>(
+    "SELECT * FROM payment_transactions WHERE payment_account_id = $1 AND provider_payment_id = $2",
+    [paymentAccountId, providerPaymentId],
+  );
+  return rows[0] ? mapTransaction(rows[0]) : null;
+}
+
+/** For reconciliation: transactions stuck in a non-terminal state past a safety window (avoids false positives on payments still genuinely in flight). */
+export async function listStaleNonTerminalTransactions(
+  tenantId: string,
+  olderThanMinutes: number,
+): Promise<PaymentTransaction[]> {
+  const { rows } = await getPool().query<PaymentTransactionRow>(
+    `SELECT * FROM payment_transactions
+     WHERE tenant_id = $1 AND status IN ('created', 'authorized')
+       AND created_at < now() - ($2 || ' minutes')::interval
+     ORDER BY created_at ASC`,
+    [tenantId, olderThanMinutes],
+  );
+  return rows.map(mapTransaction);
+}
+
 /** Plain (non-idempotent) status update — used for authorized/failed/refunded, which have no further side effects requiring dedup. */
 export async function updateTransactionStatus(
   id: string,
@@ -153,66 +180,3 @@ export async function attachDonationAndReceipt(
   );
 }
 
-export interface ListTransactionsFilters {
-  page: number;
-  pageSize: number;
-  status?: PaymentTransactionStatus;
-}
-
-export async function listTransactionsForTenant(
-  tenantId: string,
-  filters: ListTransactionsFilters,
-): Promise<{ transactions: PaymentTransaction[]; totalCount: number }> {
-  const conditions = ["tenant_id = $1"];
-  const params: unknown[] = [tenantId];
-  if (filters.status) {
-    params.push(filters.status);
-    conditions.push(`status = $${params.length}`);
-  }
-  const whereClause = conditions.join(" AND ");
-  const offset = (filters.page - 1) * filters.pageSize;
-
-  const [{ rows }, countResult] = await Promise.all([
-    getPool().query<PaymentTransactionRow>(
-      `SELECT * FROM payment_transactions WHERE ${whereClause} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, filters.pageSize, offset],
-    ),
-    getPool().query<{ count: string }>(`SELECT count(*) FROM payment_transactions WHERE ${whereClause}`, params),
-  ]);
-
-  return { transactions: rows.map(mapTransaction), totalCount: Number(countResult.rows[0].count) };
-}
-
-export interface PaymentDashboardSummary {
-  todayTotal: number;
-  todayCount: number;
-  campaignRevenueTotal: number;
-  failedCount: number;
-  pendingCount: number;
-}
-
-export async function getPaymentDashboardSummary(tenantId: string): Promise<PaymentDashboardSummary> {
-  const { rows } = await getPool().query<{
-    today_total: string | null;
-    today_count: string;
-    campaign_revenue_total: string | null;
-    failed_count: string;
-    pending_count: string;
-  }>(
-    `SELECT
-       (SELECT COALESCE(sum(amount), 0) FROM payment_transactions WHERE tenant_id = $1 AND status = 'captured' AND created_at >= date_trunc('day', now())) AS today_total,
-       (SELECT count(*) FROM payment_transactions WHERE tenant_id = $1 AND status = 'captured' AND created_at >= date_trunc('day', now())) AS today_count,
-       (SELECT COALESCE(sum(amount), 0) FROM payment_transactions WHERE tenant_id = $1 AND status = 'captured' AND campaign_id IS NOT NULL) AS campaign_revenue_total,
-       (SELECT count(*) FROM payment_transactions WHERE tenant_id = $1 AND status = 'failed') AS failed_count,
-       (SELECT count(*) FROM payment_transactions WHERE tenant_id = $1 AND status IN ('created', 'authorized')) AS pending_count`,
-    [tenantId],
-  );
-  const row = rows[0];
-  return {
-    todayTotal: Number(row.today_total ?? 0),
-    todayCount: Number(row.today_count),
-    campaignRevenueTotal: Number(row.campaign_revenue_total ?? 0),
-    failedCount: Number(row.failed_count),
-    pendingCount: Number(row.pending_count),
-  };
-}

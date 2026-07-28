@@ -9,13 +9,6 @@ export const connectRazorpayAccountSchema = z.object({
     .regex(/^rzp_(test|live)_[A-Za-z0-9]+$/, "Enter a valid Razorpay Key ID (rzp_test_... or rzp_live_...)"),
   keySecret: z.string().trim().min(1, "Key Secret is required"),
   webhookSecret: z.string().trim().min(1).nullable().optional(),
-  businessName: z.string().trim().min(1, "Business name is required").max(200),
-  merchantName: z.string().trim().min(1, "Merchant name is required").max(200),
-  contactEmail: z.string().trim().email("Enter a valid email"),
-  contactPhone: z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9]{7,15}$/, "Enter a valid phone number"),
 });
 
 export type ConnectRazorpayAccountPayload = z.infer<typeof connectRazorpayAccountSchema>;

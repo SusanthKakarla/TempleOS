@@ -6,8 +6,6 @@ import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
-  ChevronRight,
-  CreditCard,
   Landmark,
   LayoutDashboard,
   Megaphone,
@@ -27,11 +25,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { springSnappy } from "@/lib/motion";
 
@@ -41,22 +35,14 @@ export const NAV_ITEMS = [
   { href: "/dashboard/devotees", labelKey: "devotees", icon: Users, featureKey: "devotees" },
   { href: "/dashboard/donations", labelKey: "donations", icon: Receipt, featureKey: "donations" },
   { href: "/dashboard/campaigns", labelKey: "campaigns", icon: Megaphone, featureKey: "campaigns" },
-  { href: "/dashboard/payments", labelKey: "payments", icon: CreditCard, featureKey: "donations" },
   { href: "/dashboard/chatbot-settings", labelKey: "chatbotSettings", icon: Settings2, featureKey: "whatsapp_chatbot" },
+  { href: "/dashboard/users", labelKey: "userManagement", icon: UserCog, featureKey: "user_management" },
 ] as const;
 
 const SUPER_ADMIN_NAV_ITEM = {
   href: "/dashboard/admins",
   labelKey: "admins",
   icon: ShieldCheck,
-} as const;
-
-const USER_MANAGEMENT_NAV_ITEM = {
-  icon: UserCog,
-  children: [
-    { href: "/dashboard/users", labelKey: "users" as const, featureKey: "user_management" as const },
-    { href: "/dashboard/roles", labelKey: "rolesAndPermissions" as const, featureKey: "roles_permissions" as const },
-  ],
 } as const;
 
 export function AppSidebar({
@@ -75,11 +61,6 @@ export function AppSidebar({
   const navItems = (isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS).filter(
     (item) => !("featureKey" in item) || !enabledFeatures || enabledFeatures.has(item.featureKey),
   );
-
-  const userManagementChildren = USER_MANAGEMENT_NAV_ITEM.children.filter(
-    (child) => !enabledFeatures || enabledFeatures.has(child.featureKey),
-  );
-  const userManagementActive = userManagementChildren.some((child) => pathname?.startsWith(child.href));
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -131,48 +112,6 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 );
               })}
-              {userManagementChildren.length > 0 && (
-                <Collapsible defaultOpen={userManagementActive}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          isActive={userManagementActive}
-                          tooltip={t("userManagement")}
-                          className="group/nav-item h-10 gap-3"
-                        >
-                          <span
-                            className={cn(
-                              "flex size-6 shrink-0 items-center justify-center rounded-md transition-transform duration-200 group-hover/nav-item:scale-110",
-                              userManagementActive
-                                ? "bg-accent text-accent-foreground"
-                                : "bg-sidebar-foreground/10 text-sidebar-foreground",
-                            )}
-                          >
-                            <UserCog className="size-3.5" />
-                          </span>
-                          <span className="font-medium">{t("userManagement")}</span>
-                          <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[panel-open]/nav-item:rotate-90" />
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {userManagementChildren.map((child) => {
-                          const isActive = pathname?.startsWith(child.href);
-                          return (
-                            <SidebarMenuSubItem key={child.href}>
-                              <SidebarMenuSubButton isActive={isActive} render={<Link href={child.href} />}>
-                                <span>{t(child.labelKey)}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

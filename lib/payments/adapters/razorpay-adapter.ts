@@ -4,9 +4,12 @@ import type {
   CreateOrderInput,
   CreateOrderResult,
   DecryptedCredentials,
+  FetchOrderPaymentResult,
   PaymentProviderAdapter,
   PaymentWebhookEvent,
   PaymentWebhookEventType,
+  RefundPaymentInput,
+  RefundPaymentResult,
   VerifyCheckoutSignatureInput,
 } from "../provider";
 
@@ -33,6 +36,11 @@ const EVENT_TYPE_MAP: Record<string, PaymentWebhookEventType> = {
   "payment.captured": "payment.captured",
   "payment.failed": "payment.failed",
   "refund.processed": "refund.processed",
+  "refund.failed": "refund.failed",
+  // Never fires today (this app uses Orders + Checkout.js, not Payment
+  // Links) — mapped only so a future Payment Links flow wouldn't silently
+  // fall through as an unrecognized event.
+  "payment_link.paid": "payment.link.paid",
 };
 
 interface RazorpayWebhookEntity {
@@ -44,10 +52,38 @@ interface RazorpayWebhookEntity {
 
 interface RazorpayWebhookPayload {
   event?: string;
+  account_id?: string;
   payload?: {
     payment?: { entity?: RazorpayWebhookEntity };
     refund?: { entity?: RazorpayWebhookEntity };
   };
+}
+
+/**
+ * Chooses the Razorpay SDK client shape for whichever mode a tenant
+ * connected with — `{ key_id, key_secret }` for manual, `{ oauthToken }` for
+ * Partner OAuth (confirmed supported directly by the installed `razorpay`
+ * package, node_modules/razorpay/dist/razorpay.js). Every existing adapter
+ * method already calls through here, so neither one has any other code that
+ * needs to know which mode a given tenant used.
+ */
+function buildClient(creds: DecryptedCredentials): Razorpay {
+  if (creds.mode === "oauth") {
+    return new Razorpay({ oauthToken: creds.accessToken });
+  }
+  return new Razorpay({ key_id: creds.keyId, key_secret: creds.keySecret });
+}
+
+/**
+ * For OAuth-connected sub-merchants there is no tenant-owned `key_secret` to
+ * sign checkout/webhook HMACs against — Razorpay's Partner docs point to the
+ * Partner application's own `client_secret` instead (constant across every
+ * sub-merchant onboarded through that app). Flagged in the plan as the one
+ * assumption that cannot be verified without a live Partner application.
+ */
+function resolveSigningSecret(creds: DecryptedCredentials): string | null {
+  if (creds.mode === "api_key") return creds.keySecret;
+  return process.env.RAZORPAY_PARTNER_CLIENT_SECRET ?? null;
 }
 
 export const razorpayAdapter: PaymentProviderAdapter = {
@@ -55,7 +91,7 @@ export const razorpayAdapter: PaymentProviderAdapter = {
 
   async validateCredentials(creds: DecryptedCredentials) {
     try {
-      const client = new Razorpay({ key_id: creds.keyId, key_secret: creds.keySecret });
+      const client = buildClient(creds);
       await client.orders.all({ count: 1 });
       return { ok: true } as const;
     } catch (err) {
@@ -65,7 +101,7 @@ export const razorpayAdapter: PaymentProviderAdapter = {
   },
 
   async createOrder(creds: DecryptedCredentials, input: CreateOrderInput): Promise<CreateOrderResult> {
-    const client = new Razorpay({ key_id: creds.keyId, key_secret: creds.keySecret });
+    const client = buildClient(creds);
     const order = await client.orders.create({
       amount: input.amountPaise,
       currency: input.currency,
@@ -76,8 +112,10 @@ export const razorpayAdapter: PaymentProviderAdapter = {
   },
 
   verifyCheckoutSignature(creds: DecryptedCredentials, input: VerifyCheckoutSignatureInput): boolean {
+    const secret = resolveSigningSecret(creds);
+    if (!secret) return false;
     const payload = `${input.providerOrderId}|${input.providerPaymentId}`;
-    return safeEqual(hmacHex(creds.keySecret, payload), input.signature);
+    return safeEqual(hmacHex(secret, payload), input.signature);
   },
 
   verifyWebhookSignature(creds: DecryptedCredentials, rawBody: string, signatureHeader: string): boolean {
@@ -90,7 +128,14 @@ export const razorpayAdapter: PaymentProviderAdapter = {
     try {
       parsed = JSON.parse(rawBody) as RazorpayWebhookPayload;
     } catch {
-      return { type: null, providerOrderId: null, providerPaymentId: null, providerRefundId: null, amountPaise: null };
+      return {
+        type: null,
+        providerOrderId: null,
+        providerPaymentId: null,
+        providerRefundId: null,
+        amountPaise: null,
+        providerAccountId: null,
+      };
     }
 
     const type = parsed.event ? (EVENT_TYPE_MAP[parsed.event] ?? null) : null;
@@ -103,6 +148,26 @@ export const razorpayAdapter: PaymentProviderAdapter = {
       providerPaymentId: paymentEntity?.id ?? refundEntity?.payment_id ?? null,
       providerRefundId: refundEntity?.id ?? null,
       amountPaise: paymentEntity?.amount ?? refundEntity?.amount ?? null,
+      providerAccountId: parsed.account_id ?? null,
+    };
+  },
+
+  async refundPayment(creds: DecryptedCredentials, input: RefundPaymentInput): Promise<RefundPaymentResult> {
+    const client = buildClient(creds);
+    const refund = await client.payments.refund(input.providerPaymentId, {
+      amount: input.amountPaise,
+      notes: input.notes,
+    });
+    return { providerRefundId: refund.id, status: refund.status };
+  },
+
+  async fetchOrderPayment(creds: DecryptedCredentials, providerOrderId: string): Promise<FetchOrderPaymentResult> {
+    const client = buildClient(creds);
+    const { items } = await client.orders.fetchPayments(providerOrderId);
+    const captured = items.find((payment) => payment.status === "captured");
+    return {
+      capturedPaymentId: captured?.id ?? null,
+      amountPaise: captured ? Number(captured.amount) : null,
     };
   },
 };

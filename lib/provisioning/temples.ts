@@ -67,10 +67,6 @@ export interface LinkPaymentAccountInput {
   keyId: string;
   keySecret: string;
   webhookSecret: string | null;
-  businessName: string;
-  merchantName: string;
-  contactEmail: string;
-  contactPhone: string;
 }
 
 export interface ProvisionTempleInput {
@@ -229,10 +225,6 @@ const rawProvisionTempleSchema = z.object({
         .regex(/^rzp_(test|live)_[A-Za-z0-9]+$/, "Enter a valid Razorpay Key ID"),
       keySecret: z.string().trim().min(1, "Razorpay Key Secret is required"),
       webhookSecret: z.string().trim().nullable().optional(),
-      businessName: z.string().trim().min(1, "Business name is required"),
-      merchantName: z.string().trim().min(1, "Merchant name is required"),
-      contactEmail: z.string().trim().email("Enter a valid contact email"),
-      contactPhone: z.string().trim().min(1, "Contact phone is required"),
     })
     .nullish(),
   featureKeys: z.array(z.string()).optional(),
@@ -365,10 +357,6 @@ export function parseProvisionTempleInput(raw: unknown): ProvisionTempleValidati
               keyId: parsed.data.paymentAccount.keyId,
               keySecret: parsed.data.paymentAccount.keySecret,
               webhookSecret: parsed.data.paymentAccount.webhookSecret ?? null,
-              businessName: parsed.data.paymentAccount.businessName,
-              merchantName: parsed.data.paymentAccount.merchantName,
-              contactEmail: parsed.data.paymentAccount.contactEmail,
-              contactPhone: parsed.data.paymentAccount.contactPhone,
             },
           }
         : {}),

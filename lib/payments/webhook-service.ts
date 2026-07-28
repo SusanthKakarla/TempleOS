@@ -1,17 +1,60 @@
-import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import {
+  getActivePaymentAccountForTenant,
+  getPaymentAccountByRazorpayAccountId,
+} from "@/lib/db/tenant-payment-accounts";
 import { logPaymentWebhook } from "@/lib/db/payment-webhook-logs";
-import { verifyWebhookSignatureForAccount, parseWebhookEvent } from "./payment-provider-service";
-import { applyPaymentEvent } from "./campaign-payment-service";
-import type { PaymentWebhookEventType } from "./provider";
+import { verifyWebhookSignatureForAccount, parseWebhookEvent, verifyPartnerWebhookSignature } from "./payment-provider-service";
+import { applyPaymentEvent, applyRefundEvent } from "./campaign-payment-service";
+import type { PaymentWebhookEvent, PaymentWebhookEventType } from "./provider";
 
 export type WebhookOutcome = { status: 200 } | { status: 400 } | { status: 404 };
 
-const EVENT_TYPE_TO_STATUS: Record<PaymentWebhookEventType, "authorized" | "captured" | "failed" | "refunded"> = {
+/**
+ * `payment.link.paid` is never emitted today (this app creates Orders +
+ * Checkout.js, never Payment Links) but is mapped to "captured" semantics
+ * for forward-compatibility, since a paid Payment Link is fundamentally a
+ * captured payment.
+ */
+const PAYMENT_STATUS_EVENTS: Record<
+  Extract<PaymentWebhookEventType, "payment.authorized" | "payment.captured" | "payment.link.paid" | "payment.failed">,
+  "authorized" | "captured" | "failed"
+> = {
   "payment.authorized": "authorized",
   "payment.captured": "captured",
+  "payment.link.paid": "captured",
   "payment.failed": "failed",
-  "refund.processed": "refunded",
 };
+
+const REFUND_STATUS_EVENTS: Record<Extract<PaymentWebhookEventType, "refund.processed" | "refund.failed">, "processed" | "failed"> = {
+  "refund.processed": "processed",
+  "refund.failed": "failed",
+};
+
+function isPaymentStatusEvent(type: PaymentWebhookEventType): type is keyof typeof PAYMENT_STATUS_EVENTS {
+  return type in PAYMENT_STATUS_EVENTS;
+}
+
+function isRefundEvent(type: PaymentWebhookEventType): type is keyof typeof REFUND_STATUS_EVENTS {
+  return type in REFUND_STATUS_EVENTS;
+}
+
+/** Shared by both the per-tenant (manual) and platform-level (partner) webhook routes — the one place a parsed event actually gets applied, once signature verification and tenant resolution have already happened. */
+async function dispatchWebhookEvent(accountId: string, event: PaymentWebhookEvent): Promise<void> {
+  if (event.type && isPaymentStatusEvent(event.type) && event.providerOrderId) {
+    await applyPaymentEvent(accountId, event.providerOrderId, {
+      type: PAYMENT_STATUS_EVENTS[event.type],
+      providerPaymentId: event.providerPaymentId,
+    });
+  } else if (event.type && isRefundEvent(event.type) && event.providerPaymentId && event.providerRefundId) {
+    await applyRefundEvent(
+      accountId,
+      event.providerPaymentId,
+      event.providerRefundId,
+      REFUND_STATUS_EVENTS[event.type],
+      event.amountPaise,
+    );
+  }
+}
 
 /**
  * Every inbound hit is logged unconditionally (valid or not, recognized or
@@ -70,12 +113,51 @@ export async function handleRazorpayWebhook(
     return { status: 400 };
   }
 
-  if (event.type && event.providerOrderId) {
-    await applyPaymentEvent(account.id, event.providerOrderId, {
-      type: EVENT_TYPE_TO_STATUS[event.type],
-      providerPaymentId: event.providerPaymentId,
+  await dispatchWebhookEvent(account.id, event);
+  return { status: 200 };
+}
+
+/**
+ * The one platform-level endpoint every Partner-OAuth-connected tenant
+ * shares (manual-mode tenants keep their own per-tenant URL above). Verified
+ * against the Partner application's own webhook secret — not any individual
+ * tenant's — since Razorpay signs these with the Partner app's secret
+ * regardless of which sub-merchant the event belongs to. The tenant itself
+ * is only known AFTER parsing the (now-trusted) payload's `account_id`.
+ */
+export async function handleRazorpayPartnerWebhook(rawBody: string, signatureHeader: string | null): Promise<WebhookOutcome> {
+  if (!signatureHeader) {
+    await logPaymentWebhook({
+      tenantId: null,
+      providerKey: "razorpay",
+      signatureValid: false,
+      eventType: null,
+      rawBody,
+      errorMessage: "Missing X-Razorpay-Signature header",
     });
+    return { status: 400 };
   }
 
+  const signatureValid = verifyPartnerWebhookSignature(rawBody, signatureHeader);
+  const event = parseWebhookEvent("razorpay", rawBody);
+  const account = event.providerAccountId ? await getPaymentAccountByRazorpayAccountId(event.providerAccountId) : null;
+
+  await logPaymentWebhook({
+    tenantId: account?.tenantId ?? null,
+    providerKey: "razorpay",
+    signatureValid,
+    eventType: event.type,
+    rawBody,
+    errorMessage: signatureValid ? (account ? null : "Unknown razorpay_account_id") : "Signature verification failed",
+  });
+
+  if (!signatureValid) {
+    return { status: 400 };
+  }
+  if (!account) {
+    return { status: 404 };
+  }
+
+  await dispatchWebhookEvent(account.id, event);
   return { status: 200 };
 }

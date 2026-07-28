@@ -18,14 +18,11 @@
     "devotees": "Devotees",
     "donations": "Donations",
     "campaigns": "Campaigns",
-    "payments": "Payments",
     "conversations": "Conversations",
     "notifications": "Notifications",
     "chatbotSettings": "Chatbot Settings",
     "admins": "Admins",
     "userManagement": "User Management",
-    "users": "Users",
-    "rolesAndPermissions": "Roles & Permissions",
     "more": "More"
   },
   "topbar": {
@@ -182,7 +179,7 @@
     "sections": {
       "chatbotConfig": {
         "title": "Chatbot Configuration",
-        "description": "Temple info, timings, sevas, contact details, and FAQs the chatbot uses to answer devotees."
+        "description": "Temple info, timings, sevas, and contact details the chatbot uses to answer devotees."
       },
       "notificationSettings": {
         "title": "Notification Settings",
@@ -223,7 +220,6 @@
       "timings": "Timings",
       "sevas": "Sevas",
       "contact": "Contact & Social",
-      "faq": "FAQ",
       "notificationSettings": "Notification Settings",
       "automatedNotifications": "Automated Notifications",
       "whatsappTemplates": "WhatsApp Templates"
@@ -402,21 +398,6 @@
       "linkSaved": "{platform} link saved",
       "linkSaveError": "Failed to save {platform} link",
       "linkClearError": "Failed to clear {platform} link"
-    },
-    "faqsTable": {
-      "cardTitle": "FAQ",
-      "cardDescription": "Answered by the WhatsApp chatbot's FAQ option (first 5 shown).",
-      "addButton": "Add FAQ",
-      "emptyState": "No FAQs added yet.",
-      "deleteConfirm": "Delete this FAQ? This cannot be undone.",
-      "deleteError": "Failed to delete FAQ"
-    },
-    "faqFormDialog": {
-      "titleCreate": "Add FAQ",
-      "titleEdit": "Edit FAQ",
-      "description": "Answered by the WhatsApp chatbot's FAQ option.",
-      "fields": { "question": "Question", "answer": "Answer" },
-      "errorFallback": "Failed to save FAQ"
     }
   },
   "events": {
@@ -1119,29 +1100,6 @@
       "importError": "Import failed"
     }
   },
-  "rolesAndPermissions": {
-    "pageHeader": {
-      "title": "Roles & Permissions",
-      "subtitle": "Platform-defined roles. You can assign or revoke roles, but not create, rename, delete, or edit them."
-    },
-    "readOnlyBadge": "Fixed",
-    "permissionCount": "{count, plural, one {# permission} other {# permissions}}",
-    "assignedUsers": "{count, plural, one {# user} other {# users}}",
-    "noPermissions": "No dashboard permission",
-    "capabilities": {
-      "dashboardAccess": "Dashboard access",
-      "manageTenantMembers": "Member management",
-      "manageTenantRoles": "Role assignment",
-      "identityMarker": "Identity marker",
-      "tenantRelationshipMarker": "Tenant relationship"
-    },
-    "roleDetailDialog": {
-      "capabilitiesTitle": "Capabilities",
-      "restrictionsTitle": "Restrictions",
-      "restrictionsText": "Roles are defined by the platform. Temple admins can assign or revoke this role, but cannot rename it, delete it, or change what it can do.",
-      "usersTitle": "Users with this role"
-    }
-  },
   "notifications": {
     "pageHeader": {
       "title": "Notification Center",
@@ -1278,11 +1236,17 @@
         "keyId": "Razorpay Key ID",
         "keySecret": "Razorpay Key Secret",
         "webhookSecret": "Webhook Secret (optional)",
-        "businessName": "Business name",
-        "merchantName": "Merchant name",
-        "contactEmail": "Contact email",
-        "contactPhone": "Contact phone",
-        "validationStatus": "Verification status"
+        "validationStatus": "Verification status",
+        "connectionMethod": "Connection method"
+      },
+      "method": {
+        "label": "How would you like to connect?",
+        "manualLabel": "Manual API Keys",
+        "manualDescription": "Paste your own Razorpay Key ID, Key Secret, and Webhook Secret.",
+        "partnerLabel": "Connect via Razorpay",
+        "partnerDescription": "Log into your Razorpay account and grant access — no keys to copy or paste.",
+        "manualValue": "Manual API Keys",
+        "partnerValue": "Connect via Razorpay"
       },
       "connectButton": "Connect Razorpay",
       "connecting": "Connecting...",
@@ -1292,41 +1256,14 @@
       "connectSuccess": "Razorpay connected successfully.",
       "connectError": "Failed to connect Razorpay.",
       "disconnectSuccess": "Razorpay disconnected.",
-      "disconnectError": "Failed to disconnect."
-    }
-  },
-  "paymentsDashboard": {
-    "pageHeader": {
-      "title": "Payments",
-      "subtitle": "Online donations received through your connected payment provider."
-    },
-    "providerConnected": "{provider} connected",
-    "providerNotConnected": "No payment provider connected",
-    "metrics": {
-      "todayDonations": "Today's Donations",
-      "campaignRevenue": "Campaign Revenue",
-      "pending": "Pending",
-      "failed": "Failed"
-    },
-    "table": {
-      "donor": "Donor",
-      "amount": "Amount",
-      "status": "Status",
-      "date": "Date",
-      "receipt": "Receipt",
-      "download": "Download"
-    },
-    "status": {
-      "created": "Created",
-      "authorized": "Authorized",
-      "captured": "Captured",
-      "failed": "Failed",
-      "refunded": "Refunded"
-    },
-    "anonymousDonor": "Anonymous donor",
-    "emptyState": {
-      "title": "No payments yet",
-      "description": "Online donations will appear here once your connected provider starts receiving payments."
+      "disconnectError": "Failed to disconnect.",
+      "oauth": {
+        "connectButton": "Connect Razorpay",
+        "redirecting": "Redirecting to Razorpay...",
+        "startError": "Could not start Razorpay Connect.",
+        "connected": "Razorpay connected successfully.",
+        "error": "Razorpay connection failed. Please try again."
+      }
     }
   },
   "pwaInstall": {

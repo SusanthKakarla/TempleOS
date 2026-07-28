@@ -61,7 +61,6 @@ export const REAL_FEATURE_KEYS = [
   "notifications",
   "whatsapp_chatbot",
   "user_management",
-  "roles_permissions",
   "campaigns",
 ] as const;
 export type RealFeatureKey = (typeof REAL_FEATURE_KEYS)[number];
@@ -223,14 +222,15 @@ export interface PaymentProvider {
 export type PaymentAccountStatus = "connected" | "disabled";
 
 /** A tenant's own connected payment account — never the secret material (see PaymentAccountWithCredentials for the one place that needs it). */
+export type PaymentConnectionMethod = "manual" | "partner";
+
 export interface TenantPaymentAccount {
   id: string;
   tenantId: string;
   providerKey: PaymentProviderKey;
-  businessName: string;
-  merchantName: string;
-  contactEmail: string;
-  contactPhone: string;
+  connectionMethod: PaymentConnectionMethod;
+  /** Partner (OAuth) mode only — the sub-merchant account id Razorpay assigns on connect. */
+  razorpayAccountId: string | null;
   status: PaymentAccountStatus;
   isActive: boolean;
   lastValidatedAt: string | null;
@@ -270,6 +270,32 @@ export interface PaymentWebhookLog {
   signatureValid: boolean;
   eventType: string | null;
   errorMessage: string | null;
+  createdAt: string;
+}
+
+export type PaymentRefundStatus = "pending" | "processed" | "failed";
+
+export interface PaymentRefund {
+  id: string;
+  tenantId: string;
+  transactionId: string;
+  providerRefundId: string | null;
+  amount: number;
+  status: PaymentRefundStatus;
+  reason: string | null;
+  initiatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentReconciliationLog {
+  id: string;
+  tenantId: string;
+  runAt: string;
+  transactionsChecked: number;
+  mismatchesFound: number;
+  autoResolved: number;
+  details: unknown[];
   createdAt: string;
 }
 
@@ -386,7 +412,8 @@ export type NotificationType =
   | "campaign_broadcast"
   | "donation_campaign_broadcast"
   | "donation_receipt"
-  | "payment_captured";
+  | "payment_captured"
+  | "payment_refunded";
 
 export interface NotificationTemplate {
   id: string;

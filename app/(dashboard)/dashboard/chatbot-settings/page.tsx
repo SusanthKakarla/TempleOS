@@ -6,7 +6,6 @@ import { isFeatureEnabled } from "@/lib/db/tenant-features";
 import { getTenantById } from "@/lib/db/tenants";
 import { listSpecialDays } from "@/lib/db/temple-special-days";
 import { listSevas } from "@/lib/db/temple-sevas";
-import { listFaqs } from "@/lib/db/temple-faqs";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 import {
@@ -65,11 +64,10 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
-  const [tenant, specialDays, sevas, faqs, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
+  const [tenant, specialDays, sevas, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
     getTenantById(session.tenantId),
     listSpecialDays(session.tenantId),
     listSevas(session.tenantId),
-    listFaqs(session.tenantId),
     listSocialLinks(session.tenantId),
     getWhatsAppAccountByTenant(session.tenantId),
     listTemplatesForTenant(session.tenantId),
@@ -133,7 +131,6 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
         tenant={tenant}
         specialDays={specialDays}
         sevas={sevas}
-        faqs={faqs}
         socialLinks={socialLinks}
         notificationSettingsSlot={notificationSettingsSlot}
         automatedNotificationsSlot={automatedNotificationsSlot}

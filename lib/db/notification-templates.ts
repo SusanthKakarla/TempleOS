@@ -490,6 +490,36 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: "కొత్త ఆన్‌లైన్ విరాళం",
     body: "{{templeName}} ఆన్‌లైన్ చెల్లింపు లింక్ ద్వారా ఒక విరాళం అందింది.",
   },
+  // Payment refunded — donor-facing WhatsApp confirmation (raw-phone
+  // recipient, same as donation_receipt) plus an in-app alert to admins.
+  {
+    notificationType: "payment_refunded",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "🙏 Your donation of ₹{{amount}} to {{templeName}} has been refunded.\n\nReceipt: {{receiptNumber}}\nTransaction ID: {{transactionId}}\n\nIf you have any questions, please contact the temple directly.",
+  },
+  {
+    notificationType: "payment_refunded",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "🙏 {{templeName}}కి మీరు చేసిన ₹{{amount}} విరాళం వాపసు చేయబడింది.\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\n\nమీకు ఏవైనా ప్రశ్నలు ఉంటే, దయచేసి నేరుగా దేవాలయాన్ని సంప్రదించండి.",
+  },
+  {
+    notificationType: "payment_refunded",
+    channel: "in_app",
+    language: "en",
+    title: "Donation refunded",
+    body: "A donation of ₹{{amount}} to {{templeName}} was refunded.",
+  },
+  {
+    notificationType: "payment_refunded",
+    channel: "in_app",
+    language: "te",
+    title: "విరాళం వాపసు చేయబడింది",
+    body: "{{templeName}}కి చేసిన ₹{{amount}} విరాళం వాపసు చేయబడింది.",
+  },
 ];
 
 /** Idempotent — safe to run on every deploy, mirrors lib/db/role-definitions.ts's seedV0RoleDefinitions pattern. */

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { Tenant, TempleFaq, TempleSeva, TempleSocialLink, TempleSpecialDay, WhatsAppMessageTemplate } from "@/types/db";
+import type { Tenant, TempleSeva, TempleSocialLink, TempleSpecialDay, WhatsAppMessageTemplate } from "@/types/db";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TempleInfoForm } from "./temple-info-form";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
@@ -11,14 +11,12 @@ import { SpecialDaysTable } from "./special-days-table";
 import { SevasTable } from "./sevas-table";
 import { ContactForm } from "./contact-form";
 import { SocialLinksForm } from "./social-links-form";
-import { FaqsTable } from "./faqs-table";
 import { WhatsAppTemplatesTab } from "./whatsapp-templates-tab";
 
 export function ChatbotSettingsTabs({
   tenant,
   specialDays,
   sevas,
-  faqs,
   socialLinks,
   notificationSettingsSlot,
   automatedNotificationsSlot,
@@ -29,7 +27,6 @@ export function ChatbotSettingsTabs({
   tenant: Tenant;
   specialDays: TempleSpecialDay[];
   sevas: TempleSeva[];
-  faqs: TempleFaq[];
   socialLinks: TempleSocialLink[];
   /**
    * Pre-rendered by the parent Server Component page — these are async Server
@@ -53,7 +50,6 @@ export function ChatbotSettingsTabs({
         <TabsTrigger value="timings">{t("timings")}</TabsTrigger>
         <TabsTrigger value="sevas">{t("sevas")}</TabsTrigger>
         <TabsTrigger value="contact">{t("contact")}</TabsTrigger>
-        <TabsTrigger value="faq">{t("faq")}</TabsTrigger>
         {notificationSettingsSlot && (
           <>
             <TabsTrigger value="notificationSettings">{t("notificationSettings")}</TabsTrigger>
@@ -80,10 +76,6 @@ export function ChatbotSettingsTabs({
       <TabsContent value="contact" className="space-y-4">
         <ContactForm tenant={tenant} />
         <SocialLinksForm socialLinks={socialLinks} />
-      </TabsContent>
-
-      <TabsContent value="faq">
-        <FaqsTable faqs={faqs} />
       </TabsContent>
 
       {notificationSettingsSlot && (
