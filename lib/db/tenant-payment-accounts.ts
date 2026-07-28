@@ -205,6 +205,23 @@ export async function linkPartnerPaymentAccountForTenant(
   }
 }
 
+/**
+ * Stamps the "Verification status" shown on the connection card as
+ * confirmed-working right now. Only meant to be called immediately after a
+ * connect path that JUST proved the credentials work live — the Super
+ * Admin manual-connect route (which blocks the save entirely on a failed
+ * `validateCredentials` check) and the Partner OAuth callback (a successful
+ * token exchange is itself proof Razorpay accepted the connection). Not
+ * called from `linkPaymentAccountForProvisioning`/the wizard's own manual
+ * option, since that path never performs a live check to begin with.
+ */
+export async function markPaymentAccountVerified(accountId: string): Promise<void> {
+  await getPool().query(
+    "UPDATE tenant_payment_accounts SET last_validated_at = now(), last_validation_error = NULL, updated_at = now() WHERE id = $1",
+    [accountId],
+  );
+}
+
 /** Partner mode only — used by the reconciliation cron's token-refresh step and the partner webhook's tenant resolution. */
 export async function updateOAuthTokensForAccount(
   accountId: string,

@@ -6,6 +6,7 @@ import {
   connectPaymentAccountForSuperAdmin,
   disconnectPaymentAccount,
   getActivePaymentAccountForTenant,
+  markPaymentAccountVerified,
 } from "@/lib/db/tenant-payment-accounts";
 import { validateCredentials } from "@/lib/payments/payment-provider-service";
 import { PaymentAuditService } from "@/lib/payments/payment-audit";
@@ -23,6 +24,7 @@ vi.mock("@/lib/db/tenant-payment-accounts", () => ({
   connectPaymentAccountForSuperAdmin: vi.fn(),
   disconnectPaymentAccount: vi.fn(),
   getActivePaymentAccountForTenant: vi.fn(),
+  markPaymentAccountVerified: vi.fn(),
 }));
 
 vi.mock("@/lib/payments/payment-provider-service", () => ({
@@ -82,6 +84,7 @@ describe("super admin payment connection route", () => {
     vi.mocked(connectPaymentAccountForSuperAdmin).mockReset();
     vi.mocked(disconnectPaymentAccount).mockReset();
     vi.mocked(getActivePaymentAccountForTenant).mockReset();
+    vi.mocked(markPaymentAccountVerified).mockReset().mockResolvedValue(undefined);
     vi.mocked(validateCredentials).mockReset();
     vi.mocked(PaymentAuditService.accountConnectedBySuperAdmin).mockReset();
     vi.mocked(PaymentAuditService.accountDisconnectedBySuperAdmin).mockReset();
@@ -203,7 +206,11 @@ describe("super admin payment connection route", () => {
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.account).toEqual(account);
+      // The credentials were just proven live by validateCredentials, so the
+      // response reflects that immediately rather than showing stale
+      // "Verification pending"/leftover error state from a prior connection.
+      expect(body.account).toEqual({ ...account, lastValidatedAt: expect.any(String), lastValidationError: null });
+      expect(markPaymentAccountVerified).toHaveBeenCalledWith(account.id);
       expect(connectPaymentAccountForSuperAdmin).toHaveBeenCalledWith(tenantId, {
         providerKey: "razorpay",
         keyId: "rzp_test_abc123",

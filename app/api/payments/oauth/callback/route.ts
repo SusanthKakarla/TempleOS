@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOAuthState } from "@/lib/payments/oauth-handoff";
 import { exchangeAuthorizationCode } from "@/lib/payments/razorpay-oauth-client";
-import { linkPartnerPaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import { linkPartnerPaymentAccountForTenant, markPaymentAccountVerified } from "@/lib/db/tenant-payment-accounts";
 import { PaymentAuditService } from "@/lib/payments/payment-audit";
 
 /**
@@ -49,6 +49,11 @@ export async function GET(req: NextRequest) {
       accessTokenExpiresAt: new Date(Date.now() + tokens.expiresInSeconds * 1000),
       publicToken: tokens.publicToken,
     });
+
+    // A successful OAuth token exchange is itself proof Razorpay accepted
+    // the connection — record that now instead of leaving "Verification
+    // status" stuck on "Verification pending" forever.
+    await markPaymentAccountVerified(account.id);
 
     await PaymentAuditService.accountConnected(
       statePayload.tenantId,

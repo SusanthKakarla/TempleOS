@@ -7,6 +7,7 @@ import {
   connectPaymentAccountForSuperAdmin,
   getDecryptedCredentialsForAccount,
   linkPartnerPaymentAccountForTenant,
+  markPaymentAccountVerified,
 } from "./tenant-payment-accounts";
 
 vi.mock("./pool", () => ({
@@ -239,5 +240,24 @@ describe("linkPartnerPaymentAccountForTenant", () => {
     // columns, or tenant_payment_credentials_mode_check would reject the row.
     expect(credentialsSql).toContain("key_id = NULL");
     expect(credentialsSql).toContain("encrypted_key_secret = NULL");
+  });
+});
+
+describe("markPaymentAccountVerified", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("stamps last_validated_at and clears any stale last_validation_error", async () => {
+    query.mockResolvedValueOnce(undefined);
+    await markPaymentAccountVerified("acct-1");
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("last_validated_at = now()");
+    expect(String(sql)).toContain("last_validation_error = NULL");
+    expect(params).toEqual(["acct-1"]);
   });
 });

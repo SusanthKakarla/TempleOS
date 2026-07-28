@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { getTenantById } from "@/lib/db/tenants";
-import { connectPaymentAccountForSuperAdmin, disconnectPaymentAccount, getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import {
+  connectPaymentAccountForSuperAdmin,
+  disconnectPaymentAccount,
+  getActivePaymentAccountForTenant,
+  markPaymentAccountVerified,
+} from "@/lib/db/tenant-payment-accounts";
 import { validateCredentials } from "@/lib/payments/payment-provider-service";
 import { PaymentAuditService } from "@/lib/payments/payment-audit";
 import { superAdminConnectRazorpaySchema } from "@/lib/validation/payments";
@@ -90,9 +95,16 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       webhookSecret: parsed.data.webhookSecret ?? null,
     });
 
+    // The credentials were just proven live above (validation.ok) — record
+    // that now, rather than leaving "Verification status" stuck on
+    // "Verification pending" forever with nothing left to ever update it.
+    await markPaymentAccountVerified(account.id);
+
     await PaymentAuditService.accountConnectedBySuperAdmin(tenantId, superAdmin.id, account.id, account.providerKey);
 
-    return NextResponse.json({ account });
+    return NextResponse.json({
+      account: { ...account, lastValidatedAt: new Date().toISOString(), lastValidationError: null },
+    });
   } catch (err) {
     console.error("[payments:super-admin-connect] Unhandled error while connecting", {
       tenantId,
