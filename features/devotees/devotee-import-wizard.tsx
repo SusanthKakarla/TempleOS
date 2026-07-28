@@ -17,7 +17,6 @@ import type { PreviewRow } from "@/lib/validation/devotee-import";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -129,8 +128,7 @@ export function DevoteeImportWizard() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {step === "upload" && (
-        <Card className="glass-card rounded-2xl border-dashed">
-          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+        <div className="glass-card flex flex-col items-center gap-4 rounded-2xl border border-dashed py-12 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <FileUp className="size-6 text-muted-foreground" />
             </div>
@@ -161,8 +159,7 @@ export function DevoteeImportWizard() {
                 {t("upload.downloadTemplate")}
               </Link>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {step === "reviewing" && preview && (
@@ -229,17 +226,14 @@ export function DevoteeImportWizard() {
       )}
 
       {step === "importing" && (
-        <Card className="glass-card rounded-2xl">
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm font-medium">{t("importing.title")}</p>
-            <p className="text-sm text-muted-foreground">{t("importing.description")}</p>
-          </CardContent>
-        </Card>
+        <div className="glass-card flex flex-col items-center gap-3 rounded-2xl py-16 text-center">
+          <p className="text-sm font-medium">{t("importing.title")}</p>
+          <p className="text-sm text-muted-foreground">{t("importing.description")}</p>
+        </div>
       )}
 
       {step === "done" && result && (
-        <Card className="glass-card rounded-2xl">
-          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+        <div className="glass-card flex flex-col items-center gap-4 rounded-2xl py-12 text-center">
             <CheckCircle2 className="size-10 text-emerald" />
             <div>
               <p className="text-sm font-medium">
@@ -272,8 +266,7 @@ export function DevoteeImportWizard() {
                 {t("done.viewDevotees")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {step === "upload" && (
@@ -297,14 +290,12 @@ function CountChip({
   tone?: string;
 }) {
   return (
-    <Card className="glass-card rounded-xl p-3">
-      <div className="flex items-center gap-2">
-        <Icon className={`size-4 ${tone ?? "text-muted-foreground"}`} />
-        <div>
-          <p className="text-lg font-semibold tabular-nums">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
-        </div>
+    <div className="glass-card flex items-center gap-2 rounded-xl p-3">
+      <Icon className={`size-4 ${tone ?? "text-muted-foreground"}`} />
+      <div>
+        <p className="text-lg font-semibold tabular-nums">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
       </div>
-    </Card>
+    </div>
   );
 }

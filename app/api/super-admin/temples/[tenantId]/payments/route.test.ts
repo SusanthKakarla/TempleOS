@@ -130,6 +130,7 @@ describe("super admin payment connection route", () => {
       expect(validateCredentials).not.toHaveBeenCalled();
     });
 
+<<<<<<< HEAD
     it("logs and returns a clean 500 (not an opaque framework error) when an unrelated step throws, e.g. a DB blip in getTenantById", async () => {
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin as never);
@@ -179,6 +180,12 @@ describe("super admin payment connection route", () => {
         response: null,
         razorpayError: { code: "BAD_REQUEST_ERROR", description: "Authentication failed" },
       });
+=======
+    it("never saves credentials that fail live validation against Razorpay", async () => {
+      vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin as never);
+      vi.mocked(getTenantById).mockResolvedValue({ id: tenantId } as never);
+      vi.mocked(validateCredentials).mockResolvedValue({ ok: false, error: "Authentication failed" });
+>>>>>>> a18476e (Add Payment Connection management to the Super Admin temple detail page)
 
       const res = await PUT(
         putRequest({ keyId: "rzp_test_abc123", keySecret: "wrong-secret" }) as never,
@@ -188,8 +195,11 @@ describe("super admin payment connection route", () => {
 
       expect(res.status).toBe(502);
       expect(body.error).toContain("Authentication failed");
+<<<<<<< HEAD
       expect(body.statusCode).toBe(401);
       expect(body.razorpayError).toEqual({ code: "BAD_REQUEST_ERROR", description: "Authentication failed" });
+=======
+>>>>>>> a18476e (Add Payment Connection management to the Super Admin temple detail page)
       expect(connectPaymentAccountForSuperAdmin).not.toHaveBeenCalled();
     });
 

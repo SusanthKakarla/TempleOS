@@ -7,7 +7,6 @@ import { getDevoteeById } from "@/lib/db/devotees";
 import { getFamilyWithMembers } from "@/lib/db/devotee-families";
 import { listDonationsByDevotee } from "@/lib/db/donations";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { formatInr } from "@/lib/currency";
@@ -88,7 +87,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
       </Link>
 
       <FadeIn>
-      <Card className="glass-card gap-4 rounded-2xl p-5">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="size-12">
@@ -187,12 +186,12 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
             </div>
           </div>
         )}
-      </Card>
+      </div>
       </FadeIn>
 
       {family && (
         <FadeIn>
-          <Card className="glass-card gap-4 rounded-2xl p-5">
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
                 <UsersRound className="size-5 text-primary" />
@@ -264,11 +263,32 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
                 </ul>
               </div>
             )}
-          </Card>
+          </div>
         </FadeIn>
       )}
 
       <DevoteeDonationsCard devotee={devotee} donations={donations} />
+
+      <FadeIn>
+        <div className="space-y-4">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+            <Bell className="size-5 text-saffron" />
+            {t("notificationHistory")}
+          </h2>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noNotifications")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {notifications.map((n) => (
+                <li key={n.id} className="flex items-center justify-between gap-3 border-b pb-2 text-sm last:border-0 last:pb-0">
+                  <span>{tDevotees(`notificationTypeLabels.${n.notificationType}`)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(n.createdAt, locale)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </FadeIn>
     </div>
   );
 }

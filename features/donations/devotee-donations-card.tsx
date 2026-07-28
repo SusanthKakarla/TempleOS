@@ -8,7 +8,6 @@ import { HandCoins, Plus } from "lucide-react";
 import type { Devotee, Donation, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   Table,
   TableCell,
@@ -71,7 +70,7 @@ export function DevoteeDonationsCard({
   }
 
   return (
-    <Card className="glass-card gap-4 rounded-2xl p-5">
+    <div className="glass-card flex flex-col gap-4 rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-heading text-lg font-semibold">{t("title")}</h2>
@@ -151,6 +150,6 @@ export function DevoteeDonationsCard({
           </Table>
         </TableShell>
       )}
-    </Card>
+    </div>
   );
 }

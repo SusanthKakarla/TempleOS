@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Download, Eye, Pencil, RotateCcw, Trash2, Upload, UserPlus, Users } from "lucide-react";
+import { Eye, Pencil, RotateCcw, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +92,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
   const [editingDevotee, setEditingDevotee] = useState<Devotee | null>(null);
   const [deactivatingDevotee, setDeactivatingDevotee] = useState<Devotee | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
@@ -338,35 +337,16 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
             <>
               <Link
                 href="/dashboard/devotees/import"
-                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
               >
                 <Upload className="size-4" />
                 {t("importButton")}
               </Link>
-              <div className="hidden lg:block">
-                <ExportMenu
-                  exportUrl="/api/devotees/export"
-                  filterParams={searchParams}
-                  selectedIds={selectedIds}
-                  moduleLabel="devotees"
-                />
-              </div>
-              <OverflowActionMenu
-                label="Import / Export"
-                items={[
-                  { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/devotees/import") },
-                  { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
-                ]}
-              />
-              {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
               <ExportMenu
                 exportUrl="/api/devotees/export"
                 filterParams={searchParams}
                 selectedIds={selectedIds}
                 moduleLabel="devotees"
-                open={exportOpen}
-                onOpenChange={setExportOpen}
-                hideTrigger
               />
             </>
           }

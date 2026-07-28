@@ -222,7 +222,6 @@ export function UsersTable({
       <StickyToolbar>
         <PageHeader
           title={t("pageHeader.title")}
-          subtitle={t("pageHeader.subtitle")}
           actions={
             <>
               <Link
