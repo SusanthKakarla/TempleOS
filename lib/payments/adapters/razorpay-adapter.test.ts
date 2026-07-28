@@ -108,6 +108,53 @@ describe("razorpayAdapter.validateCredentials", () => {
   });
 });
 
+describe("razorpayAdapter.createOrder", () => {
+  afterEach(() => {
+    vi.doUnmock("razorpay");
+    vi.resetModules();
+  });
+
+  it("returns the provider order id on success", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { create: vi.fn().mockResolvedValue({ id: "order_abc123" }) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.createOrder(creds, { amountPaise: 10000, currency: "INR", receiptRef: "receipt-1" });
+    expect(result).toEqual({ providerOrderId: "order_abc123" });
+  });
+
+  it("throws a clean Error carrying Razorpay's own description, not the raw SDK error, and never leaves it uncaught", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = {
+          create: vi.fn().mockRejectedValue({
+            statusCode: 401,
+            error: { code: "BAD_REQUEST_ERROR", description: "Authentication failed" },
+          }),
+        };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    await expect(
+      adapter.createOrder(creds, { amountPaise: 10000, currency: "INR", receiptRef: "receipt-1" }),
+    ).rejects.toThrow("Authentication failed");
+  });
+
+  it("throws a generic-but-clean message when the rejection carries no identifiable detail", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { create: vi.fn().mockRejectedValue({}) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    await expect(
+      adapter.createOrder(creds, { amountPaise: 10000, currency: "INR", receiptRef: "receipt-1" }),
+    ).rejects.toThrow("Could not create Razorpay order");
+  });
+});
+
 describe("razorpayAdapter.verifyCheckoutSignature", () => {
   it("accepts a signature computed as HMAC-SHA256(orderId|paymentId, keySecret)", () => {
     const providerOrderId = "order_abc";

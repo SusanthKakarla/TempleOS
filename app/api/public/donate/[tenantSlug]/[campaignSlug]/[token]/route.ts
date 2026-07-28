@@ -25,15 +25,33 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const result = await createCheckoutOrder(tenantSlug, campaignSlug, token, {
-    amount: parsed.data.amount,
-    donorName: parsed.data.donorName,
-    donorPhone: parsed.data.donorPhone ?? null,
-    donorEmail: parsed.data.donorEmail ?? null,
-    donorPan: parsed.data.donorPan ?? null,
-    donationMessage: parsed.data.donationMessage ?? null,
-    isAnonymous: parsed.data.isAnonymous,
-  });
+  let result;
+  try {
+    result = await createCheckoutOrder(tenantSlug, campaignSlug, token, {
+      amount: parsed.data.amount,
+      donorName: parsed.data.donorName,
+      donorPhone: parsed.data.donorPhone ?? null,
+      donorEmail: parsed.data.donorEmail ?? null,
+      donorPan: parsed.data.donorPan ?? null,
+      donationMessage: parsed.data.donationMessage ?? null,
+      isAnonymous: parsed.data.isAnonymous,
+    });
+  } catch (err) {
+    // Distinct from "campaign/link unavailable" below: the campaign and
+    // provider connection are fine, the order-creation call to the payment
+    // provider itself failed (bad/expired keys, provider outage, etc).
+    // Telling the donor "this link isn't available" here would blame the
+    // wrong thing — full detail is logged server-side for diagnosis.
+    console.error("[public-donate:create-order] Payment order creation failed", {
+      tenantSlug,
+      campaignSlug,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json(
+      { error: "We couldn't start your payment right now. Please try again in a moment." },
+      { status: 502 },
+    );
+  }
 
   if (!result) {
     return NextResponse.json({ error: "This donation link isn't available." }, { status: 404 });

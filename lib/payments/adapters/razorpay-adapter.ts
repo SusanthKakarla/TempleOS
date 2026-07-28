@@ -127,14 +127,14 @@ function extractRazorpayErrorPayload(err: RazorpayLikeError): RazorpayLikeError[
  * status text, only falling back to a generic message if truly nothing else
  * is available.
  */
-function extractRazorpayErrorMessage(err: RazorpayLikeError): string {
+function extractRazorpayErrorMessage(err: RazorpayLikeError, fallback = "Could not verify Razorpay credentials"): string {
   const razorpayError = extractRazorpayErrorPayload(err);
   if (razorpayError?.description) return razorpayError.description;
   if (err.message) return err.message;
   if (err.response?.statusText) return `Razorpay API error: ${err.response.statusText}`;
   const statusCode = extractStatusCode(err);
   if (statusCode) return `Razorpay API request failed with status ${statusCode}`;
-  return "Could not verify Razorpay credentials";
+  return fallback;
 }
 
 export const razorpayAdapter: PaymentProviderAdapter = {
@@ -182,13 +182,32 @@ export const razorpayAdapter: PaymentProviderAdapter = {
 
   async createOrder(creds: DecryptedCredentials, input: CreateOrderInput): Promise<CreateOrderResult> {
     const client = buildClient(creds);
-    const order = await client.orders.create({
-      amount: input.amountPaise,
-      currency: input.currency,
-      receipt: input.receiptRef.slice(0, 40),
-      notes: input.notes,
-    });
-    return { providerOrderId: order.id };
+    try {
+      const order = await client.orders.create({
+        amount: input.amountPaise,
+        currency: input.currency,
+        receipt: input.receiptRef.slice(0, 40),
+        notes: input.notes,
+      });
+      return { providerOrderId: order.id };
+    } catch (rawErr) {
+      // A bad/expired key, a live/test mode mismatch, or a Razorpay-side
+      // rejection all throw here — without this catch, the raw SDK error
+      // (not a real Error instance, see the comment on RazorpayLikeError
+      // above) propagates uncaught up through the donation checkout route,
+      // producing an opaque 500 with no JSON body. The client then falls
+      // back to a generic "this donation link isn't available" message,
+      // which is actively misleading: the campaign/link is fine, the
+      // payment order just failed to create. Log full diagnostic detail
+      // here and re-throw a clean, safe-to-propagate Error instead.
+      const err = asRazorpayLikeError(rawErr);
+      console.error("[razorpay:create-order] Order creation failed", {
+        message: err.message,
+        statusCode: extractStatusCode(err),
+        razorpayError: extractRazorpayErrorPayload(err),
+      });
+      throw new Error(extractRazorpayErrorMessage(err, "Could not create Razorpay order"));
+    }
   },
 
   verifyCheckoutSignature(creds: DecryptedCredentials, input: VerifyCheckoutSignatureInput): boolean {
