@@ -74,6 +74,23 @@ export interface FetchOrderPaymentResult {
 }
 
 /**
+ * `error` is always a human-readable message. The rest are raw diagnostic
+ * detail (HTTP status, the provider's own structured error, and its full
+ * response) surfaced so a failure can be told apart — invalid key vs invalid
+ * secret vs test/live mismatch vs network failure vs an unrecognized error
+ * shape — instead of every failure collapsing into one generic message.
+ */
+export type ValidateCredentialsResult =
+  | { ok: true }
+  | {
+      ok: false;
+      error: string;
+      statusCode: number | string | null;
+      response: unknown;
+      razorpayError: unknown;
+    };
+
+/**
  * The one interface every payment provider implements. Nothing outside
  * `lib/payments/payment-provider-service.ts` may import a concrete adapter
  * directly — campaigns/donations/checkout/webhook code only ever calls
@@ -82,7 +99,7 @@ export interface FetchOrderPaymentResult {
  */
 export interface PaymentProviderAdapter {
   readonly key: PaymentProviderKey;
-  validateCredentials(creds: DecryptedCredentials): Promise<{ ok: true } | { ok: false; error: string }>;
+  validateCredentials(creds: DecryptedCredentials): Promise<ValidateCredentialsResult>;
   createOrder(creds: DecryptedCredentials, input: CreateOrderInput): Promise<CreateOrderResult>;
   verifyCheckoutSignature(creds: DecryptedCredentials, input: VerifyCheckoutSignatureInput): boolean;
   verifyWebhookSignature(creds: DecryptedCredentials, rawBody: string, signatureHeader: string): boolean;

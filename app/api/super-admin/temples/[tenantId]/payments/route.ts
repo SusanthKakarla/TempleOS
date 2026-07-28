@@ -60,7 +60,12 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   });
   if (!validation.ok) {
     return NextResponse.json(
-      { error: `Razorpay rejected these credentials: ${validation.error}`, code: "RAZORPAY_API_ERROR" },
+      {
+        error: `Razorpay rejected these credentials: ${validation.error}`,
+        code: "RAZORPAY_API_ERROR",
+        statusCode: validation.statusCode,
+        razorpayError: validation.razorpayError,
+      },
       { status: 502 },
     );
   }

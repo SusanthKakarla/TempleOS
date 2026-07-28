@@ -72,9 +72,19 @@ export function RazorpayConnectionForm({ tenantId, account }: RazorpayConnection
           webhookSecret: form.webhookSecret || null,
         }),
       });
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        statusCode?: number | string | null;
+      };
       if (!response.ok) {
-        setErrors({ message: body.error ?? "Payment connection failed." });
+        // The backend already resolves the most specific reason it can find
+        // (Razorpay's own error description, a raw HTTP status, a network
+        // failure message, ...) — display it as-is, appending the HTTP
+        // status when present, and only fall back to a generic message if
+        // the backend genuinely couldn't identify anything more specific.
+        const detail = body.error || "Could not verify Razorpay credentials.";
+        const statusSuffix = body.statusCode && !detail.includes(String(body.statusCode)) ? ` (HTTP ${body.statusCode})` : "";
+        setErrors({ message: `${detail}${statusSuffix}` });
         return;
       }
       setForm(BLANK_FORM);

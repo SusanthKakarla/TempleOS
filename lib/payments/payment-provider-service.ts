@@ -1,4 +1,4 @@
-import type { DecryptedCredentials, PaymentProviderAdapter, PaymentProviderKey } from "./provider";
+import type { DecryptedCredentials, PaymentProviderAdapter, PaymentProviderKey, ValidateCredentialsResult } from "./provider";
 import { razorpayAdapter } from "./adapters/razorpay-adapter";
 import {
   getActivePaymentAccountForTenant,
@@ -106,7 +106,7 @@ export function parseWebhookEvent(providerKey: PaymentProviderKey, rawBody: stri
 export async function validateCredentials(
   providerKey: PaymentProviderKey,
   creds: { keyId: string; keySecret: string; webhookSecret: string | null },
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<ValidateCredentialsResult> {
   const decrypted: DecryptedCredentials = { mode: "api_key", ...creds };
   return getAdapter(providerKey).validateCredentials(decrypted);
 }

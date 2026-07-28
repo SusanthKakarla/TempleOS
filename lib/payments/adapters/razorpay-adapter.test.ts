@@ -38,10 +38,16 @@ describe("razorpayAdapter.validateCredentials", () => {
     }));
     const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
     const result = await adapter.validateCredentials(creds);
-    expect(result).toEqual({ ok: false, error: "Authentication failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "Authentication failed",
+      statusCode: 401,
+      response: null,
+      razorpayError: { code: "BAD_REQUEST_ERROR", description: "Authentication failed" },
+    });
   });
 
-  it("falls back to a generic message when the thrown value has no description", async () => {
+  it("falls back to a status-code message when the thrown value has no description", async () => {
     vi.doMock("razorpay", () => ({
       default: class MockRazorpay {
         orders = { all: vi.fn().mockRejectedValue({ statusCode: 500 }) };
@@ -49,7 +55,45 @@ describe("razorpayAdapter.validateCredentials", () => {
     }));
     const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
     const result = await adapter.validateCredentials(creds);
-    expect(result).toEqual({ ok: false, error: "Could not verify Razorpay credentials" });
+    expect(result).toEqual({
+      ok: false,
+      error: "Razorpay API request failed with status 500",
+      statusCode: 500,
+      response: null,
+      razorpayError: null,
+    });
+  });
+
+  it("falls back to the fully generic message when nothing at all is identifiable", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { all: vi.fn().mockRejectedValue({}) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.validateCredentials(creds);
+    expect(result).toEqual({
+      ok: false,
+      error: "Could not verify Razorpay credentials",
+      statusCode: null,
+      response: null,
+      razorpayError: null,
+    });
+  });
+
+  it("surfaces a plain Error's message (e.g. a network failure) instead of the generic fallback", async () => {
+    vi.doMock("razorpay", () => ({
+      default: class MockRazorpay {
+        orders = { all: vi.fn().mockRejectedValue(new Error("getaddrinfo ENOTFOUND api.razorpay.com")) };
+      },
+    }));
+    const { razorpayAdapter: adapter } = await import("./razorpay-adapter");
+    const result = await adapter.validateCredentials(creds);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("getaddrinfo ENOTFOUND api.razorpay.com");
+      expect(result.statusCode).toBeNull();
+    }
   });
 
   it("returns ok: true when the API call succeeds", async () => {

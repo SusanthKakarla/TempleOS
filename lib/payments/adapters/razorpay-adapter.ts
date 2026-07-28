@@ -87,20 +87,56 @@ function resolveSigningSecret(creds: DecryptedCredentials): string | null {
 }
 
 /**
- * The `razorpay` package's API layer never throws a real `Error` for
- * HTTP-level failures — it throws a plain object shaped
- * `{ statusCode, error: { code, description, ... } }` (confirmed by reading
- * node_modules/razorpay/dist/api.js's `normalizeError`). Checking only
- * `err instanceof Error` therefore missed the actual reason (e.g. "The api
- * key/secret provided is invalid") on every real API rejection, falling
- * through to a generic, unhelpful message instead.
+ * Loose shape covering every way the `razorpay` package/axios underneath it
+ * has been observed to reject a request:
+ *  - `{ statusCode, error: { code, description, ... } }` — the SDK's own
+ *    `normalizeError` (node_modules/razorpay/dist/api.js), used for any HTTP
+ *    error response Razorpay's API actually sent back (401 bad key/secret,
+ *    400 malformed request, etc).
+ *  - A raw axios error (`{ message, code, response: { status, data: { error
+ *    } } }`) — possible if something throws before/without going through
+ *    normalizeError.
+ *  - A plain `Error` (network failure, DNS lookup failure, timeout) — has
+ *    `.message`/`.stack` but no `.response`/`.error` at all.
+ * `validateCredentials` below logs and returns every field from all three
+ * shapes rather than assuming only one, since which one actually shows up is
+ * exactly what's under investigation when verification unexpectedly fails.
  */
-function extractRazorpayErrorMessage(err: unknown): string {
-  if (err && typeof err === "object" && "error" in err) {
-    const inner = (err as { error?: { description?: string } }).error;
-    if (inner?.description) return inner.description;
-  }
-  if (err instanceof Error) return err.message;
+interface RazorpayLikeError {
+  message?: string;
+  code?: string;
+  stack?: string;
+  statusCode?: number | string;
+  error?: { code?: string; description?: string; [key: string]: unknown };
+  response?: { status?: number; statusText?: string; data?: { error?: { description?: string } } };
+}
+
+function asRazorpayLikeError(err: unknown): RazorpayLikeError {
+  return err && typeof err === "object" ? (err as RazorpayLikeError) : {};
+}
+
+function extractStatusCode(err: RazorpayLikeError): number | string | null {
+  return err.statusCode ?? err.response?.status ?? null;
+}
+
+function extractRazorpayErrorPayload(err: RazorpayLikeError): RazorpayLikeError["error"] | null {
+  return err.error ?? err.response?.data?.error ?? null;
+}
+
+/**
+ * Checked in order of specificity so the most useful available message wins:
+ * Razorpay's own description, then the raw response's, then a plain Error's
+ * `.message` (covers network/timeout failures), then the response's HTTP
+ * status text, only falling back to a generic message if truly nothing else
+ * is available.
+ */
+function extractRazorpayErrorMessage(err: RazorpayLikeError): string {
+  const razorpayError = extractRazorpayErrorPayload(err);
+  if (razorpayError?.description) return razorpayError.description;
+  if (err.message) return err.message;
+  if (err.response?.statusText) return `Razorpay API error: ${err.response.statusText}`;
+  const statusCode = extractStatusCode(err);
+  if (statusCode) return `Razorpay API request failed with status ${statusCode}`;
   return "Could not verify Razorpay credentials";
 }
 
@@ -108,12 +144,43 @@ export const razorpayAdapter: PaymentProviderAdapter = {
   key: "razorpay",
 
   async validateCredentials(creds: DecryptedCredentials) {
+    const keyId = creds.mode === "api_key" ? creds.keyId : null;
+    const keySecretLength = creds.mode === "api_key" ? creds.keySecret.length : null;
+
+    console.log("========== Razorpay Verification ==========");
+    console.log("Provider:", "razorpay");
+    console.log("Connection Mode:", creds.mode);
+    console.log("Key ID:", keyId ?? "(not applicable — OAuth mode has no key_id)");
+    console.log("Key Secret Length:", keySecretLength ?? "(not applicable — OAuth mode has no key_secret)");
+    if (keyId) {
+      console.log("Using Test Mode:", keyId.startsWith("rzp_test_"));
+      console.log("Using Live Mode:", keyId.startsWith("rzp_live_"));
+    }
+    console.log("=============================================");
+
     try {
       const client = buildClient(creds);
       await client.orders.all({ count: 1 });
+      console.log("Razorpay credentials verified successfully.");
       return { ok: true } as const;
-    } catch (err) {
-      return { ok: false, error: extractRazorpayErrorMessage(err) } as const;
+    } catch (rawErr) {
+      const err = asRazorpayLikeError(rawErr);
+      console.error("========== Razorpay Verification Failed ==========");
+      console.error("Message:", err.message);
+      console.error("Status Code:", extractStatusCode(err));
+      console.error("Error:", err.error);
+      console.error("Response:", err.response);
+      console.error("Stack:", err.stack);
+      console.error("Raw Error:", rawErr);
+      console.error("==================================================");
+
+      return {
+        ok: false,
+        error: extractRazorpayErrorMessage(err),
+        statusCode: extractStatusCode(err),
+        response: err.response ?? null,
+        razorpayError: extractRazorpayErrorPayload(err),
+      } as const;
     }
   },
 
