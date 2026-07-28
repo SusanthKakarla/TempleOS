@@ -194,13 +194,21 @@ describe("super admin auth boundary", () => {
       path.join(process.cwd(), "app/(super-admin)/super-admin/(shell)/temples/page.tsx"),
       path.join(process.cwd(), "app/(super-admin)/super-admin/(shell)/roles/page.tsx"),
       ...listSourcesIfPresent(path.join(process.cwd(), "features/super-admin")).filter(
-        (source) => !whatsappOwnedSources.has(source) && !source.includes(`new-temple-form`) && !source.includes(`super-admin-login-form`),
+        (source) =>
+          !whatsappOwnedSources.has(source) &&
+          !source.includes(`new-temple-form`) &&
+          !source.includes(`super-admin-login-form`) &&
+          // Payment Connection is a distinct, legitimate feature (Razorpay
+          // manual keys, not WhatsApp) that happens to share generic
+          // connect/disconnect vocabulary with the WhatsApp guardrail below.
+          !source.includes(`razorpay-connection-form`),
       ),
       ...listSourcesIfPresent(path.join(process.cwd(), "app/api/super-admin")).filter(
         (source) =>
           !whatsappOwnedSources.has(source) &&
           !source.includes(`${path.sep}temples${path.sep}route.ts`) &&
-          !source.includes(`${path.sep}auth${path.sep}`),
+          !source.includes(`${path.sep}auth${path.sep}`) &&
+          !source.includes(`${path.sep}payments${path.sep}route.ts`),
       ),
     ];
 

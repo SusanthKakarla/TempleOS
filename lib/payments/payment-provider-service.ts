@@ -102,6 +102,15 @@ export function parseWebhookEvent(providerKey: PaymentProviderKey, rawBody: stri
   return getAdapter(providerKey).parseWebhookEvent(rawBody);
 }
 
+/** Live credential check against the provider's own API — used by the Super Admin's manual-connect route to reject bad keys before saving them (mirrors the WhatsApp manual-connect route's "validate before persisting" posture). */
+export async function validateCredentials(
+  providerKey: PaymentProviderKey,
+  creds: { keyId: string; keySecret: string; webhookSecret: string | null },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const decrypted: DecryptedCredentials = { mode: "api_key", ...creds };
+  return getAdapter(providerKey).validateCredentials(decrypted);
+}
+
 export async function fetchOrderPaymentForTenant(
   tenantId: string,
   providerOrderId: string,

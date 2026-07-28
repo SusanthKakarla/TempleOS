@@ -132,6 +132,7 @@ const templeDetail = {
     createdAt: "2026-07-18T00:30:00.000Z",
     updatedAt: "2026-07-18T08:20:00.000Z",
   },
+  paymentAccount: null,
 };
 
 const activeOperationTempleDetail = {
@@ -139,6 +140,7 @@ const activeOperationTempleDetail = {
   domain: templeDetail.domain,
   members: templeDetail.members,
   whatsappAccount: templeDetail.whatsappAccount,
+  paymentAccount: templeDetail.paymentAccount,
 };
 
 function request(id = tenantId): Request {

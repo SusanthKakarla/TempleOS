@@ -3,9 +3,13 @@ import type { QueryClient } from "./query-client";
 import { createAuditLogEntry } from "./audit-log";
 import {
   isRoleCode,
+  type PaymentAccountStatus,
+  type PaymentConnectionMethod,
+  type PaymentProviderKey,
   type RoleCode,
   type Tenant,
   type TenantDomain,
+  type TenantPaymentAccount,
   type TenantStatus,
   type WhatsAppAccount,
 } from "@/types/db";
@@ -116,6 +120,21 @@ export interface SuperAdminTenantDetail {
   domain: TenantDomain | null;
   members: SuperAdminTenantMember[];
   whatsappAccount: WhatsAppAccount | null;
+  paymentAccount: TenantPaymentAccount | null;
+}
+
+interface SuperAdminPaymentAccountRow {
+  id: string;
+  tenant_id: string;
+  provider_key: PaymentProviderKey;
+  connection_method: PaymentConnectionMethod;
+  razorpay_account_id: string | null;
+  status: PaymentAccountStatus;
+  is_active: boolean;
+  last_validated_at: Date | null;
+  last_validation_error: string | null;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function mapTenant(row: TenantRow): Tenant {
@@ -180,6 +199,22 @@ function mapSuperAdminTenantMember(row: SuperAdminTenantMemberRow): SuperAdminTe
     phoneNumber: row.phone_number,
     status: row.status,
     roles: (row.role_codes ?? []).filter(isRoleCode),
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapPaymentAccount(row: SuperAdminPaymentAccountRow): TenantPaymentAccount {
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    providerKey: row.provider_key,
+    connectionMethod: row.connection_method,
+    razorpayAccountId: row.razorpay_account_id,
+    status: row.status,
+    isActive: row.is_active,
+    lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,
+    lastValidationError: row.last_validation_error,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -375,11 +410,24 @@ export async function getTenantDetailForSuperAdmin(
     [tenantId],
   );
 
+  // Same "show even a disconnected one" reasoning as whatsapp_accounts above —
+  // tenant_payment_accounts allows more than one historical row per tenant
+  // (UNIQUE is per tenant+provider), so this picks the most recently touched.
+  const paymentAccountResult = await client.query<SuperAdminPaymentAccountRow>(
+    `SELECT *
+     FROM tenant_payment_accounts
+     WHERE tenant_id = $1
+     ORDER BY updated_at DESC, id DESC
+     LIMIT 1`,
+    [tenantId],
+  );
+
   return {
     tenant: mapTenant(tenant),
     domain: domainResult.rows[0] ? mapTenantDomain(domainResult.rows[0]) : null,
     members: membersResult.rows.map(mapSuperAdminTenantMember),
     whatsappAccount: whatsappResult.rows[0] ? mapWhatsAppAccount(whatsappResult.rows[0]) : null,
+    paymentAccount: paymentAccountResult.rows[0] ? mapPaymentAccount(paymentAccountResult.rows[0]) : null,
   };
 }
 

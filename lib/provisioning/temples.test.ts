@@ -210,6 +210,7 @@ beforeEach(() => {
     domain: createdDomain,
     members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
     whatsappAccount: linkedWhatsAppAccount,
+    paymentAccount: null,
   });
   vi.mocked(createTenantDomainForSuperAdmin).mockResolvedValue(createdDomain);
   vi.mocked(findOrCreatePersonByPhoneForProvisioning).mockResolvedValue(createdPerson);
@@ -785,12 +786,14 @@ describe("canonical provisioned temple update contract", () => {
         domain: createdDomain,
         members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
         whatsappAccount: linkedWhatsAppAccount,
+        paymentAccount: null,
       })
       .mockResolvedValueOnce({
         tenant: createdTenant,
         domain: createdDomain,
         members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
         whatsappAccount: linkedWhatsAppAccount,
+        paymentAccount: null,
       });
     const parsed = parseUpdateProvisionedTempleInput(
       {
@@ -842,6 +845,7 @@ describe("canonical provisioned temple update contract", () => {
       domain: createdDomain,
       members: [{ ...createdMembership, phoneNumber: createdPerson.phoneNumber }],
       whatsappAccount: linkedWhatsAppAccount,
+      paymentAccount: null,
     });
 
     const result = await updateProvisionedTemple(
@@ -984,6 +988,7 @@ describe("super-admin tenant member role assignment", () => {
       domain: createdDomain,
       members: [{ ...updatedMembership, phoneNumber: createdPerson.phoneNumber }],
       whatsappAccount: linkedWhatsAppAccount,
+      paymentAccount: null,
     });
 
     const result = await assignTenantMemberRoles(

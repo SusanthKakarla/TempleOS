@@ -35,6 +35,29 @@ export const PaymentAuditService = {
       metadata: {},
     });
   },
+  /** Super Admin connecting/updating a temple's Razorpay keys from the Temples detail page — post-provisioning, not the wizard's provisioning-time connect (that's accountConnectedDuringProvisioning). */
+  accountConnectedBySuperAdmin(tenantId: string, superAdminId: string, accountId: string, providerKey: string) {
+    return createAuditLogEntry({
+      actorType: "super_admin",
+      actorId: superAdminId,
+      tenantId,
+      action: "payment_account.connected",
+      targetType: "payment_account",
+      targetId: accountId,
+      metadata: { providerKey, viaSuperAdminEdit: true },
+    });
+  },
+  accountDisconnectedBySuperAdmin(tenantId: string, superAdminId: string, accountId: string) {
+    return createAuditLogEntry({
+      actorType: "super_admin",
+      actorId: superAdminId,
+      tenantId,
+      action: "payment_account.disconnected",
+      targetType: "payment_account",
+      targetId: accountId,
+      metadata: { viaSuperAdminEdit: true },
+    });
+  },
   transactionCaptured(tenantId: string, transactionId: string, amount: number) {
     return createAuditLogEntry({
       actorType: "system",

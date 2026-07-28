@@ -78,6 +78,29 @@ export async function linkPaymentAccountForProvisioning(
   return account;
 }
 
+/** Super Admin manual-connect/update (Temples > [tenant] detail page) — deactivates any prior active account for this tenant first, since only one may be active, then inserts a fresh manual key/secret row. Mirrors the shape `manuallyConnectWhatsAppAccount` plays for WhatsApp. */
+export async function connectPaymentAccountForSuperAdmin(
+  tenantId: string,
+  input: PaymentAccountCredentialsInput,
+): Promise<TenantPaymentAccount> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "UPDATE tenant_payment_accounts SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND is_active = true",
+      [tenantId],
+    );
+    const account = await linkPaymentAccountForProvisioning(tenantId, input, client);
+    await client.query("COMMIT");
+    return account;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export interface PartnerPaymentAccountInput {
   providerKey: PaymentProviderKey;
   razorpayAccountId: string;

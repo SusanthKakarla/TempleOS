@@ -81,6 +81,20 @@ const whatsappRow = {
   updated_at: new Date("2026-07-18T08:20:00Z"),
 };
 
+const paymentAccountRow = {
+  id: "payment-account-1",
+  tenant_id: "tenant-1",
+  provider_key: "razorpay",
+  connection_method: "manual",
+  razorpay_account_id: null,
+  status: "connected",
+  is_active: true,
+  last_validated_at: null,
+  last_validation_error: null,
+  created_at: new Date("2026-07-18T00:40:00Z"),
+  updated_at: new Date("2026-07-18T08:30:00Z"),
+};
+
 describe("tenant repository super-admin list", () => {
   const query = vi.fn();
 
@@ -162,7 +176,8 @@ describe("tenant repository super-admin detail", () => {
       .mockResolvedValueOnce({ rows: [tenantRow] })
       .mockResolvedValueOnce({ rows: [domainRow] })
       .mockResolvedValueOnce({ rows: [memberRow] })
-      .mockResolvedValueOnce({ rows: [whatsappRow] });
+      .mockResolvedValueOnce({ rows: [whatsappRow] })
+      .mockResolvedValueOnce({ rows: [paymentAccountRow] });
 
     await expect(getTenantDetailForSuperAdmin("tenant-1")).resolves.toEqual({
       tenant: {
@@ -221,9 +236,22 @@ describe("tenant repository super-admin detail", () => {
         createdAt: "2026-07-18T00:30:00.000Z",
         updatedAt: "2026-07-18T08:20:00.000Z",
       },
+      paymentAccount: {
+        id: "payment-account-1",
+        tenantId: "tenant-1",
+        providerKey: "razorpay",
+        connectionMethod: "manual",
+        razorpayAccountId: null,
+        status: "connected",
+        isActive: true,
+        lastValidatedAt: null,
+        lastValidationError: null,
+        createdAt: "2026-07-18T00:40:00.000Z",
+        updatedAt: "2026-07-18T08:30:00.000Z",
+      },
     });
 
-    expect(query).toHaveBeenCalledTimes(4);
+    expect(query).toHaveBeenCalledTimes(5);
     expect(query.mock.calls[0][1]).toEqual(["tenant-1"]);
     expect(String(query.mock.calls[2][0])).toContain("tenant_memberships");
     expect(String(query.mock.calls[2][0])).toContain("persons");
@@ -231,6 +259,7 @@ describe("tenant repository super-admin detail", () => {
     expect(String(query.mock.calls[2][0])).toContain("role_definitions");
     expect(String(query.mock.calls[2][0])).toContain("ORDER BY");
     expect(String(query.mock.calls[3][0])).toContain("whatsapp_accounts");
+    expect(String(query.mock.calls[4][0])).toContain("tenant_payment_accounts");
   });
 
   it("returns null for a missing tenant without reading unrelated detail rows", async () => {
@@ -241,9 +270,10 @@ describe("tenant repository super-admin detail", () => {
     expect(query).toHaveBeenCalledTimes(1);
   });
 
-  it("maps missing optional domain, member, and WhatsApp state without inventing data", async () => {
+  it("maps missing optional domain, member, WhatsApp, and payment state without inventing data", async () => {
     query
       .mockResolvedValueOnce({ rows: [tenantRow] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
@@ -253,6 +283,7 @@ describe("tenant repository super-admin detail", () => {
       domain: null,
       members: [],
       whatsappAccount: null,
+      paymentAccount: null,
     });
   });
 });
