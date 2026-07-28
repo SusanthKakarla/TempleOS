@@ -3,7 +3,7 @@ import { getTemplate, renderTemplate } from "./notification-templates";
 import { buildDevoteeAudienceCondition } from "./campaign-audience";
 import { getCampaignDonationSummary } from "./campaign-analytics";
 import { buildDonationCampaignVars, isDonationCampaignReady } from "@/lib/campaigns/donation-message";
-import type { Campaign, SupportedLanguage, Tenant } from "@/types/db";
+import type { Campaign, NotificationType, SupportedLanguage, Tenant } from "@/types/db";
 
 const LANGUAGES: SupportedLanguage[] = ["en", "te"];
 
@@ -43,7 +43,7 @@ export async function enqueueCampaignBroadcast(tenant: Tenant, campaign: Campaig
   for (const language of languages) {
     let title: string | null;
     let message: string;
-    let notificationType: string = "campaign_broadcast";
+    let notificationType: NotificationType = "campaign_broadcast";
 
     if (useDonationTemplate && donationSummary) {
       const template = await getTemplate("donation_campaign_broadcast", campaign.channel, language);
@@ -55,6 +55,11 @@ export async function enqueueCampaignBroadcast(tenant: Tenant, campaign: Campaig
     } else if (campaign.templateKey) {
       const template = await getTemplate(campaign.templateKey, campaign.channel, language);
       if (!template) continue;
+      // Store the template key actually used, not the generic default —
+      // otherwise delivery (lib/notifications/delivery.ts) later re-derives
+      // the Meta template key from this stored value and would look up the
+      // wrong template once the 24h conversation window closes.
+      notificationType = campaign.templateKey;
       const vars = {
         templeName: tenant.name,
         campaignTitle: campaign.title,

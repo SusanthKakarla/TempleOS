@@ -297,6 +297,16 @@
       },
       "errorFallback": "Failed to save notification preferences"
     },
+    "manualAnnouncementForm": {
+      "cardTitle": "Send a message to all devotees",
+      "cardDescription": "Type a one-off message and send it now over WhatsApp to every opted-in devotee.",
+      "placeholder": "Write your announcement...",
+      "confirm": "Send this message to every opted-in devotee now? This can't be undone.",
+      "sendButton": "Send now",
+      "sending": "Sending...",
+      "sentTo": "{count, plural, =0 {Sent to no devotees (none are currently opted in)} one {Sent to # devotee} other {Sent to # devotees}}",
+      "errorFallback": "Failed to send the announcement"
+    },
     "timingsForm": {
       "cardTitle": "Regular Temple Timings",
       "cardDescription": "Used by the WhatsApp chatbot when there's no special-day override for today.",
@@ -554,9 +564,6 @@
       "goalAmountLabel": "Goal amount (₹)",
       "startDateLabel": "Campaign start date",
       "endDateLabel": "Campaign end date",
-      "donationLinkLabel": "Donation link (optional)",
-      "donationLinkPlaceholder": "Defaults to a demo donation link",
-      "donationLinkHint": "Leave blank to use the configured default demo link. Set this once a real payment gateway is connected.",
       "scheduleTypeLabel": "Send",
       "scheduleTypeNow": "Send immediately",
       "scheduleTypeLater": "Schedule for later",
@@ -1151,7 +1158,10 @@
         "family": "Family",
         "event": "Event Reminders",
         "announcement": "Announcements",
-        "platform": "Platform"
+        "platform": "Platform",
+        "donation": "Donations",
+        "festival": "Festivals",
+        "campaign": "Campaigns"
       },
       "columns": {
         "recipient": "Recipient",
@@ -1172,11 +1182,19 @@
         "tenant_config_changed": "Temple settings updated",
         "tenant_status_changed": "Temple status changed",
         "donation_thank_you": "Donation thank-you",
+        "donation_recorded": "Donation received",
         "festival_greeting": "Festival greeting",
         "new_event": "New event",
         "event_updated": "Event updated",
         "event_cancelled": "Event cancelled",
-        "event_announcement": "Event announcement"
+        "event_announcement": "Event announcement",
+        "campaign_broadcast": "Campaign broadcast",
+        "donation_campaign_broadcast": "Donation campaign update",
+        "donation_receipt": "Donation receipt",
+        "payment_captured": "Payment received",
+        "payment_failed": "Payment failed",
+        "payment_refunded": "Payment refunded",
+        "temple_announcement": "Temple announcement"
       },
       "channelLabels": { "in_app": "In-app", "whatsapp": "WhatsApp" },
       "emptyState": {

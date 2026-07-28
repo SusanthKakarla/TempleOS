@@ -159,21 +159,11 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     title: null,
     body: "📢 కుటుంబ రిమైండర్\n\nరేపు:\n{{occasionList}}\n\n{{templeName}} నుండి",
   },
-  // Platform config changes — Super Admin edited settings, or changed feature/status — to tenant admins.
-  {
-    notificationType: "tenant_config_changed",
-    channel: "whatsapp",
-    language: "en",
-    title: null,
-    body: "⚙️ Temple Settings Updated\n\n{{summary}}\n\nUpdated by the TempleOS platform team.",
-  },
-  {
-    notificationType: "tenant_config_changed",
-    channel: "whatsapp",
-    language: "te",
-    title: null,
-    body: "⚙️ ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి\n\n{{summary}}\n\nTempleOS ప్లాట్‌ఫారమ్ బృందం ద్వారా నవీకరించబడింది.",
-  },
+  // Platform config/status changes — Super Admin edited settings, changed a
+  // feature flag, or changed tenant lifecycle status — to tenant admins.
+  // In-app only (matches the payment_captured precedent): these are internal
+  // admin-only notices, not time-sensitive enough to warrant a Meta
+  // template-approval burden for a WhatsApp send.
   {
     notificationType: "tenant_config_changed",
     channel: "in_app",
@@ -187,20 +177,6 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     language: "te",
     title: "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
     body: "{{summary}}",
-  },
-  {
-    notificationType: "tenant_status_changed",
-    channel: "whatsapp",
-    language: "en",
-    title: null,
-    body: "🔔 Temple Status Changed\n\n{{templeName}} is now {{status}}.\n\nContact the TempleOS platform team with any questions.",
-  },
-  {
-    notificationType: "tenant_status_changed",
-    channel: "whatsapp",
-    language: "te",
-    title: null,
-    body: "🔔 ఆలయ స్థితి మార్చబడింది\n\n{{templeName}} ఇప్పుడు {{status}}.\n\nప్రశ్నల కోసం TempleOS ప్లాట్‌ఫారమ్ బృందాన్ని సంప్రదించండి.",
   },
   {
     notificationType: "tenant_status_changed",
@@ -519,6 +495,37 @@ const NOTIFICATION_TEMPLATE_SEEDS: TemplateSeed[] = [
     language: "te",
     title: "విరాళం వాపసు చేయబడింది",
     body: "{{templeName}}కి చేసిన ₹{{amount}} విరాళం వాపసు చేయబడింది.",
+  },
+  // Payment failed — donor-facing WhatsApp notice (raw-phone recipient, same
+  // as donation_receipt/payment_refunded) plus an in-app alert to admins. No
+  // receipt number — a failed payment never generates one.
+  {
+    notificationType: "payment_failed",
+    channel: "whatsapp",
+    language: "en",
+    title: null,
+    body: "⚠️ Your donation of ₹{{amount}} to {{templeName}} could not be completed.\n\nTransaction ID: {{transactionId}}\n\nPlease try again, or contact the temple directly if the amount was deducted.",
+  },
+  {
+    notificationType: "payment_failed",
+    channel: "whatsapp",
+    language: "te",
+    title: null,
+    body: "⚠️ {{templeName}}కి మీరు చేసిన ₹{{amount}} విరాళం పూర్తి కాలేదు.\n\nలావాదేవీ ID: {{transactionId}}\n\nదయచేసి మళ్లీ ప్రయత్నించండి, లేదా మొత్తం తీసివేయబడితే నేరుగా దేవాలయాన్ని సంప్రదించండి.",
+  },
+  {
+    notificationType: "payment_failed",
+    channel: "in_app",
+    language: "en",
+    title: "Donation payment failed",
+    body: "A donation attempt of ₹{{amount}} to {{templeName}} failed.",
+  },
+  {
+    notificationType: "payment_failed",
+    channel: "in_app",
+    language: "te",
+    title: "విరాళం చెల్లింపు విఫలమైంది",
+    body: "{{templeName}}కి ₹{{amount}} విరాళం చెల్లింపు విఫలమైంది.",
   },
 ];
 

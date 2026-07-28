@@ -61,7 +61,6 @@ function makeCampaign(overrides: Partial<Campaign> = {}): Campaign {
     goalAmount: "100000",
     campaignStartDate: null,
     campaignEndDate: null,
-    donationLinkOverride: null,
     closingReminderSentAt: null,
     targetReachedAnnouncedAt: null,
     slug: "annadanam-fund",

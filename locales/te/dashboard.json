@@ -297,6 +297,16 @@
       },
       "errorFallback": "నోటిఫికేషన్ ప్రాధాన్యతలను సేవ్ చేయడంలో విఫలమైంది"
     },
+    "manualAnnouncementForm": {
+      "cardTitle": "అందరు భక్తులకు సందేశం పంపండి",
+      "cardDescription": "ఒక సందేశాన్ని టైప్ చేసి, చేరిన ప్రతి భక్తుడికి వాట్సాప్ ద్వారా ఇప్పుడే పంపండి.",
+      "placeholder": "మీ ప్రకటనను వ్రాయండి...",
+      "confirm": "ఈ సందేశాన్ని చేరిన ప్రతి భక్తుడికి ఇప్పుడే పంపాలా? దీన్ని రద్దు చేయలేరు.",
+      "sendButton": "ఇప్పుడే పంపండి",
+      "sending": "పంపుతోంది...",
+      "sentTo": "{count, plural, =0 {ఏ భక్తుడికీ పంపబడలేదు (ఎవరూ ప్రస్తుతం చేరలేదు)} one {# భక్తుడికి పంపబడింది} other {# భక్తులకు పంపబడింది}}",
+      "errorFallback": "ప్రకటనను పంపడంలో విఫలమైంది"
+    },
     "timingsForm": {
       "cardTitle": "సాధారణ దేవాలయ వేళలు",
       "cardDescription": "ఈరోజు కోసం ప్రత్యేక-దిన మార్పు లేనప్పుడు వాట్సాప్ చాట్‌బాట్ దీన్ని ఉపయోగిస్తుంది.",
@@ -557,9 +567,6 @@
       "goalAmountLabel": "లక్ష్య మొత్తం (₹)",
       "startDateLabel": "ప్రచార ప్రారంభ తేదీ",
       "endDateLabel": "ప్రచార ముగింపు తేదీ",
-      "donationLinkLabel": "విరాళ లింక్ (ఐచ్ఛికం)",
-      "donationLinkPlaceholder": "డెమో విరాళ లింక్‌కు డిఫాల్ట్ అవుతుంది",
-      "donationLinkHint": "కాన్ఫిగర్ చేయబడిన డిఫాల్ట్ డెమో లింక్‌ను ఉపయోగించడానికి ఖాళీగా ఉంచండి. నిజమైన పేమెంట్ గేట్‌వే కనెక్ట్ అయిన తర్వాత దీన్ని సెట్ చేయండి.",
       "scheduleTypeLabel": "పంపండి",
       "scheduleTypeNow": "వెంటనే పంపండి",
       "scheduleTypeLater": "తర్వాత షెడ్యూల్ చేయండి",
@@ -1165,7 +1172,10 @@
         "family": "కుటుంబం",
         "event": "కార్యక్రమ రిమైండర్‌లు",
         "announcement": "ప్రకటనలు",
-        "platform": "ప్లాట్‌ఫారమ్"
+        "platform": "ప్లాట్‌ఫారమ్",
+        "donation": "విరాళాలు",
+        "festival": "పండుగలు",
+        "campaign": "ప్రచారాలు"
       },
       "columns": {
         "recipient": "గ్రహీత",
@@ -1186,11 +1196,19 @@
         "tenant_config_changed": "ఆలయ సెట్టింగ్‌లు నవీకరించబడ్డాయి",
         "tenant_status_changed": "ఆలయ స్థితి మార్చబడింది",
         "donation_thank_you": "విరాళ ధన్యవాదాలు",
+        "donation_recorded": "విరాళం అందింది",
         "festival_greeting": "పండుగ శుభాకాంక్షలు",
         "new_event": "కొత్త కార్యక్రమం",
         "event_updated": "కార్యక్రమం నవీకరించబడింది",
         "event_cancelled": "కార్యక్రమం రద్దు చేయబడింది",
-        "event_announcement": "కార్యక్రమ ప్రకటన"
+        "event_announcement": "కార్యక్రమ ప్రకటన",
+        "campaign_broadcast": "ప్రచార ప్రసారం",
+        "donation_campaign_broadcast": "విరాళ ప్రచార నవీకరణ",
+        "donation_receipt": "విరాళ రసీదు",
+        "payment_captured": "చెల్లింపు అందింది",
+        "payment_failed": "చెల్లింపు విఫలమైంది",
+        "payment_refunded": "చెల్లింపు వాపసు చేయబడింది",
+        "temple_announcement": "ఆలయ ప్రకటన"
       },
       "channelLabels": { "in_app": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
       "emptyState": {

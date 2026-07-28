@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CheckCircle2, Clock, MessageCircle, Smartphone, XCircle } from "lucide-react";
-import type { NotificationCategory, NotificationDeliveryStatus, SupportedLanguage } from "@/types/db";
+import { NOTIFICATION_CATEGORIES, type NotificationCategory, type NotificationDeliveryStatus, type SupportedLanguage } from "@/types/db";
 import type { NotificationListItem, WhatsAppDeliveryAnalytics } from "@/lib/db/notifications";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,16 +31,7 @@ function StatusIcon({ status }: { status: NotificationDeliveryStatus }) {
   return <Clock className="size-3.5 text-muted-foreground" />;
 }
 
-const CATEGORY_VALUES: NotificationCategory[] = [
-  "birthday",
-  "anniversary",
-  "new_user",
-  "devotee",
-  "family",
-  "event",
-  "announcement",
-  "platform",
-];
+const CATEGORY_VALUES: readonly NotificationCategory[] = NOTIFICATION_CATEGORIES;
 
 interface AutomatedNotificationListProps {
   notifications: NotificationListItem[];

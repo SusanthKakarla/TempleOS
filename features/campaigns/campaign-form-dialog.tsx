@@ -109,7 +109,6 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
   const [goalAmount, setGoalAmount] = useState(campaign?.goalAmount ?? "");
   const [campaignStartDate, setCampaignStartDate] = useState<string | null>(campaign?.campaignStartDate ?? null);
   const [campaignEndDate, setCampaignEndDate] = useState<string | null>(campaign?.campaignEndDate ?? null);
-  const [donationLinkOverride, setDonationLinkOverride] = useState(campaign?.donationLinkOverride ?? "");
   const [scheduleChoice, setScheduleChoice] = useState<ScheduleChoice>(
     campaign?.scheduleType === "recurring" ? "recurring" : campaign?.scheduledAt ? "later" : "now",
   );
@@ -182,7 +181,6 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
         goalAmount: goalAmount || null,
         campaignStartDate,
         campaignEndDate,
-        donationLinkOverride: donationLinkOverride || null,
         scheduleType: scheduleChoice === "recurring" ? ("recurring" as const) : ("one_time" as const),
         scheduledAt: scheduleChoice === "later" && scheduledAt ? scheduledAt : null,
         recurrenceRule: scheduleChoice === "recurring" ? recurrenceRule : null,
@@ -280,17 +278,6 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
             <div className="grid grid-cols-2 gap-3">
               <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />
               <DateOnlyField id="campaign-end-date" label={t("endDateLabel")} value={campaignEndDate} onChange={setCampaignEndDate} />
-            </div>
-            <div className="space-y-1.5">
-              <LabeledInput
-                id="campaign-donation-link"
-                label={t("donationLinkLabel")}
-                value={donationLinkOverride}
-                onChange={(e) => setDonationLinkOverride(e.target.value)}
-                placeholder={t("donationLinkPlaceholder")}
-                inputSize="lg"
-              />
-              <p className="text-xs text-muted-foreground">{t("donationLinkHint")}</p>
             </div>
           </div>
 

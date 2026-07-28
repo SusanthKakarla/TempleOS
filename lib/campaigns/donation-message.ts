@@ -23,24 +23,21 @@ type DonationCampaignFields = Pick<
   | "goalAmount"
   | "campaignStartDate"
   | "campaignEndDate"
-  | "donationLinkOverride"
   | "linkedDonationPurpose"
   | "slug"
   | "donationToken"
 >;
 
 /**
- * `campaign.donationLinkOverride` wins if set (an admin-supplied full URL,
- * e.g. a third-party gateway link); otherwise builds the real checkout URL
- * `{base}/{tenantSlug}/{campaignSlug}/{donationToken}` — the token is
- * unguessable and stable per campaign (every donor who receives this link
- * reuses the same one; it is not a single-use capability token).
+ * Builds the real checkout URL `{base}/{tenantSlug}/{campaignSlug}/{donationToken}`
+ * — the token is unguessable and stable per campaign (every donor who
+ * receives this link reuses the same one; it is not a single-use capability
+ * token).
  */
 export function buildDonationLink(
   tenant: Pick<Tenant, "slug">,
-  campaign: Pick<Campaign, "donationLinkOverride" | "slug" | "donationToken">,
+  campaign: Pick<Campaign, "slug" | "donationToken">,
 ): string {
-  if (campaign.donationLinkOverride) return campaign.donationLinkOverride;
   const base = process.env.DONATION_LINK_BASE_URL?.trim() || DEFAULT_DONATION_LINK_BASE_URL;
   return `${base.replace(/\/+$/, "")}/${tenant.slug}/${campaign.slug}/${campaign.donationToken}`;
 }

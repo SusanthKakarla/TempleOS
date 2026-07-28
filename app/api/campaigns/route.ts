@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
     goalAmount: parsed.data.goalAmount ?? null,
     campaignStartDate: parsed.data.campaignStartDate ?? null,
     campaignEndDate: parsed.data.campaignEndDate ?? null,
-    donationLinkOverride: parsed.data.donationLinkOverride ?? null,
     createdBy: session.membershipId,
   });
 

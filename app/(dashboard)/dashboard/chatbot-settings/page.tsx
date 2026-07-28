@@ -23,18 +23,9 @@ import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-con
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
+import { NOTIFICATION_CATEGORIES, type NotificationCategory, type NotificationMedia, type SupportedLanguage } from "@/types/db";
 
-const CATEGORY_VALUES: NotificationCategory[] = [
-  "birthday",
-  "anniversary",
-  "new_user",
-  "devotee",
-  "family",
-  "event",
-  "announcement",
-  "platform",
-];
+const CATEGORY_VALUES: readonly NotificationCategory[] = NOTIFICATION_CATEGORIES;
 
 async function resolveLinkedMedia(
   tenantId: string,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CAMPAIGN_TYPES } from "@/types/db";
+import { CAMPAIGN_TYPES, NOTIFICATION_TYPES } from "@/types/db";
 
 const nullableTrimmedString = z
   .string()
@@ -44,7 +44,7 @@ export const createCampaignSchema = z.object({
   description: nullableTrimmedString,
   campaignType: campaignTypeSchema,
   channel: campaignChannelSchema.default("whatsapp"),
-  templateKey: z.string().trim().min(1).nullable().optional(),
+  templateKey: z.enum(NOTIFICATION_TYPES).nullable().optional(),
   customMessage: nullableTrimmedString,
   audienceFilter: campaignAudienceFilterSchema.default({ type: "all" }),
   bannerMediaId: z.string().uuid().nullable().optional(),
@@ -60,7 +60,6 @@ export const createCampaignSchema = z.object({
   goalAmount: nullablePositiveAmountString,
   campaignStartDate: nullableDateOnlyString,
   campaignEndDate: nullableDateOnlyString,
-  donationLinkOverride: nullableTrimmedString,
 });
 
 export const updateCampaignSchema = createCampaignSchema.partial();

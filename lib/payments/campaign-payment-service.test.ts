@@ -8,6 +8,7 @@ import {
   getPaymentTransactionById,
   getTransactionByProviderOrderId,
   markTransactionCapturedIfNotAlready,
+  updateTransactionStatus,
 } from "@/lib/db/payment-transactions";
 import { generateAndStoreReceipt } from "@/lib/receipts/receipt-service";
 import { enqueueNotification } from "@/lib/notifications/engine";
@@ -153,6 +154,57 @@ describe("runCaptureSideEffects (via applyPaymentEvent)", () => {
 
     expect(generateAndStoreReceipt).toHaveBeenCalledWith(
       expect.objectContaining({ transaction: expect.objectContaining({ donorPan: "AAAAA9999A" }) }),
+    );
+  });
+});
+
+describe("runFailureSideEffects (via applyPaymentEvent 'failed')", () => {
+  beforeEach(() => {
+    vi.mocked(getTenantById).mockReset().mockResolvedValue(tenant);
+    vi.mocked(listActiveAdminPersonIdsForTenant).mockReset().mockResolvedValue([]);
+    vi.mocked(getTransactionByProviderOrderId).mockReset();
+    vi.mocked(getPaymentTransactionById).mockReset();
+    vi.mocked(updateTransactionStatus).mockReset().mockResolvedValue(null);
+    vi.mocked(enqueueNotification).mockReset().mockResolvedValue([]);
+    vi.mocked(processNotifications).mockReset().mockResolvedValue(undefined);
+    vi.mocked(PaymentAuditService.transactionFailed).mockReset();
+  });
+
+  it("notifies the donor and every active admin with notificationType 'payment_failed'", async () => {
+    const failed = makeTransaction({ status: "failed" });
+    vi.mocked(getTransactionByProviderOrderId).mockResolvedValue(failed);
+    vi.mocked(getPaymentTransactionById).mockResolvedValue(failed);
+    vi.mocked(listActiveAdminPersonIdsForTenant).mockResolvedValue(["admin-1"]);
+
+    await applyPaymentEvent("acct-1", "order_1", { type: "failed", providerPaymentId: "pay_1" });
+
+    expect(updateTransactionStatus).toHaveBeenCalledWith("txn-1", "failed", "pay_1");
+    expect(PaymentAuditService.transactionFailed).toHaveBeenCalledWith("tenant-1", "txn-1");
+    expect(enqueueNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient: { phone: "+919876543210" },
+        notificationType: "payment_failed",
+        category: "donation",
+      }),
+    );
+    expect(enqueueNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient: { personId: "admin-1" },
+        notificationType: "payment_failed",
+        category: "donation",
+      }),
+    );
+  });
+
+  it("skips the donor notification when no phone was captured at checkout", async () => {
+    const failed = makeTransaction({ status: "failed", donorPhone: null });
+    vi.mocked(getTransactionByProviderOrderId).mockResolvedValue(failed);
+    vi.mocked(getPaymentTransactionById).mockResolvedValue(failed);
+
+    await applyPaymentEvent("acct-1", "order_1", { type: "failed", providerPaymentId: "pay_1" });
+
+    expect(enqueueNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({ recipient: { phone: expect.anything() } }),
     );
   });
 });

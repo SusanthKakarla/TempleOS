@@ -381,41 +381,79 @@ export interface EventNotification {
 
 export type NotificationChannel = "in_app" | "whatsapp";
 export type NotificationDeliveryStatus = EventNotificationDeliveryStatus;
-export type NotificationCategory =
-  | "birthday"
-  | "new_user"
-  | "devotee"
-  | "event"
-  | "announcement"
-  | "anniversary"
-  | "family"
-  | "platform"
-  | "donation"
-  | "festival"
-  | "campaign";
-export type NotificationType =
-  | "birthday_devotee"
-  | "birthday_priest"
-  | "user_welcome"
-  | "devotee_registered"
-  | "event_reminder"
-  | "anniversary_devotee"
-  | "anniversary_priest"
-  | "family_occasion_reminder"
-  | "tenant_config_changed"
-  | "tenant_status_changed"
-  | "donation_thank_you"
-  | "donation_recorded"
-  | "festival_greeting"
-  | "new_event"
-  | "event_updated"
-  | "event_cancelled"
-  | "event_announcement"
-  | "campaign_broadcast"
-  | "donation_campaign_broadcast"
-  | "donation_receipt"
-  | "payment_captured"
-  | "payment_refunded";
+
+export const NOTIFICATION_CATEGORIES = [
+  "birthday",
+  "new_user",
+  "devotee",
+  "event",
+  "announcement",
+  "anniversary",
+  "family",
+  "platform",
+  "donation",
+  "festival",
+  "campaign",
+] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+/**
+ * Every automated/triggered notification this app sends, grouped by what
+ * fires it. Deliberately kept as a TypeScript union (not a native Postgres
+ * ENUM/CHECK) — see the `notification_type`/`category` column comments added
+ * by migration 032 for why: this list is expected to keep growing, and a DB
+ * enum would need a migration for every future addition.
+ *
+ * - Devotee lifecycle: birthday_devotee, birthday_priest, anniversary_devotee,
+ *   anniversary_priest, family_occasion_reminder, devotee_registered.
+ * - Staff/platform: user_welcome, tenant_config_changed, tenant_status_changed.
+ * - Events: new_event, event_updated, event_cancelled, event_reminder,
+ *   event_announcement (admin-authored, free-form).
+ * - Campaigns: campaign_broadcast (generic/custom-message), donation_campaign_broadcast
+ *   (goal/raised-aware — also covers closing-reminder and goal-reached sends,
+ *   which reuse this same type at a later point in the campaign's lifecycle).
+ * - Donations (manual staff entry): donation_thank_you (to the donor),
+ *   donation_recorded (broadcast to all opted-in devotees).
+ * - Donations (online/Razorpay): donation_receipt (to the donor),
+ *   payment_captured (in-app only, to admins), payment_failed (donor +
+ *   in-app to admins), payment_refunded (donor + in-app to admins). Manual
+ *   and online donations intentionally use different type pairs — the two
+ *   flows don't share the same recorded data (e.g. online donations have no
+ *   devoteeId), not an inconsistency to unify.
+ * - Festivals: festival_greeting (explicit per-festival media, not the
+ *   tenant-media-reuse table).
+ * - Announcements: temple_announcement (admin-authored, free-form — a
+ *   one-off broadcast typed directly in Chatbot Settings, sent immediately
+ *   to every WhatsApp-opted-in devotee; distinct from event_announcement
+ *   (tied to one event) and campaign_broadcast (tied to a scheduled Campaign)).
+ */
+export const NOTIFICATION_TYPES = [
+  "birthday_devotee",
+  "birthday_priest",
+  "user_welcome",
+  "devotee_registered",
+  "event_reminder",
+  "anniversary_devotee",
+  "anniversary_priest",
+  "family_occasion_reminder",
+  "tenant_config_changed",
+  "tenant_status_changed",
+  "donation_thank_you",
+  "donation_recorded",
+  "festival_greeting",
+  "new_event",
+  "event_updated",
+  "event_cancelled",
+  "event_announcement",
+  "campaign_broadcast",
+  "donation_campaign_broadcast",
+  "donation_receipt",
+  "payment_captured",
+  "payment_failed",
+  "payment_refunded",
+  "temple_announcement",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export interface NotificationTemplate {
   id: string;
@@ -551,7 +589,6 @@ export interface Campaign {
   goalAmount: string | null;
   campaignStartDate: string | null;
   campaignEndDate: string | null;
-  donationLinkOverride: string | null;
   closingReminderSentAt: string | null;
   targetReachedAnnouncedAt: string | null;
   slug: string;

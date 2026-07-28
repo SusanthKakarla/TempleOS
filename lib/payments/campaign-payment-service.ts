@@ -41,6 +41,7 @@ export async function applyPaymentEvent(
   if (event.type === "failed") {
     await updateTransactionStatus(transaction.id, "failed", event.providerPaymentId);
     await PaymentAuditService.transactionFailed(transaction.tenantId, transaction.id);
+    await runFailureSideEffects(transaction.id);
     return;
   }
 
@@ -127,6 +128,50 @@ async function runRefundSideEffects(transactionId: string, refundAmount: number)
       category: "donation",
       language: "en",
       templateVars: { templeName: tenant.name, amount: formatInr(refundAmount) },
+    });
+    notificationIds.push(...created.filter((n) => n.channel === "in_app").map((n) => n.id));
+  }
+
+  if (notificationIds.length > 0) {
+    await processNotifications(notificationIds);
+  }
+}
+
+/** Notifies the donor (if a phone was captured at checkout) and every active admin that a payment attempt failed — same shape as runRefundSideEffects. */
+async function runFailureSideEffects(transactionId: string): Promise<void> {
+  const transaction = await getPaymentTransactionById(transactionId);
+  if (!transaction) return;
+
+  const tenant = await getTenantById(transaction.tenantId);
+  if (!tenant) return;
+
+  const notificationIds: string[] = [];
+
+  if (transaction.donorPhone) {
+    const created = await enqueueNotification({
+      tenantId: transaction.tenantId,
+      recipient: { phone: transaction.donorPhone },
+      notificationType: "payment_failed",
+      category: "donation",
+      language: "en",
+      templateVars: {
+        templeName: tenant.name,
+        amount: formatInr(transaction.amount),
+        transactionId: transaction.id,
+      },
+    });
+    notificationIds.push(...created.map((n) => n.id));
+  }
+
+  const adminPersonIds = await listActiveAdminPersonIdsForTenant(transaction.tenantId);
+  for (const personId of adminPersonIds) {
+    const created = await enqueueNotification({
+      tenantId: transaction.tenantId,
+      recipient: { personId },
+      notificationType: "payment_failed",
+      category: "donation",
+      language: "en",
+      templateVars: { templeName: tenant.name, amount: formatInr(transaction.amount) },
     });
     notificationIds.push(...created.filter((n) => n.channel === "in_app").map((n) => n.id));
   }

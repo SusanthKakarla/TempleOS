@@ -36,7 +36,6 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     goalAmount: source.goalAmount,
     campaignStartDate: source.campaignStartDate,
     campaignEndDate: source.campaignEndDate,
-    donationLinkOverride: source.donationLinkOverride,
     createdBy: session.membershipId,
   });
 

@@ -46,7 +46,6 @@ interface CampaignRow {
   // conversion is needed (or possible — these are already plain strings).
   campaign_start_date: string | null;
   campaign_end_date: string | null;
-  donation_link_override: string | null;
   closing_reminder_sent_at: Date | null;
   target_reached_announced_at: Date | null;
   slug: string;
@@ -79,7 +78,6 @@ function mapCampaign(row: CampaignRow): Campaign {
     goalAmount: row.goal_amount,
     campaignStartDate: row.campaign_start_date,
     campaignEndDate: row.campaign_end_date,
-    donationLinkOverride: row.donation_link_override,
     closingReminderSentAt: row.closing_reminder_sent_at ? row.closing_reminder_sent_at.toISOString() : null,
     targetReachedAnnouncedAt: row.target_reached_announced_at ? row.target_reached_announced_at.toISOString() : null,
     slug: row.slug,
@@ -205,7 +203,6 @@ export interface CreateCampaignInput {
   goalAmount: string | null;
   campaignStartDate: string | null;
   campaignEndDate: string | null;
-  donationLinkOverride: string | null;
   createdBy: string;
 }
 
@@ -216,9 +213,9 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
        tenant_id, title, description, campaign_type, channel, template_key, custom_message,
        audience_filter, banner_media_id, linked_event_id, linked_donation_purpose,
        schedule_type, scheduled_at, recurrence_rule,
-       goal_amount, campaign_start_date, campaign_end_date, donation_link_override, created_by,
+       goal_amount, campaign_start_date, campaign_end_date, created_by,
        slug, donation_token
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
      RETURNING *`,
     [
       tenantId,
@@ -238,7 +235,6 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
       input.goalAmount,
       input.campaignStartDate,
       input.campaignEndDate,
-      input.donationLinkOverride,
       input.createdBy,
       generateCampaignSlug(input.title),
       generateDonationToken(),
@@ -263,7 +259,6 @@ export interface UpdateCampaignInput {
   goalAmount?: string | null;
   campaignStartDate?: string | null;
   campaignEndDate?: string | null;
-  donationLinkOverride?: string | null;
 }
 
 /** Draft-only edit surface — once a campaign leaves draft, only status transitions (updateCampaignStatus) are allowed, enforced by the API layer, not here. */
@@ -289,7 +284,6 @@ export async function updateCampaign(
          goal_amount = CASE WHEN $23::boolean THEN $24::numeric ELSE goal_amount END,
          campaign_start_date = CASE WHEN $25::boolean THEN $26::date ELSE campaign_start_date END,
          campaign_end_date = CASE WHEN $27::boolean THEN $28::date ELSE campaign_end_date END,
-         donation_link_override = CASE WHEN $29::boolean THEN $30 ELSE donation_link_override END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING *`,
@@ -322,8 +316,6 @@ export async function updateCampaign(
       input.campaignStartDate ?? null,
       "campaignEndDate" in input,
       input.campaignEndDate ?? null,
-      "donationLinkOverride" in input,
-      input.donationLinkOverride ?? null,
     ],
   );
   return rows[0] ? mapCampaign(rows[0]) : null;

@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import type { NotificationMedia } from "@/types/db";
 import { GreetingMediaCard } from "@/features/media/greeting-media-card";
 import { FestivalMediaGrid } from "@/features/media/festival-media-grid";
+import { ManualAnnouncementCard } from "@/features/chatbot-settings/manual-announcement-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface NotificationSettingsContentProps {
@@ -36,6 +37,7 @@ export async function NotificationSettingsContent({
       <div className="grid gap-4 lg:grid-cols-2">
         <GreetingMediaCard birthday={birthdayMedia} anniversary={anniversaryMedia} donation={donationMedia} />
         <FestivalMediaGrid initialMedia={festivalMedia} />
+        <ManualAnnouncementCard />
       </div>
     </div>
   );

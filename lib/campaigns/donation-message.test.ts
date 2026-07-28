@@ -16,7 +16,6 @@ const baseCampaign: Pick<
   | "goalAmount"
   | "campaignStartDate"
   | "campaignEndDate"
-  | "donationLinkOverride"
   | "linkedDonationPurpose"
   | "slug"
   | "donationToken"
@@ -28,7 +27,6 @@ const baseCampaign: Pick<
   goalAmount: "100000",
   campaignStartDate: "2026-01-01",
   campaignEndDate: "2026-01-31",
-  donationLinkOverride: null,
   linkedDonationPurpose: "roof_restoration",
   slug: "temple-roof-restoration-abcd1234",
   donationToken: "test-token-123",
@@ -80,15 +78,9 @@ describe("buildDonationLink", () => {
     process.env.DONATION_LINK_BASE_URL = ORIGINAL_ENV;
   });
 
-  const campaign = { donationLinkOverride: null, slug: "temple-roof-restoration-abcd1234", donationToken: "test-token-123" };
+  const campaign = { slug: "temple-roof-restoration-abcd1234", donationToken: "test-token-123" };
 
-  it("prefers the campaign's own override when set", () => {
-    expect(buildDonationLink(tenant, { ...campaign, donationLinkOverride: "https://pay.example.com/custom" })).toBe(
-      "https://pay.example.com/custom",
-    );
-  });
-
-  it("falls back to DONATION_LINK_BASE_URL + tenantSlug/campaignSlug/token when no override is set", () => {
+  it("builds DONATION_LINK_BASE_URL + tenantSlug/campaignSlug/token", () => {
     process.env.DONATION_LINK_BASE_URL = "https://gateway.example.com/donate/";
     expect(buildDonationLink(tenant, campaign)).toBe(
       "https://gateway.example.com/donate/sri-venkateswara/temple-roof-restoration-abcd1234/test-token-123",

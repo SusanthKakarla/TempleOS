@@ -365,9 +365,43 @@ const CATALOG_SOURCE: Omit<StandardTemplateCatalogEntry, "description">[] = [
     appBody:
       "🙏 {{templeName}}కి మీరు చేసిన ₹{{amount}} విరాళం వాపసు చేయబడింది.\n\nరసీదు: {{receiptNumber}}\nలావాదేవీ ID: {{transactionId}}\n\nమీకు ఏవైనా ప్రశ్నలు ఉంటే, దయచేసి నేరుగా దేవాలయాన్ని సంప్రదించండి.",
   },
+  {
+    templateKey: "payment_failed",
+    language: "en",
+    metaTemplateName: "payment_failed",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "transactionId"],
+    appBody:
+      "⚠️ Your donation of ₹{{amount}} to {{templeName}} could not be completed.\n\nTransaction ID: {{transactionId}}\n\nPlease try again, or contact the temple directly if the amount was deducted.",
+  },
+  {
+    templateKey: "payment_failed",
+    language: "te",
+    metaTemplateName: "payment_failed",
+    metaCategory: "UTILITY",
+    variables: ["templeName", "amount", "transactionId"],
+    appBody:
+      "⚠️ {{templeName}}కి మీరు చేసిన ₹{{amount}} విరాళం పూర్తి కాలేదు.\n\nలావాదేవీ ID: {{transactionId}}\n\nదయచేసి మళ్లీ ప్రయత్నించండి, లేదా మొత్తం తీసివేయబడితే నేరుగా దేవాలయాన్ని సంప్రదించండి.",
+  },
+  {
+    templateKey: "family_occasion_reminder",
+    language: "en",
+    metaTemplateName: "family_occasion_reminder",
+    metaCategory: "UTILITY",
+    variables: ["occasionList", "templeName"],
+    appBody: "📢 Family Reminder\n\nTomorrow:\n{{occasionList}}\n\nfrom {{templeName}}",
+  },
+  {
+    templateKey: "family_occasion_reminder",
+    language: "te",
+    metaTemplateName: "family_occasion_reminder",
+    metaCategory: "UTILITY",
+    variables: ["occasionList", "templeName"],
+    appBody: "📢 కుటుంబ రిమైండర్\n\nరేపు:\n{{occasionList}}\n\n{{templeName}} నుండి",
+  },
 ];
 
-/** 16 standard template keys × {en, te} = 32 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
+/** 18 standard template keys × {en, te} = 36 entries. Bootstrapped automatically on WhatsApp connect/reconnect — see lib/whatsapp/template-bootstrap.ts. */
 export const STANDARD_TEMPLATE_CATALOG: StandardTemplateCatalogEntry[] = CATALOG_SOURCE.map((entry) => ({
   ...entry,
   description: `Standard TempleOS template for "${entry.templateKey}" (${entry.language}). Recommended starting point — adjust category/body/variables as needed before submitting in Meta Business Manager.`,
