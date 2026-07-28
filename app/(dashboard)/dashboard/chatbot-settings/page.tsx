@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { MessageCircle, Settings2 } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
 import { isFeatureEnabled } from "@/lib/db/tenant-features";
@@ -21,9 +21,7 @@ import { listTemplatesForTenant } from "@/lib/db/whatsapp-message-templates";
 import { ChatbotSettingsTabs } from "@/features/chatbot-settings/chatbot-settings-tabs";
 import { NotificationSettingsContent } from "@/features/chatbot-settings/notification-settings-content";
 import { AutomatedNotificationList } from "@/features/notifications/automated-notification-list";
-import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
 import { SettingsSection } from "@/features/chatbot-settings/settings-section";
-import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { NotificationCategory, NotificationMedia, SupportedLanguage } from "@/types/db";
@@ -49,8 +47,6 @@ async function resolveLinkedMedia(
 
 interface ChatbotSettingsPageProps {
   searchParams: Promise<{
-    whatsapp_connect_token?: string;
-    whatsapp_connect_error?: string;
     category?: string;
     notifPage?: string;
   }>;
@@ -93,22 +89,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
 
   if (!tenant) return null;
 
-  const decodedResult = params.whatsapp_connect_token ? verifyResultToken(params.whatsapp_connect_token) : null;
-  const initialConnectResult =
-    decodedResult && decodedResult.tenantId === session.tenantId
-      ? { code: decodedResult.code, wabaId: decodedResult.wabaId, phoneNumberId: decodedResult.phoneNumberId }
-      : null;
-  const initialCancelled = params.whatsapp_connect_error === "cancelled";
   const isConnected = whatsappAccount !== null && whatsappAccount.status === "connected";
-
-  const whatsappConnectionCard = (
-    <WhatsAppConnectionCard
-      account={whatsappAccount}
-      initialConnectResult={initialConnectResult}
-      initialCancelled={initialCancelled}
-      compact={isConnected}
-    />
-  );
 
   // NotificationSettingsContent/AutomatedNotificationList are async Server Components —
   // they must be rendered here (in this Server Component page), not imported into
@@ -166,22 +147,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   return (
     <div className="space-y-6">
       <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
-
-      {!isConnected && (
-        <div className="glass-card space-y-1 rounded-2xl border-primary/30 bg-primary/5 p-4 sm:p-5">
-          <p className="flex items-center gap-2 text-sm font-medium text-primary">
-            <MessageCircle className="size-4" />
-            {t("connectPrompt.title")}
-          </p>
-          <p className="text-sm text-muted-foreground">{t("connectPrompt.description")}</p>
-        </div>
-      )}
-
-      {!isConnected && whatsappConnectionCard}
-
       {chatbotConfigSection}
-
-      {isConnected && whatsappConnectionCard}
     </div>
   );
 }

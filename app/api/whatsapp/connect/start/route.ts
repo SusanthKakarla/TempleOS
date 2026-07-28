@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const host = firstHeaderHost(req.headers.get("x-forwarded-host")) ?? req.nextUrl.hostname;
   const protocol = req.headers.get("x-forwarded-proto") ?? req.nextUrl.protocol.replace(":", "");
-  const returnUrl = `${protocol}://${host}/dashboard/chatbot-settings`;
+  const returnUrl = `${protocol}://${host}/dashboard/settings/whatsapp`;
 
   const handoffToken = createHandoffToken({
     tenantId: session.tenantId,

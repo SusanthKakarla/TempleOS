@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ChevronRight, CreditCard } from "lucide-react";
+import { ChevronRight, CreditCard, MessageCircle } from "lucide-react";
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { isFeatureEnabled } from "@/lib/db/tenant-features";
 import { PageHeader } from "@/components/page-header";
@@ -10,6 +10,7 @@ export default async function SettingsPage() {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("settings");
   const paymentsEnabled = await isFeatureEnabled(session.tenantId, "donations");
+  const whatsappEnabled = await isFeatureEnabled(session.tenantId, "whatsapp_chatbot");
 
   return (
     <div className="space-y-6">
@@ -19,6 +20,25 @@ export default async function SettingsPage() {
         <h2 className="text-sm font-medium text-muted-foreground">{t("applicationSection")}</h2>
         <PWAStatus />
       </section>
+
+      {whatsappEnabled && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">{t("whatsappSection")}</h2>
+          <Link
+            href="/dashboard/settings/whatsapp"
+            className="glass-card flex items-center gap-3 rounded-2xl p-4 shadow-sm transition-colors hover:bg-accent"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessageCircle className="size-4.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">{t("whatsappLinkTitle")}</p>
+              <p className="text-sm text-muted-foreground">{t("whatsappLinkDescription")}</p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        </section>
+      )}
 
       {paymentsEnabled && (
         <section className="space-y-3">

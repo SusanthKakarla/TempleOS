@@ -1249,9 +1249,18 @@
       "subtitle": "Manage your TempleOS application preferences."
     },
     "applicationSection": "Application",
+    "whatsappSection": "WhatsApp",
+    "whatsappLinkTitle": "WhatsApp Connection",
+    "whatsappLinkDescription": "Connect or manage your temple's WhatsApp Business number.",
     "paymentsSection": "Payments",
     "paymentsLinkTitle": "Payment Provider",
     "paymentsLinkDescription": "Connect Razorpay to accept online donations."
+  },
+  "whatsappSettings": {
+    "pageHeader": {
+      "title": "WhatsApp Connection",
+      "subtitle": "Connect your temple's WhatsApp Business number to enable the chatbot and message delivery."
+    }
   },
   "paymentSettings": {
     "pageHeader": {

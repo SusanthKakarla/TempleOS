@@ -1263,9 +1263,18 @@
       "subtitle": "మీ TempleOS అప్లికేషన్ ప్రాధాన్యతలను నిర్వహించండి."
     },
     "applicationSection": "అప్లికేషన్",
+    "whatsappSection": "వాట్సాప్",
+    "whatsappLinkTitle": "వాట్సాప్ కనెక్షన్",
+    "whatsappLinkDescription": "మీ దేవాలయం వాట్సాప్ బిజినెస్ నంబర్‌ను కనెక్ట్ చేయండి లేదా నిర్వహించండి.",
     "paymentsSection": "చెల్లింపులు",
     "paymentsLinkTitle": "చెల్లింపు ప్రొవైడర్",
     "paymentsLinkDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి Razorpayని కనెక్ట్ చేయండి."
+  },
+  "whatsappSettings": {
+    "pageHeader": {
+      "title": "వాట్సాప్ కనెక్షన్",
+      "subtitle": "చాట్‌బాట్ మరియు మెసేజ్ డెలివరీని ప్రారంభించడానికి మీ దేవాలయం వాట్సాప్ బిజినెస్ నంబర్‌ను కనెక్ట్ చేయండి."
+    }
   },
   "paymentSettings": {
     "pageHeader": {
