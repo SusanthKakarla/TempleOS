@@ -23,7 +23,13 @@ interface RouteContext {
  * existing temple, alongside the provisioning wizard's creation-time option.
  */
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const superAdmin = await requireSuperAdmin().catch(() => undefined);
+  const superAdmin = await requireSuperAdmin().catch((err: unknown) => {
+    console.error("[payments:super-admin-connect] requireSuperAdmin threw", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return undefined;
+  });
   if (superAdmin === undefined) {
     return connectFailedResponse();
   }
@@ -35,42 +41,48 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   if (!uuidPattern.test(tenantId)) {
     return templeNotFoundResponse();
   }
-  const tenant = await getTenantById(tenantId);
-  if (!tenant) {
-    return templeNotFoundResponse();
-  }
 
-  const json = await req.json().catch(() => invalidJson);
-  if (json === invalidJson) {
-    return validationErrorResponse("Invalid JSON body.");
-  }
-
-  const parsed = superAdminConnectRazorpaySchema.safeParse(json);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.issues[0]?.message ?? "Invalid request.");
-  }
-
-  // Nothing is saved if the keys don't actually work — same "prove it live
-  // before persisting" rule the WhatsApp manual-connect route follows for
-  // the Phone Number ID / WABA.
-  const validation = await validateCredentials("razorpay", {
-    keyId: parsed.data.keyId,
-    keySecret: parsed.data.keySecret,
-    webhookSecret: parsed.data.webhookSecret ?? null,
-  });
-  if (!validation.ok) {
-    return NextResponse.json(
-      {
-        error: `Razorpay rejected these credentials: ${validation.error}`,
-        code: "RAZORPAY_API_ERROR",
-        statusCode: validation.statusCode,
-        razorpayError: validation.razorpayError,
-      },
-      { status: 502 },
-    );
-  }
-
+  // Everything from here on can hit the database or Razorpay's live API —
+  // both can fail in ways unrelated to the submitted credentials (a DB
+  // blip, a network hiccup reaching Razorpay, etc). Wrapping the rest in one
+  // try/catch means any such failure is still fully logged here instead of
+  // falling through to Next.js's own opaque, unlogged 500.
   try {
+    const tenant = await getTenantById(tenantId);
+    if (!tenant) {
+      return templeNotFoundResponse();
+    }
+
+    const json = await req.json().catch(() => invalidJson);
+    if (json === invalidJson) {
+      return validationErrorResponse("Invalid JSON body.");
+    }
+
+    const parsed = superAdminConnectRazorpaySchema.safeParse(json);
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error.issues[0]?.message ?? "Invalid request.");
+    }
+
+    // Nothing is saved if the keys don't actually work — same "prove it live
+    // before persisting" rule the WhatsApp manual-connect route follows for
+    // the Phone Number ID / WABA.
+    const validation = await validateCredentials("razorpay", {
+      keyId: parsed.data.keyId,
+      keySecret: parsed.data.keySecret,
+      webhookSecret: parsed.data.webhookSecret ?? null,
+    });
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          error: `Razorpay rejected these credentials: ${validation.error}`,
+          code: "RAZORPAY_API_ERROR",
+          statusCode: validation.statusCode,
+          razorpayError: validation.razorpayError,
+        },
+        { status: 502 },
+      );
+    }
+
     const account = await connectPaymentAccountForSuperAdmin(tenantId, {
       providerKey: "razorpay",
       keyId: parsed.data.keyId,
@@ -81,13 +93,25 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     await PaymentAuditService.accountConnectedBySuperAdmin(tenantId, superAdmin.id, account.id, account.providerKey);
 
     return NextResponse.json({ account });
-  } catch {
+  } catch (err) {
+    console.error("[payments:super-admin-connect] Unhandled error while connecting", {
+      tenantId,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      raw: err,
+    });
     return connectFailedResponse();
   }
 }
 
 export async function DELETE(_req: NextRequest, context: RouteContext) {
-  const superAdmin = await requireSuperAdmin().catch(() => undefined);
+  const superAdmin = await requireSuperAdmin().catch((err: unknown) => {
+    console.error("[payments:super-admin-disconnect] requireSuperAdmin threw", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return undefined;
+  });
   if (superAdmin === undefined) {
     return disconnectFailedResponse();
   }
@@ -100,18 +124,28 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     return templeNotFoundResponse();
   }
 
-  const account = await getActivePaymentAccountForTenant(tenantId);
-  if (!account) {
-    return NextResponse.json(
-      { error: "No payment account is connected for this temple.", code: "NOT_CONNECTED" },
-      { status: 400 },
-    );
+  try {
+    const account = await getActivePaymentAccountForTenant(tenantId);
+    if (!account) {
+      return NextResponse.json(
+        { error: "No payment account is connected for this temple.", code: "NOT_CONNECTED" },
+        { status: 400 },
+      );
+    }
+
+    await disconnectPaymentAccount(tenantId, account.id);
+    await PaymentAuditService.accountDisconnectedBySuperAdmin(tenantId, superAdmin.id, account.id);
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[payments:super-admin-disconnect] Unhandled error while disconnecting", {
+      tenantId,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      raw: err,
+    });
+    return disconnectFailedResponse();
   }
-
-  await disconnectPaymentAccount(tenantId, account.id);
-  await PaymentAuditService.accountDisconnectedBySuperAdmin(tenantId, superAdmin.id, account.id);
-
-  return NextResponse.json({ ok: true });
 }
 
 function templeNotFoundResponse(): NextResponse {

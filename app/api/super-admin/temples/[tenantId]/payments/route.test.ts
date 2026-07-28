@@ -127,6 +127,45 @@ describe("super admin payment connection route", () => {
       expect(validateCredentials).not.toHaveBeenCalled();
     });
 
+    it("logs and returns a clean 500 (not an opaque framework error) when an unrelated step throws, e.g. a DB blip in getTenantById", async () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin as never);
+      vi.mocked(getTenantById).mockRejectedValue(new Error("connection terminated unexpectedly"));
+
+      const res = await PUT(putRequest({ keyId: "rzp_test_abc123", keySecret: "secret" }) as never, context());
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.code).toBe("CONNECT_FAILED");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[payments:super-admin-connect] Unhandled error while connecting",
+        expect.objectContaining({ message: "connection terminated unexpectedly" }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("logs and returns a clean 500 when connectPaymentAccountForSuperAdmin throws after validation passes", async () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin as never);
+      vi.mocked(getTenantById).mockResolvedValue({ id: tenantId } as never);
+      vi.mocked(validateCredentials).mockResolvedValue({ ok: true });
+      vi.mocked(connectPaymentAccountForSuperAdmin).mockRejectedValue(new Error("duplicate key value"));
+
+      const res = await PUT(
+        putRequest({ keyId: "rzp_test_abc123", keySecret: "correct-secret" }) as never,
+        context(),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.code).toBe("CONNECT_FAILED");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[payments:super-admin-connect] Unhandled error while connecting",
+        expect.objectContaining({ message: "duplicate key value" }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
     it("never saves credentials that fail live validation against Razorpay", async () => {
       vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin as never);
       vi.mocked(getTenantById).mockResolvedValue({ id: tenantId } as never);
