@@ -1,4 +1,4 @@
-import { sendImageMessage, sendTextMessage, type SendMessageResult } from "./client";
+import { sendImageMessage, sendTextMessage, type SendMessageResult, type TemplateHeaderDocument } from "./client";
 import { resolveDeliveryStrategy } from "./delivery-strategy";
 import { sendTemplate } from "./template-client";
 import { classifyWhatsAppError, isPermanentWhatsAppError } from "./errors";
@@ -16,6 +16,8 @@ export interface SendNotificationInput {
   freeFormImageUrl?: string | null;
   /** Named variable context for template sends — the notification's own `metadata` (already populated by enqueueNotification for the free-form render). */
   templateContext: Record<string, string | undefined>;
+  /** Attaches a PDF as the template's header component (e.g. a donation receipt) — only takes effect once the approved template variant declares a document header. */
+  headerDocument?: TemplateHeaderDocument;
 }
 
 export interface SendNotificationResult extends SendMessageResult {
@@ -75,6 +77,7 @@ export async function sendNotification(input: SendNotificationInput): Promise<Se
     input.language,
     input.toPhone,
     input.templateContext,
+    input.headerDocument,
   );
   // A local validation failure (missing/unapproved/disabled template, missing
   // variables) will fail identically on every retry, same as a permanent Meta

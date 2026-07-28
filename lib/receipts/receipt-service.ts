@@ -43,6 +43,7 @@ export async function generateAndStoreReceipt(input: GenerateReceiptInput): Prom
     donorName: input.transaction.isAnonymous ? "Anonymous" : input.transaction.donorName,
     donorPhone: input.transaction.donorPhone,
     donorEmail: input.transaction.donorEmail,
+    donorPan: input.transaction.donorPan,
   });
 
   const uploaded = await uploadImage(Buffer.from(pdfBuffer), "receipts", `${receiptNumber}.pdf`);

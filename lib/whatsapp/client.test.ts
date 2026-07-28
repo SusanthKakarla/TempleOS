@@ -113,6 +113,39 @@ describe("sendTemplateMessage", () => {
     expect(body.template.components).toBeUndefined();
   });
 
+  it("adds a document header when a receipt attachment is given", async () => {
+    await sendTemplateMessage("phone-id", "+919876543210", "donation_receipt_v1", "en", ["Sri Venkateswara Temple"], {
+      link: "https://cdn.example/receipts/R-1.pdf",
+      filename: "R-1.pdf",
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const body = JSON.parse(init!.body as string);
+    expect(body.template.components).toEqual([
+      {
+        type: "header",
+        parameters: [{ type: "document", document: { link: "https://cdn.example/receipts/R-1.pdf", filename: "R-1.pdf" } }],
+      },
+      { type: "body", parameters: [{ type: "text", text: "Sri Venkateswara Temple" }] },
+    ]);
+  });
+
+  it("sends only the document header when there are no body variables", async () => {
+    await sendTemplateMessage("phone-id", "+919876543210", "donation_receipt_v1", "en", [], {
+      link: "https://cdn.example/receipts/R-1.pdf",
+      filename: "R-1.pdf",
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const body = JSON.parse(init!.body as string);
+    expect(body.template.components).toEqual([
+      {
+        type: "header",
+        parameters: [{ type: "document", document: { link: "https://cdn.example/receipts/R-1.pdf", filename: "R-1.pdf" } }],
+      },
+    ]);
+  });
+
   it("surfaces Meta's structured error code on failure, same as the other send functions", async () => {
     vi.stubGlobal(
       "fetch",

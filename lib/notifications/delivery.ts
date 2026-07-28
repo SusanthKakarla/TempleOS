@@ -16,6 +16,7 @@ import {
 import { buildWhatsAppImageUrl } from "@/lib/media/imagekit";
 import { isPermanentWhatsAppError } from "@/lib/whatsapp/errors";
 import { sendNotification } from "@/lib/whatsapp/send-notification";
+import type { TemplateHeaderDocument } from "@/lib/whatsapp/client";
 import { logDeliveryOutcome } from "@/lib/whatsapp/delivery-logger";
 import type { Notification } from "@/types/db";
 
@@ -28,6 +29,22 @@ function metadataToTemplateContext(metadata: Record<string, unknown>): Record<st
     }
   }
   return context;
+}
+
+/**
+ * Attaches the receipt PDF as the template's document header — only for the
+ * donation_receipt notification, only once a receipt link actually exists.
+ * Meta ignores/rejects a document header on a template variant that hasn't
+ * been re-approved with one, so this is safe to always pass; it only takes
+ * effect once that Meta-side template resubmission is done.
+ */
+function resolveReceiptHeaderDocument(claimed: Notification): TemplateHeaderDocument | undefined {
+  if (claimed.notificationType !== "donation_receipt") return undefined;
+  const receiptLink = claimed.metadata.receiptLink;
+  if (typeof receiptLink !== "string" || !receiptLink) return undefined;
+  const receiptNumber = claimed.metadata.receiptNumber;
+  const filename = typeof receiptNumber === "string" && receiptNumber ? `${receiptNumber}.pdf` : "receipt.pdf";
+  return { link: receiptLink, filename };
 }
 
 /**
@@ -71,6 +88,7 @@ async function processOneNotification(id: string): Promise<void> {
     freeFormMessage: claimed.message,
     freeFormImageUrl: media ? buildWhatsAppImageUrl(media.imageUrl) : null,
     templateContext: metadataToTemplateContext(claimed.metadata),
+    headerDocument: resolveReceiptHeaderDocument(claimed),
   });
 
   const { outcome, terminal } = await logDeliveryOutcome(claimed, result);

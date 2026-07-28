@@ -144,6 +144,11 @@ export function sendListMessage(
   });
 }
 
+export interface TemplateHeaderDocument {
+  link: string;
+  filename: string;
+}
+
 /**
  * Sends a Meta-approved WhatsApp Message Template — the only send type Meta
  * allows outside the 24h customer-service window. `bodyParams` are already
@@ -151,6 +156,13 @@ export function sendListMessage(
  * this is a raw Graph API primitive, same level as the 4 functions above —
  * template lookup/validation/variable-resolution lives in
  * lib/whatsapp/template-client.ts, not here.
+ *
+ * `headerDocument` attaches a PDF as the template's header component (e.g. a
+ * donation receipt) — same "widen the existing header-building logic" pattern
+ * sendButtonMessage already uses for image headers. Meta only renders this if
+ * the approved template variant actually declares a document header
+ * component; sending it to a template that doesn't is safely ignored/rejected
+ * by Meta, never a silent breakage.
  */
 export function sendTemplateMessage(
   phoneNumberId: string,
@@ -158,15 +170,25 @@ export function sendTemplateMessage(
   templateName: string,
   languageCode: string,
   bodyParams: string[],
+  headerDocument?: TemplateHeaderDocument,
 ): Promise<SendMessageResult> {
+  const components: Record<string, unknown>[] = [];
+  if (headerDocument) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "document", document: { link: headerDocument.link, filename: headerDocument.filename } }],
+    });
+  }
+  if (bodyParams.length > 0) {
+    components.push({ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) });
+  }
+
   return sendMessage(phoneNumberId, toPhone, {
     type: "template",
     template: {
       name: templateName,
       language: { code: languageCode },
-      ...(bodyParams.length > 0
-        ? { components: [{ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) }] }
-        : {}),
+      ...(components.length > 0 ? { components } : {}),
     },
   });
 }

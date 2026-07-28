@@ -26,6 +26,8 @@ const transaction: PaymentTransaction = {
   donorName: "Ravi Kumar",
   donorPhone: "+919876543210",
   donorEmail: null,
+  donorPan: null,
+  donorMessage: null,
   isAnonymous: false,
   receiptNumber: null,
   receiptUrl: null,

@@ -15,6 +15,7 @@ export interface ReceiptPdfData {
   donorName: string;
   donorPhone: string | null;
   donorEmail: string | null;
+  donorPan: string | null;
 }
 
 /**
@@ -58,6 +59,7 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
     row("Donor Name:", data.donorName);
     if (data.donorPhone) row("Donor Phone:", data.donorPhone);
     if (data.donorEmail) row("Donor Email:", data.donorEmail);
+    if (data.donorPan) row("Donor PAN:", data.donorPan);
     if (data.campaignTitle) row("Campaign:", data.campaignTitle);
     row("Payment Method:", data.paymentMethod);
 

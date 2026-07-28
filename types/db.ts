@@ -256,6 +256,8 @@ export interface PaymentTransaction {
   donorName: string;
   donorPhone: string | null;
   donorEmail: string | null;
+  donorPan: string | null;
+  donorMessage: string | null;
   isAnonymous: boolean;
   receiptNumber: string | null;
   receiptUrl: string | null;

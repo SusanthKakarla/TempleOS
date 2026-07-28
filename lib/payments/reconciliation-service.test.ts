@@ -53,6 +53,8 @@ function makeTransaction(overrides: Partial<PaymentTransaction> = {}): PaymentTr
     donorName: "Ravi",
     donorPhone: null,
     donorEmail: null,
+    donorPan: null,
+    donorMessage: null,
     isAnonymous: false,
     receiptNumber: null,
     receiptUrl: null,

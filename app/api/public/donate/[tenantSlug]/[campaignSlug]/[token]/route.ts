@@ -30,6 +30,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     donorName: parsed.data.donorName,
     donorPhone: parsed.data.donorPhone ?? null,
     donorEmail: parsed.data.donorEmail ?? null,
+    donorPan: parsed.data.donorPan ?? null,
+    donationMessage: parsed.data.donationMessage ?? null,
     isAnonymous: parsed.data.isAnonymous,
   });
 

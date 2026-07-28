@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { loadDonationCheckoutContext } from "@/lib/payments/donation-checkout-service";
+import { CalendarX2, PauseCircle, SearchX } from "lucide-react";
+import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { buildDonationLink, computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { formatInr } from "@/lib/currency";
 import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/empty-state";
 import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
 import { ShareButton } from "@/features/payments/share-button";
 
@@ -13,22 +15,47 @@ interface PageParams {
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
+const UNAVAILABLE_COPY = {
+  not_found: {
+    icon: <SearchX className="size-6" />,
+    title: "This donation link isn't available",
+    description: "It may be incorrect, or the campaign may no longer exist. Please contact the temple directly.",
+  },
+  disabled: {
+    icon: <PauseCircle className="size-6" />,
+    title: "This campaign isn't accepting donations right now",
+    description: "The temple has paused or closed this campaign. Please check back later or contact the temple directly.",
+  },
+  expired: {
+    icon: <CalendarX2 className="size-6" />,
+    title: "This campaign has ended",
+    description: "The donation window for this campaign has closed. Please contact the temple directly for other ways to give.",
+  },
+} as const;
+
+function TempleMonogram({ name }: { name: string }) {
+  const initial = name.trim().charAt(0).toUpperCase() || "T";
+  return (
+    <div className="gradient-blue-purple flex size-12 items-center justify-center rounded-2xl text-lg font-semibold text-white shadow-sm">
+      {initial}
+    </div>
+  );
+}
+
 export default async function DonatePage({ params }: PageParams) {
   const { tenantSlug, campaignSlug, token } = await params;
-  const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
+  const availability = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token);
 
-  if (!context) {
+  if (!availability.ok) {
+    const copy = UNAVAILABLE_COPY[availability.reason];
     return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-lg font-semibold">This donation link isn&apos;t available</p>
-        <p className="text-sm text-muted-foreground">
-          It may have expired, or the campaign may no longer be accepting donations. Please contact the temple directly.
-        </p>
+      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4">
+        <EmptyState icon={copy.icon} title={copy.title} description={copy.description} />
       </div>
     );
   }
 
-  const { tenant, campaign, summary } = context;
+  const { tenant, campaign, summary } = availability.context;
   const banner = campaign.bannerMediaId ? await getNotificationMediaById(tenant.id, campaign.bannerMediaId) : null;
   const goal = Number(campaign.goalAmount ?? 0);
   const rawPercentage = computeRaisedPercentage(summary.totalAmount, goal);
@@ -36,7 +63,8 @@ export default async function DonatePage({ params }: PageParams) {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10">
-      <div className="mb-6 text-center">
+      <div className="mb-6 flex flex-col items-center gap-2 text-center">
+        <TempleMonogram name={tenant.name} />
         <p className="text-sm font-medium text-muted-foreground">{tenant.name}</p>
       </div>
 

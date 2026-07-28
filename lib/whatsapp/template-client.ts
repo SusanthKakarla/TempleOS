@@ -1,4 +1,4 @@
-import { sendTemplateMessage, type SendMessageResult } from "./client";
+import { sendTemplateMessage, type SendMessageResult, type TemplateHeaderDocument } from "./client";
 import { getTemplateForNotification } from "./template-registry";
 import { validateTemplate, type TemplateValidationFailureCategory } from "./template-validator";
 import type { WhatsAppMessageTemplate } from "@/types/db";
@@ -24,6 +24,7 @@ export async function sendTemplate(
   language: string,
   toPhone: string,
   context: Record<string, string | undefined>,
+  headerDocument?: TemplateHeaderDocument,
 ): Promise<TemplateSendResult> {
   const template = await getTemplateForNotification(tenantId, templateKey, language);
   const validation = validateTemplate(template, toPhone, context);
@@ -43,6 +44,7 @@ export async function sendTemplate(
     validation.template.metaTemplateName,
     language,
     validation.params,
+    headerDocument,
   );
   return { ...result, template: validation.template };
 }

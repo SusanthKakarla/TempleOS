@@ -17,6 +17,8 @@ interface PaymentTransactionRow {
   donor_name: string;
   donor_phone: string | null;
   donor_email: string | null;
+  donor_pan: string | null;
+  donor_message: string | null;
   is_anonymous: boolean;
   receipt_number: string | null;
   receipt_url: string | null;
@@ -40,6 +42,8 @@ function mapTransaction(row: PaymentTransactionRow): PaymentTransaction {
     donorName: row.donor_name,
     donorPhone: row.donor_phone,
     donorEmail: row.donor_email,
+    donorPan: row.donor_pan,
+    donorMessage: row.donor_message,
     isAnonymous: row.is_anonymous,
     receiptNumber: row.receipt_number,
     receiptUrl: row.receipt_url,
@@ -59,6 +63,8 @@ export interface CreatePaymentTransactionInput {
   donorName: string;
   donorPhone: string | null;
   donorEmail: string | null;
+  donorPan: string | null;
+  donorMessage: string | null;
   isAnonymous: boolean;
 }
 
@@ -66,8 +72,8 @@ export async function createPaymentTransaction(input: CreatePaymentTransactionIn
   const { rows } = await getPool().query<PaymentTransactionRow>(
     `INSERT INTO payment_transactions
        (tenant_id, payment_account_id, campaign_id, provider_key, provider_order_id, amount, currency,
-        donor_name, donor_phone, donor_email, is_anonymous)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        donor_name, donor_phone, donor_email, donor_pan, donor_message, is_anonymous)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
     [
       input.tenantId,
@@ -80,6 +86,8 @@ export async function createPaymentTransaction(input: CreatePaymentTransactionIn
       input.donorName,
       input.donorPhone,
       input.donorEmail,
+      input.donorPan,
+      input.donorMessage,
       input.isAnonymous,
     ],
   );

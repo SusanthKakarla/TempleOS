@@ -15,33 +15,65 @@ export interface DonationCheckoutContext {
   summary: CampaignDonationSummary;
 }
 
+export type DonationCheckoutUnavailableReason = "not_found" | "disabled" | "expired";
+
+export type DonationCheckoutAvailability =
+  | { ok: true; context: DonationCheckoutContext }
+  | { ok: false; reason: DonationCheckoutUnavailableReason };
+
 /**
- * The one load/validate chain for the public donation page — every failure
- * mode (unknown tenant, unknown campaign, wrong token, campaign not running,
- * no provider connected) returns the same `null`. Callers must render one
- * generic "this donation link isn't available" state regardless of which
- * check failed, so the page can never be used to enumerate valid
- * tenants/campaigns/tokens.
+ * The one load/validate chain for the public donation page.
+ *
+ * Checks are deliberately split into two tiers to balance UX against the
+ * anti-enumeration posture this page has always had:
+ *  - Unknown tenant, unknown campaign, wrong campaign type/purpose, or a
+ *    *wrong token* all collapse into the same generic "not_found" — telling
+ *    someone "invalid token" (as opposed to "not found") would let them
+ *    confirm a guessed tenant+campaign slug pair is real and just probe for
+ *    the right token, which is exactly the enumeration this page must never
+ *    allow.
+ *  - Only once the token itself is proven correct (i.e. this exact campaign
+ *    is confirmed real) is it safe to say *why* it can't accept donations
+ *    right now — that reveals nothing an attacker didn't already prove by
+ *    holding a valid token.
  */
+export async function resolveDonationCheckoutAvailability(
+  tenantSlug: string,
+  campaignSlug: string,
+  token: string,
+): Promise<DonationCheckoutAvailability> {
+  const tenant = await getTenantBySlug(tenantSlug);
+  if (!tenant || tenant.status !== "active") return { ok: false, reason: "not_found" };
+
+  const campaign = await getCampaignBySlugForTenant(tenant.id, campaignSlug);
+  if (!campaign) return { ok: false, reason: "not_found" };
+  if (!constantTimeEqual(campaign.donationToken, token)) return { ok: false, reason: "not_found" };
+  if (campaign.campaignType !== "donation" || !campaign.linkedDonationPurpose) {
+    return { ok: false, reason: "not_found" };
+  }
+
+  if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < new Date()) {
+    return { ok: false, reason: "expired" };
+  }
+  if (campaign.status !== "running") {
+    return { ok: false, reason: "disabled" };
+  }
+
+  const account = await getActivePaymentAccountForTenant(tenant.id);
+  if (!account) return { ok: false, reason: "disabled" };
+
+  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
+  return { ok: true, context: { tenant, campaign, account, summary } };
+}
+
+/** Thin boolean-gate wrapper over `resolveDonationCheckoutAvailability` for callers (order creation) that only need go/no-go, not the reason. */
 export async function loadDonationCheckoutContext(
   tenantSlug: string,
   campaignSlug: string,
   token: string,
 ): Promise<DonationCheckoutContext | null> {
-  const tenant = await getTenantBySlug(tenantSlug);
-  if (!tenant || tenant.status !== "active") return null;
-
-  const campaign = await getCampaignBySlugForTenant(tenant.id, campaignSlug);
-  if (!campaign) return null;
-  if (!constantTimeEqual(campaign.donationToken, token)) return null;
-  if (campaign.campaignType !== "donation" || campaign.status !== "running") return null;
-  if (!campaign.linkedDonationPurpose) return null;
-
-  const account = await getActivePaymentAccountForTenant(tenant.id);
-  if (!account) return null;
-
-  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
-  return { tenant, campaign, account, summary };
+  const result = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token);
+  return result.ok ? result.context : null;
 }
 
 export interface CreateCheckoutOrderInput {
@@ -49,6 +81,8 @@ export interface CreateCheckoutOrderInput {
   donorName: string;
   donorPhone: string | null;
   donorEmail: string | null;
+  donorPan: string | null;
+  donationMessage: string | null;
   isAnonymous: boolean;
 }
 
@@ -91,6 +125,8 @@ export async function createCheckoutOrder(
     donorName: input.donorName,
     donorPhone: input.donorPhone,
     donorEmail: input.donorEmail,
+    donorPan: input.donorPan,
+    donorMessage: input.donationMessage,
     isAnonymous: input.isAnonymous,
   });
 

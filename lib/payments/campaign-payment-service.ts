@@ -156,6 +156,14 @@ async function runCaptureSideEffects(transactionId: string): Promise<void> {
   ]);
   if (!tenant) return;
 
+  const notes = [
+    `Razorpay transaction ${transaction.id}`,
+    transaction.donorPan ? `PAN: ${transaction.donorPan}` : null,
+    transaction.donorMessage ? `Message: ${transaction.donorMessage}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
   const donation = await createDonation(transaction.tenantId, {
     devoteeId: null,
     manualDonor: {
@@ -168,7 +176,7 @@ async function runCaptureSideEffects(transactionId: string): Promise<void> {
     amount: transaction.amount,
     purpose: campaign?.linkedDonationPurpose ?? "online_donation",
     paymentMethod: "razorpay",
-    notes: `Razorpay transaction ${transaction.id}`,
+    notes,
     donatedAt: new Date().toISOString(),
     recordedBy: null,
   });

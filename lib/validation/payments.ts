@@ -18,10 +18,16 @@ export const donationCheckoutSchema = z.object({
   donorPhone: z
     .string()
     .trim()
-    .regex(/^\+?[0-9]{7,15}$/, "Enter a valid phone number")
+    .regex(/^\+?[0-9]{7,15}$/, "Enter a valid mobile number"),
+  donorEmail: z.string().trim().email("Enter a valid email").nullable().optional(),
+  donorPan: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Enter a valid PAN (e.g. AAAAA9999A)")
     .nullable()
     .optional(),
-  donorEmail: z.string().trim().email("Enter a valid email").nullable().optional(),
+  donationMessage: z.string().trim().max(500, "Message is too long").nullable().optional(),
   isAnonymous: z.boolean().default(false),
 });
 
