@@ -57,22 +57,50 @@ export interface PaymentAccountCredentialsInput {
   webhookSecret: string | null;
 }
 
-/** Provisioning-time link (new tenant, no prior payment account to deactivate) — mirrors `linkWhatsAppAccountForProvisioning`. */
+/**
+ * Provisioning-time link, and also the underlying primitive
+ * `connectPaymentAccountForSuperAdmin` re-runs on every manual (re)connect —
+ * mirrors `linkWhatsAppAccountForProvisioning`. Uses `ON CONFLICT (tenant_id,
+ * provider_key)` (the one row this tenant+provider pair can ever have,
+ * connected or not — see migrations/025_payment_provider_framework.sql) to
+ * update that row in place rather than a plain INSERT, which would violate
+ * the unique constraint the moment a tenant reconnects after a disconnect
+ * (the disabled row is never deleted, so it's always still there). Explicitly
+ * clears the OAuth-only credential columns and any stale verification state
+ * on conflict, since this path always means "this tenant is manual now."
+ */
 export async function linkPaymentAccountForProvisioning(
   tenantId: string,
   input: PaymentAccountCredentialsInput,
   client: QueryClient,
 ): Promise<TenantPaymentAccount> {
   const { rows } = await client.query<PaymentAccountRow>(
-    `INSERT INTO tenant_payment_accounts (tenant_id, provider_key, status, is_active)
-     VALUES ($1, $2, 'connected', true)
+    `INSERT INTO tenant_payment_accounts (tenant_id, provider_key, connection_method, razorpay_account_id, status, is_active)
+     VALUES ($1, $2, 'manual', NULL, 'connected', true)
+     ON CONFLICT (tenant_id, provider_key) DO UPDATE SET
+       connection_method = 'manual',
+       razorpay_account_id = NULL,
+       status = 'connected',
+       is_active = true,
+       last_validated_at = NULL,
+       last_validation_error = NULL,
+       updated_at = now()
      RETURNING *`,
     [tenantId, input.providerKey],
   );
   const account = mapAccount(rows[0]);
   await client.query(
     `INSERT INTO tenant_payment_credentials (payment_account_id, key_id, encrypted_key_secret, encrypted_webhook_secret)
-     VALUES ($1, $2, $3, $4)`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (payment_account_id) DO UPDATE SET
+       key_id = EXCLUDED.key_id,
+       encrypted_key_secret = EXCLUDED.encrypted_key_secret,
+       encrypted_webhook_secret = EXCLUDED.encrypted_webhook_secret,
+       encrypted_access_token = NULL,
+       encrypted_refresh_token = NULL,
+       access_token_expires_at = NULL,
+       public_token = NULL,
+       updated_at = now()`,
     [account.id, input.keyId, encryptSecret(input.keySecret), input.webhookSecret ? encryptSecret(input.webhookSecret) : null],
   );
   return account;
@@ -110,7 +138,16 @@ export interface PartnerPaymentAccountInput {
   publicToken: string | null;
 }
 
-/** OAuth-connect equivalent of `connectPaymentAccount` — deactivates any prior active account for this tenant, then inserts a `connection_method = 'partner'` account/credentials pair instead of a manual key/secret one. */
+/**
+ * OAuth-connect equivalent of `connectPaymentAccountForSuperAdmin` —
+ * deactivates any prior active account for this tenant, then upserts a
+ * `connection_method = 'partner'` account/credentials pair instead of a
+ * manual key/secret one. Same `ON CONFLICT (tenant_id, provider_key)`
+ * reasoning as `linkPaymentAccountForProvisioning`: this tenant+provider pair
+ * can only ever have one row, so reconnecting after a disconnect (or
+ * switching from manual to Partner OAuth) must update that row in place, not
+ * insert a second one.
+ */
 export async function linkPartnerPaymentAccountForTenant(
   tenantId: string,
   input: PartnerPaymentAccountInput,
@@ -126,6 +163,14 @@ export async function linkPartnerPaymentAccountForTenant(
       `INSERT INTO tenant_payment_accounts
          (tenant_id, provider_key, connection_method, razorpay_account_id, status, is_active)
        VALUES ($1, $2, 'partner', $3, 'connected', true)
+       ON CONFLICT (tenant_id, provider_key) DO UPDATE SET
+         connection_method = 'partner',
+         razorpay_account_id = EXCLUDED.razorpay_account_id,
+         status = 'connected',
+         is_active = true,
+         last_validated_at = NULL,
+         last_validation_error = NULL,
+         updated_at = now()
        RETURNING *`,
       [tenantId, input.providerKey, input.razorpayAccountId],
     );
@@ -133,7 +178,15 @@ export async function linkPartnerPaymentAccountForTenant(
     await client.query(
       `INSERT INTO tenant_payment_credentials
          (payment_account_id, encrypted_access_token, encrypted_refresh_token, access_token_expires_at, public_token)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (payment_account_id) DO UPDATE SET
+         key_id = NULL,
+         encrypted_key_secret = NULL,
+         encrypted_access_token = EXCLUDED.encrypted_access_token,
+         encrypted_refresh_token = EXCLUDED.encrypted_refresh_token,
+         access_token_expires_at = EXCLUDED.access_token_expires_at,
+         public_token = EXCLUDED.public_token,
+         updated_at = now()`,
       [
         account.id,
         encryptSecret(input.accessToken),
