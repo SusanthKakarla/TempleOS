@@ -3,6 +3,7 @@ import { POST } from "./route";
 import { requireTenantAdminSession } from "@/lib/auth/tenant-admin";
 import { createNotificationMedia } from "@/lib/db/notification-media";
 import { uploadImage } from "@/lib/media/imagekit";
+import { isRateLimited } from "@/lib/rate-limit";
 import type { SessionPayload } from "@/lib/auth/session";
 
 vi.mock("@/lib/auth/tenant-admin", () => ({
@@ -13,6 +14,7 @@ vi.mock("@/lib/auth/tenant-admin", () => ({
 
 vi.mock("@/lib/db/notification-media", () => ({ createNotificationMedia: vi.fn() }));
 vi.mock("@/lib/media/imagekit", () => ({ uploadImage: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({ isRateLimited: vi.fn().mockReturnValue(false) }));
 
 const adminSession: SessionPayload = {
   tenantId: "tenant-1",
@@ -38,6 +40,18 @@ describe("media upload route", () => {
     vi.mocked(requireTenantAdminSession).mockResolvedValue({ ok: true, session: adminSession });
     vi.mocked(createNotificationMedia).mockReset();
     vi.mocked(uploadImage).mockReset();
+    vi.mocked(isRateLimited).mockReset().mockReturnValue(false);
+  });
+
+  it("rejects with 429 when the rate limiter reports too many uploads, keyed by the authenticated member", async () => {
+    vi.mocked(isRateLimited).mockReturnValue(true);
+
+    const file = new File(["fake-bytes"], "banner.jpg", { type: "image/jpeg" });
+    const res = await POST(requestWithFormData({ file, category: "event_banner" }));
+
+    expect(res.status).toBe(429);
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(isRateLimited).toHaveBeenCalledWith("media-upload:membership-1", expect.any(Object));
   });
 
   it("rejects an unsupported file type before touching ImageKit", async () => {

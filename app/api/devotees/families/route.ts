@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
-import { createFamilyWithMembers, listFamiliesForTenant, type FamilyMemberInput } from "@/lib/db/devotee-families";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
+import {
+  createFamilyWithMembers,
+  listFamiliesForTenant,
+  FamilyValidationError,
+  type FamilyMemberInput,
+} from "@/lib/db/devotee-families";
 import { createFamilySchema } from "@/lib/validation/devotee-families";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
@@ -15,6 +21,8 @@ export async function GET() {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const families = await listFamiliesForTenant(session.tenantId);
   return NextResponse.json({ families });
@@ -26,6 +34,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = createFamilySchema.safeParse(json);
@@ -63,9 +73,10 @@ export async function POST(req: NextRequest) {
     if (isUniqueViolation(err)) {
       return NextResponse.json({ error: "A member with this phone number already exists" }, { status: 409 });
     }
-    if (err instanceof Error) {
+    if (err instanceof FamilyValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
-    throw err;
+    console.error("[devotees:families] Unhandled error while creating family", err);
+    return NextResponse.json({ error: "Failed to create family" }, { status: 500 });
   }
 }

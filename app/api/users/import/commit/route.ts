@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { listActiveMemberPhonesForTenant } from "@/lib/db/tenant-memberships";
 import { inviteTenantMember, TenantMemberActionError } from "@/lib/provisioning/tenant-members";
 import { isRoleCode } from "@/types/db";
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = commitSchema.safeParse(json);

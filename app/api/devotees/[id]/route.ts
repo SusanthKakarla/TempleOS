@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deactivateDevotee, updateDevotee } from "@/lib/db/devotees";
 import { updateDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
@@ -14,6 +15,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const json = await req.json().catch(() => null);
@@ -69,6 +72,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const deactivated = await deactivateDevotee(session.tenantId, id);

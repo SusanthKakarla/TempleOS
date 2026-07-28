@@ -1,4 +1,4 @@
-import { Pool, types } from "pg";
+import { Pool, types, type PoolConfig } from "pg";
 
 // DATE columns (OID 1082) default to JS `Date` objects built from local-time
 // components; calling `.toISOString()` on those can roll the date to the
@@ -16,6 +16,18 @@ function needsSSL(connectionString: string): boolean {
   return !/localhost|127\.0\.0\.1|\.railway\.internal/.test(connectionString);
 }
 
+// `rejectUnauthorized: false` (no certificate verification, still encrypted)
+// is the safe-by-default fallback since most managed Postgres hosts (Railway
+// included) don't present a certificate chaining to a well-known public CA.
+// Setting DATABASE_CA_CERT (PEM contents) opts into full certificate
+// verification once you have your provider's CA cert to supply — this never
+// changes on its own, so it can't break an existing deployment.
+export function buildSslConfig(connectionString: string): PoolConfig["ssl"] {
+  if (!needsSSL(connectionString)) return false;
+  const caCert = process.env.DATABASE_CA_CERT;
+  return caCert ? { ca: caCert, rejectUnauthorized: true } : { rejectUnauthorized: false };
+}
+
 function createPool(): Pool {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -23,7 +35,7 @@ function createPool(): Pool {
   }
   return new Pool({
     connectionString,
-    ssl: needsSSL(connectionString) ? { rejectUnauthorized: false } : false,
+    ssl: buildSslConfig(connectionString),
   });
 }
 

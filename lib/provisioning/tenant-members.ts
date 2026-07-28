@@ -302,13 +302,19 @@ export async function setTenantMemberStatus(
 
     if (input.status === "inactive") {
       const otherAdmins = await countOtherActiveAdmins(actor.tenantId, input.membershipId, client);
+      // Scoped by tenant_id too, not just membership_id — otherwise a
+      // cross-tenant membershipId's admin-role existence would still be
+      // checked here (and could be inferred from the 409-vs-404 response
+      // difference) before deactivateTenantMembership's own tenant-scoped
+      // lookup below ever runs.
       const { rows } = await client.query<{ has_admin: boolean }>(
         `SELECT EXISTS (
            SELECT 1 FROM tenant_membership_roles tmr
+           JOIN tenant_memberships tm ON tm.id = tmr.membership_id
            JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.code = 'admin' AND rd.active = true
-           WHERE tmr.membership_id = $1
+           WHERE tmr.membership_id = $1 AND tm.tenant_id = $2
          ) AS has_admin`,
-        [input.membershipId],
+        [input.membershipId, actor.tenantId],
       );
       if (rows[0]?.has_admin && otherAdmins === 0) {
         throw new TenantMemberActionError(
@@ -416,13 +422,16 @@ export async function deleteTenantMember(input: DeleteTenantMemberInput, actor: 
   try {
     await client.query("BEGIN");
 
+    // Scoped by tenant_id too, not just membership_id — see the identical
+    // comment in setTenantMemberStatus above.
     const { rows } = await client.query<{ has_admin: boolean }>(
       `SELECT EXISTS (
          SELECT 1 FROM tenant_membership_roles tmr
+         JOIN tenant_memberships tm ON tm.id = tmr.membership_id
          JOIN role_definitions rd ON rd.id = tmr.role_definition_id AND rd.code = 'admin' AND rd.active = true
-         WHERE tmr.membership_id = $1
+         WHERE tmr.membership_id = $1 AND tm.tenant_id = $2
        ) AS has_admin`,
-      [input.membershipId],
+      [input.membershipId, actor.tenantId],
     );
     if (rows[0]?.has_admin) {
       const otherAdmins = await countOtherActiveAdmins(actor.tenantId, input.membershipId, client);

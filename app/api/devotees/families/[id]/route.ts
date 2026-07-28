@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import {
   deleteFamily,
   getFamilyWithMembers,
   updateFamilyWithMembers,
+  FamilyValidationError,
   type UpdateFamilyMemberInput,
 } from "@/lib/db/devotee-families";
 import { updateFamilySchema } from "@/lib/validation/devotee-families";
@@ -23,6 +25,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const result = await getFamilyWithMembers(session.tenantId, id);
@@ -38,6 +42,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const json = await req.json().catch(() => null);
@@ -79,10 +85,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (isUniqueViolation(err)) {
       return NextResponse.json({ error: "A member with this phone number already exists" }, { status: 409 });
     }
-    if (err instanceof Error) {
+    if (err instanceof FamilyValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
-    throw err;
+    console.error("[devotees:families] Unhandled error while updating family", err);
+    return NextResponse.json({ error: "Failed to update family" }, { status: 500 });
   }
 }
 
@@ -92,6 +99,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const deleted = await deleteFamily(session.tenantId, id);

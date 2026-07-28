@@ -1,4 +1,5 @@
-import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { timingSafeEqualString } from "@/lib/timing-safe-equal";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -17,9 +18,7 @@ function getKey(): Buffer {
 
 /** Constant-time string comparison — used for the campaign donation_token check (prevents timing-based enumeration of valid tokens). */
 export function constantTimeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, "utf8");
-  const bufB = Buffer.from(b, "utf8");
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+  return timingSafeEqualString(a, b);
 }
 
 /** Encrypts a secret (Razorpay key_secret, webhook_secret, etc.) for storage. Format: base64(iv).base64(authTag).base64(ciphertext). */

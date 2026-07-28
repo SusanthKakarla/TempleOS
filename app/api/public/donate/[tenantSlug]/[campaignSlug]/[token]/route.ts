@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { donationCheckoutSchema } from "@/lib/validation/payments";
 import { createCheckoutOrder } from "@/lib/payments/donation-checkout-service";
-import { isRateLimited, getClientIp } from "@/lib/payments/rate-limit";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 
 interface RouteParams {
   params: Promise<{ tenantSlug: string; campaignSlug: string; token: string }>;

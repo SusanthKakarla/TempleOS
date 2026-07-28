@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getTenantById } from "@/lib/db/tenants";
 import { listTenantMembershipsForTenant, listTenantMembershipsByIds } from "@/lib/db/tenant-memberships";
 import { buildExportFile, type ExportFormat } from "@/lib/export";
@@ -17,6 +18,8 @@ export async function GET(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const formatParam = formatSchema.safeParse(req.nextUrl.searchParams.get("format"));
   if (!formatParam.success) {
@@ -58,6 +61,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = selectedExportSchema.safeParse(json);

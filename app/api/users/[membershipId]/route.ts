@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deleteTenantMember, updateTenantMemberDetails, TenantMemberActionError } from "@/lib/provisioning/tenant-members";
 
 const bodySchema = z.object({
@@ -18,6 +19,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const { membershipId } = await params;
   const json = await req.json().catch(() => null);
@@ -46,6 +49,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const { membershipId } = await params;
 

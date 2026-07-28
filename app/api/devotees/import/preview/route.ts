@@ -2,6 +2,7 @@ import { Readable } from "node:stream";
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { listExistingPhones } from "@/lib/db/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { validateFamilyGroups, validateImportRow, type PreviewRow, type RawImportRow } from "@/lib/validation/devotee-import";
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const formData = await req.formData().catch(() => null);
   const file = formData?.get("file");

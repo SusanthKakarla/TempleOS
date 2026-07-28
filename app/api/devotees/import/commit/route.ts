@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createDevotee, listExistingPhones } from "@/lib/db/devotees";
 import {
   addMembersToFamily,
@@ -71,6 +72,8 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const json = await req.json().catch(() => null);
   const parsed = commitSchema.safeParse(json);

@@ -1,4 +1,6 @@
+import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/timing-safe-equal";
 import type { SupportedLanguage, WhatsAppAccount, WhatsAppMessageType } from "@/types/db";
 import { getWhatsAppAccountByPhoneNumberId } from "@/lib/db/whatsapp-accounts";
 import { getTenantById } from "@/lib/db/tenants";
@@ -75,11 +77,27 @@ export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get("hub.mode");
   const token = req.nextUrl.searchParams.get("hub.verify_token");
   const challenge = req.nextUrl.searchParams.get("hub.challenge");
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
 
-  if (mode === "subscribe" && challenge && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+  if (mode === "subscribe" && challenge && token && verifyToken && timingSafeEqualString(token, verifyToken)) {
     return new NextResponse(challenge, { status: 200 });
   }
   return NextResponse.json({ error: "Verification failed" }, { status: 403 });
+}
+
+/**
+ * Meta signs every webhook POST body with the app secret
+ * (X-Hub-Signature-256: sha256=<hmac-hex>) — without verifying it, any actor
+ * who discovers this URL could POST forged payloads that get processed as
+ * genuine Meta traffic (fake inbound messages, forged delivery statuses,
+ * fabricated devotee records). Must be checked against the *raw* body text,
+ * before any JSON parsing.
+ */
+function isValidWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret || !signatureHeader) return false;
+  const expected = `sha256=${createHmac("sha256", appSecret).update(rawBody).digest("hex")}`;
+  return timingSafeEqualString(expected, signatureHeader);
 }
 
 async function handleInboundMessage(
@@ -195,7 +213,18 @@ async function handleInboundMessage(
 }
 
 export async function POST(req: NextRequest) {
-  const payload = (await req.json().catch(() => null)) as WhatsAppWebhookPayload | null;
+  const rawBody = await req.text();
+  if (!isValidWhatsAppSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
+    console.error("[whatsapp:webhook] Rejected: missing or invalid X-Hub-Signature-256");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  let payload: WhatsAppWebhookPayload | null;
+  try {
+    payload = JSON.parse(rawBody) as WhatsAppWebhookPayload;
+  } catch {
+    payload = null;
+  }
   if (!payload) {
     return NextResponse.json({ ok: true });
   }

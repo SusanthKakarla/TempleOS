@@ -11,6 +11,7 @@ import {
   requireTenantAdminSession,
   tenantAdminAuthResponse,
 } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { updateEventSchema } from "@/lib/validation/events";
 
 interface RouteParams {
@@ -23,6 +24,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "events");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const priorEvent = await getEventById(session.tenantId, id);
@@ -74,6 +77,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "events");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const deleted = await deleteEvent(session.tenantId, id);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deleteDonation, updateDonation } from "@/lib/db/donations";
 import { updateDonationSchema } from "@/lib/validation/donations";
 
@@ -13,6 +14,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "donations");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const json = await req.json().catch(() => null);
@@ -58,6 +61,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "donations");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const deleted = await deleteDonation(session.tenantId, id);

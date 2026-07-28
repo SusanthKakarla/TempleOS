@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { getPaymentTransactionById } from "@/lib/db/payment-transactions";
 import { verifyCheckoutSignatureForAccount } from "@/lib/payments/payment-provider-service";
-import { isRateLimited, getClientIp } from "@/lib/payments/rate-limit";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 
 const verifySchema = z.object({
   transactionId: z.string().uuid(),

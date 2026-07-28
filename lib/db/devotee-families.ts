@@ -2,6 +2,9 @@ import { getPool } from "./pool";
 import { getDevoteeById } from "./devotees";
 import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
 
+/** Deliberate business-rule rejections (never a raw driver error) — lets callers show `.message` directly without risking a Postgres error leaking through the same catch block. */
+export class FamilyValidationError extends Error {}
+
 interface DevoteeFamilyRow {
   id: string;
   tenant_id: string;
@@ -151,7 +154,7 @@ export async function createFamilyWithMembers(
 ): Promise<FamilyWithMembers> {
   const headCount = input.members.filter((m) => m.relationship === "head_of_family").length;
   if (headCount !== 1) {
-    throw new Error("A family must have exactly one Head of Family.");
+    throw new FamilyValidationError("A family must have exactly one Head of Family.");
   }
 
   const client = await getPool().connect();
@@ -235,7 +238,7 @@ export async function updateFamilyWithMembers(
 
   const headCount = input.members.filter((m) => m.relationship === "head_of_family").length;
   if (headCount !== 1) {
-    throw new Error("A family must have exactly one Head of Family.");
+    throw new FamilyValidationError("A family must have exactly one Head of Family.");
   }
 
   const client = await getPool().connect();
@@ -358,7 +361,7 @@ export async function addMembersToFamily(
   if (!family) return null;
 
   if (family.primaryDevoteeId && members.some((m) => m.relationship === "head_of_family")) {
-    throw new Error("This family already has a Head of Family.");
+    throw new FamilyValidationError("This family already has a Head of Family.");
   }
 
   const client = await getPool().connect();

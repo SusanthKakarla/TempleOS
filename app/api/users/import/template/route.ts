@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getTenantById } from "@/lib/db/tenants";
 import { buildExportFile } from "@/lib/export";
 import { fileResponse } from "@/lib/export/response";
@@ -11,6 +12,8 @@ export async function GET() {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "user_management");
+  if (featureBlocked) return featureBlocked;
 
   const tenant = await getTenantById(session.tenantId);
   if (!tenant) {

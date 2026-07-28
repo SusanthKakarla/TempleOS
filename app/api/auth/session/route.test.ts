@@ -7,6 +7,7 @@ import { bindPersonFirebaseUid, findPersonByPhone } from "@/lib/db/persons";
 import { findActiveTenantMembershipByPersonAndTenant } from "@/lib/db/tenant-memberships";
 import { devLog } from "@/lib/firebase/errors";
 import { setLocaleCookie } from "@/lib/i18n/locale";
+import { isRateLimited } from "@/lib/rate-limit";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -38,6 +39,11 @@ vi.mock("@/lib/db/tenant-memberships", () => ({
 
 vi.mock("@/lib/firebase/errors", () => ({
   devLog: vi.fn(),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  isRateLimited: vi.fn().mockReturnValue(false),
+  getClientIp: vi.fn().mockReturnValue("unknown"),
 }));
 
 const domain = {
@@ -113,6 +119,16 @@ describe("tenant auth session route", () => {
     vi.mocked(bindPersonFirebaseUid).mockReset();
     vi.mocked(findActiveTenantMembershipByPersonAndTenant).mockReset();
     vi.mocked(devLog).mockReset();
+    vi.mocked(isRateLimited).mockReset().mockReturnValue(false);
+  });
+
+  it("rejects with 429 when the rate limiter reports too many requests, before ever verifying the token", async () => {
+    vi.mocked(isRateLimited).mockReturnValue(true);
+
+    const res = await POST(request({ idToken: "token-1" }) as never);
+
+    expect(res.status).toBe(429);
+    expect(verifyFirebaseIdToken).not.toHaveBeenCalled();
   });
 
   it("creates a tenant membership session for a verified phone on an active tenant hostname", async () => {

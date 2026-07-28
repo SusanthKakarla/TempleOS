@@ -1,5 +1,6 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import Razorpay from "razorpay";
+import { timingSafeEqualString } from "@/lib/timing-safe-equal";
 import type {
   CreateOrderInput,
   CreateOrderResult,
@@ -14,22 +15,18 @@ import type {
 } from "../provider";
 
 /**
- * Signatures are verified by hand (HMAC-SHA256 + timingSafeEqual) rather than
- * via the `razorpay` package's own `Razorpay.validateWebhookSignature`/
- * `validatePaymentVerification` helpers — those compare with a plain `===`,
- * which is not constant-time and reintroduces the exact timing-attack class
- * this codebase's one real precedent (lib/auth/session-token.ts) already
- * guards against.
+ * Signatures are verified by hand (HMAC-SHA256 + timingSafeEqualString)
+ * rather than via the `razorpay` package's own
+ * `Razorpay.validateWebhookSignature`/`validatePaymentVerification` helpers —
+ * those compare with a plain `===`, which is not constant-time and
+ * reintroduces the exact timing-attack class the shared timing-safe helper
+ * (lib/timing-safe-equal.ts) guards against everywhere else in this app.
  */
 function hmacHex(secret: string, payload: string): string {
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-function safeEqual(expectedHex: string, actualHex: string): boolean {
-  const expected = Buffer.from(expectedHex, "hex");
-  const actual = Buffer.from(actualHex, "hex");
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
+const safeEqual = timingSafeEqualString;
 
 const EVENT_TYPE_MAP: Record<string, PaymentWebhookEventType> = {
   "payment.authorized": "payment.authorized",
@@ -171,7 +168,6 @@ export const razorpayAdapter: PaymentProviderAdapter = {
       console.error("Error:", err.error);
       console.error("Response:", err.response);
       console.error("Stack:", err.stack);
-      console.error("Raw Error:", rawErr);
       console.error("==================================================");
 
       return {

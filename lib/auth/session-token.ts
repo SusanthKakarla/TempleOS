@@ -1,4 +1,5 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
+import { timingSafeEqualString } from "@/lib/timing-safe-equal";
 
 interface ExpiringPayload {
   exp: number;
@@ -40,9 +41,7 @@ export function verifySignedSessionToken<TPayload extends ExpiringPayload>(
   if (!payloadB64 || !signature) return null;
 
   const expectedSignature = sign(payloadB64);
-  const provided = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+  if (!timingSafeEqualString(signature, expectedSignature)) {
     return null;
   }
 

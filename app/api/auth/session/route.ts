@@ -8,10 +8,16 @@ import { findActiveTenantMembershipByPersonAndTenant, touchLastSignedIn } from "
 import { setLocaleCookie } from "@/lib/i18n/locale";
 import { verifyFirebaseIdToken } from "@/lib/firebase/admin";
 import { devLog } from "@/lib/firebase/errors";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
+import { maskPhoneForDisplay } from "@/lib/phone.mts";
 
 const bodySchema = z.object({ idToken: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
+  if (isRateLimited(`auth-session:${getClientIp(req.headers)}`, { windowMs: 60_000, maxRequests: 10 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -47,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const person = await findPersonByPhone(phoneNumber);
   if (!person) {
-    devLog("Sign-in rejected: phone number not allowlisted", phoneNumber);
+    devLog("Sign-in rejected: phone number not allowlisted", maskPhoneForDisplay(phoneNumber));
     return NextResponse.json(
       {
         error: "This phone number is not authorized for dashboard access.",
@@ -94,7 +100,7 @@ export async function POST(req: NextRequest) {
   });
   await setLocaleCookie(membership.preferredUiLanguage ?? "en");
   await touchLastSignedIn(membership.id);
-  devLog("Session created for tenant member", membership.id, person.phoneNumber);
+  devLog("Session created for tenant member", membership.id, maskPhoneForDisplay(person.phoneNumber));
 
   return NextResponse.json({ ok: true });
 }

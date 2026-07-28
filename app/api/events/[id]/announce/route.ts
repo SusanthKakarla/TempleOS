@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getEventById } from "@/lib/db/events";
 import { getTenantById } from "@/lib/db/tenants";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
@@ -17,6 +18,8 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "events");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
 

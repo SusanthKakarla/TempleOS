@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
+import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deactivateDevotee, reactivateDevotee } from "@/lib/db/devotees";
 
 const bodySchema = z.object({ isActive: z.boolean() });
@@ -16,6 +17,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
   const json = await req.json().catch(() => null);

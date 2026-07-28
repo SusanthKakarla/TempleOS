@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { createNotificationMedia } from "@/lib/db/notification-media";
 import { uploadImage } from "@/lib/media/imagekit";
+import { isRateLimited } from "@/lib/rate-limit";
 import { NOTIFICATION_MEDIA_CATEGORIES, type NotificationMediaCategory } from "@/types/db";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
     return tenantAdminAuthResponse(auth);
   }
   const { session } = auth;
+
+  // Keyed by the authenticated member (not IP) — this throttles a single
+  // compromised/abusive account hammering ImageKit uploads, not an
+  // anonymous attacker.
+  if (isRateLimited(`media-upload:${session.membershipId}`, { windowMs: 60_000, maxRequests: 20 })) {
+    return NextResponse.json({ error: "Too many uploads. Please slow down." }, { status: 429 });
+  }
 
   const formData = await req.formData().catch(() => null);
   if (!formData) {
