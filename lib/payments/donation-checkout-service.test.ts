@@ -155,12 +155,39 @@ describe("resolveDonationCheckoutAvailability", () => {
     expect(result).toEqual({ ok: false, reason: "disabled" });
   });
 
-  it("returns disabled when no active payment account is connected", async () => {
+  it("returns payment_not_configured (not 'disabled') when no active payment account is connected — a running campaign should never be blamed as 'paused or closed' for a payment-setup gap", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
     vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue(null);
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "disabled" });
+    expect(result).toEqual({ ok: false, reason: "payment_not_configured" });
+  });
+
+  it("returns not_started once the token is correct but the campaign start date is in the future", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
+      makeCampaign({ campaignStartDate: "2099-01-01T00:00:00.000Z" }),
+    );
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result).toEqual({ ok: false, reason: "not_started" });
+  });
+
+  it("does not block a campaign whose start date is in the past", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
+      makeCampaign({ campaignStartDate: "2020-01-01T00:00:00.000Z" }),
+    );
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result.ok).toBe(true);
+  });
+
+  it("checks not_started before expired/disabled/payment checks (most specific boundary first)", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
+      makeCampaign({ campaignStartDate: "2099-01-01T00:00:00.000Z", status: "paused" }),
+    );
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result).toEqual({ ok: false, reason: "not_started" });
   });
 
   it("returns ok with the full context for a valid, running campaign", async () => {

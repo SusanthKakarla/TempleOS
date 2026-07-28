@@ -36,11 +36,23 @@ export async function runCampaignNow(tenant: Tenant, campaign: Campaign): Promis
 
   const summary = await getCampaignDeliverySummary(tenant.id, campaign.id);
 
-  if (campaign.scheduleType === "recurring" && campaign.recurrenceRule) {
-    const nextRunAt = computeNextRunAt(campaign.recurrenceRule, new Date());
-    await updateCampaignStatus(tenant.id, campaign.id, "scheduled", { nextRunAt: nextRunAt?.toISOString() ?? null });
-  } else {
-    await updateCampaignStatus(tenant.id, campaign.id, "completed", { nextRunAt: null });
+  // Donation campaigns stay "running" (open for donations) for their whole
+  // campaignStartDate–campaignEndDate window — sending the WhatsApp
+  // announcement is a one-off side effect, not the campaign's actual
+  // lifecycle. resolveDonationCheckoutAvailability already enforces
+  // campaignEndDate independently, and the closing-reminder/target-reached
+  // cron queries (lib/db/campaigns.ts) already require status = 'running'
+  // for the entire donation window — flipping to "completed"/"scheduled"
+  // here the instant the broadcast finishes sending would incorrectly close
+  // the campaign to new donations right away (the root cause of the public
+  // donation page prematurely showing "isn't accepting donations right now").
+  if (campaign.campaignType !== "donation") {
+    if (campaign.scheduleType === "recurring" && campaign.recurrenceRule) {
+      const nextRunAt = computeNextRunAt(campaign.recurrenceRule, new Date());
+      await updateCampaignStatus(tenant.id, campaign.id, "scheduled", { nextRunAt: nextRunAt?.toISOString() ?? null });
+    } else {
+      await updateCampaignStatus(tenant.id, campaign.id, "completed", { nextRunAt: null });
+    }
   }
 
   return { ok: true, sent: summary.sent, failed: summary.failed, recipients: summary.recipients };

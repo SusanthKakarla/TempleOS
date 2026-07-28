@@ -15,11 +15,20 @@ export interface DonationCheckoutContext {
   summary: CampaignDonationSummary;
 }
 
-export type DonationCheckoutUnavailableReason = "not_found" | "disabled" | "expired";
+export type DonationCheckoutUnavailableReason =
+  | "not_found"
+  | "not_started"
+  | "expired"
+  | "disabled"
+  | "payment_not_configured";
 
 export type DonationCheckoutAvailability =
   | { ok: true; context: DonationCheckoutContext }
   | { ok: false; reason: DonationCheckoutUnavailableReason };
+
+function logUnavailable(reason: DonationCheckoutUnavailableReason, detail: string): void {
+  console.log(`[donation-checkout] unavailable (${reason}): ${detail}`);
+}
 
 /**
  * The one load/validate chain for the public donation page.
@@ -35,7 +44,13 @@ export type DonationCheckoutAvailability =
  *  - Only once the token itself is proven correct (i.e. this exact campaign
  *    is confirmed real) is it safe to say *why* it can't accept donations
  *    right now — that reveals nothing an attacker didn't already prove by
- *    holding a valid token.
+ *    holding a valid token. "disabled" (campaign status) and
+ *    "payment_not_configured" (no active payment account) are kept as
+ *    distinct reasons rather than collapsed together — they are different
+ *    root causes with different fixes, and conflating them previously meant
+ *    a temple with a genuinely running campaign but no connected Razorpay
+ *    account would be told "the temple has paused or closed this campaign",
+ *    which is simply false.
  */
 export async function resolveDonationCheckoutAvailability(
   tenantSlug: string,
@@ -43,24 +58,51 @@ export async function resolveDonationCheckoutAvailability(
   token: string,
 ): Promise<DonationCheckoutAvailability> {
   const tenant = await getTenantBySlug(tenantSlug);
-  if (!tenant || tenant.status !== "active") return { ok: false, reason: "not_found" };
-
-  const campaign = await getCampaignBySlugForTenant(tenant.id, campaignSlug);
-  if (!campaign) return { ok: false, reason: "not_found" };
-  if (!constantTimeEqual(campaign.donationToken, token)) return { ok: false, reason: "not_found" };
-  if (campaign.campaignType !== "donation" || !campaign.linkedDonationPurpose) {
+  if (!tenant || tenant.status !== "active") {
+    logUnavailable("not_found", `tenant "${tenantSlug}" missing or not active (status=${tenant?.status ?? "n/a"})`);
     return { ok: false, reason: "not_found" };
   }
 
-  if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < new Date()) {
+  const campaign = await getCampaignBySlugForTenant(tenant.id, campaignSlug);
+  if (!campaign) {
+    logUnavailable("not_found", `no campaign with slug "${campaignSlug}" for tenant ${tenant.id}`);
+    return { ok: false, reason: "not_found" };
+  }
+  if (!constantTimeEqual(campaign.donationToken, token)) {
+    logUnavailable("not_found", `token mismatch for campaign ${campaign.id}`);
+    return { ok: false, reason: "not_found" };
+  }
+  if (campaign.campaignType !== "donation" || !campaign.linkedDonationPurpose) {
+    logUnavailable(
+      "not_found",
+      `campaign ${campaign.id} is not a configured donation campaign (campaignType=${campaign.campaignType}, linkedDonationPurpose=${campaign.linkedDonationPurpose})`,
+    );
+    return { ok: false, reason: "not_found" };
+  }
+
+  const now = new Date();
+  console.log(
+    `[donation-checkout] campaign ${campaign.id} snapshot: status=${campaign.status} campaignStartDate=${campaign.campaignStartDate} campaignEndDate=${campaign.campaignEndDate} now=${now.toISOString()}`,
+  );
+
+  if (campaign.campaignStartDate && new Date(campaign.campaignStartDate) > now) {
+    logUnavailable("not_started", `campaign ${campaign.id} starts ${campaign.campaignStartDate}, now is ${now.toISOString()}`);
+    return { ok: false, reason: "not_started" };
+  }
+  if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < now) {
+    logUnavailable("expired", `campaign ${campaign.id} ended ${campaign.campaignEndDate}, now is ${now.toISOString()}`);
     return { ok: false, reason: "expired" };
   }
   if (campaign.status !== "running") {
+    logUnavailable("disabled", `campaign ${campaign.id} status is "${campaign.status}", not "running"`);
     return { ok: false, reason: "disabled" };
   }
 
   const account = await getActivePaymentAccountForTenant(tenant.id);
-  if (!account) return { ok: false, reason: "disabled" };
+  if (!account) {
+    logUnavailable("payment_not_configured", `tenant ${tenant.id} has no active payment account`);
+    return { ok: false, reason: "payment_not_configured" };
+  }
 
   const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
   return { ok: true, context: { tenant, campaign, account, summary } };

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CalendarX2, PauseCircle, SearchX } from "lucide-react";
+import { CalendarClock, CalendarX2, PauseCircle, SearchX } from "lucide-react";
 import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { buildDonationLink, computeRaisedPercentage } from "@/lib/campaigns/donation-message";
@@ -21,6 +21,11 @@ const UNAVAILABLE_COPY = {
     title: "This donation link isn't available",
     description: "It may be incorrect, or the campaign may no longer exist. Please contact the temple directly.",
   },
+  not_started: {
+    icon: <CalendarClock className="size-6" />,
+    title: "This campaign hasn't started yet",
+    description: "Donations will open once the campaign begins. Please check back later.",
+  },
   disabled: {
     icon: <PauseCircle className="size-6" />,
     title: "This campaign isn't accepting donations right now",
@@ -30,6 +35,11 @@ const UNAVAILABLE_COPY = {
     icon: <CalendarX2 className="size-6" />,
     title: "This campaign has ended",
     description: "The donation window for this campaign has closed. Please contact the temple directly for other ways to give.",
+  },
+  payment_not_configured: {
+    icon: <PauseCircle className="size-6" />,
+    title: "This campaign isn't accepting donations right now",
+    description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly.",
   },
 } as const;
 
