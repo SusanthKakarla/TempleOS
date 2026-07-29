@@ -755,7 +755,6 @@
         "label": "WhatsApp status",
         "description": "Set automatically when a devotee messages the temple WhatsApp number — can't be set manually."
       },
-      "advancedOptions": "Advanced options",
       "errorFallback": "Failed to save devotee"
     },
     "familyForm": {
@@ -770,7 +769,7 @@
       "addMember": "Add member",
       "removeMember": "Remove member",
       "memberNumber": "Member {number}",
-      "additionalInformation": "Additional information",
+      "newMember": "New member",
       "fields": {
         "familyName": "Family name",
         "address": "Address (optional)",
