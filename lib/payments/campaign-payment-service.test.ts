@@ -13,7 +13,7 @@ import {
 import { generateAndStoreReceipt } from "@/lib/receipts/receipt-service";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
-import { applyPaymentEvent } from "./campaign-payment-service";
+import { applyPaymentEvent, runCaptureSideEffects } from "./campaign-payment-service";
 import { PaymentAuditService } from "./payment-audit";
 import type { PaymentTransaction, Tenant } from "@/types/db";
 
@@ -39,6 +39,7 @@ vi.mock("./payment-audit", () => ({
     transactionFailed: vi.fn(),
     transactionRefunded: vi.fn(),
     refundFailed: vi.fn(),
+    captureSideEffectsFailed: vi.fn(),
   },
 }));
 
@@ -155,6 +156,45 @@ describe("runCaptureSideEffects (via applyPaymentEvent)", () => {
     expect(generateAndStoreReceipt).toHaveBeenCalledWith(
       expect.objectContaining({ transaction: expect.objectContaining({ donorPan: "AAAAA9999A" }) }),
     );
+  });
+
+  it("skips donation/receipt creation when the transaction already has a donationId, reusing the stored receipt instead", async () => {
+    const alreadyProcessed = makeTransaction({
+      donationId: "donation-1",
+      receiptNumber: "R-EXISTING",
+      receiptUrl: "https://cdn.example/R-EXISTING.pdf",
+    });
+    vi.mocked(getPaymentTransactionById).mockResolvedValue(alreadyProcessed);
+
+    await runCaptureSideEffects("txn-1");
+
+    expect(createDonation).not.toHaveBeenCalled();
+    expect(generateAndStoreReceipt).not.toHaveBeenCalled();
+    expect(attachDonationAndReceipt).not.toHaveBeenCalled();
+    expect(enqueueNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient: { phone: "+919876543210" },
+        notificationType: "donation_receipt",
+        templateVars: expect.objectContaining({ receiptNumber: "R-EXISTING" }),
+      }),
+    );
+  });
+
+  it("logs the failure via PaymentAuditService and returns without notifying when donation/receipt creation throws", async () => {
+    const captured = makeTransaction();
+    vi.mocked(getPaymentTransactionById).mockResolvedValue(captured);
+    vi.mocked(createDonation).mockRejectedValue(new Error("ImageKit upload failed"));
+
+    await runCaptureSideEffects("txn-1");
+
+    expect(PaymentAuditService.captureSideEffectsFailed).toHaveBeenCalledWith(
+      "tenant-1",
+      "txn-1",
+      "ImageKit upload failed",
+    );
+    expect(attachDonationAndReceipt).not.toHaveBeenCalled();
+    expect(enqueueNotification).not.toHaveBeenCalled();
+    expect(processNotifications).not.toHaveBeenCalled();
   });
 });
 

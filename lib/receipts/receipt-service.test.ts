@@ -80,4 +80,16 @@ describe("generateAndStoreReceipt", () => {
 
     expect(buildReceiptPdfBuffer).toHaveBeenCalledWith(expect.objectContaining({ donorName: "Anonymous" }));
   });
+
+  it("passes the Razorpay payment id through to the PDF, distinct from the internal transaction id", async () => {
+    await generateAndStoreReceipt({
+      tenant: { name: "Sri Venkateswara Temple", slug: "sri-venkateswara", address: null },
+      transaction,
+      campaignTitle: null,
+    });
+
+    expect(buildReceiptPdfBuffer).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionId: "txn-1", providerPaymentId: "pay_1" }),
+    );
+  });
 });

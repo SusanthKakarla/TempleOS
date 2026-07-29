@@ -69,6 +69,18 @@ export const PaymentAuditService = {
       metadata: { amount },
     });
   },
+  /** Donation/receipt creation threw partway through runCaptureSideEffects — the transaction stays 'captured' (money is real), but has no donation/receipt attached yet. Reconciliation retries it; this just makes the failure visible instead of silent. */
+  captureSideEffectsFailed(tenantId: string, transactionId: string, error: string) {
+    return createAuditLogEntry({
+      actorType: "system",
+      actorId: tenantId,
+      tenantId,
+      action: "payment_transaction.capture_side_effects_failed",
+      targetType: "payment_transaction",
+      targetId: transactionId,
+      metadata: { error },
+    });
+  },
   transactionFailed(tenantId: string, transactionId: string) {
     return createAuditLogEntry({
       actorType: "system",
