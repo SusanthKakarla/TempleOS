@@ -1238,25 +1238,10 @@
       "title": "సెట్టింగ్‌లు",
       "subtitle": "మీ TempleOS అప్లికేషన్ ప్రాధాన్యతలను నిర్వహించండి."
     },
-    "applicationSection": "అప్లికేషన్",
     "whatsappSection": "వాట్సాప్",
-    "whatsappLinkTitle": "వాట్సాప్ కనెక్షన్",
-    "whatsappLinkDescription": "మీ దేవాలయం వాట్సాప్ బిజినెస్ నంబర్‌ను కనెక్ట్ చేయండి లేదా నిర్వహించండి.",
-    "paymentsSection": "చెల్లింపులు",
-    "paymentsLinkTitle": "చెల్లింపు ప్రొవైడర్",
-    "paymentsLinkDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి Razorpayని కనెక్ట్ చేయండి."
-  },
-  "whatsappSettings": {
-    "pageHeader": {
-      "title": "వాట్సాప్ కనెక్షన్",
-      "subtitle": "చాట్‌బాట్ మరియు మెసేజ్ డెలివరీని ప్రారంభించడానికి మీ దేవాలయం వాట్సాప్ బిజినెస్ నంబర్‌ను కనెక్ట్ చేయండి."
-    }
+    "paymentsSection": "చెల్లింపులు"
   },
   "paymentSettings": {
-    "pageHeader": {
-      "title": "చెల్లింపు సెట్టింగ్‌లు",
-      "subtitle": "దాతలు ఆన్‌లైన్‌లో చెల్లించడానికి ఒక చెల్లింపు ప్రొవైడర్‌ను కనెక్ట్ చేయండి."
-    },
     "connection": {
       "cardTitle": "Razorpay",
       "cardDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం స్వంత Razorpay ఖాతాను కనెక్ట్ చేయండి.",
@@ -1288,16 +1273,8 @@
     }
   },
   "pwaInstall": {
-    "installAction": "📲 TempleOS ఇన్‌స్టాల్ చేయండి",
+    "installAction": "TempleOS ఇన్‌స్టాల్ చేయండి",
     "installedToast": "TempleOS విజయవంతంగా ఇన్‌స్టాల్ అయింది.",
-    "bannerTitle": "TempleOS ఇన్‌స్టాల్ చేయండి",
-    "bannerDescription": "వేగవంతమైన, పూర్తి-స్క్రీన్, యాప్ లాంటి అనుభవం కోసం TempleOSని మీ పరికరానికి జోడించండి.",
-    "dismiss": "మూసివేయండి",
-    "statusTitle": "ఇన్‌స్టాలేషన్ స్థితి",
-    "statusInstalled": "ఇన్‌స్టాల్ చేయబడింది",
-    "statusNotInstalled": "ఇన్‌స్టాల్ చేయలేదు",
-    "statusInstalledDescription": "TempleOS ఈ పరికరంలో ఇన్‌స్టాల్ చేయబడింది.",
-    "statusUnsupported": "ఈ బ్రౌజర్ యాప్ ఇన్‌స్టాలేషన్‌కు మద్దతు ఇవ్వదు. Chrome, Edge, లేదా iOSలో Safari ప్రయత్నించండి.",
     "iosDialog": {
       "title": "iPhone/iPadలో TempleOS ఇన్‌స్టాల్ చేయండి",
       "description": "Safari వన్-టాప్ ఇన్‌స్టాల్‌లకు మద్దతు ఇవ్వదు — బదులుగా TempleOSని మీ హోమ్ స్క్రీన్‌కు జోడించండి:",

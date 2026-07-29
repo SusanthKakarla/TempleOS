@@ -1,38 +1,23 @@
-import { getTranslations } from "next-intl/server";
-import { requireDashboardAdmin } from "../../require-dashboard-admin";
-import { requireTenantFeature } from "@/lib/auth/features";
-import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
-import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
-import { PageHeader } from "@/components/page-header";
-import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
+import { redirect } from "next/navigation";
 
-interface WhatsAppSettingsPageProps {
-  searchParams: Promise<{ whatsapp_connect_token?: string; whatsapp_connect_error?: string }>;
-}
-
-export default async function WhatsAppSettingsPage({ searchParams }: WhatsAppSettingsPageProps) {
-  const session = await requireDashboardAdmin();
-  await requireTenantFeature(session.tenantId, "whatsapp_chatbot");
-  const t = await getTranslations("whatsappSettings");
+/**
+ * WhatsApp connection management now lives directly on /dashboard/settings.
+ * This route is kept only so old bookmarks and in-flight Embedded Signup
+ * handoff tokens (minted before this redirect existed) still land somewhere
+ * that can finish the connection — the query string is forwarded as-is so
+ * the settings page's own whatsapp_connect_token/whatsapp_connect_error
+ * handling picks up where this page would have.
+ */
+export default async function WhatsAppSettingsRedirectPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const params = await searchParams;
-
-  const whatsappAccount = await getWhatsAppAccountByTenant(session.tenantId);
-
-  const decodedResult = params.whatsapp_connect_token ? verifyResultToken(params.whatsapp_connect_token) : null;
-  const initialConnectResult =
-    decodedResult && decodedResult.tenantId === session.tenantId
-      ? { code: decodedResult.code, wabaId: decodedResult.wabaId, phoneNumberId: decodedResult.phoneNumberId }
-      : null;
-  const initialCancelled = params.whatsapp_connect_error === "cancelled";
-
-  return (
-    <div className="space-y-6">
-      <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
-      <WhatsAppConnectionCard
-        account={whatsappAccount}
-        initialConnectResult={initialConnectResult}
-        initialCancelled={initialCancelled}
-      />
-    </div>
-  );
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") query.set(key, value);
+  }
+  const queryString = query.toString();
+  redirect(`/dashboard/settings${queryString ? `?${queryString}` : ""}`);
 }

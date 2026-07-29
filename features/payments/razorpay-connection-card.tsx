@@ -35,10 +35,10 @@ export function RazorpayConnectionCard({ account }: RazorpayConnectionCardProps)
   useEffect(() => {
     if (searchParams.get("razorpay_oauth_connected")) {
       toast.success(t("oauth.connected"));
-      router.replace("/dashboard/settings/payments");
+      router.replace("/dashboard/settings");
     } else if (searchParams.get("razorpay_oauth_error")) {
       toast.error(t("oauth.error"));
-      router.replace("/dashboard/settings/payments");
+      router.replace("/dashboard/settings");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the redirect query param itself changes
   }, [searchParams]);

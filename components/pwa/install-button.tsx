@@ -7,7 +7,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useInstall } from "./install-context";
 
 interface InstallButtonProps {
-  /** "menu-item" renders as a DropdownMenuItem (for the account menu); "button" renders a standalone Button (for the Settings page). */
+  /** "menu-item" renders as a DropdownMenuItem (for the account menu); "button" renders a standalone Button. */
   variant?: "menu-item" | "button";
   className?: string;
 }
@@ -15,8 +15,8 @@ interface InstallButtonProps {
 /**
  * The single reusable "Install TempleOS" control — renders nothing when
  * installation isn't available or the app is already installed, so it's safe
- * to mount in more than one place (account menu + Settings) without ever
- * showing two competing prompts at once.
+ * to mount in more than one place without ever showing two competing prompts
+ * at once.
  */
 export function InstallButton({ variant = "button", className }: InstallButtonProps) {
   const t = useTranslations("pwaInstall");

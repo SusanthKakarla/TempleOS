@@ -12,7 +12,7 @@ import { PaymentAuditService } from "@/lib/payments/payment-audit";
  * which tenant/admin started this connection.
  */
 export async function GET(req: NextRequest) {
-  const settingsUrl = new URL("/dashboard/settings/payments", req.nextUrl.origin);
+  const settingsUrl = new URL("/dashboard/settings", req.nextUrl.origin);
 
   const error = req.nextUrl.searchParams.get("error");
   if (error) {

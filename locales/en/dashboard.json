@@ -1224,25 +1224,10 @@
       "title": "Settings",
       "subtitle": "Manage your TempleOS application preferences."
     },
-    "applicationSection": "Application",
     "whatsappSection": "WhatsApp",
-    "whatsappLinkTitle": "WhatsApp Connection",
-    "whatsappLinkDescription": "Connect or manage your temple's WhatsApp Business number.",
-    "paymentsSection": "Payments",
-    "paymentsLinkTitle": "Payment Provider",
-    "paymentsLinkDescription": "Connect Razorpay to accept online donations."
-  },
-  "whatsappSettings": {
-    "pageHeader": {
-      "title": "WhatsApp Connection",
-      "subtitle": "Connect your temple's WhatsApp Business number to enable the chatbot and message delivery."
-    }
+    "paymentsSection": "Payments"
   },
   "paymentSettings": {
-    "pageHeader": {
-      "title": "Payment Settings",
-      "subtitle": "Connect a payment provider so donors can pay online."
-    },
     "connection": {
       "cardTitle": "Razorpay",
       "cardDescription": "Connect your temple's own Razorpay account to accept online donations.",
@@ -1274,16 +1259,8 @@
     }
   },
   "pwaInstall": {
-    "installAction": "📲 Install TempleOS",
+    "installAction": "Install TempleOS",
     "installedToast": "TempleOS installed successfully.",
-    "bannerTitle": "Install TempleOS",
-    "bannerDescription": "Add TempleOS to your device for a faster, full-screen, app-like experience.",
-    "dismiss": "Dismiss",
-    "statusTitle": "Installation Status",
-    "statusInstalled": "Installed",
-    "statusNotInstalled": "Not installed",
-    "statusInstalledDescription": "TempleOS is installed on this device.",
-    "statusUnsupported": "This browser doesn't support app installation. Try Chrome, Edge, or Safari on iOS.",
     "iosDialog": {
       "title": "Install TempleOS on iPhone/iPad",
       "description": "Safari doesn't support one-tap installs — add TempleOS to your Home Screen instead:",

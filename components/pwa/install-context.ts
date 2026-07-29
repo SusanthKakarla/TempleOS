@@ -15,7 +15,7 @@ export interface InstallContextValue {
   isDismissed: boolean;
   /** Triggers the native install prompt (Android/desktop Chromium) or opens the iOS instructions dialog. No-op if `state` isn't "installable"/"ios-manual". */
   promptInstall: () => Promise<void>;
-  /** Suppresses passive install nudges (e.g. InstallBanner) for a few days. Never hides the explicit Install button/menu item. */
+  /** Suppresses passive install nudges for a few days. Never hides the explicit Install button/menu item. */
   dismiss: () => void;
 }
 
