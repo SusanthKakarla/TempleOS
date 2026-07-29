@@ -7,6 +7,8 @@ export interface ReceiptPdfData {
   templeAddress: string | null;
   receiptNumber: string;
   transactionId: string;
+  /** Razorpay's own payment id (e.g. "pay_..."), distinct from TempleOS's internal transactionId — shown separately so the temple/donor can reconcile against the Razorpay dashboard directly. */
+  providerPaymentId: string | null;
   campaignTitle: string | null;
   amount: number;
   currency: string;
@@ -54,14 +56,16 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
     };
 
     row("Receipt Number:", data.receiptNumber);
+    row("Date & Time:", data.date);
     row("Transaction ID:", data.transactionId);
-    row("Date:", data.date);
+    if (data.providerPaymentId) row("Razorpay Payment ID:", data.providerPaymentId);
     row("Donor Name:", data.donorName);
     if (data.donorPhone) row("Donor Phone:", data.donorPhone);
     if (data.donorEmail) row("Donor Email:", data.donorEmail);
     if (data.donorPan) row("Donor PAN:", data.donorPan);
     if (data.campaignTitle) row("Campaign:", data.campaignTitle);
     row("Payment Method:", data.paymentMethod);
+    row("Currency:", data.currency);
 
     doc.moveDown(1);
     doc
@@ -71,7 +75,14 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
     doc.moveDown(1);
 
     doc.fontSize(16).font("Helvetica-Bold").text(`Amount: ${data.currency} ${data.amount.toFixed(2)}`);
-    doc.moveDown(2);
+    doc.moveDown(1.5);
+
+    doc
+      .fontSize(11)
+      .font("Helvetica-Bold")
+      .fillColor("#000000")
+      .text(`Thank you for your generous contribution to ${data.templeName}.`, { align: "center" });
+    doc.moveDown(1);
 
     doc
       .fontSize(9)

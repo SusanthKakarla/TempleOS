@@ -3,10 +3,14 @@ import {
   getDecryptedCredentialsForAccount,
   updateOAuthTokensForAccount,
 } from "@/lib/db/tenant-payment-accounts";
-import { listStaleNonTerminalTransactions } from "@/lib/db/payment-transactions";
+import {
+  listStaleNonTerminalTransactions,
+  listCapturedTransactionsMissingDonation,
+  getPaymentTransactionById,
+} from "@/lib/db/payment-transactions";
 import { recordReconciliationRun } from "@/lib/db/payment-reconciliation-logs";
 import { fetchOrderPaymentForTenant } from "./payment-provider-service";
-import { applyPaymentEvent } from "./campaign-payment-service";
+import { applyPaymentEvent, runCaptureSideEffects } from "./campaign-payment-service";
 import { refreshAccessToken } from "./razorpay-oauth-client";
 import { PaymentAuditService } from "./payment-audit";
 import type { PaymentReconciliationLog, TenantPaymentAccount } from "@/types/db";
@@ -51,7 +55,7 @@ const STALE_AFTER_MINUTES = 15;
 
 interface ReconciliationDetail {
   transactionId: string;
-  issue: "missed_capture";
+  issue: "missed_capture" | "missed_capture_side_effects";
   providerPaymentId: string;
 }
 
@@ -63,6 +67,11 @@ interface ReconciliationDetail {
  * capture path a real webhook would have, through the same idempotent CAS,
  * so it can never double-process a transaction the webhook already caught
  * in the meantime.
+ *
+ * Separately, also retries transactions that already reached `captured` but
+ * never got a donation/receipt attached — donation/receipt creation threw
+ * partway through runCaptureSideEffects (see its own doc comment for why a
+ * redelivered webhook can't retry this on its own once status has flipped).
  */
 export async function reconcileTenant(tenantId: string): Promise<PaymentReconciliationLog> {
   const staleTransactions = await listStaleNonTerminalTransactions(tenantId, STALE_AFTER_MINUTES);
@@ -81,9 +90,21 @@ export async function reconcileTenant(tenantId: string): Promise<PaymentReconcil
     autoResolved += 1;
   }
 
+  const stuckCaptures = await listCapturedTransactionsMissingDonation(tenantId, STALE_AFTER_MINUTES);
+  for (const transaction of stuckCaptures) {
+    await runCaptureSideEffects(transaction.id);
+    const after = await getPaymentTransactionById(transaction.id);
+    details.push({
+      transactionId: transaction.id,
+      issue: "missed_capture_side_effects",
+      providerPaymentId: transaction.providerPaymentId ?? "",
+    });
+    if (after?.donationId) autoResolved += 1;
+  }
+
   const log = await recordReconciliationRun({
     tenantId,
-    transactionsChecked: staleTransactions.length,
+    transactionsChecked: staleTransactions.length + stuckCaptures.length,
     mismatchesFound: details.length,
     autoResolved,
     details,

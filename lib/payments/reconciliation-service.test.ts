@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { listStaleNonTerminalTransactions } from "@/lib/db/payment-transactions";
+import {
+  listStaleNonTerminalTransactions,
+  listCapturedTransactionsMissingDonation,
+  getPaymentTransactionById,
+} from "@/lib/db/payment-transactions";
 import { recordReconciliationRun } from "@/lib/db/payment-reconciliation-logs";
 import {
   listActiveConnectedPaymentAccounts,
@@ -7,7 +11,7 @@ import {
   updateOAuthTokensForAccount,
 } from "@/lib/db/tenant-payment-accounts";
 import { fetchOrderPaymentForTenant } from "./payment-provider-service";
-import { applyPaymentEvent } from "./campaign-payment-service";
+import { applyPaymentEvent, runCaptureSideEffects } from "./campaign-payment-service";
 import { refreshAccessToken } from "./razorpay-oauth-client";
 import { PaymentAuditService } from "./payment-audit";
 import { reconcileTenant, reconcileAllTenants } from "./reconciliation-service";
@@ -15,6 +19,8 @@ import type { PaymentTransaction, TenantPaymentAccount } from "@/types/db";
 
 vi.mock("@/lib/db/payment-transactions", () => ({
   listStaleNonTerminalTransactions: vi.fn(),
+  listCapturedTransactionsMissingDonation: vi.fn(),
+  getPaymentTransactionById: vi.fn(),
 }));
 vi.mock("@/lib/db/payment-reconciliation-logs", () => ({
   recordReconciliationRun: vi.fn(),
@@ -29,6 +35,7 @@ vi.mock("./payment-provider-service", () => ({
 }));
 vi.mock("./campaign-payment-service", () => ({
   applyPaymentEvent: vi.fn(),
+  runCaptureSideEffects: vi.fn(),
 }));
 vi.mock("./razorpay-oauth-client", () => ({
   refreshAccessToken: vi.fn(),
@@ -77,10 +84,13 @@ const loggedRun = {
 
 describe("reconcileTenant", () => {
   beforeEach(() => {
-    vi.mocked(listStaleNonTerminalTransactions).mockReset();
+    vi.mocked(listStaleNonTerminalTransactions).mockReset().mockResolvedValue([]);
+    vi.mocked(listCapturedTransactionsMissingDonation).mockReset().mockResolvedValue([]);
+    vi.mocked(getPaymentTransactionById).mockReset();
     vi.mocked(recordReconciliationRun).mockReset();
     vi.mocked(fetchOrderPaymentForTenant).mockReset();
     vi.mocked(applyPaymentEvent).mockReset();
+    vi.mocked(runCaptureSideEffects).mockReset();
     vi.mocked(PaymentAuditService.reconciliationRunCompleted).mockReset();
     vi.mocked(recordReconciliationRun).mockResolvedValue(loggedRun);
   });
@@ -119,12 +129,42 @@ describe("reconcileTenant", () => {
 
     expect(PaymentAuditService.reconciliationRunCompleted).not.toHaveBeenCalled();
   });
+
+  it("retries a transaction stuck at captured with no donation attached, and counts it as auto-resolved once it gets one", async () => {
+    const stuck = makeTransaction({ status: "captured", providerPaymentId: "pay_stuck" });
+    vi.mocked(listCapturedTransactionsMissingDonation).mockResolvedValue([stuck]);
+    vi.mocked(getPaymentTransactionById).mockResolvedValue({ ...stuck, donationId: "donation-1" });
+    vi.mocked(recordReconciliationRun).mockResolvedValue({ ...loggedRun, mismatchesFound: 1, autoResolved: 1 });
+
+    await reconcileTenant("tenant-1");
+
+    expect(runCaptureSideEffects).toHaveBeenCalledWith("txn-1");
+    expect(recordReconciliationRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactionsChecked: 1,
+        details: [expect.objectContaining({ transactionId: "txn-1", issue: "missed_capture_side_effects" })],
+      }),
+    );
+    expect(PaymentAuditService.reconciliationRunCompleted).toHaveBeenCalledWith("tenant-1", "log-1", 1, 1);
+  });
+
+  it("does not count a stuck capture as auto-resolved if it still has no donation after retrying (still failing)", async () => {
+    const stuck = makeTransaction({ status: "captured", providerPaymentId: "pay_stuck" });
+    vi.mocked(listCapturedTransactionsMissingDonation).mockResolvedValue([stuck]);
+    vi.mocked(getPaymentTransactionById).mockResolvedValue(stuck); // still no donationId
+    vi.mocked(recordReconciliationRun).mockResolvedValue({ ...loggedRun, mismatchesFound: 1, autoResolved: 0 });
+
+    await reconcileTenant("tenant-1");
+
+    expect(recordReconciliationRun).toHaveBeenCalledWith(expect.objectContaining({ autoResolved: 0 }));
+  });
 });
 
 describe("reconcileAllTenants", () => {
   beforeEach(() => {
     vi.mocked(listActiveConnectedPaymentAccounts).mockReset();
     vi.mocked(listStaleNonTerminalTransactions).mockReset();
+    vi.mocked(listCapturedTransactionsMissingDonation).mockReset().mockResolvedValue([]);
     vi.mocked(recordReconciliationRun).mockReset();
     vi.mocked(getDecryptedCredentialsForAccount).mockReset();
     vi.mocked(updateOAuthTokensForAccount).mockReset();

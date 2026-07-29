@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { markTransactionCapturedIfNotAlready } from "./payment-transactions";
+import { listCapturedTransactionsMissingDonation, markTransactionCapturedIfNotAlready } from "./payment-transactions";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -59,5 +59,33 @@ describe("markTransactionCapturedIfNotAlready", () => {
     query.mockResolvedValueOnce({ rows: [] });
     const result = await markTransactionCapturedIfNotAlready("txn-1", "pay_1");
     expect(result).toBeNull();
+  });
+});
+
+describe("listCapturedTransactionsMissingDonation", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("filters to captured transactions with no donation attached, stale past the given threshold", async () => {
+    query.mockResolvedValueOnce({ rows: [baseRow] });
+    await listCapturedTransactionsMissingDonation("tenant-1", 15);
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("status = 'captured'");
+    expect(String(sql)).toContain("donation_id IS NULL");
+    expect(String(sql)).toContain("updated_at < now()");
+    expect(params).toEqual(["tenant-1", 15]);
+  });
+
+  it("maps the returned rows to PaymentTransaction objects", async () => {
+    query.mockResolvedValueOnce({ rows: [baseRow] });
+    const result = await listCapturedTransactionsMissingDonation("tenant-1", 15);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("txn-1");
+    expect(result[0].donationId).toBeNull();
   });
 });

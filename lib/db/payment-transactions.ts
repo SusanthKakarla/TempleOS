@@ -137,6 +137,30 @@ export async function listStaleNonTerminalTransactions(
   return rows.map(mapTransaction);
 }
 
+/**
+ * A transaction can reach `captured` (via markTransactionCapturedIfNotAlready)
+ * and then have its donation/receipt creation fail before completing —
+ * e.g. a transient ImageKit/DB error mid-way through runCaptureSideEffects.
+ * Once that CAS has flipped status to 'captured', a redelivered webhook
+ * event is a no-op (by design, to stay idempotent), so nothing else will
+ * ever retry it. Reconciliation uses this to find and re-run those stuck
+ * transactions — the same self-healing role listStaleNonTerminalTransactions
+ * plays for a missed webhook, just for a different failure point.
+ */
+export async function listCapturedTransactionsMissingDonation(
+  tenantId: string,
+  olderThanMinutes: number,
+): Promise<PaymentTransaction[]> {
+  const { rows } = await getPool().query<PaymentTransactionRow>(
+    `SELECT * FROM payment_transactions
+     WHERE tenant_id = $1 AND status = 'captured' AND donation_id IS NULL
+       AND updated_at < now() - ($2 || ' minutes')::interval
+     ORDER BY updated_at ASC`,
+    [tenantId, olderThanMinutes],
+  );
+  return rows.map(mapTransaction);
+}
+
 /** Plain (non-idempotent) status update — used for authorized/failed/refunded, which have no further side effects requiring dedup. */
 export async function updateTransactionStatus(
   id: string,

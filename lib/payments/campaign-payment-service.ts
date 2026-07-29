@@ -190,8 +190,20 @@ async function runFailureSideEffects(transactionId: string): Promise<void> {
  * only sent if a phone was captured at checkout), and an in-app notification
  * to every tenant admin (the existing Notification Center, not a new
  * real-time push mechanism this app has no infrastructure for).
+ *
+ * Safely re-callable for the same transaction: once `markTransactionCapturedIfNotAlready`
+ * has flipped status to 'captured', a redelivered webhook event is a no-op
+ * by design (see that function's own doc comment) — so if donation/receipt
+ * creation throws partway through (a transient ImageKit/DB error), nothing
+ * would otherwise ever retry it. Reconciliation calls this again for any
+ * transaction stuck at `captured` with no `donation_id`
+ * (listCapturedTransactionsMissingDonation) — the check below skips
+ * re-creating the donation/receipt if a prior attempt already got that far,
+ * and the whole donation+receipt block is contained so a failure here never
+ * throws back into the webhook route (which would just prompt a wasted
+ * Razorpay retry that the CAS above would swallow anyway).
  */
-async function runCaptureSideEffects(transactionId: string): Promise<void> {
+export async function runCaptureSideEffects(transactionId: string): Promise<void> {
   const transaction = await getPaymentTransactionById(transactionId);
   if (!transaction) return;
 
@@ -201,45 +213,61 @@ async function runCaptureSideEffects(transactionId: string): Promise<void> {
   ]);
   if (!tenant) return;
 
-  const notes = [
-    `Razorpay transaction ${transaction.id}`,
-    transaction.donorPan ? `PAN: ${transaction.donorPan}` : null,
-    transaction.donorMessage ? `Message: ${transaction.donorMessage}` : null,
-  ]
-    .filter(Boolean)
-    .join(" | ");
+  let receiptNumber = transaction.receiptNumber;
+  let receiptUrl = transaction.receiptUrl;
 
-  const donation = await createDonation(transaction.tenantId, {
-    devoteeId: null,
-    manualDonor: {
-      name: transaction.donorName,
-      phone: transaction.donorPhone,
-      email: transaction.donorEmail,
-      address: null,
-      isAnonymous: transaction.isAnonymous,
-    },
-    amount: transaction.amount,
-    purpose: campaign?.linkedDonationPurpose ?? "online_donation",
-    paymentMethod: "razorpay",
-    notes,
-    donatedAt: new Date().toISOString(),
-    recordedBy: null,
-  });
+  if (!transaction.donationId) {
+    try {
+      const notes = [
+        `Razorpay transaction ${transaction.id}`,
+        transaction.donorPan ? `PAN: ${transaction.donorPan}` : null,
+        transaction.donorMessage ? `Message: ${transaction.donorMessage}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
-  const receipt = await generateAndStoreReceipt({
-    tenant,
-    transaction,
-    campaignTitle: campaign?.title ?? null,
-  });
-  await attachDonationAndReceipt(transaction.id, {
-    donationId: donation.id,
-    receiptNumber: receipt.receiptNumber,
-    receiptUrl: receipt.receiptUrl,
-  });
+      const donation = await createDonation(transaction.tenantId, {
+        devoteeId: null,
+        manualDonor: {
+          name: transaction.donorName,
+          phone: transaction.donorPhone,
+          email: transaction.donorEmail,
+          address: null,
+          isAnonymous: transaction.isAnonymous,
+        },
+        amount: transaction.amount,
+        purpose: campaign?.linkedDonationPurpose ?? "online_donation",
+        paymentMethod: "razorpay",
+        notes,
+        donatedAt: new Date().toISOString(),
+        recordedBy: null,
+      });
+
+      const receipt = await generateAndStoreReceipt({
+        tenant,
+        transaction,
+        campaignTitle: campaign?.title ?? null,
+      });
+      await attachDonationAndReceipt(transaction.id, {
+        donationId: donation.id,
+        receiptNumber: receipt.receiptNumber,
+        receiptUrl: receipt.receiptUrl,
+      });
+      receiptNumber = receipt.receiptNumber;
+      receiptUrl = receipt.receiptUrl;
+    } catch (err) {
+      await PaymentAuditService.captureSideEffectsFailed(
+        transaction.tenantId,
+        transaction.id,
+        err instanceof Error ? err.message : String(err),
+      );
+      return; // no receipt to notify about yet — reconciliation retries this transaction later
+    }
+  }
 
   const notificationIds: string[] = [];
 
-  if (transaction.donorPhone) {
+  if (transaction.donorPhone && receiptNumber && receiptUrl) {
     const receiptNotifications = await enqueueNotification({
       tenantId: transaction.tenantId,
       recipient: { phone: transaction.donorPhone },
@@ -250,10 +278,10 @@ async function runCaptureSideEffects(transactionId: string): Promise<void> {
         templeName: tenant.name,
         amount: formatInr(transaction.amount),
         campaign: campaign?.title ?? "General Donation",
-        receiptNumber: receipt.receiptNumber,
+        receiptNumber,
         transactionId: transaction.id,
         date: new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
-        receiptLink: receipt.receiptUrl,
+        receiptLink: receiptUrl,
       },
     });
     notificationIds.push(...receiptNotifications.map((n) => n.id));
