@@ -14,8 +14,8 @@ function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
 }
 
-/** For the devotee edit dialog's family-reassignment dropdown. */
-export async function GET() {
+/** For devotee/family pickers. Supports search for same-name household disambiguation. */
+export async function GET(req: NextRequest) {
   const auth = await requireTenantAdminSession();
   if (!auth.ok) {
     return tenantAdminAuthResponse(auth);
@@ -24,7 +24,8 @@ export async function GET() {
   const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
   if (featureBlocked) return featureBlocked;
 
-  const families = await listFamiliesForTenant(session.tenantId);
+  const search = req.nextUrl.searchParams.get("search");
+  const families = await listFamiliesForTenant(session.tenantId, { search });
   return NextResponse.json({ families });
 }
 

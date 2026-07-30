@@ -828,10 +828,7 @@
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
-<<<<<<< HEAD
-=======
-      "createDescription": "Manually add a devotee. They'll be opted in for WhatsApp announcements by default.",
->>>>>>> 98c134b (ui improvements, udpating donation form)
+      "createDescription": "Add a devotee and optionally place them in a family.",
       "editDescription": "Update this devotee's details.",
       "registrationType": {
         "title": "How would you like to register?",
@@ -875,6 +872,42 @@
       "whatsappStatus": {
         "label": "WhatsApp opt-in",
         "description": "Allow this devotee to receive WhatsApp announcements and automated messages."
+      },
+      "familySection": {
+        "title": "Family / household",
+        "description": "A devotee can belong to one current family household at a time.",
+        "modes": {
+          "none": "No family",
+          "existing": "Existing family",
+          "new": "New family"
+        },
+        "existingFamily": "Existing family",
+        "existingFamilyPlaceholder": "Search by family, head, member, phone, village, or PIN",
+        "typeToSearchFamilies": "Type to search families.",
+        "noFamiliesFound": "No matching families found.",
+        "headSummary": "Head: {name}",
+        "memberCount": "{count, plural, one {# member} other {# members}}",
+        "similarFamiliesTitle": "Similar families already exist",
+        "primaryRelationship": "Relationship",
+        "relationship": "Relationship",
+        "relationshipPlaceholder": "Select relationship",
+        "familyName": "Family name",
+        "address": "Address (optional)",
+        "city": "City (optional)",
+        "state": "State (optional)",
+        "pincode": "PIN code (optional)",
+        "members": "Additional family members",
+        "addNewMember": "New member",
+        "search": "Search",
+        "searchExistingPlaceholder": "Search existing devotees by name or phone",
+        "newMember": "New family member",
+        "memberName": "Member name",
+        "memberPhone": "Mobile number (optional)",
+        "removeMember": "Remove member",
+        "currentFamily": "Current family: {family}",
+        "confirmMove": "Move this devotee from their current family",
+        "clearFamily": "Clear selected family",
+        "noPhone": "No phone number"
       },
       "errorFallback": "Failed to save devotee"
     },
@@ -1053,12 +1086,8 @@
     "deleteError": "Failed to delete donation",
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
-<<<<<<< HEAD
-    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
-=======
     "nonCashBadge": "Non-cash",
-    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other" },
->>>>>>> 98c134b (ui improvements, udpating donation form)
+    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "General Donation",
       "annadanam": "Annadanam (Food Offering)",

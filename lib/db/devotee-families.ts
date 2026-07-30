@@ -1,6 +1,14 @@
 import { getPool } from "./pool";
 import { getDevoteeById } from "./devotees";
-import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
+import type {
+  Devotee,
+  DevoteeFamily,
+  DevoteeFamilySummary,
+  Gender,
+  MaritalStatus,
+  RelationshipCode,
+  SupportedLanguage,
+} from "@/types/db";
 
 /** Deliberate business-rule rejections (never a raw driver error) — lets callers show `.message` directly without risking a Postgres error leaking through the same catch block. */
 export class FamilyValidationError extends Error {}
@@ -19,6 +27,13 @@ interface DevoteeFamilyRow {
   updated_at: Date;
 }
 
+interface DevoteeFamilySummaryRow extends DevoteeFamilyRow {
+  primary_devotee_name: string | null;
+  primary_devotee_phone: string | null;
+  member_count: number | string;
+  member_names: string[] | null;
+}
+
 function mapFamily(row: DevoteeFamilyRow): DevoteeFamily {
   return {
     id: row.id,
@@ -32,6 +47,16 @@ function mapFamily(row: DevoteeFamilyRow): DevoteeFamily {
     primaryLanguage: row.primary_language as SupportedLanguage | null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapFamilySummary(row: DevoteeFamilySummaryRow): DevoteeFamilySummary {
+  return {
+    ...mapFamily(row),
+    primaryDevoteeName: row.primary_devotee_name,
+    primaryDevoteePhone: row.primary_devotee_phone,
+    memberCount: Number(row.member_count),
+    memberNames: row.member_names ?? [],
   };
 }
 
@@ -117,13 +142,69 @@ export async function getFamilyWithMembers(tenantId: string, familyId: string): 
   return { family, members };
 }
 
-/** For the devotee edit dialog's family-reassignment dropdown. */
-export async function listFamiliesForTenant(tenantId: string): Promise<DevoteeFamily[]> {
-  const { rows } = await getPool().query<DevoteeFamilyRow>(
-    "SELECT * FROM devotee_families WHERE tenant_id = $1 ORDER BY family_name ASC",
-    [tenantId],
+/** For devotee/family pickers. Summary fields disambiguate same-name village households. */
+export async function listFamiliesForTenant(
+  tenantId: string,
+  options: { search?: string | null; limit?: number } = {},
+): Promise<DevoteeFamilySummary[]> {
+  const search = options.search?.trim() ?? "";
+  const pattern = `%${search}%`;
+  const limit = options.limit ?? 500;
+  const { rows } = await getPool().query<DevoteeFamilySummaryRow>(
+    `SELECT
+       f.*,
+       primary_devotee.display_name AS primary_devotee_name,
+       primary_devotee.whatsapp_phone AS primary_devotee_phone,
+       count(DISTINCT fm.devotee_id) AS member_count,
+       coalesce(
+         array_remove(
+           array_agg(DISTINCT member_devotee.display_name)
+             FILTER (
+               WHERE member_devotee.display_name IS NOT NULL
+                 AND member_devotee.id IS DISTINCT FROM f.primary_devotee_id
+             ),
+           NULL
+         ),
+         '{}'
+       ) AS member_names
+     FROM devotee_families f
+     LEFT JOIN devotees primary_devotee
+       ON primary_devotee.id = f.primary_devotee_id
+      AND primary_devotee.tenant_id = f.tenant_id
+     LEFT JOIN family_members fm
+       ON fm.family_id = f.id
+     LEFT JOIN devotees member_devotee
+       ON member_devotee.id = fm.devotee_id
+      AND member_devotee.tenant_id = f.tenant_id
+     WHERE f.tenant_id = $1
+       AND (
+         $2 = ''
+         OR f.family_name ILIKE $3
+         OR f.address ILIKE $3
+         OR f.city ILIKE $3
+         OR f.state ILIKE $3
+         OR f.pincode ILIKE $3
+         OR primary_devotee.display_name ILIKE $3
+         OR primary_devotee.whatsapp_phone ILIKE $3
+         OR EXISTS (
+           SELECT 1
+           FROM family_members search_members
+           JOIN devotees search_devotees
+             ON search_devotees.id = search_members.devotee_id
+            AND search_devotees.tenant_id = f.tenant_id
+           WHERE search_members.family_id = f.id
+             AND (
+               search_devotees.display_name ILIKE $3
+               OR search_devotees.whatsapp_phone ILIKE $3
+             )
+         )
+       )
+     GROUP BY f.id, primary_devotee.display_name, primary_devotee.whatsapp_phone
+     ORDER BY lower(f.family_name) ASC, lower(primary_devotee.display_name) ASC NULLS LAST, lower(f.city) ASC NULLS LAST
+     LIMIT $4`,
+    [tenantId, search, pattern, limit],
   );
-  return rows.map(mapFamily);
+  return rows.map(mapFamilySummary);
 }
 
 export async function countFamilies(tenantId: string): Promise<number> {

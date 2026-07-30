@@ -1,6 +1,10 @@
+---
+baseline_commit: b08342389b5b6a7682273056e49e7fdf5e76dca5
+---
+
 # Story Ad Hoc: Unified Devotee And Family Registration
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -17,6 +21,7 @@ so that adding individuals and families is one clear workflow without duplicatin
   - Any previous family-member link for that devotee is removed in the same transaction if a move is confirmed.
   - list/detail views show the new `familyName` and `relationship` via existing `lib/db/devotees.ts` joins.
 - No database schema migration is expected. This is a service/API/UI contract change over the existing family tables.
+- Village deployments commonly have many households sharing the same surname/family label. `familyName` must be treated as a loose display label, not a unique identifier. Family selection must disambiguate with head/member/contact/location context.
 
 ## Acceptance Criteria
 
@@ -87,6 +92,13 @@ so that adding individuals and families is one clear workflow without duplicatin
    - Given the story is complete
    - When `npm run test`, `npm run typecheck`, and `npm run lint` are run
    - Then all pass, or any environment-only failure is documented with exact output.
+
+13. Same-name family disambiguation
+   - Given a village has multiple families with the same surname or family label
+   - When the admin searches for an existing family
+   - Then results show family name plus head of family, location/address, phone, and member count where available
+   - And search matches family name, head name, member name, phone, city/address/state, and PIN code
+   - And creating a new family with similar known details shows a soft warning without blocking save.
 
 ## Technical Plan
 
@@ -208,42 +220,48 @@ Preserve `features/devotees/family-form-wizard.tsx` for full family edit after c
 
 Use existing tenant-scoped `/api/devotees?search=` for existing-devotee search unless the UI needs a smaller response shape. If a smaller response is needed, add a tenant-scoped search route under the devotees API rather than querying from the client.
 
-Use `/api/devotees/families` for family selection. If family counts become large, add a `search` query param to that existing GET endpoint and implement filtering in `listFamiliesForTenant`.
+Use `/api/devotees/families` for family selection. Family picker rows should show disambiguating summary fields. Do not rely on family name uniqueness in villages where many families share the same surname.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Validation and contract tests (AC: 2, 3, 4, 5, 7, 8)
-  - [ ] Add `lib/validation/devotee-registration.ts`.
-  - [ ] Add tests for no-family, existing-family, new-family, existing-member, move-conflict, and exactly-one-head cases.
+- [x] Task 1: Validation and contract tests (AC: 2, 3, 4, 5, 7, 8)
+  - [x] Add `lib/validation/devotee-registration.ts`.
+  - [x] Add tests for no-family, existing-family, new-family, existing-member, move-conflict, and exactly-one-head cases.
 
-- [ ] Task 2: Transaction service (AC: 2, 3, 4, 5, 6, 7, 8, 9)
-  - [ ] Add the composite registration service in `lib/db`.
-  - [ ] Reuse existing table contracts in `lib/db/devotee-families.ts` where practical.
-  - [ ] Ensure all writes are tenant-scoped and parameterized.
-  - [ ] Ensure moving an existing devotee updates old and new family state in one transaction.
+- [x] Task 2: Transaction service (AC: 2, 3, 4, 5, 6, 7, 8, 9)
+  - [x] Add the composite registration service in `lib/db`.
+  - [x] Reuse existing table contracts in `lib/db/devotee-families.ts` where practical.
+  - [x] Ensure all writes are tenant-scoped and parameterized.
+  - [x] Ensure moving an existing devotee updates old and new family state in one transaction.
 
-- [ ] Task 3: API route (AC: 2, 3, 4, 7, 9)
-  - [ ] Add `app/api/devotees/registration/route.ts`.
-  - [ ] Gate with `requireTenantAdminSession()`.
-  - [ ] Return 400 for validation, 401/403 for auth, 409 for duplicate phone or move conflict.
-  - [ ] Add the route to `app/api/tenant-dashboard-auth-boundary.test.ts`.
+- [x] Task 3: API route (AC: 2, 3, 4, 7, 9)
+  - [x] Add `app/api/devotees/registration/route.ts`.
+  - [x] Gate with `requireTenantAdminSession()`.
+  - [x] Return 400 for validation, 401/403 for auth, 409 for duplicate phone or move conflict.
+  - [x] Add the route to `app/api/tenant-dashboard-auth-boundary.test.ts`.
 
-- [ ] Task 4: UI refactor (AC: 1, 3, 4, 5, 7, 11)
-  - [ ] Refactor create mode in `features/devotees/devotee-form-dialog.tsx`.
-  - [ ] Keep edit mode compatible with existing profile editing.
-  - [ ] Add compact family section with no-family/existing-family/new-family states.
-  - [ ] Add existing-devotee search/select rows with current-family warning.
-  - [ ] Keep text in `locales/en/dashboard.json` and `locales/te/dashboard.json` in sync.
+- [x] Task 4: UI refactor (AC: 1, 3, 4, 5, 7, 11)
+  - [x] Refactor create mode in `features/devotees/devotee-form-dialog.tsx`.
+  - [x] Keep edit mode compatible with existing profile editing.
+  - [x] Add compact family section with no-family/existing-family/new-family states.
+  - [x] Add existing-devotee search/select rows with current-family warning.
+  - [x] Keep text in `locales/en/dashboard.json` and `locales/te/dashboard.json` in sync.
 
-- [ ] Task 5: Preserve existing family edit path (AC: 10)
-  - [ ] Do not remove `/dashboard/devotees/family/new` or edit routes unless explicitly approved.
-  - [ ] Ensure current `FamilyFormWizard` still saves family edits after the new add flow lands.
+- [x] Task 5: Preserve existing family edit path (AC: 10)
+  - [x] Do not remove `/dashboard/devotees/family/new` or edit routes unless explicitly approved.
+  - [x] Ensure current `FamilyFormWizard` still saves family edits after the new add flow lands.
 
 - [ ] Task 6: Verification (AC: 12)
-  - [ ] Run targeted validation/API tests first.
+  - [x] Run targeted validation/API tests first.
   - [ ] Run `npm run test`.
   - [ ] Run `npm run typecheck`.
   - [ ] Run `npm run lint`.
+
+- [x] Task 7: Same-name family disambiguation (AC: 13)
+  - [x] Extend family listing with optional search across family, head, member, contact, and location fields.
+  - [x] Return summary fields for head, phone, member count, and member names.
+  - [x] Replace create-flow existing-family dropdown with compact searchable summary rows.
+  - [x] Show soft similar-family warning during new-family creation.
 
 ## Dev Notes
 
@@ -323,16 +341,54 @@ Use `/api/devotees/families` for family selection. If family counts become large
 
 ### Agent Model Used
 
-TBD by dev agent.
+GPT-5 Codex
 
 ### Debug Log References
 
-TBD.
+- `npx vitest run lib/validation/devotee-registration.test.ts` passed after validation schema implementation.
+- `npx vitest run lib/db/devotee-registration.test.ts` passed after transaction service implementation.
+- `npx vitest run app/api/devotees/registration/route.test.ts` passed after route implementation.
+- `npx vitest run lib/validation/devotee-registration.test.ts lib/db/devotee-registration.test.ts app/api/devotees/registration/route.test.ts app/api/tenant-dashboard-auth-boundary.test.ts` passed: 4 files, 17 tests.
+- `npx vitest run lib/db/devotee-families.test.ts app/api/devotees/families/route.test.ts lib/validation/devotee-registration.test.ts lib/db/devotee-registration.test.ts app/api/devotees/registration/route.test.ts app/api/tenant-dashboard-auth-boundary.test.ts` passed: 6 files, 19 tests.
+- `npx eslint features/devotees/devotee-form-dialog.tsx lib/validation/devotee-registration.ts lib/validation/devotee-registration.test.ts lib/db/devotee-registration.ts lib/db/devotee-registration.test.ts app/api/devotees/registration/route.ts app/api/devotees/registration/route.test.ts app/api/tenant-dashboard-auth-boundary.test.ts` passed.
+- `npx eslint features/devotees/devotee-form-dialog.tsx lib/db/devotee-families.ts lib/db/devotee-families.test.ts app/api/devotees/families/route.ts app/api/devotees/families/route.test.ts types/db.ts locales/en/dashboard.json locales/te/dashboard.json` passed for code files; locale JSON files were ignored by ESLint config.
+- `node -e "JSON.parse(...)"` passed for `locales/en/dashboard.json` and `locales/te/dashboard.json`.
+- Isolated story-file TypeScript check passed with `/private/tmp/templeos-devotee-registration-tsconfig.json`.
+- Isolated family-disambiguation TypeScript check passed with `/private/tmp/templeos-family-disambiguation-tsconfig.json`.
+- `npm run test` is blocked by unrelated existing failures: missing `razorpay` package import, `buildDonationExportColumns is not a function`, and merge conflict markers in `app/api/super-admin/temples/[tenantId]/payments/route.test.ts`. The run still reported 106 of 109 test files passed and 792 tests passed.
+- `npm run typecheck` is blocked by unrelated merge conflict markers in `app/api/super-admin/temples/[tenantId]/payments/route.test.ts` and `features/donations/donations-table.tsx`.
+- `npm run lint` is blocked by unrelated existing issues: undefined `DevoteeDetailActions` and `Bell` in `app/(dashboard)/dashboard/devotees/[id]/page.tsx`, conflict-marker parse errors in the payments route test and donations table, and an unused `_gradient` warning in `features/dashboard/metric-card.tsx`.
 
 ### Completion Notes List
 
-TBD.
+- Added composite registration validation for no-family, existing-family, and new-family modes.
+- Added a tenant-scoped transaction service that creates the primary devotee, creates or loads the target family, attaches new and existing members, updates moved devotees' `family_id`, maintains `family_members`, and enforces exactly one Head of Family.
+- Added `POST /api/devotees/registration` with tenant admin/feature gating, validation errors, duplicate-phone conflict handling, and explicit family-move conflict handling.
+- Refactored the create-mode Add Devotee UI into a unified individual-first form with an optional Family section for no family, existing family, or new family.
+- Added same-name family disambiguation to the create flow with searchable family summary rows and soft duplicate warnings for new family creation.
+- Preserved edit-mode devotee behavior and existing full family wizard routes.
+- Updated English and Telugu dashboard locale strings for the new family section and resolved conflict markers encountered in touched locale files.
 
 ### File List
 
-TBD.
+- `_bmad-output/implementation-artifacts/adhoc-unified-devotee-family-registration.md`
+- `app/api/devotees/families/route.test.ts`
+- `app/api/devotees/families/route.ts`
+- `app/api/devotees/registration/route.test.ts`
+- `app/api/devotees/registration/route.ts`
+- `app/api/tenant-dashboard-auth-boundary.test.ts`
+- `features/devotees/devotee-form-dialog.tsx`
+- `lib/db/devotee-families.test.ts`
+- `lib/db/devotee-families.ts`
+- `lib/db/devotee-registration.test.ts`
+- `lib/db/devotee-registration.ts`
+- `lib/validation/devotee-registration.test.ts`
+- `lib/validation/devotee-registration.ts`
+- `types/db.ts`
+- `locales/en/dashboard.json`
+- `locales/te/dashboard.json`
+
+### Change Log
+
+- 2026-07-31: Implemented unified devotee/family registration flow; full-suite verification remains blocked by unrelated existing repo errors listed in Debug Log References.
+- 2026-07-31: Added village same-name family disambiguation with richer family search results and soft similar-family warnings.

@@ -706,6 +706,13 @@ export interface DevoteeFamily {
   updatedAt: string;
 }
 
+export interface DevoteeFamilySummary extends DevoteeFamily {
+  primaryDevoteeName: string | null;
+  primaryDevoteePhone: string | null;
+  memberCount: number;
+  memberNames: string[];
+}
+
 export interface FamilyMember {
   id: string;
   familyId: string;

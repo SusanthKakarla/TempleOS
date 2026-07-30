@@ -831,10 +831,7 @@
     "formDialog": {
       "createTitle": "భక్తుడిని జోడించండి",
       "editTitle": "భక్తుడిని సవరించండి",
-<<<<<<< HEAD
-=======
-      "createDescription": "భక్తుడిని మాన్యువల్‌గా జోడించండి. వాట్సాప్ ప్రకటనల కోసం వారు డిఫాల్ట్‌గా చేరినట్లు గుర్తించబడతారు.",
->>>>>>> 98c134b (ui improvements, udpating donation form)
+      "createDescription": "భక్తుడిని జోడించి అవసరమైతే కుటుంబంలో చేర్చండి.",
       "editDescription": "ఈ భక్తుడి వివరాలను నవీకరించండి.",
       "registrationType": {
         "title": "మీరు ఎలా నమోదు చేయాలనుకుంటున్నారు?",
@@ -878,6 +875,42 @@
       "whatsappStatus": {
         "label": "వాట్సాప్ ఆప్ట్-ఇన్",
         "description": "ఈ భక్తుడు వాట్సాప్ ప్రకటనలు మరియు ఆటోమేటెడ్ సందేశాలు అందుకునేలా అనుమతించండి."
+      },
+      "familySection": {
+        "title": "కుటుంబం / గృహం",
+        "description": "ఒక భక్తుడు ఒకేసారి ఒక ప్రస్తుత కుటుంబ గృహానికి మాత్రమే చెందుతారు.",
+        "modes": {
+          "none": "కుటుంబం లేదు",
+          "existing": "ఉన్న కుటుంబం",
+          "new": "కొత్త కుటుంబం"
+        },
+        "existingFamily": "ఉన్న కుటుంబం",
+        "existingFamilyPlaceholder": "కుటుంబం, పెద్ద, సభ్యుడు, ఫోన్, గ్రామం లేదా పిన్‌తో వెతకండి",
+        "typeToSearchFamilies": "కుటుంబాలను వెతకడానికి టైప్ చేయండి.",
+        "noFamiliesFound": "సరిపోలే కుటుంబాలు కనిపించలేదు.",
+        "headSummary": "పెద్ద: {name}",
+        "memberCount": "{count, plural, one {# సభ్యుడు} other {# సభ్యులు}}",
+        "similarFamiliesTitle": "ఇలాంటి కుటుంబాలు ఇప్పటికే ఉన్నాయి",
+        "primaryRelationship": "సంబంధం",
+        "relationship": "సంబంధం",
+        "relationshipPlaceholder": "సంబంధాన్ని ఎంచుకోండి",
+        "familyName": "కుటుంబం పేరు",
+        "address": "చిరునామా (ఐచ్ఛికం)",
+        "city": "నగరం (ఐచ్ఛికం)",
+        "state": "రాష్ట్రం (ఐచ్ఛికం)",
+        "pincode": "పిన్ కోడ్ (ఐచ్ఛికం)",
+        "members": "అదనపు కుటుంబ సభ్యులు",
+        "addNewMember": "కొత్త సభ్యుడు",
+        "search": "వెతకండి",
+        "searchExistingPlaceholder": "పేరు లేదా ఫోన్‌తో ఉన్న భక్తులను వెతకండి",
+        "newMember": "కొత్త కుటుంబ సభ్యుడు",
+        "memberName": "సభ్యుడి పేరు",
+        "memberPhone": "మొబైల్ నంబర్ (ఐచ్ఛికం)",
+        "removeMember": "సభ్యుడిని తొలగించండి",
+        "currentFamily": "ప్రస్తుత కుటుంబం: {family}",
+        "confirmMove": "ఈ భక్తుడిని వారి ప్రస్తుత కుటుంబం నుండి మార్చండి",
+        "clearFamily": "ఎంచుకున్న కుటుంబాన్ని క్లియర్ చేయండి",
+        "noPhone": "ఫోన్ నంబర్ లేదు"
       },
       "errorFallback": "భక్తుడిని సేవ్ చేయడంలో విఫలమైంది"
     },
@@ -1059,12 +1092,8 @@
     "deleteError": "విరాళాన్ని తొలగించడంలో విఫలమైంది",
     "anonymousDonor": "అనామక దాత",
     "manualDonorBadge": "నమోదు కాలేదు",
-<<<<<<< HEAD
-    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay" },
-=======
     "nonCashBadge": "నగదేతరం",
-    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర" },
->>>>>>> 98c134b (ui improvements, udpating donation form)
+    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "సాధారణ విరాళం",
       "annadanam": "అన్నదానం (భోజన సేవ)",
