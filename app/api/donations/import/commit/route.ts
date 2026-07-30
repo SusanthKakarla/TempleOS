@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
         amount: row.data.amount!,
         purpose: row.data.purpose,
         paymentMethod: row.data.paymentMethod!,
+        itemDescription: null,
         notes: row.data.notes || null,
         donatedAt: row.data.donatedAt!,
         recordedBy: session.membershipId,
