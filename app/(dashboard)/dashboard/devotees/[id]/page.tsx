@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, Bell, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
+import { ArrowLeft, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getFamilyWithMembers } from "@/lib/db/devotee-families";
 import { listDonationsByDevotee } from "@/lib/db/donations";
-import { listNotificationsForDevotee } from "@/lib/db/notifications";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { formatInr } from "@/lib/currency";
-import { formatDate, formatDateTime } from "@/lib/date";
+import { formatDate } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
 
@@ -45,10 +44,9 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
   const devotee = await getDevoteeById(session.tenantId, id);
   if (!devotee) notFound();
 
-  const [donations, family, notifications] = await Promise.all([
+  const [donations, family] = await Promise.all([
     listDonationsByDevotee(session.tenantId, id),
     devotee.familyId ? getFamilyWithMembers(session.tenantId, devotee.familyId) : Promise.resolve(null),
-    listNotificationsForDevotee(session.tenantId, id),
   ]);
 
   const now = new Date();
@@ -262,27 +260,6 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
       )}
 
       <DevoteeDonationsCard devotee={devotee} donations={donations} />
-
-      <FadeIn>
-        <Card className="glass-card gap-4 rounded-2xl p-5">
-          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-            <Bell className="size-5 text-saffron" />
-            {t("notificationHistory")}
-          </h2>
-          {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("noNotifications")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {notifications.map((n) => (
-                <li key={n.id} className="flex items-center justify-between gap-3 border-b pb-2 text-sm last:border-0 last:pb-0">
-                  <span>{tDevotees(`notificationTypeLabels.${n.notificationType}`)}</span>
-                  <span className="text-xs text-muted-foreground">{formatDateTime(n.createdAt, locale)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </FadeIn>
     </div>
   );
 }

@@ -482,7 +482,7 @@
       "subtitle": "విరాళ ప్రచారాలు, పండుగ శుభాకాంక్షలు మరియు రిమైండర్‌లను భక్తులకు ప్రసారం చేయండి."
     },
     "createButton": "ప్రచారం సృష్టించండి",
-    "searchPlaceholder": "ప్రచారాలను శోధించండి...",
+    "searchPlaceholder": "వెతకండి",
     "selectAll": "అన్ని ప్రచారాలను ఎంచుకోండి",
     "columns": {
       "title": "శీర్షిక",
@@ -629,12 +629,11 @@
   },
   "devotees": {
     "pageHeader": {
-      "title": "భక్తులు",
-      "subtitle": "ఆలయ వాట్సాప్ నంబర్‌కు సందేశం పంపే భక్తులు, మీరు మాన్యువల్‌గా జోడించిన వారితో పాటు."
+      "title": "భక్తులు"
     },
     "importButton": "దిగుమతి",
     "addButton": "భక్తుడిని జోడించండి",
-    "searchPlaceholder": "పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
+    "searchPlaceholder": "వెతకండి",
     "sendWhatsapp": "వాట్సాప్ పంపండి",
     "columns": {
       "name": "పేరు",
@@ -684,16 +683,6 @@
       "uncle": "బాబాయి/మామయ్య",
       "aunt": "అత్త/పిన్ని",
       "other": "ఇతర"
-    },
-    "notificationTypeLabels": {
-      "birthday_devotee": "పుట్టినరోజు శుభాకాంక్షలు",
-      "birthday_priest": "పుట్టినరోజు పూజ రిమైండర్",
-      "user_welcome": "స్వాగత సందేశం",
-      "devotee_registered": "భక్తుడు నమోదు చేయబడ్డారు",
-      "event_reminder": "కార్యక్రమ రిమైండర్",
-      "anniversary_devotee": "వార్షికోత్సవ శుభాకాంక్షలు",
-      "anniversary_priest": "వార్షికోత్సవ పూజ రిమైండర్",
-      "family_occasion_reminder": "కుటుంబ సందర్భ రిమైండర్"
     },
     "selectAll": "అన్ని భక్తులను ఎంచుకోండి",
     "selectRow": "{name} ఎంచుకోండి",
@@ -770,9 +759,17 @@
       "familyDetails": "కుటుంబ వివరాలు",
       "familyMembers": "కుటుంబ సభ్యులు",
       "addMember": "సభ్యుడిని జోడించండి",
+      "editMember": "సభ్యుడిని సవరించండి",
       "removeMember": "సభ్యుడిని తొలగించండి",
       "memberNumber": "సభ్యుడు {number}",
       "newMember": "కొత్త సభ్యుడు",
+      "notSet": "సెట్ చేయలేదు",
+      "memberCount": "{count, plural, one {# సభ్యుడు} other {# సభ్యులు}}",
+      "sections": {
+        "details": "కుటుంబ వివరాలు",
+        "address": "చిరునామా",
+        "additionalInformation": "అదనపు సమాచారం (ఐచ్ఛికం)"
+      },
       "fields": {
         "familyName": "కుటుంబం పేరు",
         "address": "చిరునామా (ఐచ్ఛికం)",
@@ -804,6 +801,8 @@
       },
       "languages": { "en": "ఇంగ్లీష్", "te": "తెలుగు" },
       "errors": {
+        "familyNameRequired": "కుటుంబం పేరు అవసరం.",
+        "nameRequired": "సభ్యుడి పేరు అవసరం.",
         "relationshipRequired": "ప్రతి సభ్యుడికి సంబంధాన్ని ఎంచుకోండి.",
         "exactlyOneHead": "ఖచ్చితంగా ఒక సభ్యుడు కుటుంబ పెద్దగా ఉండాలి."
       },
@@ -837,9 +836,7 @@
       "birthday": "పుట్టినరోజు",
       "anniversary": "వార్షికోత్సవం",
       "today": "ఈరోజు",
-      "inDays": "{count, plural, one {# రోజులో} other {# రోజుల్లో}}",
-      "notificationHistory": "నోటిఫికేషన్ చరిత్ర",
-      "noNotifications": "ఇంకా నోటిఫికేషన్‌లు పంపబడలేదు."
+      "inDays": "{count, plural, one {# రోజులో} other {# రోజుల్లో}}"
     },
     "donationsCard": {
       "title": "విరాళాలు",
@@ -898,10 +895,10 @@
     }
   },
   "donations": {
-    "pageHeader": { "title": "విరాళాలు", "subtitle": "మాన్యువల్‌గా నమోదు చేసిన విరాళాలు. ఆన్‌లైన్ చెల్లింపులు లేదా రసీదులు లేవు." },
+    "pageHeader": { "title": "విరాళాలు" },
     "summary": { "totalThisMonth": "ఈ నెల మొత్తం", "totalAllTime": "ఇప్పటివరకు మొత్తం" },
     "addButton": "విరాళం జోడించండి",
-    "searchPlaceholder": "దాత పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
+    "searchPlaceholder": "వెతకండి",
     "dateFromLabel": "నుండి తేదీ",
     "dateToLabel": "వరకు తేదీ",
     "dateRangeSeparator": "వరకు",
@@ -992,7 +989,7 @@
     },
     "inviteButton": "వినియోగదారుని ఆహ్వానించండి",
     "importButton": "దిగుమతి",
-    "searchPlaceholder": "పేరు లేదా ఫోన్ ద్వారా వెతకండి...",
+    "searchPlaceholder": "వెతకండి",
     "filters": { "allRoles": "అన్ని పాత్రలు", "allStatuses": "అన్ని స్థితులు" },
     "columns": {
       "name": "పేరు",

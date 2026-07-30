@@ -334,7 +334,6 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
       <StickyToolbar>
         <PageHeader
           title={t("pageHeader.title")}
-          subtitle={t("pageHeader.subtitle")}
           actions={
             <>
               <Link

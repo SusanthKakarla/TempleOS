@@ -386,7 +386,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
           )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <DialogFooter className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm">
+          <DialogFooter>
             <Button type="submit" size="xl" disabled={submitting}>
               {submitting ? tCommon("saving") : tCommon("save")}
             </Button>

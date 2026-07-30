@@ -290,7 +290,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
       <StickyToolbar>
       <PageHeader
         title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
         actions={
           <>
             <div className="hidden lg:block">

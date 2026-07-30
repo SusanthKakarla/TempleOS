@@ -479,7 +479,7 @@
       "subtitle": "Broadcast donation drives, festival greetings, and reminders to devotees."
     },
     "createButton": "Create campaign",
-    "searchPlaceholder": "Search campaigns...",
+    "searchPlaceholder": "Search",
     "selectAll": "Select all campaigns",
     "columns": {
       "title": "Title",
@@ -626,12 +626,11 @@
   },
   "devotees": {
     "pageHeader": {
-      "title": "Devotees",
-      "subtitle": "Devotees who message the temple WhatsApp number, plus any you add manually."
+      "title": "Devotees"
     },
     "importButton": "Import",
     "addButton": "Add devotee",
-    "searchPlaceholder": "Search by name or phone...",
+    "searchPlaceholder": "Search",
     "sendWhatsapp": "Send WhatsApp",
     "columns": {
       "name": "Name",
@@ -681,16 +680,6 @@
       "uncle": "Uncle",
       "aunt": "Aunt",
       "other": "Other"
-    },
-    "notificationTypeLabels": {
-      "birthday_devotee": "Birthday wish",
-      "birthday_priest": "Birthday pooja reminder",
-      "user_welcome": "Welcome message",
-      "devotee_registered": "Devotee registered",
-      "event_reminder": "Event reminder",
-      "anniversary_devotee": "Anniversary wish",
-      "anniversary_priest": "Anniversary pooja reminder",
-      "family_occasion_reminder": "Family occasion reminder"
     },
     "selectAll": "Select all devotees",
     "selectRow": "Select {name}",
@@ -767,9 +756,17 @@
       "familyDetails": "Family details",
       "familyMembers": "Family members",
       "addMember": "Add member",
+      "editMember": "Edit member",
       "removeMember": "Remove member",
       "memberNumber": "Member {number}",
       "newMember": "New member",
+      "notSet": "Not set",
+      "memberCount": "{count, plural, one {# member} other {# members}}",
+      "sections": {
+        "details": "Family details",
+        "address": "Address",
+        "additionalInformation": "Additional information (optional)"
+      },
       "fields": {
         "familyName": "Family name",
         "address": "Address (optional)",
@@ -801,6 +798,8 @@
       },
       "languages": { "en": "English", "te": "Telugu" },
       "errors": {
+        "familyNameRequired": "Family name is required.",
+        "nameRequired": "Member name is required.",
         "relationshipRequired": "Select a relationship for every member.",
         "exactlyOneHead": "Exactly one member must be the Head of Family."
       },
@@ -834,9 +833,7 @@
       "birthday": "Birthday",
       "anniversary": "Anniversary",
       "today": "Today",
-      "inDays": "in {count, plural, one {# day} other {# days}}",
-      "notificationHistory": "Notification history",
-      "noNotifications": "No notifications sent yet."
+      "inDays": "in {count, plural, one {# day} other {# days}}"
     },
     "donationsCard": {
       "title": "Donations",
@@ -895,10 +892,10 @@
     }
   },
   "donations": {
-    "pageHeader": { "title": "Donations", "subtitle": "Manually recorded donations. No online payments or receipts." },
+    "pageHeader": { "title": "Donations" },
     "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time" },
     "addButton": "Add donation",
-    "searchPlaceholder": "Search by donor name or phone...",
+    "searchPlaceholder": "Search",
     "dateFromLabel": "From date",
     "dateToLabel": "To date",
     "dateRangeSeparator": "to",
@@ -986,7 +983,7 @@
     },
     "inviteButton": "Invite User",
     "importButton": "Import",
-    "searchPlaceholder": "Search by name or phone...",
+    "searchPlaceholder": "Search",
     "filters": { "allRoles": "All roles", "allStatuses": "All statuses" },
     "columns": {
       "name": "Name",
