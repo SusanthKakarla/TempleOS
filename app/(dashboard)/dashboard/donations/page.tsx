@@ -6,6 +6,7 @@ import { DonationsTable } from "@/features/donations/donations-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
+import { translateFields } from "@/lib/i18n/translate-rows";
 import { resolveDonationPurposes } from "@/lib/donations/resolve-purpose";
 
 interface DonationsPageProps {
@@ -49,7 +50,8 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
     listDevotees(session.tenantId),
     getDonationSummary(session.tenantId),
   ]);
-  const donations = await resolveDonationPurposes(donationsRaw, locale);
+  const donationsWithPurposes = await resolveDonationPurposes(donationsRaw, locale);
+  const donations = await translateFields(donationsWithPurposes, locale, ["donorName"]);
 
   return (
     <DonationsTable

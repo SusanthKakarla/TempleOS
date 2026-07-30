@@ -11,6 +11,7 @@ import { buildExportMetaLabels } from "@/lib/export/locale-labels";
 import { buildDonationExportColumns, type DonationExportLabels } from "@/lib/export/columns/donations";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
+import { translateFields } from "@/lib/i18n/translate-rows";
 import { resolveDonationPurposes } from "@/lib/donations/resolve-purpose";
 import { PAYMENT_METHOD_OPTIONS } from "@/features/donations/donation-options";
 
@@ -31,7 +32,9 @@ async function buildDonationColumnsAndLabels() {
       date: t("date"),
       notes: t("notes"),
     },
-    paymentMethodLabels: Object.fromEntries(PAYMENT_METHOD_OPTIONS.map(({ value }) => [value, tMethod(value)])),
+    paymentMethodLabels: Object.fromEntries(
+      [...PAYMENT_METHOD_OPTIONS.map(({ value }) => value), "razorpay"].map((value) => [value, tMethod(value)]),
+    ),
   };
   return buildDonationExportColumns(labels);
 }
@@ -65,7 +68,8 @@ export async function GET(req: NextRequest) {
     dateFrom: req.nextUrl.searchParams.get("dateFrom") ?? undefined,
     dateTo: req.nextUrl.searchParams.get("dateTo") ?? undefined,
   });
-  const donations = await resolveDonationPurposes(donationsRaw, locale);
+  const donationsWithPurposes = await resolveDonationPurposes(donationsRaw, locale);
+  const donations = await translateFields(donationsWithPurposes, locale, ["donorName"]);
 
   const generatedAt = new Date();
   const [columns, labels] = await Promise.all([
@@ -110,7 +114,8 @@ export async function POST(req: NextRequest) {
 
   const locale = await getLocaleCookie();
   const donationsRaw = await listDonationsByIds(session.tenantId, parsed.data.ids);
-  const donations = await resolveDonationPurposes(donationsRaw, locale);
+  const donationsWithPurposes = await resolveDonationPurposes(donationsRaw, locale);
+  const donations = await translateFields(donationsWithPurposes, locale, ["donorName"]);
 
   const generatedAt = new Date();
   const [columns, labels] = await Promise.all([

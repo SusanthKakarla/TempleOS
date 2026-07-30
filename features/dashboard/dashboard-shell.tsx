@@ -1,6 +1,8 @@
 import type { SessionPayload } from "@/lib/auth/session";
 import { listTenantFeatures } from "@/lib/db/tenant-features";
 import { getTenantById } from "@/lib/db/tenants";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { translateOne } from "@/lib/i18n/translate";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardTopbar } from "./dashboard-topbar";
 import { BottomNavBar } from "./bottom-nav-bar";
@@ -14,18 +16,18 @@ export async function DashboardShell({
   session: SessionPayload;
   children: React.ReactNode;
 }) {
-  const [features, tenant] = await Promise.all([
+  const [features, tenant, locale] = await Promise.all([
     listTenantFeatures(session.tenantId),
     getTenantById(session.tenantId),
+    getLocaleCookie(),
   ]);
   const enabledFeatures = new Set(features.filter((f) => f.enabled).map((f) => f.key));
+  const tenantName = tenant ? (locale === "te" ? await translateOne(tenant.name) : tenant.name) : "TempleOS";
 
   return (
     <MotionProvider>
       <DashboardFrame
-        sidebar={
-          <AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenant?.name ?? "TempleOS"} />
-        }
+        sidebar={<AppSidebar isSuperAdmin={false} enabledFeatures={enabledFeatures} tenantName={tenantName} />}
         topbar={
           <DashboardTopbar
             displayName={session.displayName}

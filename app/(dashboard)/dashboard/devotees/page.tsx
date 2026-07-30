@@ -74,7 +74,7 @@ export default async function DevoteesPage({ searchParams }: DevoteesPageProps) 
     listDevotees(session.tenantId, { ...filterOptions, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
     countDevoteesFiltered(session.tenantId, filterOptions),
   ]);
-  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName"]);
+  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   return (
     <DevoteesTable
