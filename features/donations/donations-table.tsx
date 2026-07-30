@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarRange, Download, Eye, HandCoins, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarRange, Download, Eye, HandCoins, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import type { Devotee, DonationSummary, DonationWithDonor, SupportedLanguage } from "@/types/db";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const tExport = useTranslations("export");
 
   function paymentMethodLabel(value: string): string {
+    if (value === "razorpay") return t("paymentMethods.razorpay");
     const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
     return option ? t(`paymentMethods.${option.value}`) : value;
   }
@@ -292,12 +293,22 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         title={t("pageHeader.title")}
         actions={
           <>
+            <Link
+              href="/dashboard/donations/import"
+              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+            >
+              <Upload className="size-4" />
+              {t("importButton")}
+            </Link>
             <div className="hidden lg:block">
               <ExportMenu exportUrl="/api/donations/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="donations" />
             </div>
             <OverflowActionMenu
               label={tExport("exportButton")}
-              items={[{ label: tExport("exportButton"), icon: <Download className="size-4" />, onClick: () => setExportOpen(true) }]}
+              items={[
+                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/donations/import") },
+                { label: tExport("exportButton"), icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
+              ]}
             />
             <ExportMenu
               exportUrl="/api/donations/export"

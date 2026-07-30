@@ -1027,6 +1027,7 @@
     "pageHeader": { "title": "విరాళాలు" },
     "summary": { "totalThisMonth": "ఈ నెల మొత్తం", "totalAllTime": "ఇప్పటివరకు మొత్తం" },
     "addButton": "విరాళం జోడించండి",
+    "importButton": "దిగుమతి",
     "searchPlaceholder": "వెతకండి",
     "dateFromLabel": "నుండి తేదీ",
     "dateToLabel": "వరకు తేదీ",
@@ -1059,7 +1060,7 @@
     "deleteError": "విరాళాన్ని తొలగించడంలో విఫలమైంది",
     "anonymousDonor": "అనామక దాత",
     "manualDonorBadge": "నమోదు కాలేదు",
-    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర" },
+    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "సాధారణ విరాళం",
       "annadanam": "అన్నదానం (భోజన సేవ)",
@@ -1110,6 +1111,61 @@
         "hint": "ఈ విరాళం ఈ దాత వివరాలకు మాత్రమే లింక్ చేయబడి ఉంటుంది — మీరు తర్వాత భక్తుడిగా సేవ్ చేయాలని ఎంచుకుంటే తప్ప, భక్తుడి రికార్డు సృష్టించబడదు."
       },
       "errorFallback": "విరాళాన్ని సేవ్ చేయడంలో విఫలమైంది"
+    },
+    "importWizard": {
+      "pageHeader": {
+        "title": "విరాళాలను దిగుమతి చేయండి",
+        "subtitle": "విరాళాలను పెద్ద మొత్తంలో నమోదు చేయడానికి CSV లేదా Excel ఫైల్‌ను అప్‌లోడ్ చేయండి. దిగుమతి చేయడానికి ముందు ఏవైనా సమస్యలను సమీక్షించి సరిదిద్దండి."
+      },
+      "upload": {
+        "title": ".csv లేదా .xlsx ఫైల్‌ను అప్‌లోడ్ చేయండి",
+        "description": "కనీసం \"Donor Name\", \"Amount\", \"Purpose\", \"Payment Method\", మరియు \"Date\" కాలమ్‌లు అవసరం.",
+        "uploadButton": "ఫైల్ అప్‌లోడ్ చేయండి",
+        "reading": "ఫైల్ చదువుతోంది…",
+        "downloadTemplate": "టెంప్లేట్ డౌన్‌లోడ్ చేయండి"
+      },
+      "statusLabels": {
+        "valid": "సరైనది",
+        "invalid": "చెల్లనిది",
+        "empty": "ఖాళీ వరుస"
+      },
+      "countChips": {
+        "total": "మొత్తం",
+        "valid": "సరైనవి",
+        "invalid": "చెల్లనివి",
+        "skipped": "దాటవేయబడినవి"
+      },
+      "tabs": {
+        "all": "అన్ని వరుసలు",
+        "problems": "సమస్యలు మాత్రమే"
+      },
+      "startOver": "మళ్లీ మొదలుపెట్టండి",
+      "importRows": "{count, plural, one {# సరైన వరుసను దిగుమతి చేయండి} other {# సరైన వరుసలను దిగుమతి చేయండి}}",
+      "columns": {
+        "row": "వరుస",
+        "donor": "దాత",
+        "amount": "మొత్తం",
+        "purpose": "ప్రయోజనం",
+        "method": "విధానం",
+        "date": "తేదీ",
+        "status": "స్థితి",
+        "issues": "సమస్యలు"
+      },
+      "importing": {
+        "title": "విరాళాలు నమోదు చేస్తోంది…",
+        "description": "పెద్ద ఫైళ్లకు ఇది కొంత సమయం పట్టవచ్చు."
+      },
+      "done": {
+        "imported": "{count} నమోదు చేయబడ్డాయి",
+        "skipped": "{count} దాటవేయబడ్డాయి",
+        "failed": "{count} విఫలమయ్యాయి",
+        "rowError": "వరుస {row}: {message}",
+        "importAnother": "మరో ఫైల్‌ను దిగుమతి చేయండి",
+        "viewDonations": "విరాళాలు చూడండి"
+      },
+      "backToDonations": "విరాళాలకు తిరిగి వెళ్లండి",
+      "readError": "ఫైల్ చదవడంలో విఫలమైంది",
+      "importError": "దిగుమతి విఫలమైంది"
     }
   },
   "userManagement": {
