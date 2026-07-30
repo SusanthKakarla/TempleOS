@@ -69,52 +69,75 @@ export async function handleRazorpayWebhook(
   rawBody: string,
   signatureHeader: string | null,
 ): Promise<WebhookOutcome> {
-  const account = await getActivePaymentAccountForTenant(tenantId);
-  if (!account || account.providerKey !== "razorpay") {
-    // tenantId here is an unverified URL path segment — it may not even be a
-    // real tenant row (garbage/probing traffic), so it must never be passed
-    // to the log (payment_webhook_logs.tenant_id has a real FK to tenants).
-    await logPaymentWebhook({
-      tenantId: null,
-      providerKey: "razorpay",
-      signatureValid: false,
-      eventType: null,
-      rawBody,
-      errorMessage: "No active Razorpay account for this tenant",
-    });
-    return { status: 404 };
-  }
+  try {
+    const account = await getActivePaymentAccountForTenant(tenantId);
+    if (!account || account.providerKey !== "razorpay") {
+      // tenantId here is an unverified URL path segment — it may not even be a
+      // real tenant row (garbage/probing traffic), so it must never be passed
+      // to the log (payment_webhook_logs.tenant_id has a real FK to tenants).
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "razorpay",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: "No active Razorpay account for this tenant",
+      });
+      return { status: 404 };
+    }
 
-  if (!signatureHeader) {
+    if (!signatureHeader) {
+      await logPaymentWebhook({
+        tenantId,
+        providerKey: "razorpay",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: "Missing X-Razorpay-Signature header",
+      });
+      return { status: 400 };
+    }
+
+    const signatureValid = await verifyWebhookSignatureForAccount(account.id, "razorpay", rawBody, signatureHeader);
+    const event = parseWebhookEvent("razorpay", rawBody);
+
     await logPaymentWebhook({
       tenantId,
       providerKey: "razorpay",
-      signatureValid: false,
-      eventType: null,
+      signatureValid,
+      eventType: event.type,
       rawBody,
-      errorMessage: "Missing X-Razorpay-Signature header",
+      errorMessage: signatureValid ? null : "Signature verification failed",
     });
+
+    if (!signatureValid) {
+      return { status: 400 };
+    }
+
+    await dispatchWebhookEvent(account.id, event);
+    return { status: 200 };
+  } catch (err) {
+    // Every branch above logs unconditionally before returning — this is the
+    // one path that wouldn't otherwise: an unexpected throw (e.g. a transient
+    // decrypt/DB error) would previously bypass logPaymentWebhook entirely,
+    // leaving a real webhook delivery attempt with zero trace in
+    // payment_webhook_logs. tenantId is still an unverified path segment here
+    // (see the 404 branch above), so it's only logged if it already resolved
+    // to a real account.
+    try {
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "razorpay",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: `Unhandled exception: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } catch {
+      // best-effort — the original exception is already what matters here
+    }
     return { status: 400 };
   }
-
-  const signatureValid = await verifyWebhookSignatureForAccount(account.id, "razorpay", rawBody, signatureHeader);
-  const event = parseWebhookEvent("razorpay", rawBody);
-
-  await logPaymentWebhook({
-    tenantId,
-    providerKey: "razorpay",
-    signatureValid,
-    eventType: event.type,
-    rawBody,
-    errorMessage: signatureValid ? null : "Signature verification failed",
-  });
-
-  if (!signatureValid) {
-    return { status: 400 };
-  }
-
-  await dispatchWebhookEvent(account.id, event);
-  return { status: 200 };
 }
 
 /**
@@ -126,38 +149,57 @@ export async function handleRazorpayWebhook(
  * is only known AFTER parsing the (now-trusted) payload's `account_id`.
  */
 export async function handleRazorpayPartnerWebhook(rawBody: string, signatureHeader: string | null): Promise<WebhookOutcome> {
-  if (!signatureHeader) {
+  try {
+    if (!signatureHeader) {
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "razorpay",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: "Missing X-Razorpay-Signature header",
+      });
+      return { status: 400 };
+    }
+
+    const signatureValid = verifyPartnerWebhookSignature(rawBody, signatureHeader);
+    const event = parseWebhookEvent("razorpay", rawBody);
+    const account = event.providerAccountId ? await getPaymentAccountByRazorpayAccountId(event.providerAccountId) : null;
+
     await logPaymentWebhook({
-      tenantId: null,
+      tenantId: account?.tenantId ?? null,
       providerKey: "razorpay",
-      signatureValid: false,
-      eventType: null,
+      signatureValid,
+      eventType: event.type,
       rawBody,
-      errorMessage: "Missing X-Razorpay-Signature header",
+      errorMessage: signatureValid ? (account ? null : "Unknown razorpay_account_id") : "Signature verification failed",
     });
+
+    if (!signatureValid) {
+      return { status: 400 };
+    }
+    if (!account) {
+      return { status: 404 };
+    }
+
+    await dispatchWebhookEvent(account.id, event);
+    return { status: 200 };
+  } catch (err) {
+    // Same rationale as handleRazorpayWebhook's catch — an unexpected throw
+    // (e.g. a transient decrypt/DB error) would otherwise leave a real
+    // delivery attempt with zero trace in payment_webhook_logs.
+    try {
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "razorpay",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: `Unhandled exception: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } catch {
+      // best-effort — the original exception is already what matters here
+    }
     return { status: 400 };
   }
-
-  const signatureValid = verifyPartnerWebhookSignature(rawBody, signatureHeader);
-  const event = parseWebhookEvent("razorpay", rawBody);
-  const account = event.providerAccountId ? await getPaymentAccountByRazorpayAccountId(event.providerAccountId) : null;
-
-  await logPaymentWebhook({
-    tenantId: account?.tenantId ?? null,
-    providerKey: "razorpay",
-    signatureValid,
-    eventType: event.type,
-    rawBody,
-    errorMessage: signatureValid ? (account ? null : "Unknown razorpay_account_id") : "Signature verification failed",
-  });
-
-  if (!signatureValid) {
-    return { status: 400 };
-  }
-  if (!account) {
-    return { status: 404 };
-  }
-
-  await dispatchWebhookEvent(account.id, event);
-  return { status: 200 };
 }

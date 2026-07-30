@@ -4,6 +4,9 @@ import { listDonations, countDonationsFiltered, getDonationSummary, type ListDon
 import { listDevotees } from "@/lib/db/devotees";
 import { DonationsTable } from "@/features/donations/donations-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
+import { resolveDonationPurposes } from "@/lib/donations/resolve-purpose";
 
 interface DonationsPageProps {
   searchParams: Promise<{
@@ -28,12 +31,25 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
   const sort = SORT_VALUES.find((value) => value === sortParam);
   const dir = dirParam === "asc" ? "asc" : "desc";
 
-  const [donations, totalCount, devotees, summary] = await Promise.all([
-    listDonations(session.tenantId, { search, dateFrom, dateTo, purpose, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
-    countDonationsFiltered(session.tenantId, { search, dateFrom, dateTo, purpose }),
+  const locale = await getLocaleCookie();
+  const translatedSearch = search ? await toEnglishSearchQuery(search) : search;
+
+  const [donationsRaw, totalCount, devotees, summary] = await Promise.all([
+    listDonations(session.tenantId, {
+      search: translatedSearch,
+      dateFrom,
+      dateTo,
+      purpose,
+      page,
+      pageSize: DEFAULT_PAGE_SIZE,
+      sort,
+      dir,
+    }),
+    countDonationsFiltered(session.tenantId, { search: translatedSearch, dateFrom, dateTo, purpose }),
     listDevotees(session.tenantId),
     getDonationSummary(session.tenantId),
   ]);
+  const donations = await resolveDonationPurposes(donationsRaw, locale);
 
   return (
     <DonationsTable

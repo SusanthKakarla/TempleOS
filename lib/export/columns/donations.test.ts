@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { DonationWithDonor } from "@/types/db";
-import { DONATION_EXPORT_COLUMNS } from "./donations";
+import { buildDonationExportColumns, type DonationExportLabels } from "./donations";
+
+const LABELS: DonationExportLabels = {
+  headers: { donor: "Donor", phone: "Phone", amount: "Amount", purpose: "Purpose", method: "Method", date: "Date", notes: "Notes" },
+  paymentMethodLabels: { cash: "Cash", upi: "UPI", bank_transfer: "Bank Transfer", cheque: "Cheque", other: "Other" },
+};
+
+const DONATION_EXPORT_COLUMNS = buildDonationExportColumns(LABELS);
 
 function makeDonation(overrides: Partial<DonationWithDonor> = {}): DonationWithDonor {
   return {

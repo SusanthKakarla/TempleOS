@@ -1,14 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getTenantById } from "@/lib/db/tenants";
 import { listDonations, listDonationsByIds } from "@/lib/db/donations";
 import { buildExportFile, type ExportFormat } from "@/lib/export";
 import { fileResponse } from "@/lib/export/response";
-import { DONATION_EXPORT_COLUMNS } from "@/lib/export/columns/donations";
+import { buildExportMetaLabels } from "@/lib/export/locale-labels";
+import { buildDonationExportColumns, type DonationExportLabels } from "@/lib/export/columns/donations";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
+import { resolveDonationPurposes } from "@/lib/donations/resolve-purpose";
+import { PAYMENT_METHOD_OPTIONS } from "@/features/donations/donation-options";
 
 const formatSchema = z.enum(["xlsx", "csv", "pdf"]);
+
+async function buildDonationColumnsAndLabels() {
+  const [t, tMethod] = await Promise.all([
+    getTranslations("exportLabels.donations"),
+    getTranslations("donations.paymentMethods"),
+  ]);
+  const labels: DonationExportLabels = {
+    headers: {
+      donor: t("donor"),
+      phone: t("phone"),
+      amount: t("amount"),
+      purpose: t("purpose"),
+      method: t("method"),
+      date: t("date"),
+      notes: t("notes"),
+    },
+    paymentMethodLabels: Object.fromEntries(PAYMENT_METHOD_OPTIONS.map(({ value }) => [value, tMethod(value)])),
+  };
+  return buildDonationExportColumns(labels);
+}
 
 /** Export All / Export Filtered — respects the table's current `?search=&dateFrom=&dateTo=`. */
 export async function GET(req: NextRequest) {
@@ -30,17 +56,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
 
-  const donations = await listDonations(session.tenantId, {
-    search: req.nextUrl.searchParams.get("search") ?? undefined,
+  const locale = await getLocaleCookie();
+  const rawSearch = req.nextUrl.searchParams.get("search") ?? undefined;
+  const search = rawSearch ? await toEnglishSearchQuery(rawSearch) : rawSearch;
+
+  const donationsRaw = await listDonations(session.tenantId, {
+    search,
     dateFrom: req.nextUrl.searchParams.get("dateFrom") ?? undefined,
     dateTo: req.nextUrl.searchParams.get("dateTo") ?? undefined,
   });
+  const donations = await resolveDonationPurposes(donationsRaw, locale);
 
-  const file = await buildExportFile(formatParam.data as ExportFormat, DONATION_EXPORT_COLUMNS, donations, {
+  const generatedAt = new Date();
+  const [columns, labels] = await Promise.all([
+    buildDonationColumnsAndLabels(),
+    buildExportMetaLabels(session.displayName, generatedAt),
+  ]);
+  const file = await buildExportFile(formatParam.data as ExportFormat, columns, donations, {
     title: "Donations",
     tenantName: tenant.name,
     generatedBy: session.displayName,
-    generatedAt: new Date(),
+    generatedAt,
+    labels,
   });
   return fileResponse(file);
 }
@@ -71,13 +108,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
 
-  const donations = await listDonationsByIds(session.tenantId, parsed.data.ids);
+  const locale = await getLocaleCookie();
+  const donationsRaw = await listDonationsByIds(session.tenantId, parsed.data.ids);
+  const donations = await resolveDonationPurposes(donationsRaw, locale);
 
-  const file = await buildExportFile(parsed.data.format, DONATION_EXPORT_COLUMNS, donations, {
+  const generatedAt = new Date();
+  const [columns, labels] = await Promise.all([
+    buildDonationColumnsAndLabels(),
+    buildExportMetaLabels(session.displayName, generatedAt),
+  ]);
+  const file = await buildExportFile(parsed.data.format, columns, donations, {
     title: "Donations",
     tenantName: tenant.name,
     generatedBy: session.displayName,
-    generatedAt: new Date(),
+    generatedAt,
+    labels,
   });
   return fileResponse(file);
 }

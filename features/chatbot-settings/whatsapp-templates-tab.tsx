@@ -131,12 +131,12 @@ export function WhatsAppTemplatesTab({
       });
       if (!response.ok) {
         const errBody = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errBody.error ?? "Failed to save template");
+        throw new Error(errBody.error ?? t("formDialog.defaultError"));
       }
       setFormOpen(false);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save template");
+      setError(err instanceof Error ? err.message : t("formDialog.defaultError"));
     } finally {
       setSubmitting(false);
     }
@@ -165,14 +165,14 @@ export function WhatsAppTemplatesTab({
 
   function actionItems(template: WhatsAppMessageTemplate) {
     return [
-      { label: "Edit", icon: <Pencil className="size-4" />, onClick: () => openEdit(template) },
-      { label: "Sync status from Meta", icon: <RefreshCw className="size-4" />, onClick: () => handleSync(template) },
-      { label: "Test send", icon: <Send className="size-4" />, onClick: () => setTestSendTemplate(template) },
+      { label: t("actions.edit"), icon: <Pencil className="size-4" />, onClick: () => openEdit(template) },
+      { label: t("actions.sync"), icon: <RefreshCw className="size-4" />, onClick: () => handleSync(template) },
+      { label: t("actions.testSend"), icon: <Send className="size-4" />, onClick: () => setTestSendTemplate(template) },
       ...(template.submissionGuide
         ? [{ label: t("guideDialog.menuItem"), icon: <BookOpen className="size-4" />, onClick: () => setGuideTemplate(template) }]
         : []),
       {
-        label: "Delete",
+        label: t("actions.delete"),
         icon: <Trash2 className="size-4" />,
         variant: "destructive" as const,
         onClick: () => setDeletingTemplate(template),
@@ -183,11 +183,7 @@ export function WhatsAppTemplatesTab({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Register a Meta-approved WhatsApp Message Template once you&apos;ve submitted and approved it directly in
-          Meta Business Manager — this is what TempleOS falls back to when a recipient&apos;s 24h conversation window is
-          closed.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("intro")}</p>
         <div className="flex shrink-0 gap-2">
           {whatsappConnected && (
             <Button
@@ -204,7 +200,7 @@ export function WhatsAppTemplatesTab({
           )}
           <Button className="gap-1.5" onClick={openCreate}>
             <Plus className="size-4" />
-            Add Template
+            {t("addTemplateButton")}
           </Button>
         </div>
       </div>
@@ -212,12 +208,12 @@ export function WhatsAppTemplatesTab({
       {templates.length === 0 ? (
         <EmptyState
           icon={<Send className="size-6" />}
-          title="No templates configured yet"
-          description="Until one is registered here, notifications outside the 24h window will fail fast with a clear reason instead of retrying forever."
+          title={t("emptyState.title")}
+          description={t("emptyState.description")}
           action={
             <Button className="gap-1.5" onClick={openCreate}>
               <Plus className="size-4" />
-              Add Template
+              {t("addTemplateButton")}
             </Button>
           }
         />
@@ -228,12 +224,12 @@ export function WhatsAppTemplatesTab({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Meta Template Name</TableHead>
-                    <TableHead>Language</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Enabled</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("table.key")}</TableHead>
+                    <TableHead>{t("table.metaTemplateName")}</TableHead>
+                    <TableHead>{t("table.language")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
+                    <TableHead>{t("table.enabled")}</TableHead>
+                    <TableHead className="text-right">{t("table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <tbody>
@@ -244,7 +240,7 @@ export function WhatsAppTemplatesTab({
                       </TableCell>
                       <TableCell className="align-top font-medium">
                         {template.metaTemplateName}
-                        <p className="mt-0.5 text-xs text-muted-foreground">v{template.version} · {template.variables.join(", ") || "no variables"}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">v{template.version} · {template.variables.join(", ") || t("table.noVariables")}</p>
                       </TableCell>
                       <TableCell className="align-top">{template.language}</TableCell>
                       <TableCell className="align-top">
@@ -282,17 +278,15 @@ export function WhatsAppTemplatesTab({
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingTemplate ? "Edit Template" : "Add Template"}</DialogTitle>
+            <DialogTitle>{editingTemplate ? t("formDialog.editTitle") : t("formDialog.addTitle")}</DialogTitle>
             <DialogDescription>
-              {editingTemplate
-                ? "Update this template's Meta name, category, or variables."
-                : "Register a template you've already had approved in Meta Business Manager."}
+              {editingTemplate ? t("formDialog.editDescription") : t("formDialog.addDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {!editingTemplate && (
               <div className="space-y-1.5">
-                <Label htmlFor="templateKey">Template key</Label>
+                <Label htmlFor="templateKey">{t("formDialog.templateKeyLabel")}</Label>
                 <Input
                   id="templateKey"
                   placeholder="e.g. user_welcome"
@@ -302,7 +296,7 @@ export function WhatsAppTemplatesTab({
               </div>
             )}
             <div className="space-y-1.5">
-              <Label htmlFor="metaTemplateName">Meta template name</Label>
+              <Label htmlFor="metaTemplateName">{t("formDialog.metaTemplateNameLabel")}</Label>
               <Input
                 id="metaTemplateName"
                 placeholder="e.g. welcome_user_v1"
@@ -313,7 +307,7 @@ export function WhatsAppTemplatesTab({
             <div className="grid grid-cols-2 gap-3">
               {!editingTemplate && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="language">Language</Label>
+                  <Label htmlFor="language">{t("formDialog.languageLabel")}</Label>
                   <Input
                     id="language"
                     placeholder="en"
@@ -323,7 +317,7 @@ export function WhatsAppTemplatesTab({
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label htmlFor="metaCategory">Category</Label>
+                <Label htmlFor="metaCategory">{t("formDialog.categoryLabel")}</Label>
                 <Select
                   value={form.metaCategory}
                   onValueChange={(v) => setForm((f) => ({ ...f, metaCategory: (v as WhatsAppTemplateMetaCategory) ?? "UTILITY" }))}
@@ -343,7 +337,7 @@ export function WhatsAppTemplatesTab({
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="variables">Variables (comma-separated, in order)</Label>
+              <Label htmlFor="variables">{t("formDialog.variablesLabel")}</Label>
               <Input
                 id="variables"
                 placeholder="templeName, userName, role"
@@ -352,7 +346,7 @@ export function WhatsAppTemplatesTab({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description">{t("formDialog.descriptionLabel")}</Label>
               <Textarea
                 id="description"
                 value={form.description}
@@ -363,7 +357,7 @@ export function WhatsAppTemplatesTab({
           </div>
           <DialogFooter>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? t("formDialog.saving") : t("formDialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -388,18 +382,20 @@ export function WhatsAppTemplatesTab({
       <AlertDialog open={deletingTemplate !== null} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this template?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {deletingTemplate?.metaTemplateName} will no longer be used as a fallback for &quot;{deletingTemplate?.templateKey}&quot;
-              notifications. This only removes it from TempleOS — it doesn&apos;t delete the template from Meta Business Manager.
+              {t("deleteDialog.description", {
+                metaTemplateName: deletingTemplate?.metaTemplateName ?? "",
+                templateKey: deletingTemplate?.templateKey ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeletingTemplate(null)}>
-              Cancel
+              {t("deleteDialog.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleConfirmDelete}>
-              Delete
+              {t("deleteDialog.confirm")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -415,6 +411,7 @@ function TestSendDialog({
   template: WhatsAppMessageTemplate;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("chatbotSettings.whatsappTemplateSetup.testSendDialog");
   const [toPhone, setToPhone] = useState("");
   const [sampleValues, setSampleValues] = useState<Record<string, string>>(
     Object.fromEntries(template.variables.map((v) => [v, ""])),
@@ -433,12 +430,12 @@ function TestSendDialog({
       });
       const body = (await response.json().catch(() => ({}))) as { error?: string; ok?: boolean };
       if (!response.ok) {
-        setResult({ ok: false, message: body.error ?? "Test send failed" });
+        setResult({ ok: false, message: body.error ?? t("defaultError") });
       } else {
-        setResult({ ok: true, message: "Sent! Check the recipient's WhatsApp." });
+        setResult({ ok: true, message: t("success") });
       }
     } catch {
-      setResult({ ok: false, message: "Test send failed — network error." });
+      setResult({ ok: false, message: t("networkError") });
     } finally {
       setSubmitting(false);
     }
@@ -448,14 +445,12 @@ function TestSendDialog({
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Test Send</DialogTitle>
-          <DialogDescription>
-            Sends the real &quot;{template.metaTemplateName}&quot; template — only succeeds once it&apos;s approved in Meta.
-          </DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description", { metaTemplateName: template.metaTemplateName })}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="toPhone">Recipient phone number</Label>
+            <Label htmlFor="toPhone">{t("recipientLabel")}</Label>
             <Input id="toPhone" placeholder="+919876543210" value={toPhone} onChange={(e) => setToPhone(e.target.value)} />
           </div>
           {template.variables.map((variable) => (
@@ -475,7 +470,7 @@ function TestSendDialog({
         <DialogFooter>
           <Button onClick={handleSend} disabled={submitting || !toPhone}>
             <Send className="size-4" />
-            {submitting ? "Sending..." : "Send test"}
+            {submitting ? t("sending") : t("sendTest")}
           </Button>
         </DialogFooter>
       </DialogContent>

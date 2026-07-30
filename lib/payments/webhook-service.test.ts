@@ -115,6 +115,18 @@ describe("handleRazorpayWebhook — dispatch routing", () => {
     expect(applyPaymentEvent).not.toHaveBeenCalled();
     expect(applyRefundEvent).not.toHaveBeenCalled();
   });
+
+  it("still logs the attempt when an unexpected exception is thrown mid-flight (e.g. a transient decrypt/DB error)", async () => {
+    vi.mocked(verifyWebhookSignatureForAccount).mockRejectedValue(new Error("decrypt failed: bad auth tag"));
+
+    const result = await handleRazorpayWebhook("tenant-1", "{}", "sig");
+
+    expect(result).toEqual({ status: 400 });
+    expect(logPaymentWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({ errorMessage: "Unhandled exception: decrypt failed: bad auth tag" }),
+    );
+    expect(applyPaymentEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe("handleRazorpayPartnerWebhook — tenant resolution by razorpay_account_id", () => {
@@ -183,5 +195,19 @@ describe("handleRazorpayPartnerWebhook — tenant resolution by razorpay_account
     const result = await handleRazorpayPartnerWebhook("{}", null);
     expect(result).toEqual({ status: 400 });
     expect(logPaymentWebhook).toHaveBeenCalledWith(expect.objectContaining({ errorMessage: "Missing X-Razorpay-Signature header" }));
+  });
+
+  it("still logs the attempt when an unexpected exception is thrown mid-flight", async () => {
+    vi.mocked(verifyPartnerWebhookSignature).mockImplementation(() => {
+      throw new Error("decrypt failed: bad auth tag");
+    });
+
+    const result = await handleRazorpayPartnerWebhook("{}", "sig");
+
+    expect(result).toEqual({ status: 400 });
+    expect(logPaymentWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({ errorMessage: "Unhandled exception: decrypt failed: bad auth tag" }),
+    );
+    expect(applyPaymentEvent).not.toHaveBeenCalled();
   });
 });

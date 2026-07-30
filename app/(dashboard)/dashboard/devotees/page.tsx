@@ -4,6 +4,9 @@ import { listDevotees, countDevoteesFiltered, type ListDevoteesOptions } from "@
 import { getTenantById } from "@/lib/db/tenants";
 import { DevoteesTable } from "@/features/devotees/devotees-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { translateFields } from "@/lib/i18n/translate-rows";
+import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
 
 interface DevoteesPageProps {
   searchParams: Promise<{
@@ -52,13 +55,26 @@ export default async function DevoteesPage({ searchParams }: DevoteesPageProps) 
   const whatsappOptIn = whatsappOptInParam === "true" ? true : whatsappOptInParam === "false" ? false : undefined;
   const includeInactive = statusParam === "all";
 
-  const tenant = await getTenantById(session.tenantId);
-  const filterOptions = { search, registrationType, isDonor, whatsappOptIn, occasion, includeInactive, timezone: tenant?.timezone };
+  const locale = await getLocaleCookie();
+  const [tenant, translatedSearch] = await Promise.all([
+    getTenantById(session.tenantId),
+    search ? toEnglishSearchQuery(search) : Promise.resolve(search),
+  ]);
+  const filterOptions = {
+    search: translatedSearch,
+    registrationType,
+    isDonor,
+    whatsappOptIn,
+    occasion,
+    includeInactive,
+    timezone: tenant?.timezone,
+  };
 
-  const [devotees, totalCount] = await Promise.all([
+  const [devoteesRaw, totalCount] = await Promise.all([
     listDevotees(session.tenantId, { ...filterOptions, page, pageSize: DEFAULT_PAGE_SIZE, sort, dir }),
     countDevoteesFiltered(session.tenantId, filterOptions),
   ]);
+  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName"]);
 
   return (
     <DevoteesTable

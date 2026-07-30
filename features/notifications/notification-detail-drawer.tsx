@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +9,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import type { NotificationListItem } from "@/lib/db/notifications";
 import type { SupportedLanguage } from "@/types/db";
 import { formatDateTime } from "@/lib/date";
-
-const STRATEGY_LABEL: Record<string, string> = { free_form: "Free-form", template: "Template" };
-const CONVERSATION_LABEL: Record<string, string> = { active: "Active (window open)", inactive: "Inactive (window closed)", unknown: "Unknown" };
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -36,57 +34,60 @@ export function NotificationDetailDrawer({
   notification: NotificationListItem;
   locale: SupportedLanguage;
 }) {
+  const t = useTranslations("notifications.detailDrawer");
+  const tStrategy = useTranslations("notifications.detailDrawer.strategyLabels");
+  const tConversation = useTranslations("notifications.detailDrawer.conversationLabels");
   const [open, setOpen] = useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={
-          <Button variant="ghost" size="icon-sm" aria-label="View details">
+          <Button variant="ghost" size="icon-sm" aria-label={t("viewDetails")}>
             <Info className="size-4" />
           </Button>
         }
       />
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Notification Details</SheetTitle>
+          <SheetTitle>{t("title")}</SheetTitle>
         </SheetHeader>
         <div className="flex-1 space-y-1 overflow-y-auto px-4 pb-4">
-          <Row label="Notification ID">
+          <Row label={t("notificationId")}>
             <code className="text-xs">{notification.id}</code>
           </Row>
-          <Row label="Recipient">{notification.recipientName}</Row>
-          <Row label="Type">{notification.notificationType}</Row>
-          <Row label="Channel">{notification.channel}</Row>
-          <Row label="Category">{notification.category}</Row>
-          <Row label="Delivery Strategy">
+          <Row label={t("recipient")}>{notification.recipientName}</Row>
+          <Row label={t("type")}>{notification.notificationType}</Row>
+          <Row label={t("channel")}>{notification.channel}</Row>
+          <Row label={t("category")}>{notification.category}</Row>
+          <Row label={t("deliveryStrategy")}>
             {notification.deliveryStrategy ? (
-              <Badge variant="outline">{STRATEGY_LABEL[notification.deliveryStrategy] ?? notification.deliveryStrategy}</Badge>
+              <Badge variant="outline">{tStrategy(notification.deliveryStrategy)}</Badge>
             ) : (
               "—"
             )}
           </Row>
-          {notification.templateUsed && <Row label="Template Used">{notification.templateUsed}</Row>}
-          <Row label="Conversation Status">
-            {notification.conversationStatus ? CONVERSATION_LABEL[notification.conversationStatus] ?? notification.conversationStatus : "—"}
+          {notification.templateUsed && <Row label={t("templateUsed")}>{notification.templateUsed}</Row>}
+          <Row label={t("conversationStatus")}>
+            {notification.conversationStatus ? tConversation(notification.conversationStatus) : "—"}
           </Row>
-          <Row label="Status">
+          <Row label={t("status")}>
             <Badge variant={notification.deliveryStatus === "failed" ? "destructive" : "outline"}>
               {notification.deliveryStatus}
             </Badge>
           </Row>
-          <Row label="Retry Count">{notification.attemptCount}</Row>
-          {notification.metaErrorCode !== null && <Row label="Meta Error Code">{notification.metaErrorCode}</Row>}
-          {notification.metaErrorCategory && <Row label="Meta Error Category">{notification.metaErrorCategory}</Row>}
+          <Row label={t("retryCount")}>{notification.attemptCount}</Row>
+          {notification.metaErrorCode !== null && <Row label={t("metaErrorCode")}>{notification.metaErrorCode}</Row>}
+          {notification.metaErrorCategory && <Row label={t("metaErrorCategory")}>{notification.metaErrorCategory}</Row>}
           {notification.failureReason && (
             <div className="border-b py-2 text-sm last:border-0">
-              <p className="mb-1 text-muted-foreground">Failure Reason</p>
+              <p className="mb-1 text-muted-foreground">{t("failureReason")}</p>
               <p className="font-medium">{notification.failureReason}</p>
             </div>
           )}
-          <Row label="Created">{formatDateTime(notification.createdAt, locale)}</Row>
-          {notification.sentAt && <Row label="Sent">{formatDateTime(notification.sentAt, locale)}</Row>}
-          {notification.deliveredAt && <Row label="Delivered">{formatDateTime(notification.deliveredAt, locale)}</Row>}
+          <Row label={t("created")}>{formatDateTime(notification.createdAt, locale)}</Row>
+          {notification.sentAt && <Row label={t("sent")}>{formatDateTime(notification.sentAt, locale)}</Row>}
+          {notification.deliveredAt && <Row label={t("delivered")}>{formatDateTime(notification.deliveredAt, locale)}</Row>}
         </div>
       </SheetContent>
     </Sheet>

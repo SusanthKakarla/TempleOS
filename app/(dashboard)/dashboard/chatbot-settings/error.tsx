@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -13,21 +14,23 @@ export default function ChatbotSettingsError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("chatbotSettings");
+
   useEffect(() => {
     console.error("Chatbot Settings failed to load:", error);
   }, [error]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Chatbot Settings" subtitle="Temple configuration, FAQs, and notifications." />
+      <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
       <EmptyState
         icon={<AlertTriangle className="size-6" />}
-        title="This section couldn't load"
-        description="Something went wrong while loading Chatbot Settings. Your other tabs and data are unaffected — try again."
+        title={t("error.title")}
+        description={t("error.description")}
         action={
           <Button onClick={reset} className="gap-1.5">
             <RotateCcw className="size-4" />
-            Try again
+            {t("error.tryAgain")}
           </Button>
         }
       />

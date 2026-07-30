@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Event } from "@/types/db";
-import { EVENT_EXPORT_COLUMNS } from "./events";
+import { buildEventExportColumns, type EventExportLabels } from "./events";
+
+const LABELS: EventExportLabels = {
+  headers: { title: "Title", status: "Status", starts: "Starts", ends: "Ends", location: "Location", description: "Description" },
+  statusLabels: {},
+};
+
+const EVENT_EXPORT_COLUMNS = buildEventExportColumns(LABELS);
 
 function makeEvent(overrides: Partial<Event> = {}): Event {
   return {

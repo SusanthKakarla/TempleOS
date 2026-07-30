@@ -4,6 +4,8 @@ import { listEvents, countEventsFiltered, type ListEventsFilter } from "@/lib/db
 import type { EventStatus } from "@/types/db";
 import { EventsTable } from "@/features/events/events-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { translateFields } from "@/lib/i18n/translate-rows";
 
 interface EventsPageProps {
   searchParams: Promise<{ page?: string; sort?: string; dir?: string; when?: string; status?: string }>;
@@ -23,10 +25,12 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const upcomingOnly = when === "upcoming";
   const status = STATUS_VALUES.find((value) => value === statusParam);
 
-  const [events, totalCount] = await Promise.all([
+  const locale = await getLocaleCookie();
+  const [eventsRaw, totalCount] = await Promise.all([
     listEvents(session.tenantId, { page, pageSize: DEFAULT_PAGE_SIZE, sort, dir, upcomingOnly, status }),
     countEventsFiltered(session.tenantId, { upcomingOnly, status }),
   ]);
+  const events = await translateFields(eventsRaw, locale, ["title", "description"]);
 
   return (
     <EventsTable

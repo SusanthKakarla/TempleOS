@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { WhatsAppMessage } from "@/types/db";
-import { WHATSAPP_THREAD_EXPORT_COLUMNS } from "./whatsapp-thread";
+import { buildWhatsAppThreadExportColumns, type WhatsAppThreadExportLabels } from "./whatsapp-thread";
+
+const LABELS: WhatsAppThreadExportLabels = {
+  headers: { timestamp: "Timestamp", direction: "Direction", type: "Type", status: "Status", message: "Message" },
+  devotee: "Devotee",
+  temple: "Temple",
+};
+
+const WHATSAPP_THREAD_EXPORT_COLUMNS = buildWhatsAppThreadExportColumns(LABELS);
 
 function makeMessage(overrides: Partial<WhatsAppMessage> = {}): WhatsAppMessage {
   return {
