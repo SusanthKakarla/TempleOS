@@ -410,7 +410,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               </div>
               <div className="space-y-2">
                 <Label htmlFor="gender">{t("fields.gender")}</Label>
-                <Select value={gender || undefined} onValueChange={(v) => setGender((v as Gender) ?? "")} items={genderItems}>
+                <Select value={gender} onValueChange={(v) => setGender((v as Gender) ?? "")} items={genderItems}>
                   <SelectTrigger id="gender" size="lg" className="w-full">
                     <UserRound className="size-4 text-muted-foreground" />
                     <SelectValue placeholder={t("fields.genderPlaceholder")} />

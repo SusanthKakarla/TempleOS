@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
 import { createAuditLogEntry } from "./audit-log";
@@ -35,7 +36,7 @@ export interface TenantFeatureWithCatalog extends Feature {
  * row yet, so it falls back to the catalog's own default_enabled rather
  * than silently disappearing.
  */
-export async function listTenantFeatures(tenantId: string): Promise<TenantFeatureWithCatalog[]> {
+export const listTenantFeatures = cache(async (tenantId: string): Promise<TenantFeatureWithCatalog[]> => {
   const { rows } = await getPool().query<{
     id: string;
     key: string;
@@ -72,20 +73,15 @@ export async function listTenantFeatures(tenantId: string): Promise<TenantFeatur
     updatedAt: row.updated_at.toISOString(),
     enabled: row.enabled ?? row.default_enabled,
   }));
-}
+});
 
 /** The hot-path check used by lib/auth/features.ts's requireTenantFeature. */
-export async function isFeatureEnabled(tenantId: string, featureKey: FeatureKey): Promise<boolean> {
-  const { rows } = await getPool().query<{ enabled: boolean | null; default_enabled: boolean }>(
-    `SELECT tf.enabled, f.default_enabled
-     FROM features f
-     LEFT JOIN tenant_features tf ON tf.feature_key = f.key AND tf.tenant_id = $2
-     WHERE f.key = $1`,
-    [featureKey, tenantId],
-  );
-  if (rows.length === 0) return false; // unknown feature key — fail closed
-  return rows[0].enabled ?? rows[0].default_enabled;
-}
+export const isFeatureEnabled = cache(async (tenantId: string, featureKey: FeatureKey): Promise<boolean> => {
+  const features = await listTenantFeatures(tenantId);
+  const feature = features.find((f) => f.key === featureKey);
+  if (!feature) return false; // unknown feature key — fail closed
+  return feature.enabled;
+});
 
 export class TenantFeatureError extends Error {
   constructor(

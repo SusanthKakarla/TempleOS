@@ -812,6 +812,32 @@
     "selectRow": "Select {name}",
     "optedIn": "Opted in",
     "notOptedIn": "Not opted in",
+    "notificationTypeLabels": {
+      "birthday_devotee": "Birthday wish",
+      "birthday_priest": "Birthday wish (priest)",
+      "user_welcome": "Welcome",
+      "devotee_registered": "Devotee registered",
+      "event_reminder": "Event reminder",
+      "anniversary_devotee": "Anniversary wish",
+      "anniversary_priest": "Anniversary wish (priest)",
+      "family_occasion_reminder": "Family occasion reminder",
+      "tenant_config_changed": "Temple config changed",
+      "tenant_status_changed": "Temple status changed",
+      "donation_thank_you": "Donation thank you",
+      "donation_recorded": "Donation recorded",
+      "festival_greeting": "Festival greeting",
+      "new_event": "New event",
+      "event_updated": "Event updated",
+      "event_cancelled": "Event cancelled",
+      "event_announcement": "Event announcement",
+      "campaign_broadcast": "Campaign broadcast",
+      "donation_campaign_broadcast": "Donation campaign",
+      "donation_receipt": "Donation receipt",
+      "payment_captured": "Payment received",
+      "payment_failed": "Payment failed",
+      "payment_refunded": "Payment refunded",
+      "temple_announcement": "Temple announcement"
+    },
     "emptyState": {
       "title": "No devotees found",
       "description": "Devotees appear here once they message the temple WhatsApp number, or you can add one manually."
@@ -994,7 +1020,9 @@
       "birthday": "Birthday",
       "anniversary": "Anniversary",
       "today": "Today",
-      "inDays": "in {count, plural, one {# day} other {# days}}"
+      "inDays": "in {count, plural, one {# day} other {# days}}",
+      "notificationHistory": "Notification history",
+      "noNotifications": "No notifications sent yet."
     },
     "donationsCard": {
       "title": "Donations",

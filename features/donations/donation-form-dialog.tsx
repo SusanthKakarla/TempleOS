@@ -355,6 +355,7 @@ export function DonationFormDialog({
                         type="button"
                         variant="outline"
                         size="sm"
+                        className="border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/60"
                         onClick={() => { setIsNonCash(true); setAmount(""); }}
                       >
                         {tForm("fields.nonCashDonation")}
@@ -377,6 +378,7 @@ export function DonationFormDialog({
                         type="button"
                         variant="outline"
                         size="sm"
+                        className="border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
                         onClick={() => { setIsNonCash(false); setItemDescription(""); }}
                       >
                         {tForm("fields.switchToCash")}

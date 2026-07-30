@@ -121,7 +121,7 @@ export function DevoteeDonationsCard({
                   <TableCell className="font-medium tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
                   <TableCell>{donation.purpose}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
+                    <Badge variant={donation.itemDescription ? "outline" : "secondary"} className={donation.itemDescription ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-400" : undefined}>{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
                   </TableCell>
                   <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                   <TableCell className="flex justify-end gap-2">

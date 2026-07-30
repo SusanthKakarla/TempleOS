@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createSignedSessionToken, verifySignedSessionToken } from "./session-token";
 import { getTenantMembershipById } from "@/lib/db/tenant-memberships";
@@ -42,7 +43,7 @@ export async function clearSessionCookie(): Promise<void> {
   store.delete(TENANT_SESSION_COOKIE_NAME);
 }
 
-export async function getSessionAdmin(): Promise<SessionPayload | null> {
+export const getSessionAdmin = cache(async (): Promise<SessionPayload | null> => {
   const store = await cookies();
   const token = store.get(TENANT_SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -50,17 +51,21 @@ export async function getSessionAdmin(): Promise<SessionPayload | null> {
   const session = verifySessionToken(token);
   if (!session) return null;
 
-  const membership = await getTenantMembershipById(session.membershipId);
+  // Fire both queries in parallel — tenantId is already in the signed JWT so
+  // we don't need the membership result first to know which tenant to fetch.
+  const [membership, tenant] = await Promise.all([
+    getTenantMembershipById(session.membershipId),
+    // Total lockout for a non-active tenant (suspended/maintenance/archived/
+    // disabled) — every tenant-facing page and API route resolves its session
+    // through this one function, so this single check covers login, API
+    // access, and data creation all at once.
+    getTenantById(session.tenantId),
+  ]);
+
   if (!membership) return null;
   if (membership.tenantId !== session.tenantId || membership.personId !== session.personId) {
     return null;
   }
-
-  // Total lockout for a non-active tenant (suspended/maintenance/archived/
-  // disabled) — every tenant-facing page and API route resolves its session
-  // through this one function, so this single check covers login, API
-  // access, and data creation all at once.
-  const tenant = await getTenantById(membership.tenantId);
   if (!tenant || tenant.status !== "active") return null;
 
   return {
@@ -68,7 +73,7 @@ export async function getSessionAdmin(): Promise<SessionPayload | null> {
     roles: membership.roles,
     displayName: membership.displayName,
   };
-}
+});
 
 function isSessionPayload(payload: unknown): payload is SessionPayload {
   return (

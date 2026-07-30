@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
+import { ArrowLeft, Bell, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getFamilyWithMembers } from "@/lib/db/devotee-families";
 import { listDonationsByDevotee } from "@/lib/db/donations";
+import { listNotificationsForDevotee } from "@/lib/db/notifications";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { formatInr } from "@/lib/currency";
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
+import { DevoteeDetailActions } from "@/features/devotees/devotee-detail-actions";
 import { translateFields } from "@/lib/i18n/translate-rows";
 
 interface DevoteeDetailPageProps {
@@ -49,9 +51,10 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
   const devoteeRaw = await getDevoteeById(session.tenantId, id);
   if (!devoteeRaw) notFound();
 
-  const [donations, familyRaw] = await Promise.all([
+  const [donations, familyRaw, notifications] = await Promise.all([
     listDonationsByDevotee(session.tenantId, id),
     devoteeRaw.familyId ? getFamilyWithMembers(session.tenantId, devoteeRaw.familyId) : Promise.resolve(null),
+    listNotificationsForDevotee(session.tenantId, id),
   ]);
 
   const [devotee] = await translateFields([devoteeRaw], locale, ["displayName", "birthStar", "ancestralLineage"]);

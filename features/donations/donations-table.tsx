@@ -109,14 +109,9 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const tCommon = useTranslations("common");
   const tExport = useTranslations("export");
 
-<<<<<<< HEAD
-  function paymentMethodLabel(value: string): string {
-    if (value === "razorpay") return t("paymentMethods.razorpay");
-=======
   function paymentMethodLabel(value: string | null, itemDescription: string | null): string {
     if (itemDescription) return t("nonCashBadge");
     if (!value) return "—";
->>>>>>> 98c134b (ui improvements, udpating donation form)
     const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
     return option ? t(`paymentMethods.${option.value}`) : value;
   }
@@ -459,7 +454,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                       <TableCell className="font-medium tabular-nums">{formatDonationAmount(donation.amount)}</TableCell>
                       <TableCell>{donation.purpose}</TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
+                        <Badge variant={donation.itemDescription ? "outline" : "secondary"} className={donation.itemDescription ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-400" : undefined}>{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
                       </TableCell>
                       <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                       <TableCell className="text-right">
