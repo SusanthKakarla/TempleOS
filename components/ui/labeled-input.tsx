@@ -29,7 +29,7 @@ function LabeledInput({
   ...props
 }: LabeledInputProps) {
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
+    <div className={cn("min-w-0 space-y-1.5", wrapperClassName)}>
       <Label htmlFor={id} className="justify-between">
         <span>{label}</span>
         {required && requiredLabel && (
