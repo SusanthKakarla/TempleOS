@@ -43,3 +43,4 @@ Both session systems share one primitive: `createSignedSessionToken` / `verifySi
 - [Security-Architecture.md](./Security-Architecture.md) — the webhook signature gap and full auth-guard coverage check
 - [Route-Inventory.md](./Route-Inventory.md) — auth pattern per route
 - [Audit/lib/auth/](./Audit/) — per-file audits (Phase 2, Batch 1)
+- [Firebase-Console-Prerequisites.md](./Firebase-Console-Prerequisites.md) — one-time Firebase project/Console setup phone-OTP login depends on, and how to tell an environment-config failure apart from an in-app authorization rejection

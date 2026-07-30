@@ -1205,7 +1205,14 @@
     "inviteDialog": {
       "title": "Invite User",
       "description": "They'll be able to sign in immediately with this phone number.",
-      "fields": { "name": "Name", "phone": "Phone number", "phonePlaceholder": "+91XXXXXXXXXX", "roles": "Assign Role" },
+      "fields": {
+        "name": "Name",
+        "phone": "Phone number",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "phonePreview": "Will be saved as {phone}",
+        "phoneInvalid": "Enter a valid phone number for the selected country.",
+        "roles": "Assign Role"
+      },
       "rolesHelper": "Select at least one role.",
       "errorFallback": "Failed to invite user"
     },

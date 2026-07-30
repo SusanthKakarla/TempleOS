@@ -1218,6 +1218,8 @@
         "name": "పేరు",
         "phone": "ఫోన్ నంబర్",
         "phonePlaceholder": "+91XXXXXXXXXX",
+        "phonePreview": "{phone} గా సేవ్ చేయబడుతుంది",
+        "phoneInvalid": "ఎంచుకున్న దేశానికి సరైన ఫోన్ నంబర్‌ను నమోదు చేయండి.",
         "roles": "పాత్ర కేటాయించండి"
       },
       "rolesHelper": "కనీసం ఒక పాత్రను ఎంచుకోండి.",

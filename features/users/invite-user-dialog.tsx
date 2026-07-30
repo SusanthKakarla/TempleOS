@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
-import { useState, type FormEvent, type ReactElement } from "react";
+import { useMemo, useState, type FormEvent, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
+import type { CountryCode } from "libphonenumber-js";
 import { Phone, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LabeledInput } from "@/components/ui/labeled-input";
+import { CountryCodeSelect } from "@/features/auth/country-code-select";
+import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { ROLE_CODES, type RoleCode } from "@/types/db";
 
 export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement; onInvited: () => void }) {
@@ -24,16 +27,30 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [countryOverride, setCountryOverride] = useState<CountryCode | null>(null);
+  const countryIso = countryOverride ?? "IN";
   const [phoneNumber, setPhoneNumber] = useState("");
   const [roles, setRoles] = useState<RoleCode[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Computed live so the admin sees, before submitting, exactly which E.164
+  // number will be saved — the most common way a new admin ends up unable
+  // to sign in is a phone typed in local format against the wrong assumed
+  // country, silently normalized to someone else's number.
+  const normalizedPhone = useMemo(
+    () => (phoneNumber.trim() ? normalizePhoneNumber(phoneNumber, countryIso) : null),
+    [phoneNumber, countryIso],
+  );
 
   function reset() {
     setDisplayName("");
+    setCountryOverride(null);
     setPhoneNumber("");
     setRoles([]);
     setError(null);
+    setPhoneError(null);
   }
 
   function toggleRole(role: RoleCode, checked: boolean) {
@@ -43,6 +60,12 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    setPhoneError(null);
+
+    if (!normalizedPhone) {
+      setPhoneError(tDialog("fields.phoneInvalid"));
+      return;
+    }
     if (roles.length === 0) {
       setError(tDialog("rolesHelper"));
       return;
@@ -53,10 +76,18 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
       const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName, phoneNumber, roles }),
+        body: JSON.stringify({ displayName, phoneNumber: normalizedPhone, roles }),
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          errors?: { path: string[]; message: string }[];
+        };
+        const fieldError = body.errors?.find((issue) => issue.path[0] === "phoneNumber");
+        if (fieldError) {
+          setPhoneError(fieldError.message);
+          return;
+        }
         throw new Error(body.error ?? tDialog("errorFallback"));
       }
       setOpen(false);
@@ -91,14 +122,29 @@ export function InviteUserDialog({ trigger, onInvited }: { trigger: ReactElement
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
-          <LabeledInput
-            id="invite-phone"
-            label={tDialog("fields.phone")}
-            icon={<Phone />}
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            required
-          />
+          <div className="space-y-1.5">
+            <div className="flex gap-2">
+              <CountryCodeSelect value={countryIso} onChange={setCountryOverride} />
+              <LabeledInput
+                id="invite-phone"
+                label={tDialog("fields.phone")}
+                placeholder={tDialog("fields.phonePlaceholder")}
+                icon={<Phone />}
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value);
+                  setPhoneError(null);
+                }}
+                wrapperClassName="flex-1"
+                error={phoneError ?? undefined}
+                required
+              />
+            </div>
+            {!phoneError && normalizedPhone && (
+              <p className="text-xs text-muted-foreground">{tDialog("fields.phonePreview", { phone: normalizedPhone })}</p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label>{tDialog("fields.roles")}</Label>
             <div className="flex flex-wrap gap-2">
