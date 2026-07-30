@@ -428,6 +428,66 @@ export async function updateFamilyWithMembers(
 }
 
 /**
+ * Creates a new family and links an already-existing devotee to it as a member.
+ * Used when editing a devotee who has no family and wants to create one on the spot.
+ */
+export async function createFamilyForExistingDevotee(
+  tenantId: string,
+  devoteeId: string,
+  relationship: RelationshipCode,
+  input: Omit<CreateFamilyInput, "members">,
+): Promise<DevoteeFamily> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+
+    const familyResult = await client.query<{ id: string }>(
+      `INSERT INTO devotee_families (tenant_id, family_name, address, city, state, pincode, primary_language)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [
+        tenantId,
+        input.familyName,
+        input.address ?? null,
+        input.city ?? null,
+        input.state ?? null,
+        input.pincode ?? null,
+        input.primaryLanguage ?? null,
+      ],
+    );
+    const familyId = familyResult.rows[0].id;
+    const isPrimary = relationship === "head_of_family";
+
+    await client.query(
+      "UPDATE devotees SET family_id = $2, updated_at = now() WHERE id = $1 AND tenant_id = $3",
+      [devoteeId, familyId, tenantId],
+    );
+    await client.query(
+      "INSERT INTO family_members (family_id, devotee_id, relationship, is_primary) VALUES ($1, $2, $3, $4)",
+      [familyId, devoteeId, relationship, isPrimary],
+    );
+    if (isPrimary) {
+      await client.query(
+        "UPDATE devotee_families SET primary_devotee_id = $2, updated_at = now() WHERE id = $1",
+        [familyId, devoteeId],
+      );
+    }
+
+    await client.query("COMMIT");
+
+    const { rows } = await client.query<DevoteeFamilyRow>(
+      "SELECT * FROM devotee_families WHERE id = $1",
+      [familyId],
+    );
+    return mapFamily(rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Import-commit helper: appends new members to an already-existing family
  * (e.g. a second CSV upload extending a previously-imported household).
  * Rejects a row claiming `head_of_family` if the family already has a

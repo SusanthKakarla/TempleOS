@@ -167,12 +167,12 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
   }
 
   useEffect(() => {
-    if (!open || mode !== "create" || familyMode !== "existing" || selectedFamilyId) return;
+    if (!open || familyMode !== "existing" || selectedFamilyId) return;
     const trimmedSearch = familySearch.trim();
     if (!trimmedSearch) return;
     const timeout = window.setTimeout(() => loadFamilies(trimmedSearch), 250);
     return () => window.clearTimeout(timeout);
-  }, [familyMode, familySearch, mode, open, selectedFamilyId]);
+  }, [familyMode, familySearch, open, selectedFamilyId]);
 
   async function searchExistingMembers() {
     if (memberSearch.trim().length < 2) {
@@ -337,9 +337,19 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 weddingAnniversary,
                 eventNotificationsEnabled,
                 preferredLanguage: preferredLanguage || null,
-                familyId: familyId || null,
+                familyId: familyMode === "existing" ? (selectedFamilyId || null) : (familyMode === "new" ? undefined : (familyId || null)),
                 address,
                 notes,
+                ...(familyMode === "new" ? {
+                  newFamily: {
+                    familyName,
+                    relationship: primaryRelationship || "head_of_family",
+                    address: familyAddress || null,
+                    city: familyCity || null,
+                    state: familyState || null,
+                    pincode: familyPincode || null,
+                  },
+                } : {}),
               },
         ),
       });
@@ -401,14 +411,14 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               requiredLabel={tCommon("required")}
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="dateOfBirth">{t("fields.dateOfBirth")}</Label>
                 <div className="relative">
                   <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="dateOfBirth" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} inputSize="lg" className="pl-9" />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="gender">{t("fields.gender")}</Label>
                 <Select value={gender} onValueChange={(v) => setGender((v as Gender) ?? "")} items={genderItems}>
                   <SelectTrigger id="gender" size="lg" className="w-full">
@@ -428,29 +438,149 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
           </section>
 
           {mode === "edit" && (
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="familyId">{t("fields.family")}</Label>
-                <Select
-                  value={familyId || NO_FAMILY_VALUE}
-                  onValueChange={(v) => setFamilyId(v === NO_FAMILY_VALUE ? "" : (v ?? ""))}
-                  items={Object.fromEntries([[NO_FAMILY_VALUE, t("fields.noFamily")], ...families.map((f) => [f.id, f.familyName])])}
-                >
-                  <SelectTrigger id="familyId" size="lg" className="w-full">
-                    <Users className="size-4 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_FAMILY_VALUE}>{t("fields.noFamily")}</SelectItem>
-                    {families.map((family) => (
-                      <SelectItem key={family.id} value={family.id}>
-                        {family.familyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <LabeledInput id="address" label={t("fields.address")} value={address} onChange={(e) => setAddress(e.target.value)} inputSize="lg" />
+            <section className="space-y-4">
+              {familyId ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="min-w-0 space-y-2">
+                    <Label htmlFor="familyId">{t("fields.family")}</Label>
+                    <Select
+                      value={familyId || NO_FAMILY_VALUE}
+                      onValueChange={(v) => setFamilyId(v === NO_FAMILY_VALUE ? "" : (v ?? ""))}
+                      items={Object.fromEntries([[NO_FAMILY_VALUE, t("fields.noFamily")], ...families.map((f) => [f.id, f.familyName])])}
+                    >
+                      <SelectTrigger id="familyId" size="lg" className="w-full">
+                        <Users className="size-4 text-muted-foreground" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_FAMILY_VALUE}>{t("fields.noFamily")}</SelectItem>
+                        {families.map((family) => (
+                          <SelectItem key={family.id} value={family.id}>
+                            {family.familyName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <LabeledInput id="address" label={t("fields.address")} value={address} onChange={(e) => setAddress(e.target.value)} inputSize="lg" />
+                </div>
+              ) : (
+                <>
+                  <section className="space-y-4 rounded-lg border p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold">{t("familySection.title")}</h3>
+                      <p className="text-xs text-muted-foreground">{t("familySection.description")}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                      {(["none", "existing", "new"] as const).map((value) => (
+                        <Button
+                          key={value}
+                          type="button"
+                          variant={familyMode === value ? "default" : "outline"}
+                          onClick={() => setFamilyMode(value)}
+                        >
+                          {t(`familySection.modes.${value}`)}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {familyMode === "existing" && (
+                      <div className="space-y-4">
+                        <div className="space-y-3">
+                          <Label htmlFor="editSelectedFamilyId">{t("familySection.existingFamily")}</Label>
+                          {families.find((f) => f.id === selectedFamilyId) ? (
+                            <div className="relative rounded-lg border border-primary bg-primary/5 p-3 pr-12">
+                              <FamilySummary family={families.find((f) => f.id === selectedFamilyId)!} t={t} />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={clearSelectedFamily}
+                                aria-label={t("familySection.clearFamily")}
+                                className="absolute top-2 right-2"
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="relative">
+                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                  id="editSelectedFamilyId"
+                                  value={familySearch}
+                                  onChange={(e) => {
+                                    const nextSearch = e.target.value;
+                                    setFamilySearch(nextSearch);
+                                    if (!nextSearch.trim()) {
+                                      setFamilies([]);
+                                      setSearchingFamilies(false);
+                                    }
+                                  }}
+                                  placeholder={t("familySection.existingFamilyPlaceholder")}
+                                  inputSize="lg"
+                                  className="pl-9"
+                                />
+                              </div>
+                              <div className="max-h-56 space-y-2 overflow-y-auto rounded-lg border p-2">
+                                {!familySearch.trim() ? (
+                                  <p className="px-2 py-3 text-sm text-muted-foreground">{t("familySection.typeToSearchFamilies")}</p>
+                                ) : searchingFamilies ? (
+                                  <p className="px-2 py-3 text-sm text-muted-foreground">{tCommon("loading")}</p>
+                                ) : families.length === 0 ? (
+                                  <p className="px-2 py-3 text-sm text-muted-foreground">{t("familySection.noFamiliesFound")}</p>
+                                ) : (
+                                  families.map((family) => (
+                                    <FamilySummaryButton
+                                      key={family.id}
+                                      family={family}
+                                      selected={family.id === selectedFamilyId}
+                                      onSelect={() => selectExistingFamily(family)}
+                                      t={t}
+                                    />
+                                  ))
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {families.find((f) => f.id === selectedFamilyId) && (
+                          <RelationshipSelect
+                            id="editPrimaryRelationshipExisting"
+                            value={primaryRelationship}
+                            onChange={setPrimaryRelationship}
+                            label={t("familySection.primaryRelationship")}
+                            placeholder={t("familySection.relationshipPlaceholder")}
+                            relationshipItems={relationshipItems}
+                            disabledRelationships={families.find((f) => f.id === selectedFamilyId)?.primaryDevoteeId ? ["head_of_family"] : []}
+                            tRelationship={tRelationship}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {familyMode === "new" && (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <LabeledInput id="editFamilyName" label={t("familySection.familyName")} value={familyName} onChange={(e) => setFamilyName(e.target.value)} inputSize="lg" required />
+                        <RelationshipSelect
+                          id="editPrimaryRelationshipNew"
+                          value={primaryRelationship}
+                          onChange={setPrimaryRelationship}
+                          label={t("familySection.primaryRelationship")}
+                          placeholder={t("familySection.relationshipPlaceholder")}
+                          relationshipItems={relationshipItems}
+                          tRelationship={tRelationship}
+                        />
+                        <LabeledInput id="editFamilyAddress" label={t("familySection.address")} value={familyAddress} onChange={(e) => setFamilyAddress(e.target.value)} inputSize="lg" />
+                        <LabeledInput id="editFamilyCity" label={t("familySection.city")} value={familyCity} onChange={(e) => setFamilyCity(e.target.value)} inputSize="lg" />
+                        <LabeledInput id="editFamilyState" label={t("familySection.state")} value={familyState} onChange={(e) => setFamilyState(e.target.value)} inputSize="lg" />
+                        <LabeledInput id="editFamilyPincode" label={t("familySection.pincode")} value={familyPincode} onChange={(e) => setFamilyPincode(e.target.value)} inputSize="lg" />
+                      </div>
+                    )}
+                  </section>
+                  <LabeledInput id="address" label={t("fields.address")} value={address} onChange={(e) => setAddress(e.target.value)} inputSize="lg" />
+                </>
+              )}
             </section>
           )}
 
@@ -460,7 +590,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               <LabeledInput id="ancestralLineage" label={t("fields.gothram")} placeholder={t("fields.gothramPlaceholder")} icon={<Users />} value={ancestralLineage} onChange={(e) => setAncestralLineage(e.target.value)} inputSize="lg" />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="maritalStatus">{t("fields.maritalStatus")}</Label>
                 <Select value={maritalStatus || undefined} onValueChange={(v) => setMaritalStatus((v as MaritalStatus) ?? "")} items={maritalStatusItems}>
                   <SelectTrigger id="maritalStatus" size="lg" className="w-full">
@@ -476,7 +606,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="weddingAnniversary">{t("fields.weddingAnniversary")}</Label>
                 <div className="relative">
                   <Heart className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
