@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BellRing,
@@ -618,6 +619,16 @@ export function NewTempleForm({ features }: { features: Feature[] }) {
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted-foreground">Payment Provider</span>
                 <Badge variant="outline">{created.paymentAccount ? "Connected" : "Not connected"}</Badge>
+              </div>
+              <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <p className="text-xs leading-relaxed">
+                  <span className="font-medium">Action required:</span> add{" "}
+                  <span className="font-mono">{created.domain.hostname}</span> to Firebase Console → Authentication
+                  → Settings → Authorized domains (and any separate reCAPTCHA/API-key domain allowlist) before
+                  this temple&apos;s admins can sign in. Not automated — see{" "}
+                  <span className="font-mono">docs/Architecture/Firebase-Console-Prerequisites.md</span>.
+                </p>
               </div>
             </CardContent>
           </Card>

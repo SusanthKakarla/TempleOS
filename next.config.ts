@@ -24,12 +24,17 @@ const SECURITY_HEADERS = [
 // confirms the allowlist is complete.
 const CONTENT_SECURITY_POLICY_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.gstatic.com https://apis.google.com https://connect.facebook.net",
+  // https://www.google.com and https://www.recaptcha.net (Google's regional
+  // fallback, used where google.com is blocked) are required for Firebase
+  // Phone Auth's invisible RecaptchaVerifier — without them here, flipping
+  // this policy to enforcing would break phone-OTP login with
+  // auth/captcha-check-failed even though nothing else changed.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.gstatic.com https://apis.google.com https://connect.facebook.net https://www.google.com https://www.recaptcha.net",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://ik.imagekit.io https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://graph.facebook.com",
-  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://accounts.google.com https://*.firebaseapp.com https://www.facebook.com https://business.facebook.com",
+  "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://graph.facebook.com https://www.google.com https://www.recaptcha.net",
+  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://accounts.google.com https://*.firebaseapp.com https://www.facebook.com https://business.facebook.com https://www.google.com https://www.recaptcha.net",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

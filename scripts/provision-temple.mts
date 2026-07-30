@@ -216,6 +216,13 @@ export async function runProvisionTempleCli(
     output.stdout(`Assigned roles: ${result.roles.join(", ")}`);
     output.stdout(`WhatsApp linkage: ${result.whatsappAccount ? "linked" : "not linked"}`);
     output.stdout(`Payment provider: ${result.paymentAccount ? result.paymentAccount.providerKey : "not connected"}`);
+    output.stdout("");
+    output.stdout(
+      `ACTION REQUIRED before this temple's admins can sign in: add "${result.domain.hostname}" to ` +
+        `Firebase Console -> Authentication -> Settings -> Authorized domains (and, if configured, any ` +
+        `separate reCAPTCHA key domain allowlist / API key HTTP-referrer restriction in Google Cloud ` +
+        `Console). This step is not automated. See docs/Architecture/Firebase-Console-Prerequisites.md.`,
+    );
     return 0;
   } catch (err) {
     printCliError(err, output);
