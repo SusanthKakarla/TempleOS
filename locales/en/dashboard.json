@@ -1019,6 +1019,7 @@
     "pageHeader": { "title": "Donations" },
     "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time" },
     "addButton": "Add donation",
+    "importButton": "Import",
     "searchPlaceholder": "Search",
     "dateFromLabel": "From date",
     "dateToLabel": "To date",
@@ -1048,7 +1049,7 @@
     "deleteError": "Failed to delete donation",
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
-    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other" },
+    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "General Donation",
       "annadanam": "Annadanam (Food Offering)",
@@ -1098,6 +1099,61 @@
         "hint": "This donation stays linked to this donor's details only — no devotee record is created unless you choose to save them as one later."
       },
       "errorFallback": "Failed to save donation"
+    },
+    "importWizard": {
+      "pageHeader": {
+        "title": "Import Donations",
+        "subtitle": "Upload a CSV or Excel file to record donations in bulk. Review and fix any issues before importing."
+      },
+      "upload": {
+        "title": "Upload a .csv or .xlsx file",
+        "description": "Needs \"Donor Name\", \"Amount\", \"Purpose\", \"Payment Method\", and \"Date\" columns at minimum.",
+        "uploadButton": "Upload file",
+        "reading": "Reading file…",
+        "downloadTemplate": "Download template"
+      },
+      "statusLabels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "empty": "Empty row"
+      },
+      "countChips": {
+        "total": "Total",
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "skipped": "Skipped"
+      },
+      "tabs": {
+        "all": "All rows",
+        "problems": "Only issues"
+      },
+      "startOver": "Start over",
+      "importRows": "{count, plural, one {Import # valid row} other {Import # valid rows}}",
+      "columns": {
+        "row": "Row",
+        "donor": "Donor",
+        "amount": "Amount",
+        "purpose": "Purpose",
+        "method": "Method",
+        "date": "Date",
+        "status": "Status",
+        "issues": "Issues"
+      },
+      "importing": {
+        "title": "Recording donations…",
+        "description": "This may take a moment for larger files."
+      },
+      "done": {
+        "imported": "{count} recorded",
+        "skipped": "{count} skipped",
+        "failed": "{count} failed",
+        "rowError": "Row {row}: {message}",
+        "importAnother": "Import another file",
+        "viewDonations": "View donations"
+      },
+      "backToDonations": "Back to donations",
+      "readError": "Failed to read file",
+      "importError": "Import failed"
     }
   },
   "userManagement": {

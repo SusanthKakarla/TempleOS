@@ -50,7 +50,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
     devoteeRaw.familyId ? getFamilyWithMembers(session.tenantId, devoteeRaw.familyId) : Promise.resolve(null),
   ]);
 
-  const [devotee] = await translateFields([devoteeRaw], locale, ["displayName"]);
+  const [devotee] = await translateFields([devoteeRaw], locale, ["displayName", "birthStar", "ancestralLineage"]);
   const family = familyRaw
     ? {
         family: (await translateFields([familyRaw.family], locale, ["familyName"]))[0],

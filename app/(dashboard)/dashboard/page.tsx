@@ -9,6 +9,8 @@ import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
+import { getLocaleCookie } from "@/lib/i18n/locale";
+import { translateOne } from "@/lib/i18n/translate";
 
 const CHART_DAYS = 30;
 
@@ -23,13 +25,15 @@ export default async function DashboardHomePage() {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("dashboardHome");
 
-  const [tenant, upcomingEvents, totalDevotees, donationSummary, donationsPerDayRaw] = await Promise.all([
+  const [tenant, upcomingEvents, totalDevotees, donationSummary, donationsPerDayRaw, locale] = await Promise.all([
     getTenantById(session.tenantId),
     countUpcomingPublishedEvents(session.tenantId),
     countDevotees(session.tenantId),
     getDonationSummary(session.tenantId),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
+    getLocaleCookie(),
   ]);
+  const tenantName = tenant ? (locale === "te" ? await translateOne(tenant.name) : tenant.name) : null;
 
   const donationsPerDay = zeroFillDays(
     donationsPerDayRaw.map((row) => ({ date: row.date, total: Number(row.total) })),
@@ -47,7 +51,7 @@ export default async function DashboardHomePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${t("namaste")} ${tenant ? `— ${tenant.name}` : ""}`}
+        title={`${t("namaste")} ${tenantName ? `— ${tenantName}` : ""}`}
         subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}
       />
 

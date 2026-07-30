@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
   const rawSearch = req.nextUrl.searchParams.get("search") ?? undefined;
   const search = rawSearch ? await toEnglishSearchQuery(rawSearch) : rawSearch;
   const devoteesRaw = await listDevotees(session.tenantId, { search });
-  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName"]);
+  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   const generatedAt = new Date();
   const [columns, labels] = await Promise.all([
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
   const locale = await getLocaleCookie();
   const devoteesRaw = await listDevoteesByIds(session.tenantId, parsed.data.ids);
-  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName"]);
+  const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   const generatedAt = new Date();
   const [columns, labels] = await Promise.all([
