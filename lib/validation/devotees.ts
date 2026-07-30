@@ -26,6 +26,7 @@ const familyIdSchema = z.string().uuid().nullable().optional();
 export const createDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required"),
   displayName: z.string().trim().min(1, "Name is required").max(200),
+  whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
@@ -37,6 +38,7 @@ export const createDevoteeSchema = z.object({
 export const updateDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required").optional(),
   displayName: z.string().trim().min(1, "Name is required").max(200).optional(),
+  whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,

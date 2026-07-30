@@ -828,6 +828,10 @@
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
+<<<<<<< HEAD
+=======
+      "createDescription": "Manually add a devotee. They'll be opted in for WhatsApp announcements by default.",
+>>>>>>> 98c134b (ui improvements, udpating donation form)
       "editDescription": "Update this devotee's details.",
       "registrationType": {
         "title": "How would you like to register?",
@@ -869,8 +873,8 @@
         "description": "Automatically notify about new, updated, or cancelled events."
       },
       "whatsappStatus": {
-        "label": "WhatsApp status",
-        "description": "Set automatically when a devotee messages the temple WhatsApp number — can't be set manually."
+        "label": "WhatsApp opt-in",
+        "description": "Allow this devotee to receive WhatsApp announcements and automated messages."
       },
       "errorFallback": "Failed to save devotee"
     },
@@ -1049,7 +1053,12 @@
     "deleteError": "Failed to delete donation",
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
+<<<<<<< HEAD
     "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
+=======
+    "nonCashBadge": "Non-cash",
+    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other" },
+>>>>>>> 98c134b (ui improvements, udpating donation form)
     "purposePresets": {
       "generalDonation": "General Donation",
       "annadanam": "Annadanam (Food Offering)",
@@ -1070,12 +1079,20 @@
       "fields": {
         "devotee": "Devotee",
         "devoteePlaceholder": "Select a devotee",
+        "devoteeSearchPlaceholder": "Search devotees by name or phone",
+        "noDevoteesFound": "No devotees found",
+        "noPhone": "No phone",
         "donationFor": "Donation for",
         "existingDevotee": "Existing devotee",
         "manualDonor": "Manual donor",
         "amount": "Amount (₹)",
+        "amountPlaceholder": "Enter amount",
         "customAmount": "Custom",
         "customAmountPlaceholder": "Enter amount",
+        "nonCashDonation": "Non-cash / Material Donation",
+        "itemDescription": "Item description",
+        "itemDescriptionPlaceholder": "e.g. 5kg rice, 20 coconuts",
+        "switchToCash": "Cash donation",
         "paymentMethod": "Payment method",
         "purpose": "Purpose",
         "purposePlaceholder": "Describe the purpose",
@@ -1086,6 +1103,7 @@
         "selectDevotee": "Select a devotee",
         "enterDonorName": "Enter the donor's name",
         "invalidAmount": "Enter a valid amount greater than zero",
+        "enterItemDescription": "Describe the item being donated",
         "enterPurpose": "Enter a purpose",
         "dateRequired": "Donation date is required"
       },

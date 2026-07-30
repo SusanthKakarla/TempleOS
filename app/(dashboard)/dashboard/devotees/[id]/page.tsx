@@ -19,6 +19,11 @@ interface DevoteeDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const OPTED_IN_BADGE_CLASS =
+  "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100";
+const DONOR_BADGE_CLASS =
+  "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100";
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
@@ -104,12 +109,16 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
+            {devotee.isActive && <DevoteeDetailActions devotee={devotee} />}
+            <Badge
+              variant={devotee.whatsappOptInStatus ? "outline" : "secondary"}
+              className={devotee.whatsappOptInStatus ? OPTED_IN_BADGE_CLASS : undefined}
+            >
               <MessageCircle className="size-3.5" />
               {devotee.whatsappOptInStatus ? tDevotees("optedIn") : tDevotees("notOptedIn")}
             </Badge>
             {devotee.isDonor && (
-              <Badge className="gradient-saffron-gold text-saffron-foreground">
+              <Badge variant="outline" className={DONOR_BADGE_CLASS}>
                 <HandCoins className="size-3.5" />
                 {t("donor")}
               </Badge>

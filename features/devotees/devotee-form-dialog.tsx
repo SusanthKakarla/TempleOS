@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import { Bell, Cake, Heart, MessageCircle, Phone, Sparkles, User, UserRound, Users, UsersRound } from "lucide-react";
 import type { Devotee, DevoteeFamily, Gender, MaritalStatus, SupportedLanguage } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from "@/types/db";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,7 +37,6 @@ interface DevoteeFormDialogProps {
 
 export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: controlledOpen, onOpenChange }: DevoteeFormDialogProps) {
   const t = useTranslations("devotees.formDialog");
-  const tDevoteesRoot = useTranslations("devotees");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -56,6 +54,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
   const [gender, setGender] = useState<Gender | "">(devotee?.gender ?? "");
   const [maritalStatus, setMaritalStatus] = useState<MaritalStatus | "">(devotee?.maritalStatus ?? "");
   const [weddingAnniversary, setWeddingAnniversary] = useState(devotee?.weddingAnniversary ?? "");
+  const [whatsappOptInStatus, setWhatsappOptInStatus] = useState(devotee?.whatsappOptInStatus ?? true);
   const [eventNotificationsEnabled, setEventNotificationsEnabled] = useState(
     devotee?.eventNotificationsEnabled ?? true,
   );
@@ -79,6 +78,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
     setGender(devotee?.gender ?? "");
     setMaritalStatus(devotee?.maritalStatus ?? "");
     setWeddingAnniversary(devotee?.weddingAnniversary ?? "");
+    setWhatsappOptInStatus(devotee?.whatsappOptInStatus ?? true);
     setEventNotificationsEnabled(devotee?.eventNotificationsEnabled ?? true);
     setPreferredLanguage(devotee?.preferredLanguage ?? "");
     setFamilyId(devotee?.familyId ?? "");
@@ -115,6 +115,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
         body: JSON.stringify({
           whatsappPhone,
           displayName,
+          whatsappOptInStatus,
           dateOfBirth,
           birthStar,
           ancestralLineage,
@@ -356,16 +357,34 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t("fields.notes")}</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-              </div>
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">{t("whatsappStatus.label")}</p>
                     <p className="text-xs text-muted-foreground">{t("whatsappStatus.description")}</p>
+
+                  </div>
+                </div>
+                <Switch checked={whatsappOptInStatus} onCheckedChange={setWhatsappOptInStatus} />
+              </div>
+              {mode === "edit" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="preferredLanguage">{t("fields.preferredLanguage")}</Label>
+                    <Select
+                      value={preferredLanguage || undefined}
+                      onValueChange={(v) => setPreferredLanguage((v as SupportedLanguage) ?? "")}
+                      items={{ en: t("languageOptions.en"), te: t("languageOptions.te") }}
+                    >
+                      <SelectTrigger id="preferredLanguage" size="lg" className="w-full">
+                        <SelectValue placeholder={t("fields.preferredLanguagePlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">{t("languageOptions.en")}</SelectItem>
+                        <SelectItem value="te">{t("languageOptions.te")}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <Badge variant={devotee?.whatsappOptInStatus ? "default" : "secondary"}>
@@ -379,12 +398,20 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                     <p className="text-sm font-medium">{t("eventNotifications.label")}</p>
                     <p className="text-xs text-muted-foreground">{t("eventNotifications.description")}</p>
                   </div>
-                </div>
-                <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
-              </div>
-            </>
-          )}
-
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Bell className="size-4 text-saffron" />
+                      <div>
+                        <p className="text-sm font-medium">{t("eventNotifications.label")}</p>
+                        <p className="text-xs text-muted-foreground">{t("eventNotifications.description")}</p>
+                      </div>
+                    </div>
+                    <Switch checked={eventNotificationsEnabled} onCheckedChange={setEventNotificationsEnabled} />
+                  </div>
+                </>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" size="xl" disabled={submitting}>

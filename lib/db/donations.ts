@@ -7,9 +7,9 @@ interface DonationRow {
   id: string;
   tenant_id: string;
   devotee_id: string | null;
-  amount: string;
+  amount: string | null;
   purpose: string;
-  payment_method: PaymentMethod;
+  payment_method: string | null;
   notes: string | null;
   donated_at: Date;
   recorded_by: string | null;
@@ -18,6 +18,7 @@ interface DonationRow {
   manual_donor_email: string | null;
   manual_donor_address: string | null;
   is_anonymous: boolean;
+  item_description: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -34,7 +35,7 @@ function mapDonation(row: DonationRow): Donation {
     devoteeId: row.devotee_id,
     amount: row.amount,
     purpose: row.purpose,
-    paymentMethod: row.payment_method,
+    paymentMethod: row.payment_method as PaymentMethod | null,
     notes: row.notes,
     donatedAt: row.donated_at.toISOString(),
     recordedBy: row.recorded_by,
@@ -43,6 +44,7 @@ function mapDonation(row: DonationRow): Donation {
     manualDonorEmail: row.manual_donor_email,
     manualDonorAddress: row.manual_donor_address,
     isAnonymous: row.is_anonymous,
+    itemDescription: row.item_description,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -58,6 +60,10 @@ function mapDonationWithDonor(row: DonationWithDonorRow): DonationWithDonor {
  * patching them — avoids drift across edits/deletes. Always called inside
  * the same transaction as the donation write it follows. No-op for manual
  * (non-registered) donors — there's no devotee row to update.
+ *
+ * Intentional: is_donor and last_donation_at update for non-cash donations too —
+ * a material gift (e.g. rice, coconuts) counts as a donation event.
+ * SUM(amount) ignores NULLs, so non-cash rows contribute 0 to total_donated_amount.
  */
 async function recomputeDevoteeDonationCache(client: PoolClient, devoteeId: string | null): Promise<void> {
   if (!devoteeId) return;
@@ -85,9 +91,13 @@ export interface CreateDonationInput {
   /** Exactly one of devoteeId / manualDonor must be set. */
   devoteeId: string | null;
   manualDonor: ManualDonorInput | null;
-  amount: number;
+  /** Null for non-cash / in-kind donations. */
+  amount: number | null;
   purpose: string;
-  paymentMethod: PaymentMethod;
+  /** Null for non-cash / in-kind donations. */
+  paymentMethod: PaymentMethod | null;
+  /** Description of a material gift (e.g. "5kg rice"). Set only when amount and paymentMethod are null. */
+  itemDescription: string | null;
   notes: string | null;
   donatedAt: string;
   recordedBy: string | null;
@@ -100,9 +110,10 @@ export async function createDonation(tenantId: string, input: CreateDonationInpu
     const { rows } = await client.query<DonationRow>(
       `INSERT INTO donations (
          tenant_id, devotee_id, amount, purpose, payment_method, notes, donated_at, recorded_by,
-         manual_donor_name, manual_donor_phone, manual_donor_email, manual_donor_address, is_anonymous
+         manual_donor_name, manual_donor_phone, manual_donor_email, manual_donor_address, is_anonymous,
+         item_description
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         tenantId,
@@ -118,6 +129,7 @@ export async function createDonation(tenantId: string, input: CreateDonationInpu
         input.manualDonor?.email ?? null,
         input.manualDonor?.address ?? null,
         input.manualDonor?.isAnonymous ?? false,
+        input.itemDescription,
       ],
     );
     await recomputeDevoteeDonationCache(client, input.devoteeId);
@@ -136,9 +148,13 @@ export interface UpdateDonationInput {
   devoteeId?: string;
   /** Switches this donation to a manual donor (clears devotee_id). Omit to leave the donor unchanged. */
   manualDonor?: ManualDonorInput;
-  amount?: number;
+  /** Null when switching to a non-cash donation. Cash/non-cash fields must be updated together. */
+  amount?: number | null;
   purpose?: string;
-  paymentMethod?: PaymentMethod;
+  /** Null when switching to a non-cash donation. */
+  paymentMethod?: PaymentMethod | null;
+  /** Description of a material gift. Null when switching to a cash donation. */
+  itemDescription?: string | null;
   notes?: string | null;
   donatedAt?: string;
 }
@@ -166,6 +182,12 @@ export async function updateDonation(
     // reassigns the full donor identity, never a partial mix of the two.
     const switchingToDevotee = input.devoteeId !== undefined;
     const switchingToManual = input.manualDonor !== undefined;
+
+    // Presence booleans for fields that can be intentionally set to null (cash ↔ non-cash switch).
+    // "key" in input distinguishes "omit field" (keep existing) from "set to null" (clear it).
+    const hasAmount = "amount" in input;
+    const hasPaymentMethod = "paymentMethod" in input;
+    const hasItemDescription = "itemDescription" in input;
 
     const { rows } = await client.query<DonationRow>(
       `UPDATE donations
@@ -195,11 +217,12 @@ export async function updateDonation(
              ELSE manual_donor_address
            END,
            is_anonymous = CASE WHEN $5::boolean THEN $10 ELSE is_anonymous END,
-           amount = COALESCE($11, amount),
-           purpose = COALESCE($12, purpose),
-           payment_method = COALESCE($13, payment_method),
-           notes = CASE WHEN $14::boolean THEN $15 ELSE notes END,
-           donated_at = COALESCE($16, donated_at),
+           amount = CASE WHEN $11::boolean THEN $12 ELSE amount END,
+           purpose = COALESCE($13, purpose),
+           payment_method = CASE WHEN $14::boolean THEN $15 ELSE payment_method END,
+           notes = CASE WHEN $16::boolean THEN $17 ELSE notes END,
+           donated_at = COALESCE($18, donated_at),
+           item_description = CASE WHEN $19::boolean THEN $20 ELSE item_description END,
            updated_at = now()
        WHERE tenant_id = $1 AND id = $2
        RETURNING *`,
@@ -214,12 +237,16 @@ export async function updateDonation(
         input.manualDonor?.email ?? null,
         input.manualDonor?.address ?? null,
         input.manualDonor?.isAnonymous ?? false,
+        hasAmount,
         input.amount ?? null,
         input.purpose ?? null,
+        hasPaymentMethod,
         input.paymentMethod ?? null,
         "notes" in input,
         input.notes ?? null,
         input.donatedAt ?? null,
+        hasItemDescription,
+        input.itemDescription ?? null,
       ],
     );
 

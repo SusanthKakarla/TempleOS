@@ -58,9 +58,10 @@ export async function POST(req: NextRequest) {
             isAnonymous: parsed.data.manualDonor.isAnonymous,
           }
         : null,
-      amount: parsed.data.amount,
+      amount: parsed.data.amount ?? null,
       purpose: parsed.data.purpose,
-      paymentMethod: parsed.data.paymentMethod,
+      paymentMethod: parsed.data.paymentMethod ?? null,
+      itemDescription: parsed.data.itemDescription ?? null,
       notes: parsed.data.notes ?? null,
       donatedAt: parsed.data.donatedAt,
       recordedBy: session.membershipId,
@@ -75,7 +76,8 @@ export async function POST(req: NextRequest) {
       getTenantById(session.tenantId),
     ]);
     const allNotificationIds: string[] = [];
-    if (devotee && tenant) {
+    // Non-cash donations have no monetary amount to display in the thank-you message — skip it.
+    if (devotee && tenant && donation.amount !== null) {
       const language = devotee.preferredLanguage ?? "en";
       const created = await enqueueNotification({
         tenantId: session.tenantId,

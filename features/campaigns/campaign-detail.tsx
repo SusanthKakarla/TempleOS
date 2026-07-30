@@ -15,14 +15,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { formatDate, formatDateTime } from "@/lib/date";
-import { formatInr } from "@/lib/currency";
+import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
 
 interface CampaignAnalytics {
   delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
   donation: { totalAmount: number; donationCount: number; donorCount: number } | null;
-  donations: { id: string; donorName: string; amount: string; paymentMethod: string; donatedAt: string }[];
+  donations: { id: string; donorName: string; amount: string | null; paymentMethod: string | null; itemDescription: string | null; donatedAt: string }[];
 }
 
 const STATUS_BADGE_VARIANT: Record<Campaign["status"], "default" | "secondary" | "destructive" | "outline"> = {
@@ -292,7 +292,7 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
                   {analytics.donations.map((donation) => (
                     <TableRow key={donation.id}>
                       <TableCell className="font-medium">{donation.donorName}</TableCell>
-                      <TableCell className="tabular-nums">{formatInr(Number(donation.amount))}</TableCell>
+                      <TableCell className="tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDateTime(donation.donatedAt, locale)}</TableCell>
                     </TableRow>
                   ))}

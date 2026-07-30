@@ -359,6 +359,7 @@ export async function getDevoteeByPhone(
 export interface CreateDevoteeInput {
   whatsappPhone: string | null;
   displayName: string;
+  whatsappOptInStatus?: boolean;
   dateOfBirth: string | null;
   birthStar: string | null;
   ancestralLineage: string | null;
@@ -370,8 +371,8 @@ export interface CreateDevoteeInput {
 }
 
 /**
- * Manually added devotees default to not opted in until they message the
- * temple number. `family_name`/`relationship` are returned as literal NULLs
+ * Manually added devotees default to opted in when they have a WhatsApp
+ * phone. `family_name`/`relationship` are returned as literal NULLs
  * here rather than re-querying — accurate for every caller: the plain
  * individual-create path never sets familyId, and lib/db/devotee-families.ts
  * (the only caller that does) builds its own richer result instead of
@@ -384,7 +385,7 @@ export async function createDevotee(
   const { rows } = await getPool().query<DevoteeRow>(
     `INSERT INTO devotees
        (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
-     VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *, NULL::text AS family_name, NULL::text AS relationship`,
     [
       tenantId,
@@ -393,6 +394,7 @@ export async function createDevotee(
       input.dateOfBirth,
       input.birthStar,
       input.ancestralLineage,
+      input.whatsappPhone ? (input.whatsappOptInStatus ?? true) : false,
       input.gender ?? null,
       input.maritalStatus ?? null,
       input.weddingAnniversary ?? null,
@@ -457,6 +459,7 @@ export async function updateDevoteePreferredLanguage(
 export interface UpdateDevoteeInput {
   whatsappPhone?: string | null;
   displayName?: string;
+  whatsappOptInStatus?: boolean;
   dateOfBirth?: string | null;
   birthStar?: string | null;
   ancestralLineage?: string | null;
@@ -479,17 +482,18 @@ export async function updateDevotee(
     `UPDATE devotees
      SET whatsapp_phone = CASE WHEN $3::boolean THEN $4 ELSE whatsapp_phone END,
          display_name = COALESCE($5, display_name),
-         date_of_birth = CASE WHEN $6::boolean THEN $7 ELSE date_of_birth END,
-         birth_star = CASE WHEN $8::boolean THEN $9 ELSE birth_star END,
-         ancestral_lineage = CASE WHEN $10::boolean THEN $11 ELSE ancestral_lineage END,
-         event_notifications_enabled = COALESCE($12::boolean, event_notifications_enabled),
-         gender = CASE WHEN $13::boolean THEN $14 ELSE gender END,
-         marital_status = CASE WHEN $15::boolean THEN $16 ELSE marital_status END,
-         wedding_anniversary = CASE WHEN $17::boolean THEN $18 ELSE wedding_anniversary END,
-         family_id = CASE WHEN $19::boolean THEN $20::uuid ELSE family_id END,
-         address = CASE WHEN $21::boolean THEN $22 ELSE address END,
-         notes = CASE WHEN $23::boolean THEN $24 ELSE notes END,
-         preferred_language = CASE WHEN $25::boolean THEN $26 ELSE preferred_language END,
+         whatsapp_opt_in_status = COALESCE($6::boolean, whatsapp_opt_in_status),
+         date_of_birth = CASE WHEN $7::boolean THEN $8 ELSE date_of_birth END,
+         birth_star = CASE WHEN $9::boolean THEN $10 ELSE birth_star END,
+         ancestral_lineage = CASE WHEN $11::boolean THEN $12 ELSE ancestral_lineage END,
+         event_notifications_enabled = COALESCE($13::boolean, event_notifications_enabled),
+         gender = CASE WHEN $14::boolean THEN $15 ELSE gender END,
+         marital_status = CASE WHEN $16::boolean THEN $17 ELSE marital_status END,
+         wedding_anniversary = CASE WHEN $18::boolean THEN $19 ELSE wedding_anniversary END,
+         family_id = CASE WHEN $20::boolean THEN $21::uuid ELSE family_id END,
+         address = CASE WHEN $22::boolean THEN $23 ELSE address END,
+         notes = CASE WHEN $24::boolean THEN $25 ELSE notes END,
+         preferred_language = CASE WHEN $26::boolean THEN $27 ELSE preferred_language END,
          updated_at = now()
      WHERE tenant_id = $1 AND id = $2
      RETURNING id`,
@@ -499,6 +503,7 @@ export async function updateDevotee(
       "whatsappPhone" in input,
       input.whatsappPhone ?? null,
       input.displayName ?? null,
+      input.whatsappOptInStatus ?? null,
       "dateOfBirth" in input,
       input.dateOfBirth ?? null,
       "birthStar" in input,

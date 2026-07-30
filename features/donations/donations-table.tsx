@@ -32,7 +32,7 @@ import { PageHeader } from "@/components/page-header";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
-import { formatInr } from "@/lib/currency";
+import { formatDonationAmount } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
@@ -109,8 +109,14 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const tCommon = useTranslations("common");
   const tExport = useTranslations("export");
 
+<<<<<<< HEAD
   function paymentMethodLabel(value: string): string {
     if (value === "razorpay") return t("paymentMethods.razorpay");
+=======
+  function paymentMethodLabel(value: string | null, itemDescription: string | null): string {
+    if (itemDescription) return t("nonCashBadge");
+    if (!value) return "—";
+>>>>>>> 98c134b (ui improvements, udpating donation form)
     const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
     return option ? t(`paymentMethods.${option.value}`) : value;
   }
@@ -135,7 +141,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   }
 
   async function handleDelete(donation: DonationWithDonor) {
-    if (!window.confirm(t("confirmDelete", { amount: formatInr(donation.amount), name: donorDisplayName(donation) }))) {
+    if (!window.confirm(t("confirmDelete", { amount: formatDonationAmount(donation.amount), name: donorDisplayName(donation) }))) {
       return;
     }
     setError(null);
@@ -450,10 +456,10 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium tabular-nums">{formatInr(donation.amount)}</TableCell>
+                      <TableCell className="font-medium tabular-nums">{formatDonationAmount(donation.amount)}</TableCell>
                       <TableCell>{donation.purpose}</TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod)}</Badge>
+                        <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
                       </TableCell>
                       <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                       <TableCell className="text-right">
@@ -489,7 +495,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                           <TableCell className="max-w-32 truncate py-3" title={donorDisplayName(donation)}>
                             {donorDisplayName(donation)}
                           </TableCell>
-                          <TableCell className="py-3 text-base font-bold tabular-nums">{formatInr(donation.amount)}</TableCell>
+                          <TableCell className="py-3 text-base font-bold tabular-nums">{formatDonationAmount(donation.amount)}</TableCell>
                           <TableCell className="py-3">
                             <Badge variant="secondary" className="max-w-28 truncate">
                               {donation.purpose}

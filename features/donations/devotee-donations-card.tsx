@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { TableShell } from "@/components/table-shell";
-import { formatInr } from "@/lib/currency";
+import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { PAYMENT_METHOD_OPTIONS } from "./donation-options";
@@ -40,7 +40,9 @@ export function DevoteeDonationsCard({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function paymentMethodLabel(value: string): string {
+  function paymentMethodLabel(value: string | null, itemDescription: string | null): string {
+    if (itemDescription) return tDonations("nonCashBadge");
+    if (!value) return "—";
     const option = PAYMENT_METHOD_OPTIONS.find((o) => o.value === value);
     return option ? tDonations(`paymentMethods.${option.value}`) : value;
   }
@@ -50,7 +52,7 @@ export function DevoteeDonationsCard({
   }
 
   async function handleDelete(donation: Donation) {
-    if (!window.confirm(t("confirmDelete", { amount: formatInr(donation.amount) }))) {
+    if (!window.confirm(t("confirmDelete", { amount: formatDonationAmount(donation.amount) }))) {
       return;
     }
     setError(null);
@@ -116,10 +118,10 @@ export function DevoteeDonationsCard({
             <motion.tbody initial="hidden" animate="show" variants={staggerContainer()}>
               {donations.map((donation) => (
                 <MotionTableRow key={donation.id} variants={rowFadeIn}>
-                  <TableCell className="font-medium tabular-nums">{formatInr(donation.amount)}</TableCell>
+                  <TableCell className="font-medium tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
                   <TableCell>{donation.purpose}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod)}</Badge>
+                    <Badge variant="secondary">{paymentMethodLabel(donation.paymentMethod, donation.itemDescription)}</Badge>
                   </TableCell>
                   <TableCell>{formatDate(donation.donatedAt, locale)}</TableCell>
                   <TableCell className="flex justify-end gap-2">

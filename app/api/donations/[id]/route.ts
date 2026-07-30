@@ -27,9 +27,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const donation = await updateDonation(session.tenantId, id, {
-      ...parsed.data,
-      manualDonor: parsed.data.manualDonor
+    // Build the update input explicitly so that nullable fields (amount, paymentMethod,
+    // itemDescription) are included in the object when present in the parsed payload —
+    // the presence-boolean pattern in updateDonation relies on "key" in input to distinguish
+    // "omit" from "set to null".
+    const updateInput: Parameters<typeof updateDonation>[2] = {};
+    if ("devoteeId" in parsed.data) updateInput.devoteeId = parsed.data.devoteeId;
+    if ("manualDonor" in parsed.data) {
+      updateInput.manualDonor = parsed.data.manualDonor
         ? {
             name: parsed.data.manualDonor.name,
             phone: parsed.data.manualDonor.phone ?? null,
@@ -37,8 +42,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
             address: parsed.data.manualDonor.address ?? null,
             isAnonymous: parsed.data.manualDonor.isAnonymous,
           }
-        : undefined,
-    });
+        : undefined;
+    }
+    if ("amount" in parsed.data) updateInput.amount = parsed.data.amount ?? null;
+    if ("purpose" in parsed.data) updateInput.purpose = parsed.data.purpose;
+    if ("paymentMethod" in parsed.data) updateInput.paymentMethod = parsed.data.paymentMethod ?? null;
+    if ("itemDescription" in parsed.data) updateInput.itemDescription = parsed.data.itemDescription ?? null;
+    if ("notes" in parsed.data) updateInput.notes = parsed.data.notes ?? null;
+    if ("donatedAt" in parsed.data) updateInput.donatedAt = parsed.data.donatedAt;
+
+    const donation = await updateDonation(session.tenantId, id, updateInput);
     if (!donation) {
       return NextResponse.json({ error: "Donation not found" }, { status: 404 });
     }

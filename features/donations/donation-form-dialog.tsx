@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { useState, type FormEvent, type ReactElement } from "react";
+import { useMemo, useState, type FormEvent, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
-import { IndianRupee, User } from "lucide-react";
+import { IndianRupee, Package, Search, User } from "lucide-react";
 import type { Devotee, Donation, PaymentMethod } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,22 +27,10 @@ import {
   DONATION_PURPOSE_PRESETS,
   PAYMENT_METHOD_OPTIONS,
 } from "./donation-options";
-import { BLANK_MANUAL_DONOR, ManualDonorFields, type ManualDonorValue } from "./manual-donor-fields";
 
 const AMOUNT_PRESETS = [101, 501, 1001, 5001] as const;
-
-type DonorMode = "devotee" | "manual";
-
-function initialManualDonor(donation: Donation | undefined): ManualDonorValue {
-  if (!donation?.manualDonorName) return BLANK_MANUAL_DONOR;
-  return {
-    name: donation.manualDonorName,
-    phone: donation.manualDonorPhone ?? "",
-    email: donation.manualDonorEmail ?? "",
-    address: donation.manualDonorAddress ?? "",
-    isAnonymous: donation.isAnonymous,
-  };
-}
+const NON_CASH_SUGGESTIONS = ["Rice", "Milk", "Coconuts", "Flowers", "Oil"] as const;
+const DEVOTEE_RESULT_LIMIT = 8;
 
 interface DonationFormDialogProps {
   mode: "create" | "edit";
@@ -67,6 +55,103 @@ function initialPurposeState(purpose: string | undefined): { preset: string; cus
   return { preset: DONATION_PURPOSE_OTHER, custom: purpose };
 }
 
+interface DevoteeSearchFieldProps {
+  devotees: Devotee[];
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+  placeholder: string;
+  noResultsLabel: string;
+  noPhoneLabel: string;
+}
+
+function devoteeLabel(devotee: Devotee | undefined): string {
+  if (!devotee) return "";
+  return [devotee.displayName, devotee.whatsappPhone].filter(Boolean).join(" · ");
+}
+
+function DevoteeSearchField({
+  devotees,
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  noResultsLabel,
+  noPhoneLabel,
+}: DevoteeSearchFieldProps) {
+  const [search, setSearch] = useState("");
+  const selectedDevotee = devotees.find((devotee) => devotee.id === value);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredDevotees = useMemo(() => {
+    const matches = normalizedSearch
+      ? devotees.filter((devotee) =>
+          [devotee.displayName, devotee.whatsappPhone, devotee.familyName]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedSearch),
+        )
+      : devotees;
+    return matches.slice(0, DEVOTEE_RESULT_LIMIT);
+  }, [devotees, normalizedSearch]);
+
+  if (disabled) {
+    return (
+      <Input
+        id="devotee-search"
+        value={devoteeLabel(selectedDevotee)}
+        disabled
+        inputSize="lg"
+        className="bg-muted/50"
+        aria-label={placeholder}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative z-20">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          id="devotee-search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          inputSize="lg"
+          className="pl-9"
+          placeholder={selectedDevotee ? devoteeLabel(selectedDevotee) : placeholder}
+        />
+        {normalizedSearch && (
+          <div className="absolute top-full left-0 z-30 mt-1 max-h-48 w-full origin-top overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-150 animate-in fade-in-0 zoom-in-95 slide-in-from-top-1">
+            {filteredDevotees.length === 0 ? (
+              <p className="px-2 py-2 text-sm text-muted-foreground">{noResultsLabel}</p>
+            ) : (
+              filteredDevotees.map((devotee) => (
+                <button
+                  key={devotee.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(devotee.id);
+                    setSearch("");
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted ${
+                    devotee.id === value ? "bg-primary/5 text-primary" : ""
+                  }`}
+                >
+                  <User className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{devotee.displayName}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{devotee.whatsappPhone ?? noPhoneLabel}</span>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DonationFormDialog({
   mode,
   donation,
@@ -85,11 +170,10 @@ export function DonationFormDialog({
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
-  const [donorMode, setDonorMode] = useState<DonorMode>(donation?.manualDonorName ? "manual" : "devotee");
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
-  const [manualDonor, setManualDonor] = useState<ManualDonorValue>(() => initialManualDonor(donation));
   const [amount, setAmount] = useState(donation?.amount ?? "");
-  const isCustomAmount = !(AMOUNT_PRESETS as readonly number[]).some((preset) => String(preset) === amount);
+  const [isNonCash, setIsNonCash] = useState(Boolean(donation?.itemDescription));
+  const [itemDescription, setItemDescription] = useState(donation?.itemDescription ?? "");
   const initialPurpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
   const [purposePreset, setPurposePreset] = useState(initialPurpose.preset);
   const [customPurpose, setCustomPurpose] = useState(initialPurpose.custom);
@@ -102,10 +186,10 @@ export function DonationFormDialog({
   const [submitting, setSubmitting] = useState(false);
 
   function resetToDonation() {
-    setDonorMode(donation?.manualDonorName ? "manual" : "devotee");
     setDevoteeId(donation?.devoteeId ?? fixedDevoteeId ?? "");
-    setManualDonor(initialManualDonor(donation));
     setAmount(donation?.amount ?? "");
+    setIsNonCash(Boolean(donation?.itemDescription));
+    setItemDescription(donation?.itemDescription ?? "");
     const purpose = initialPurposeState(donation?.purpose ?? fixedPurpose);
     setPurposePreset(purpose.preset);
     setCustomPurpose(purpose.custom);
@@ -119,18 +203,22 @@ export function DonationFormDialog({
     formEvent.preventDefault();
     setError(null);
 
-    if (donorMode === "devotee" && !devoteeId) {
+    if (!devoteeId) {
       setError(tForm("errors.selectDevotee"));
       return;
     }
-    if (donorMode === "manual" && !manualDonor.name.trim()) {
-      setError(tForm("errors.enterDonorName"));
-      return;
-    }
-    const amountNumber = Number(amount);
-    if (!amount || Number.isNaN(amountNumber) || amountNumber <= 0) {
-      setError(tForm("errors.invalidAmount"));
-      return;
+    let amountNumber: number | null = null;
+    if (isNonCash) {
+      if (!itemDescription.trim()) {
+        setError(tForm("errors.enterItemDescription"));
+        return;
+      }
+    } else {
+      amountNumber = Number(amount);
+      if (!amount || Number.isNaN(amountNumber) || amountNumber <= 0) {
+        setError(tForm("errors.invalidAmount"));
+        return;
+      }
     }
     const purpose = purposePreset === DONATION_PURPOSE_OTHER ? customPurpose.trim() : purposePreset;
     if (!purpose) {
@@ -151,20 +239,12 @@ export function DonationFormDialog({
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          devoteeId: donorMode === "devotee" ? devoteeId : null,
-          manualDonor:
-            donorMode === "manual"
-              ? {
-                  name: manualDonor.name.trim(),
-                  phone: manualDonor.phone.trim() || null,
-                  email: manualDonor.email.trim() || null,
-                  address: manualDonor.address.trim() || null,
-                  isAnonymous: manualDonor.isAnonymous,
-                }
-              : null,
-          amount: amountNumber,
+          devoteeId,
+          manualDonor: null,
+          amount: isNonCash ? null : amountNumber,
           purpose,
-          paymentMethod,
+          paymentMethod: isNonCash ? null : paymentMethod,
+          itemDescription: isNonCash ? itemDescription.trim() : null,
           notes: notes || null,
           donatedAt: donatedAtIso,
         }),
@@ -198,193 +278,198 @@ export function DonationFormDialog({
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-175">
+      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? tForm("createTitle") : tForm("editTitle")}</DialogTitle>
           {mode === "edit" && <DialogDescription>{tForm("editDescription")}</DialogDescription>}
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="justify-between">
-              <span>{tForm("fields.donationFor")}</span>
-            </Label>
-            {!fixedDevoteeId && (
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={donorMode === "devotee" ? "default" : "outline"}
-                  onClick={() => setDonorMode("devotee")}
-                >
-                  {tForm("fields.existingDevotee")}
-                </Button>
-                <Button
-                  type="button"
-                  variant={donorMode === "manual" ? "default" : "outline"}
-                  onClick={() => setDonorMode("manual")}
-                >
-                  {tForm("fields.manualDonor")}
-                </Button>
-              </div>
-            )}
-
-            {donorMode === "devotee" ? (
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1 pl-3 [direction:rtl]">
+            <div className="space-y-4 [direction:ltr]">
               <div className="space-y-2">
-                <Label htmlFor="devoteeId" className="justify-between">
+                <Label htmlFor="devotee-search" className="justify-between">
                   <span>{tForm("fields.devotee")}</span>
                   <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
                 </Label>
-                <Select
+                <DevoteeSearchField
+                  devotees={devotees}
                   value={devoteeId}
-                  onValueChange={(value) => setDevoteeId(value ?? "")}
+                  onChange={setDevoteeId}
                   disabled={Boolean(fixedDevoteeId)}
-                  items={Object.fromEntries(
-                    devotees.map((devotee) => [devotee.id, `${devotee.displayName} Â· ${devotee.whatsappPhone}`]),
+                  placeholder={tForm("fields.devoteeSearchPlaceholder")}
+                  noResultsLabel={tForm("fields.noDevoteesFound")}
+                  noPhoneLabel={tForm("fields.noPhone")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="donation-value" className="justify-between">
+                  <span>{isNonCash ? tForm("fields.itemDescription") : tForm("fields.amount")}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+                </Label>
+                <div className="relative">
+                  {isNonCash ? (
+                    <Package className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  ) : (
+                    <IndianRupee className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   )}
+                  {isNonCash ? (
+                    <Input
+                      id="donation-value"
+                      value={itemDescription}
+                      onChange={(e) => setItemDescription(e.target.value)}
+                      inputSize="lg"
+                      className="pl-9"
+                      placeholder={tForm("fields.itemDescriptionPlaceholder")}
+                      autoFocus
+                    />
+                  ) : (
+                    <Input
+                      id="donation-value"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      inputSize="lg"
+                      className="pl-9"
+                      placeholder={tForm("fields.amountPlaceholder")}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {!isNonCash ? (
+                    <>
+                      {AMOUNT_PRESETS.map((preset) => (
+                        <Button
+                          key={preset}
+                          type="button"
+                          variant={amount === String(preset) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAmount(String(preset))}
+                        >
+                          {formatInr(preset)}
+                        </Button>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setIsNonCash(true); setAmount(""); }}
+                      >
+                        {tForm("fields.nonCashDonation")}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {NON_CASH_SUGGESTIONS.map((item) => (
+                        <Button
+                          key={item}
+                          type="button"
+                          variant={itemDescription === item ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setItemDescription(item)}
+                        >
+                          {item}
+                        </Button>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setIsNonCash(false); setItemDescription(""); }}
+                      >
+                        {tForm("fields.switchToCash")}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {!isNonCash && (
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod">{tForm("fields.paymentMethod")}</Label>
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                    items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
+                  >
+                    <SelectTrigger id="paymentMethod" size="lg" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHOD_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {t(`paymentMethods.${option.value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="purpose" className="justify-between">
+                  <span>{tForm("fields.purpose")}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+                </Label>
+                <Select
+                  value={purposePreset}
+                  onValueChange={(value) => setPurposePreset(value ?? "")}
+                  disabled={Boolean(fixedPurpose)}
+                  items={Object.fromEntries([
+                    ...DONATION_PURPOSE_PRESETS.map((preset) => [preset, purposeLabel(preset)]),
+                    [DONATION_PURPOSE_OTHER, t("purposePresets.other")],
+                  ])}
                 >
-                  <SelectTrigger id="devoteeId" size="lg" className="w-full">
-                    <User className="size-4 text-muted-foreground" />
-                    <SelectValue placeholder={tForm("fields.devoteePlaceholder")} />
+                  <SelectTrigger id="purpose" size="lg" className="w-full">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {devotees.map((devotee) => (
-                      <SelectItem key={devotee.id} value={devotee.id}>
-                        {devotee.displayName} Â· {devotee.whatsappPhone}
+                    {DONATION_PURPOSE_PRESETS.map((preset) => (
+                      <SelectItem key={preset} value={preset}>
+                        {purposeLabel(preset)}
                       </SelectItem>
                     ))}
+                    <SelectItem value={DONATION_PURPOSE_OTHER}>{t("purposePresets.other")}</SelectItem>
                   </SelectContent>
                 </Select>
+                {purposePreset === DONATION_PURPOSE_OTHER && (
+                  <>
+                    <Label htmlFor="purpose-other" className="sr-only">
+                      {tForm("fields.purposePlaceholder")}
+                    </Label>
+                    <Input
+                      id="purpose-other"
+                      placeholder={tForm("fields.purposePlaceholder")}
+                      value={customPurpose}
+                      onChange={(e) => setCustomPurpose(e.target.value)}
+                      inputSize="lg"
+                      required
+                    />
+                  </>
+                )}
               </div>
-            ) : (
-              <ManualDonorFields value={manualDonor} onChange={setManualDonor} requiredLabel={tCommon("required")} />
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label className="justify-between">
-              <span>{tForm("fields.amount")}</span>
-              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
-            </Label>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {AMOUNT_PRESETS.map((preset) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  variant={amount === String(preset) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setAmount(String(preset))}
-                >
-                  {formatInr(preset)}
-                </Button>
-              ))}
-              <Button
-                type="button"
-                variant={isCustomAmount ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAmount("")}
-              >
-                {tForm("fields.customAmount")}
-              </Button>
+              <DateTimeField
+                id="donatedAt"
+                label={tForm("fields.donationDate")}
+                value={donatedAt}
+                onChange={setDonatedAt}
+                required
+                requiredLabel={tCommon("required")}
+                size="lg"
+              />
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">{tForm("fields.notes")}</Label>
+                <Textarea id="notes" value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={2} />
+              </div>
             </div>
-            {isCustomAmount && (
-              <div className="relative">
-                <IndianRupee className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  inputSize="lg"
-                  className="pl-9"
-                  placeholder={tForm("fields.customAmountPlaceholder")}
-                  required
-                  autoFocus
-                />
-              </div>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">{tForm("fields.paymentMethod")}</Label>
-            <Select
-              value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
-              items={Object.fromEntries(PAYMENT_METHOD_OPTIONS.map((o) => [o.value, t(`paymentMethods.${o.value}`)]))}
-            >
-              <SelectTrigger id="paymentMethod" size="lg" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {t(`paymentMethods.${option.value}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="purpose" className="justify-between">
-              <span>{tForm("fields.purpose")}</span>
-              <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
-            </Label>
-            <Select
-              value={purposePreset}
-              onValueChange={(value) => setPurposePreset(value ?? "")}
-              disabled={Boolean(fixedPurpose)}
-              items={Object.fromEntries([
-                ...DONATION_PURPOSE_PRESETS.map((preset) => [preset, purposeLabel(preset)]),
-                [DONATION_PURPOSE_OTHER, t("purposePresets.other")],
-              ])}
-            >
-              <SelectTrigger id="purpose" size="lg" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DONATION_PURPOSE_PRESETS.map((preset) => (
-                  <SelectItem key={preset} value={preset}>
-                    {purposeLabel(preset)}
-                  </SelectItem>
-                ))}
-                <SelectItem value={DONATION_PURPOSE_OTHER}>{t("purposePresets.other")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {purposePreset === DONATION_PURPOSE_OTHER && (
-              <>
-                <Label htmlFor="purpose-other" className="sr-only">
-                  {tForm("fields.purposePlaceholder")}
-                </Label>
-                <Input
-                  id="purpose-other"
-                  placeholder={tForm("fields.purposePlaceholder")}
-                  value={customPurpose}
-                  onChange={(e) => setCustomPurpose(e.target.value)}
-                  inputSize="lg"
-                  required
-                />
-              </>
-            )}
-          </div>
-
-          <DateTimeField
-            id="donatedAt"
-            label={tForm("fields.donationDate")}
-            value={donatedAt}
-            onChange={setDonatedAt}
-            required
-            requiredLabel={tCommon("required")}
-            size="lg"
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">{tForm("fields.notes")}</Label>
-            <Textarea id="notes" value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={2} />
-          </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <DialogFooter>
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          <DialogFooter className="mx-0 mt-4 mb-0 rounded-none border-t-0 p-0">
             <Button type="submit" size="xl" disabled={submitting}>
               {submitting ? tCommon("saving") : tCommon("save")}
             </Button>
