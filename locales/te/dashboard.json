@@ -241,8 +241,7 @@
   },
   "chatbotSettings": {
     "pageHeader": {
-      "title": "వాట్సాప్ చాట్‌బాట్ సెట్టింగులు",
-      "subtitle": "ఇక్కడ ఉన్నదంతా వాట్సాప్ చాట్‌బాట్ ప్రత్యక్షంగా చదువుతుంది — మార్పులు వెంటనే అమలవుతాయి, డిప్లాయ్‌మెంట్ అవసరం లేదు."
+      "title": "వాట్సాప్ చాట్‌బాట్ సెట్టింగులు"
     },
     "error": {
       "title": "ఈ విభాగం లోడ్ కాలేదు",
@@ -607,10 +606,9 @@
   },
   "campaigns": {
     "pageHeader": {
-      "title": "ప్రచారాలు",
-      "subtitle": "విరాళ ప్రచారాలు, పండుగ శుభాకాంక్షలు మరియు రిమైండర్‌లను భక్తులకు ప్రసారం చేయండి."
+      "title": "ప్రచారాలు"
     },
-    "createButton": "ప్రచారం సృష్టించండి",
+    "createButton": "సృష్టించండి",
     "searchPlaceholder": "వెతకండి",
     "selectAll": "అన్ని ప్రచారాలను ఎంచుకోండి",
     "columns": {
@@ -833,7 +831,6 @@
     "formDialog": {
       "createTitle": "భక్తుడిని జోడించండి",
       "editTitle": "భక్తుడిని సవరించండి",
-      "createDescription": "భక్తుడిని మాన్యువల్‌గా జోడించండి. వారు ఆలయ నంబర్‌కు సందేశం పంపే వరకు వాట్సాప్ ప్రకటనల కోసం చేరనట్లు గుర్తించబడతారు.",
       "editDescription": "ఈ భక్తుడి వివరాలను నవీకరించండి.",
       "registrationType": {
         "title": "మీరు ఎలా నమోదు చేయాలనుకుంటున్నారు?",
@@ -847,7 +844,9 @@
         "phonePlaceholder": "+91XXXXXXXXXX",
         "dateOfBirth": "పుట్టిన తేదీ (ఐచ్ఛికం)",
         "birthStar": "జన్మ నక్షత్రం (ఐచ్ఛికం)",
+        "birthStarPlaceholder": "జన్మ నక్షత్రం నమోదు చేయండి",
         "gothram": "గోత్రం (ఐచ్ఛికం)",
+        "gothramPlaceholder": "గోత్రం నమోదు చేయండి",
         "gender": "లింగం (ఐచ్ఛికం)",
         "genderPlaceholder": "లింగం ఎంచుకోండి",
         "maritalStatus": "వైవాహిక స్థితి (ఐచ్ఛికం)",
@@ -896,8 +895,7 @@
       "memberCount": "{count, plural, one {# సభ్యుడు} other {# సభ్యులు}}",
       "sections": {
         "details": "కుటుంబ వివరాలు",
-        "address": "చిరునామా",
-        "additionalInformation": "అదనపు సమాచారం (ఐచ్ఛికం)"
+        "address": "చిరునామా"
       },
       "fields": {
         "familyName": "కుటుంబం పేరు",
@@ -905,8 +903,6 @@
         "city": "నగరం (ఐచ్ఛికం)",
         "state": "రాష్ట్రం (ఐచ్ఛికం)",
         "pincode": "పిన్ కోడ్ (ఐచ్ఛికం)",
-        "primaryLanguage": "ప్రధాన భాష (ఐచ్ఛికం)",
-        "primaryLanguagePlaceholder": "భాష ఎంచుకోండి",
         "memberName": "పూర్తి పేరు",
         "relationship": "సంబంధం",
         "relationshipPlaceholder": "సంబంధాన్ని ఎంచుకోండి",
@@ -928,7 +924,6 @@
         "widowed": "వితంతువు",
         "divorced": "విడాకులు తీసుకున్న"
       },
-      "languages": { "en": "ఇంగ్లీష్", "te": "తెలుగు" },
       "errors": {
         "familyNameRequired": "కుటుంబం పేరు అవసరం.",
         "nameRequired": "సభ్యుడి పేరు అవసరం.",
@@ -1076,7 +1071,6 @@
     "formDialog": {
       "createTitle": "విరాళం జోడించండి",
       "editTitle": "విరాళాన్ని సవరించండి",
-      "createDescription": "నగదు, UPI లేదా మరో మాన్యువల్ పద్ధతిలో అందిన విరాళాన్ని నమోదు చేయండి.",
       "editDescription": "ఈ విరాళ రికార్డును నవీకరించండి.",
       "fields": {
         "devotee": "భక్తుడు",

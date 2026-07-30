@@ -162,13 +162,11 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
       <DialogContent className="sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{registrationType === null ? t("registrationType.title") : mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
-          <DialogDescription>
-            {registrationType === null
-              ? t("registrationType.description")
-              : mode === "create"
-                ? t("createDescription")
-                : t("editDescription")}
-          </DialogDescription>
+          {(registrationType === null || mode === "edit") && (
+            <DialogDescription>
+              {registrationType === null ? t("registrationType.description") : t("editDescription")}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         {registrationType === null ? (
@@ -288,6 +286,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             <LabeledInput
               id="birthStar"
               label={t("fields.birthStar")}
+              placeholder={t("fields.birthStarPlaceholder")}
               icon={<Sparkles />}
               value={birthStar}
               onChange={(e) => setBirthStar(e.target.value)}
@@ -296,6 +295,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             <LabeledInput
               id="ancestralLineage"
               label={t("fields.gothram")}
+              placeholder={t("fields.gothramPlaceholder")}
               icon={<Users />}
               value={ancestralLineage}
               onChange={(e) => setAncestralLineage(e.target.value)}

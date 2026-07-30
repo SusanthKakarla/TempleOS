@@ -10,7 +10,9 @@ export function SuperAdminBottomNavBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="glass-panel fixed inset-x-3 bottom-3 z-20 flex items-center justify-around rounded-2xl px-1 py-1.5 shadow-lg md:hidden">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-20 grid w-full grid-cols-4 border-t border-black/[0.08] bg-background pb-[env(safe-area-inset-bottom)] md:hidden dark:border-white/[0.08]"
+    >
       {SUPER_ADMIN_NAV_ITEMS.map((item) => {
         const isActive = item.href === "/super-admin" ? pathname === item.href : pathname?.startsWith(item.href);
         const Icon = item.icon;
@@ -19,7 +21,7 @@ export function SuperAdminBottomNavBar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex min-w-14 flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[0.65rem] font-medium transition-colors",
+              "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.65rem] font-medium transition-colors",
               isActive ? "text-primary" : "text-muted-foreground",
             )}
           >

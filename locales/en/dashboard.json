@@ -241,8 +241,7 @@
   },
   "chatbotSettings": {
     "pageHeader": {
-      "title": "WhatsApp Chatbot Settings",
-      "subtitle": "Everything here is read live by the WhatsApp chatbot — changes take effect immediately, no deployment needed."
+      "title": "WhatsApp Chatbot Settings"
     },
     "error": {
       "title": "This section couldn't load",
@@ -604,10 +603,9 @@
   },
   "campaigns": {
     "pageHeader": {
-      "title": "Campaigns",
-      "subtitle": "Broadcast donation drives, festival greetings, and reminders to devotees."
+      "title": "Campaigns"
     },
-    "createButton": "Create campaign",
+    "createButton": "Create",
     "searchPlaceholder": "Search",
     "selectAll": "Select all campaigns",
     "columns": {
@@ -830,7 +828,6 @@
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
-      "createDescription": "Manually add a devotee. They'll be marked not opted in for WhatsApp announcements until they message the temple number.",
       "editDescription": "Update this devotee's details.",
       "registrationType": {
         "title": "How would you like to register?",
@@ -844,7 +841,9 @@
         "phonePlaceholder": "+91XXXXXXXXXX",
         "dateOfBirth": "Date of birth (optional)",
         "birthStar": "Birth star / Nakshatram (optional)",
+        "birthStarPlaceholder": "Enter birth star",
         "gothram": "Gothram / Ancestral lineage (optional)",
+        "gothramPlaceholder": "Enter gothram",
         "gender": "Gender (optional)",
         "genderPlaceholder": "Select gender",
         "maritalStatus": "Marital status (optional)",
@@ -893,8 +892,7 @@
       "memberCount": "{count, plural, one {# member} other {# members}}",
       "sections": {
         "details": "Family details",
-        "address": "Address",
-        "additionalInformation": "Additional information (optional)"
+        "address": "Address"
       },
       "fields": {
         "familyName": "Family name",
@@ -902,8 +900,6 @@
         "city": "City (optional)",
         "state": "State (optional)",
         "pincode": "PIN code (optional)",
-        "primaryLanguage": "Primary language (optional)",
-        "primaryLanguagePlaceholder": "Select language",
         "memberName": "Full name",
         "relationship": "Relationship",
         "relationshipPlaceholder": "Select relationship",
@@ -925,7 +921,6 @@
         "widowed": "Widowed",
         "divorced": "Divorced"
       },
-      "languages": { "en": "English", "te": "Telugu" },
       "errors": {
         "familyNameRequired": "Family name is required.",
         "nameRequired": "Member name is required.",
@@ -1070,7 +1065,6 @@
     "formDialog": {
       "createTitle": "Add donation",
       "editTitle": "Edit donation",
-      "createDescription": "Record a donation received in cash, UPI, or another manual method.",
       "editDescription": "Update this donation record.",
       "fields": {
         "devotee": "Devotee",

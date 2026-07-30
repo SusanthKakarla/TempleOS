@@ -136,7 +136,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
+      <PageHeader title={t("pageHeader.title")} />
 
       <ChatbotSettingsTabs
         tenant={tenant}

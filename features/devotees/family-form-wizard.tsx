@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ChevronDown, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
-import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
+import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS, RELATIONSHIP_CODES } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,24 +43,24 @@ function blankMember(relationship: RelationshipCode | ""): MemberDraft {
   };
 }
 
-type SectionKey = "details" | "address" | "additional" | "members";
+type SectionKey = "details" | "members" | "address";
 
 function FormSection({
   isOpen,
-  onSelect,
+  onOpenChange,
   title,
   summary,
   children,
 }: {
   isOpen: boolean;
-  onSelect: () => void;
+  onOpenChange: (open: boolean) => void;
   title: string;
   summary?: string;
   children: ReactNode;
 }) {
   return (
     <Card className="glass-card gap-0 overflow-hidden rounded-2xl py-0">
-      <Collapsible open={isOpen} onOpenChange={onSelect}>
+      <Collapsible open={isOpen} onOpenChange={onOpenChange}>
         <CollapsibleTrigger className="flex min-h-11 w-full items-center justify-between gap-3 p-4 text-left">
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-medium">{title}</span>
@@ -93,7 +93,6 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
   const [city, setCity] = useState(family?.city ?? "");
   const [state, setState] = useState(family?.state ?? "");
   const [pincode, setPincode] = useState(family?.pincode ?? "");
-  const [primaryLanguage, setPrimaryLanguage] = useState<SupportedLanguage | "">(family?.primaryLanguage ?? "");
   const [members, setMembers] = useState<MemberDraft[]>(
     initialMembers && initialMembers.length > 0
       ? initialMembers.map((m) => ({
@@ -112,10 +111,9 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
   );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Sections behave like tabs — exactly one open at a time — so a required
-  // field (Family Name) is never left unreachable behind a fully collapsed
-  // group.
-  const [expandedSection, setExpandedSection] = useState<SectionKey>("details");
+  // At most one section open at a time — clicking an open section's header
+  // collapses it back to null, matching a native accordion.
+  const [expandedSection, setExpandedSection] = useState<SectionKey | null>("details");
 
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
@@ -199,7 +197,6 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
           city: city || null,
           state: state || null,
           pincode: pincode || null,
-          primaryLanguage: primaryLanguage || null,
           members: members.map((m) => ({
             ...(m.id ? { id: m.id } : {}),
             displayName: m.displayName,
@@ -246,7 +243,6 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
     }
   }
 
-  const languageItems: Record<string, string> = { en: t("languages.en"), te: t("languages.te") };
   const relationshipItems: Record<string, string> = Object.fromEntries(
     RELATIONSHIP_CODES.map((value) => [value, tRelationship(value)]),
   );
@@ -271,7 +267,7 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormSection
           isOpen={expandedSection === "details"}
-          onSelect={() => setExpandedSection("details")}
+          onOpenChange={(open) => setExpandedSection(open ? "details" : null)}
           title={t("sections.details")}
           summary={familyName || t("notSet")}
         >
@@ -282,58 +278,8 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
         </FormSection>
 
         <FormSection
-          isOpen={expandedSection === "address"}
-          onSelect={() => setExpandedSection("address")}
-          title={t("sections.address")}
-          summary={[city, state].filter(Boolean).join(", ") || t("notSet")}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="address">{t("fields.address")}</Label>
-            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="city">{t("fields.city")}</Label>
-              <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">{t("fields.state")}</Label>
-              <Input id="state" value={state} onChange={(e) => setState(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pincode">{t("fields.pincode")}</Label>
-              <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} />
-            </div>
-          </div>
-        </FormSection>
-
-        <FormSection
-          isOpen={expandedSection === "additional"}
-          onSelect={() => setExpandedSection("additional")}
-          title={t("sections.additionalInformation")}
-          summary={primaryLanguage ? languageItems[primaryLanguage] : t("notSet")}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="primaryLanguage">{t("fields.primaryLanguage")}</Label>
-            <Select
-              value={primaryLanguage || undefined}
-              onValueChange={(v) => setPrimaryLanguage((v as SupportedLanguage) ?? "")}
-              items={languageItems}
-            >
-              <SelectTrigger id="primaryLanguage" className="w-full md:w-60">
-                <SelectValue placeholder={t("fields.primaryLanguagePlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">{t("languages.en")}</SelectItem>
-                <SelectItem value="te">{t("languages.te")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </FormSection>
-
-        <FormSection
           isOpen={expandedSection === "members"}
-          onSelect={() => setExpandedSection("members")}
+          onOpenChange={(open) => setExpandedSection(open ? "members" : null)}
           title={t("familyMembers")}
           summary={t("memberCount", { count: members.length })}
         >
@@ -380,6 +326,32 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
               <Plus className="size-4" />
               {t("addMember")}
             </Button>
+          </div>
+        </FormSection>
+
+        <FormSection
+          isOpen={expandedSection === "address"}
+          onOpenChange={(open) => setExpandedSection(open ? "address" : null)}
+          title={t("sections.address")}
+          summary={[city, state].filter(Boolean).join(", ") || t("notSet")}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="address">{t("fields.address")}</Label>
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="city">{t("fields.city")}</Label>
+              <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="state">{t("fields.state")}</Label>
+              <Input id="state" value={state} onChange={(e) => setState(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pincode">{t("fields.pincode")}</Label>
+              <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} />
+            </div>
           </div>
         </FormSection>
 

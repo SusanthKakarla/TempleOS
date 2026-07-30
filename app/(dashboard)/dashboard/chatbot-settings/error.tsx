@@ -22,7 +22,7 @@ export default function ChatbotSettingsError({
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("pageHeader.title")} subtitle={t("pageHeader.subtitle")} />
+      <PageHeader title={t("pageHeader.title")} />
       <EmptyState
         icon={<AlertTriangle className="size-6" />}
         title={t("error.title")}

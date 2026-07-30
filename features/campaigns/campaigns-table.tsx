@@ -233,7 +233,6 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
       <StickyToolbar>
       <PageHeader
         title={t("pageHeader.title")}
-        subtitle={t("pageHeader.subtitle")}
         actions={
           <>
             <div className="hidden lg:block">
@@ -252,16 +251,6 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
               onOpenChange={setExportOpen}
               hideTrigger
             />
-            <CampaignFormDialog
-              mode="create"
-              trigger={
-                <Button className="gap-1.5">
-                  <Plus className="size-4" />
-                  {t("createButton")}
-                </Button>
-              }
-              onSaved={refresh}
-            />
           </>
         }
       />
@@ -271,60 +260,72 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
         placeholder={t("searchPlaceholder")}
         sticky={false}
         filtersSlot={
-          <FilterBottomSheet
-            title={tCommon("filters")}
-            activeCount={activeFilterCount}
-            onOpenChange={(open) => {
-              if (open) setPendingFilters(filtersFromSearchParams(searchParams));
-            }}
-            onReset={() => {
-              const reset: PendingFilters = { status: "all", campaignType: "all" };
-              setPendingFilters(reset);
-              applyFilters(reset);
-            }}
-            onApply={() => applyFilters(pendingFilters)}
-          >
-            <div className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <Label>{t("filters.statusLabel")}</Label>
-                <Select
-                  value={pendingFilters.status}
-                  onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
-                  items={statusItems}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(statusItems).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <>
+            <FilterBottomSheet
+              title={tCommon("filters")}
+              activeCount={activeFilterCount}
+              onOpenChange={(open) => {
+                if (open) setPendingFilters(filtersFromSearchParams(searchParams));
+              }}
+              onReset={() => {
+                const reset: PendingFilters = { status: "all", campaignType: "all" };
+                setPendingFilters(reset);
+                applyFilters(reset);
+              }}
+              onApply={() => applyFilters(pendingFilters)}
+            >
+              <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <Label>{t("filters.statusLabel")}</Label>
+                  <Select
+                    value={pendingFilters.status}
+                    onValueChange={(v) => setPendingFilters((f) => ({ ...f, status: v ?? "all" }))}
+                    items={statusItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(statusItems).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("filters.typeLabel")}</Label>
+                  <Select
+                    value={pendingFilters.campaignType}
+                    onValueChange={(v) => setPendingFilters((f) => ({ ...f, campaignType: v ?? "all" }))}
+                    items={typeItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(typeItems).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("filters.typeLabel")}</Label>
-                <Select
-                  value={pendingFilters.campaignType}
-                  onValueChange={(v) => setPendingFilters((f) => ({ ...f, campaignType: v ?? "all" }))}
-                  items={typeItems}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(typeItems).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </FilterBottomSheet>
+            </FilterBottomSheet>
+            <CampaignFormDialog
+              mode="create"
+              trigger={
+                <Button className="shrink-0 gap-1.5">
+                  <Plus className="size-4" />
+                  <span className="hidden sm:inline">{t("createButton")}</span>
+                </Button>
+              }
+              onSaved={refresh}
+            />
+          </>
         }
       />
       </StickyToolbar>

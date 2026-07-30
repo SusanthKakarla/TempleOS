@@ -26,7 +26,7 @@ export function DashboardFrame({ sidebar, topbar, bottomNav, footerLabel, childr
         <div className="flex h-full flex-col">
           {topbar}
           <div className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="p-4 pb-20 sm:p-6 md:pb-6">
+            <div className="p-4 pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
               <div className="mx-auto w-full max-w-400">{children}</div>
             </div>
             <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">

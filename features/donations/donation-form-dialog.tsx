@@ -201,9 +201,7 @@ export function DonationFormDialog({
       <DialogContent className="sm:max-w-175">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? tForm("createTitle") : tForm("editTitle")}</DialogTitle>
-          <DialogDescription>
-            {mode === "create" ? tForm("createDescription") : tForm("editDescription")}
-          </DialogDescription>
+          {mode === "edit" && <DialogDescription>{tForm("editDescription")}</DialogDescription>}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
