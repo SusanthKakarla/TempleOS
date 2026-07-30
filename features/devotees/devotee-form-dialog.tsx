@@ -372,7 +372,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-190">
+      <DialogContent className="sm:max-w-190 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:max-w-full max-sm:rounded-b-none max-sm:max-h-[92dvh]">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
           <DialogDescription>{mode === "create" ? t("createDescription") : t("editDescription")}</DialogDescription>

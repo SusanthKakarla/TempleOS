@@ -24,6 +24,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { springSnappy } from "@/lib/motion";
@@ -56,6 +57,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const { setOpenMobile } = useSidebar();
   const navItems = (isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS).filter(
     (item) => !("featureKey" in item) || !enabledFeatures || enabledFeatures.has(item.featureKey),
   );
@@ -94,6 +96,7 @@ export function AppSidebar({
                       tooltip={t(item.labelKey)}
                       render={<Link href={item.href} />}
                       className="group/nav-item h-10 gap-3"
+                      onClick={() => setOpenMobile(false)}
                     >
                       <span
                         className={cn(
