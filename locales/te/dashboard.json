@@ -86,6 +86,78 @@
     "preparing": "సిద్ధమవుతోంది…",
     "exportButton": "ఎగుమతి"
   },
+  "exportLabels": {
+    "common": {
+      "generatedBy": "{name} ద్వారా {date}న రూపొందించబడింది",
+      "pageOf": "{total}లో {page}వ పేజీ"
+    },
+    "devotees": {
+      "name": "పేరు",
+      "phone": "ఫోన్",
+      "whatsappOptIn": "వాట్సాప్ ఆప్ట్-ఇన్",
+      "language": "భాష",
+      "donor": "దాత",
+      "totalDonated": "మొత్తం విరాళం",
+      "birthStar": "జన్మ నక్షత్రం",
+      "gothram": "గోత్రం",
+      "dateOfBirth": "పుట్టిన తేదీ",
+      "gender": "లింగం",
+      "maritalStatus": "వైవాహిక స్థితి",
+      "weddingAnniversary": "వివాహ వార్షికోత్సవం",
+      "registrationType": "నమోదు రకం",
+      "familyName": "కుటుంబం పేరు",
+      "relationship": "బంధుత్వం",
+      "firstSeen": "మొదట కనిపించింది",
+      "lastSeen": "చివరిగా కనిపించింది",
+      "yes": "అవును",
+      "no": "కాదు",
+      "individual": "వ్యక్తిగత",
+      "family": "కుటుంబం"
+    },
+    "donations": {
+      "donor": "దాత",
+      "phone": "ఫోన్",
+      "amount": "మొత్తం",
+      "purpose": "ప్రయోజనం",
+      "method": "విధానం",
+      "date": "తేదీ",
+      "notes": "గమనికలు"
+    },
+    "events": {
+      "title": "శీర్షిక",
+      "status": "స్థితి",
+      "starts": "ప్రారంభం",
+      "ends": "ముగింపు",
+      "location": "ప్రదేశం",
+      "description": "వివరణ"
+    },
+    "campaigns": {
+      "title": "శీర్షిక",
+      "type": "రకం",
+      "status": "స్థితి",
+      "schedule": "షెడ్యూల్",
+      "nextRun": "తదుపరి రన్",
+      "lastSent": "చివరిగా పంపిన",
+      "created": "సృష్టించబడింది"
+    },
+    "users": {
+      "name": "పేరు",
+      "phone": "ఫోన్",
+      "roles": "పాత్రలు",
+      "status": "స్థితి",
+      "joined": "చేరిన తేదీ",
+      "lastLogin": "చివరి లాగిన్"
+    },
+    "whatsappThread": {
+      "timestamp": "సమయముద్ర",
+      "direction": "దిశ",
+      "type": "రకం",
+      "status": "స్థితి",
+      "message": "సందేశం",
+      "devotee": "భక్తుడు",
+      "temple": "ఆలయం"
+    }
+  },
   "whatsappActivity": {
     "pageHeader": {
       "title": "సంభాషణలు",
@@ -172,6 +244,11 @@
       "title": "వాట్సాప్ చాట్‌బాట్ సెట్టింగులు",
       "subtitle": "ఇక్కడ ఉన్నదంతా వాట్సాప్ చాట్‌బాట్ ప్రత్యక్షంగా చదువుతుంది — మార్పులు వెంటనే అమలవుతాయి, డిప్లాయ్‌మెంట్ అవసరం లేదు."
     },
+    "error": {
+      "title": "ఈ విభాగం లోడ్ కాలేదు",
+      "description": "చాట్‌బాట్ సెట్టింగులను లోడ్ చేయడంలో ఏదో తప్పు జరిగింది. మీ ఇతర ట్యాబ్‌లు మరియు డేటా ప్రభావితం కాలేదు — మళ్లీ ప్రయత్నించండి.",
+      "tryAgain": "మళ్లీ ప్రయత్నించండి"
+    },
     "connectPrompt": {
       "title": "ప్రారంభించడానికి వాట్సాప్ కనెక్ట్ చేయండి",
       "description": "చాట్‌బాట్‌ను కాన్ఫిగర్ చేయడానికి ముందు దిగువన మీ దేవాలయం వాట్సాప్ బిజినెస్ ఖాతాను కనెక్ట్ చేయండి — నంబర్ కనెక్ట్ అయ్యే వరకు సెట్టింగులు అమలులోకి రావు."
@@ -242,6 +319,58 @@
       "setupSuccess": "WhatsApp టెంప్లేట్ సెటప్ పూర్తయింది",
       "setupError": "సెటప్ విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
       "close": "మూసివేయండి",
+      "intro": "మీరు దీన్ని Meta Business Manager‌లో నేరుగా సమర్పించి ఆమోదించిన తర్వాత, Meta-ఆమోదిత WhatsApp మెసేజ్ టెంప్లేట్‌ను ఇక్కడ నమోదు చేయండి — స్వీకర్త యొక్క 24 గంటల సంభాషణ విండో మూసివేయబడినప్పుడు TempleOS దీన్ని ఫాల్‌బ్యాక్‌గా ఉపయోగిస్తుంది.",
+      "addTemplateButton": "టెంప్లేట్ జోడించండి",
+      "emptyState": {
+        "title": "ఇంకా టెంప్లేట్‌లు కాన్ఫిగర్ చేయబడలేదు",
+        "description": "ఇక్కడ ఒకటి నమోదు అయ్యే వరకు, 24 గంటల విండో వెలుపల నోటిఫికేషన్‌లు ఎప్పటికీ మళ్లీ ప్రయత్నించే బదులు స్పష్టమైన కారణంతో వెంటనే విఫలమవుతాయి."
+      },
+      "table": {
+        "key": "కీ",
+        "metaTemplateName": "Meta టెంప్లేట్ పేరు",
+        "language": "భాష",
+        "status": "స్థితి",
+        "enabled": "ప్రారంభించబడింది",
+        "actions": "చర్యలు",
+        "noVariables": "వేరియబుల్స్ లేవు"
+      },
+      "actions": {
+        "edit": "సవరించండి",
+        "sync": "Meta నుండి స్థితిని సింక్ చేయండి",
+        "testSend": "టెస్ట్ పంపండి",
+        "delete": "తొలగించండి"
+      },
+      "formDialog": {
+        "editTitle": "టెంప్లేట్‌ను సవరించండి",
+        "addTitle": "టెంప్లేట్ జోడించండి",
+        "editDescription": "ఈ టెంప్లేట్ యొక్క Meta పేరు, వర్గం లేదా వేరియబుల్స్‌ను నవీకరించండి.",
+        "addDescription": "మీరు ఇప్పటికే Meta Business Managerలో ఆమోదించిన టెంప్లేట్‌ను నమోదు చేయండి.",
+        "templateKeyLabel": "టెంప్లేట్ కీ",
+        "metaTemplateNameLabel": "Meta టెంప్లేట్ పేరు",
+        "languageLabel": "భాష",
+        "categoryLabel": "వర్గం",
+        "variablesLabel": "వేరియబుల్స్ (కామాతో వేరు చేయబడినవి, క్రమంలో)",
+        "descriptionLabel": "వివరణ (ఐచ్ఛికం)",
+        "saving": "సేవ్ చేస్తోంది...",
+        "save": "సేవ్ చేయండి",
+        "defaultError": "టెంప్లేట్‌ను సేవ్ చేయడంలో విఫలమైంది"
+      },
+      "deleteDialog": {
+        "title": "ఈ టెంప్లేట్‌ను తొలగించాలా?",
+        "description": "{metaTemplateName} ఇకపై \"{templateKey}\" నోటిఫికేషన్‌లకు ఫాల్‌బ్యాక్‌గా ఉపయోగించబడదు. ఇది TempleOS నుండి మాత్రమే తొలగిస్తుంది — Meta Business Manager నుండి టెంప్లేట్‌ను తొలగించదు.",
+        "cancel": "రద్దు చేయండి",
+        "confirm": "తొలగించండి"
+      },
+      "testSendDialog": {
+        "title": "టెస్ట్ పంపండి",
+        "description": "నిజమైన \"{metaTemplateName}\" టెంప్లేట్‌ను పంపుతుంది — ఇది Metaలో ఆమోదించబడిన తర్వాతే విజయవంతమవుతుంది.",
+        "recipientLabel": "స్వీకర్త ఫోన్ నంబర్",
+        "sending": "పంపుతోంది...",
+        "sendTest": "టెస్ట్ పంపండి",
+        "defaultError": "టెస్ట్ పంపడం విఫలమైంది",
+        "success": "పంపబడింది! స్వీకర్త వాట్సాప్‌ను తనిఖీ చేయండి.",
+        "networkError": "టెస్ట్ పంపడం విఫలమైంది — నెట్‌వర్క్ ఎర్రర్."
+      },
       "guideDialog": {
         "menuItem": "Meta సెటప్ గైడ్ చూడండి",
         "title": "Meta సెటప్ గైడ్",
@@ -944,7 +1073,8 @@
       "abhishekam": "అభిషేకం",
       "constructionRenovation": "నిర్మాణం / పునరుద్ధరణ",
       "vastraAlankaram": "వస్త్రం / అలంకారం",
-      "other": "ఇతర"
+      "other": "ఇతర",
+      "onlineDonation": "ఆన్‌లైన్ విరాళం"
     },
     "formDialog": {
       "createTitle": "విరాళం జోడించండి",
@@ -1159,6 +1289,35 @@
         "retrying": "మళ్లీ ప్రయత్నిస్తోంది"
       },
       "resendError": "నోటిఫికేషన్‌లను మళ్లీ పంపడంలో విఫలమైంది"
+    },
+    "detailDrawer": {
+      "viewDetails": "వివరాలు చూడండి",
+      "title": "నోటిఫికేషన్ వివరాలు",
+      "notificationId": "నోటిఫికేషన్ ఐడీ",
+      "recipient": "స్వీకర్త",
+      "type": "రకం",
+      "channel": "ఛానెల్",
+      "category": "వర్గం",
+      "deliveryStrategy": "డెలివరీ వ్యూహం",
+      "strategyLabels": {
+        "free_form": "ఫ్రీ-ఫారమ్",
+        "template": "టెంప్లేట్"
+      },
+      "templateUsed": "ఉపయోగించిన టెంప్లేట్",
+      "conversationStatus": "సంభాషణ స్థితి",
+      "conversationLabels": {
+        "active": "యాక్టివ్ (విండో తెరిచి ఉంది)",
+        "inactive": "ఇనాక్టివ్ (విండో మూసివేయబడింది)",
+        "unknown": "తెలియదు"
+      },
+      "status": "స్థితి",
+      "retryCount": "మళ్లీ ప్రయత్నాల సంఖ్య",
+      "metaErrorCode": "మెటా ఎర్రర్ కోడ్",
+      "metaErrorCategory": "మెటా ఎర్రర్ వర్గం",
+      "failureReason": "వైఫల్య కారణం",
+      "created": "సృష్టించబడింది",
+      "sent": "పంపబడింది",
+      "delivered": "డెలివరీ అయింది"
     },
     "automated": {
       "sectionTitle": "ఆటోమేటిక్ నోటిఫికేషన్‌లు",

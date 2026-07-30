@@ -8,6 +8,7 @@ import {
 import { UsersTable } from "@/features/users/users-table";
 import { isRoleCode, type TenantMembershipStatus } from "@/types/db";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
 
 interface UsersPageProps {
   searchParams: Promise<{
@@ -32,7 +33,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const dir = dirParam === "desc" ? "desc" : "asc";
 
   const filters: ListTenantMembershipsFilters = {
-    search,
+    search: search ? await toEnglishSearchQuery(search) : search,
     status: status === "active" || status === "inactive" ? (status as TenantMembershipStatus) : undefined,
     role: role && isRoleCode(role) ? role : undefined,
   };

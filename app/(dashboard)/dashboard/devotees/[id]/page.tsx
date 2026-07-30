@@ -15,6 +15,7 @@ import { formatInr } from "@/lib/currency";
 import { formatDate, formatDateTime } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
+import { translateFields } from "@/lib/i18n/translate-rows";
 
 interface DevoteeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -42,14 +43,22 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
   const tRelationship = await getTranslations("devotees.relationshipNames");
 
   const { id } = await params;
-  const devotee = await getDevoteeById(session.tenantId, id);
-  if (!devotee) notFound();
+  const devoteeRaw = await getDevoteeById(session.tenantId, id);
+  if (!devoteeRaw) notFound();
 
-  const [donations, family, notifications] = await Promise.all([
+  const [donations, familyRaw, notifications] = await Promise.all([
     listDonationsByDevotee(session.tenantId, id),
-    devotee.familyId ? getFamilyWithMembers(session.tenantId, devotee.familyId) : Promise.resolve(null),
+    devoteeRaw.familyId ? getFamilyWithMembers(session.tenantId, devoteeRaw.familyId) : Promise.resolve(null),
     listNotificationsForDevotee(session.tenantId, id),
   ]);
+
+  const [devotee] = await translateFields([devoteeRaw], locale, ["displayName"]);
+  const family = familyRaw
+    ? {
+        family: (await translateFields([familyRaw.family], locale, ["familyName"]))[0],
+        members: await translateFields(familyRaw.members, locale, ["displayName"]),
+      }
+    : null;
 
   const now = new Date();
   const upcomingOccasions = family

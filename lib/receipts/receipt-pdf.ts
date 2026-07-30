@@ -20,13 +20,52 @@ export interface ReceiptPdfData {
   donorPan: string | null;
 }
 
+/** Every piece of static wrapper text on the receipt — kept separate from ReceiptPdfData so the caller decides which language to render in, without this module needing to know about next-intl/locales itself. */
+export interface ReceiptPdfLabels {
+  documentTitle: string;
+  receiptNumber: string;
+  dateTime: string;
+  transactionId: string;
+  razorpayPaymentId: string;
+  donorName: string;
+  donorPhone: string;
+  donorEmail: string;
+  donorPan: string;
+  campaign: string;
+  paymentMethod: string;
+  currency: string;
+  amountLabel: string;
+  /** `{templeName}` is replaced with the actual temple name. */
+  thankYou: string;
+  footer: string;
+}
+
+/** The behavior this module has always had — used verbatim by the existing donor-facing pipeline (lib/receipts/receipt-service.ts), which doesn't yet vary receipt language by donor. */
+export const ENGLISH_RECEIPT_LABELS: ReceiptPdfLabels = {
+  documentTitle: "Donation Receipt",
+  receiptNumber: "Receipt Number:",
+  dateTime: "Date & Time:",
+  transactionId: "Transaction ID:",
+  razorpayPaymentId: "Razorpay Payment ID:",
+  donorName: "Donor Name:",
+  donorPhone: "Donor Phone:",
+  donorEmail: "Donor Email:",
+  donorPan: "Donor PAN:",
+  campaign: "Campaign:",
+  paymentMethod: "Payment Method:",
+  currency: "Currency:",
+  amountLabel: "Amount",
+  thankYou: "Thank you for your generous contribution to {templeName}.",
+  footer: "This is a system-generated receipt and does not require a signature.",
+};
+
 /**
  * A single-page portrait donation receipt. Separate layout from
  * lib/export/pdf.ts's landscape tabular exports (different document shape
  * entirely) but the same library and buffering approach (collect chunks,
  * resolve on 'end').
  */
-export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array> {
+export function buildReceiptPdfBuffer(data: ReceiptPdfData, labels: ReceiptPdfLabels): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: PAGE_MARGIN, size: "A4" });
     const chunks: Buffer[] = [];
@@ -40,7 +79,7 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
     }
     doc.moveDown(1.5);
 
-    doc.fillColor("#000000").fontSize(14).font("Helvetica-Bold").text("Donation Receipt", { align: "center" });
+    doc.fillColor("#000000").fontSize(14).font("Helvetica-Bold").text(labels.documentTitle, { align: "center" });
     doc.moveDown(1.5);
 
     doc
@@ -55,17 +94,17 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
       doc.moveDown(0.5);
     };
 
-    row("Receipt Number:", data.receiptNumber);
-    row("Date & Time:", data.date);
-    row("Transaction ID:", data.transactionId);
-    if (data.providerPaymentId) row("Razorpay Payment ID:", data.providerPaymentId);
-    row("Donor Name:", data.donorName);
-    if (data.donorPhone) row("Donor Phone:", data.donorPhone);
-    if (data.donorEmail) row("Donor Email:", data.donorEmail);
-    if (data.donorPan) row("Donor PAN:", data.donorPan);
-    if (data.campaignTitle) row("Campaign:", data.campaignTitle);
-    row("Payment Method:", data.paymentMethod);
-    row("Currency:", data.currency);
+    row(labels.receiptNumber, data.receiptNumber);
+    row(labels.dateTime, data.date);
+    row(labels.transactionId, data.transactionId);
+    if (data.providerPaymentId) row(labels.razorpayPaymentId, data.providerPaymentId);
+    row(labels.donorName, data.donorName);
+    if (data.donorPhone) row(labels.donorPhone, data.donorPhone);
+    if (data.donorEmail) row(labels.donorEmail, data.donorEmail);
+    if (data.donorPan) row(labels.donorPan, data.donorPan);
+    if (data.campaignTitle) row(labels.campaign, data.campaignTitle);
+    row(labels.paymentMethod, data.paymentMethod);
+    row(labels.currency, data.currency);
 
     doc.moveDown(1);
     doc
@@ -74,21 +113,17 @@ export function buildReceiptPdfBuffer(data: ReceiptPdfData): Promise<Uint8Array>
       .stroke("#cccccc");
     doc.moveDown(1);
 
-    doc.fontSize(16).font("Helvetica-Bold").text(`Amount: ${data.currency} ${data.amount.toFixed(2)}`);
+    doc.fontSize(16).font("Helvetica-Bold").text(`${labels.amountLabel}: ${data.currency} ${data.amount.toFixed(2)}`);
     doc.moveDown(1.5);
 
     doc
       .fontSize(11)
       .font("Helvetica-Bold")
       .fillColor("#000000")
-      .text(`Thank you for your generous contribution to ${data.templeName}.`, { align: "center" });
+      .text(labels.thankYou.replace("{templeName}", data.templeName), { align: "center" });
     doc.moveDown(1);
 
-    doc
-      .fontSize(9)
-      .font("Helvetica")
-      .fillColor("#666666")
-      .text("This is a system-generated receipt and does not require a signature.", { align: "center" });
+    doc.fontSize(9).font("Helvetica").fillColor("#666666").text(labels.footer, { align: "center" });
 
     doc.end();
   });

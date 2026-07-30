@@ -9,6 +9,7 @@ vi.mock("@/lib/media/imagekit", () => ({
 }));
 vi.mock("./receipt-pdf", () => ({
   buildReceiptPdfBuffer: vi.fn(),
+  ENGLISH_RECEIPT_LABELS: { documentTitle: "Donation Receipt" },
 }));
 
 const transaction: PaymentTransaction = {
@@ -78,7 +79,7 @@ describe("generateAndStoreReceipt", () => {
       campaignTitle: null,
     });
 
-    expect(buildReceiptPdfBuffer).toHaveBeenCalledWith(expect.objectContaining({ donorName: "Anonymous" }));
+    expect(buildReceiptPdfBuffer).toHaveBeenCalledWith(expect.objectContaining({ donorName: "Anonymous" }), expect.anything());
   });
 
   it("passes the Razorpay payment id through to the PDF, distinct from the internal transaction id", async () => {
@@ -90,6 +91,7 @@ describe("generateAndStoreReceipt", () => {
 
     expect(buildReceiptPdfBuffer).toHaveBeenCalledWith(
       expect.objectContaining({ transactionId: "txn-1", providerPaymentId: "pay_1" }),
+      expect.anything(),
     );
   });
 });

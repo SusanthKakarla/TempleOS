@@ -6,59 +6,84 @@ function formatDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString("en-IN") : "—";
 }
 
-const RELATIONSHIP_LABELS: Record<string, string> = {
-  head_of_family: "Head of Family",
-  husband: "Husband",
-  wife: "Wife",
-  father: "Father",
-  mother: "Mother",
-  son: "Son",
-  daughter: "Daughter",
-  brother: "Brother",
-  sister: "Sister",
-  grandfather: "Grandfather",
-  grandmother: "Grandmother",
-  grandson: "Grandson",
-  granddaughter: "Granddaughter",
-  uncle: "Uncle",
-  aunt: "Aunt",
-  other: "Other",
-};
+export interface DevoteeExportLabels {
+  headers: {
+    name: string;
+    phone: string;
+    whatsappOptIn: string;
+    language: string;
+    donor: string;
+    totalDonated: string;
+    birthStar: string;
+    gothram: string;
+    dateOfBirth: string;
+    gender: string;
+    maritalStatus: string;
+    weddingAnniversary: string;
+    registrationType: string;
+    familyName: string;
+    relationship: string;
+    firstSeen: string;
+    lastSeen: string;
+  };
+  yes: string;
+  no: string;
+  individual: string;
+  family: string;
+  /** Keyed by the closed RelationshipCode union (head_of_family, husband, ...) — see devotees.relationshipNames. */
+  relationshipLabels: Record<string, string>;
+  /** Keyed by the stored gender value — see devotees.formDialog.genderOptions. */
+  genderLabels: Record<string, string>;
+  /** Keyed by the stored marital status value — see devotees.formDialog.maritalStatusOptions. */
+  maritalStatusLabels: Record<string, string>;
+}
 
-export const DEVOTEE_EXPORT_COLUMNS: ColumnDef<Devotee>[] = [
-  { key: "displayName", header: "Name", accessor: (d) => d.displayName, width: 24 },
-  { key: "whatsappPhone", header: "Phone", accessor: (d) => d.whatsappPhone ?? "—", width: 18 },
-  { key: "whatsappOptInStatus", header: "WhatsApp Opt-in", accessor: (d) => (d.whatsappOptInStatus ? "Yes" : "No"), width: 14 },
-  { key: "preferredLanguage", header: "Language", accessor: (d) => d.preferredLanguage?.toUpperCase() ?? "—", width: 10 },
-  { key: "isDonor", header: "Donor", accessor: (d) => (d.isDonor ? "Yes" : "No"), width: 10 },
-  { key: "totalDonatedAmount", header: "Total Donated", accessor: (d) => formatInr(Number(d.totalDonatedAmount)), width: 16 },
-  { key: "birthStar", header: "Birth Star", accessor: (d) => d.birthStar ?? "—", width: 16 },
-  { key: "ancestralLineage", header: "Gothram", accessor: (d) => d.ancestralLineage ?? "—", width: 16 },
-  { key: "dateOfBirth", header: "Date of Birth", accessor: (d) => d.dateOfBirth ?? "—", width: 14 },
-  { key: "gender", header: "Gender", accessor: (d) => (d.gender ? d.gender.charAt(0).toUpperCase() + d.gender.slice(1) : "—"), width: 10 },
-  {
-    key: "maritalStatus",
-    header: "Marital Status",
-    accessor: (d) => (d.maritalStatus ? d.maritalStatus.charAt(0).toUpperCase() + d.maritalStatus.slice(1) : "—"),
-    width: 14,
-  },
-  { key: "weddingAnniversary", header: "Wedding Anniversary", accessor: (d) => d.weddingAnniversary ?? "—", width: 18 },
-  {
-    key: "registrationType",
-    header: "Registration Type",
-    accessor: (d) => (d.familyId ? "Family" : "Individual"),
-    width: 16,
-  },
-  { key: "familyName", header: "Family Name", accessor: (d) => d.familyName ?? "—", width: 20 },
-  {
-    key: "relationship",
-    header: "Relationship",
-    accessor: (d) => (d.relationship ? RELATIONSHIP_LABELS[d.relationship] ?? d.relationship : "—"),
-    width: 16,
-  },
-  { key: "firstSeenAt", header: "First Seen", accessor: (d) => formatDate(d.firstSeenAt), width: 14 },
-  { key: "lastSeenAt", header: "Last Seen", accessor: (d) => formatDate(d.lastSeenAt), width: 14 },
-];
+export function buildDevoteeExportColumns(labels: DevoteeExportLabels): ColumnDef<Devotee>[] {
+  return [
+    { key: "displayName", header: labels.headers.name, accessor: (d) => d.displayName, width: 24 },
+    { key: "whatsappPhone", header: labels.headers.phone, accessor: (d) => d.whatsappPhone ?? "—", width: 18 },
+    {
+      key: "whatsappOptInStatus",
+      header: labels.headers.whatsappOptIn,
+      accessor: (d) => (d.whatsappOptInStatus ? labels.yes : labels.no),
+      width: 14,
+    },
+    { key: "preferredLanguage", header: labels.headers.language, accessor: (d) => d.preferredLanguage?.toUpperCase() ?? "—", width: 10 },
+    { key: "isDonor", header: labels.headers.donor, accessor: (d) => (d.isDonor ? labels.yes : labels.no), width: 10 },
+    { key: "totalDonatedAmount", header: labels.headers.totalDonated, accessor: (d) => formatInr(Number(d.totalDonatedAmount)), width: 16 },
+    { key: "birthStar", header: labels.headers.birthStar, accessor: (d) => d.birthStar ?? "—", width: 16 },
+    { key: "ancestralLineage", header: labels.headers.gothram, accessor: (d) => d.ancestralLineage ?? "—", width: 16 },
+    { key: "dateOfBirth", header: labels.headers.dateOfBirth, accessor: (d) => d.dateOfBirth ?? "—", width: 14 },
+    {
+      key: "gender",
+      header: labels.headers.gender,
+      accessor: (d) => (d.gender ? (labels.genderLabels[d.gender] ?? d.gender) : "—"),
+      width: 10,
+    },
+    {
+      key: "maritalStatus",
+      header: labels.headers.maritalStatus,
+      accessor: (d) => (d.maritalStatus ? (labels.maritalStatusLabels[d.maritalStatus] ?? d.maritalStatus) : "—"),
+      width: 14,
+    },
+    { key: "weddingAnniversary", header: labels.headers.weddingAnniversary, accessor: (d) => d.weddingAnniversary ?? "—", width: 18 },
+    {
+      key: "registrationType",
+      header: labels.headers.registrationType,
+      accessor: (d) => (d.familyId ? labels.family : labels.individual),
+      width: 16,
+    },
+    { key: "familyName", header: labels.headers.familyName, accessor: (d) => d.familyName ?? "—", width: 20 },
+    {
+      key: "relationship",
+      header: labels.headers.relationship,
+      accessor: (d) => (d.relationship ? (labels.relationshipLabels[d.relationship] ?? d.relationship) : "—"),
+      width: 16,
+    },
+    { key: "firstSeenAt", header: labels.headers.firstSeen, accessor: (d) => formatDate(d.firstSeenAt), width: 14 },
+    { key: "lastSeenAt", header: labels.headers.lastSeen, accessor: (d) => formatDate(d.lastSeenAt), width: 14 },
+  ];
+}
 
 interface TemplateExampleRow {
   name: string;

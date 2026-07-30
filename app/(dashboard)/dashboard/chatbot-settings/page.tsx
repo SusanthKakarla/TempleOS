@@ -24,6 +24,7 @@ import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { NOTIFICATION_CATEGORIES, type NotificationCategory, type NotificationMedia, type SupportedLanguage } from "@/types/db";
+import { translateFields } from "@/lib/i18n/translate-rows";
 
 const CATEGORY_VALUES: readonly NotificationCategory[] = NOTIFICATION_CATEGORIES;
 
@@ -57,7 +58,7 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const category = CATEGORY_VALUES.find((value) => value === categoryParam);
   const notifPage = parsePageParam(notifPageParam);
 
-  const [tenant, specialDays, sevas, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
+  const [tenant, specialDaysRaw, sevasRaw, socialLinks, whatsappAccount, whatsappTemplates, notificationData] = await Promise.all([
     getTenantById(session.tenantId),
     listSpecialDays(session.tenantId),
     listSevas(session.tenantId),
@@ -79,6 +80,11 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   ]);
 
   if (!tenant) return null;
+
+  const [specialDays, sevas] = await Promise.all([
+    translateFields(specialDaysRaw, locale, ["occasion"]),
+    translateFields(sevasRaw, locale, ["name", "description"]),
+  ]);
 
   const isConnected = whatsappAccount !== null && whatsappAccount.status === "connected";
 

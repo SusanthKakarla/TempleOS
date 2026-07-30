@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { uploadImage } from "@/lib/media/imagekit";
-import { buildReceiptPdfBuffer } from "./receipt-pdf";
+import { buildReceiptPdfBuffer, ENGLISH_RECEIPT_LABELS } from "./receipt-pdf";
 import type { PaymentTransaction, Tenant } from "@/types/db";
 
 /** Deterministic, human-readable, unique per transaction — no separate sequence/counter table needed since the transaction id is already globally unique. */
@@ -30,22 +30,25 @@ export async function generateAndStoreReceipt(input: GenerateReceiptInput): Prom
   const now = new Date();
   const receiptNumber = generateReceiptNumber(input.tenant, now);
 
-  const pdfBuffer = await buildReceiptPdfBuffer({
-    templeName: input.tenant.name,
-    templeAddress: input.tenant.address,
-    receiptNumber,
-    transactionId: input.transaction.id,
-    providerPaymentId: input.transaction.providerPaymentId,
-    campaignTitle: input.campaignTitle,
-    amount: input.transaction.amount,
-    currency: input.transaction.currency,
-    date: now.toLocaleString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }),
-    paymentMethod: input.transaction.providerKey,
-    donorName: input.transaction.isAnonymous ? "Anonymous" : input.transaction.donorName,
-    donorPhone: input.transaction.donorPhone,
-    donorEmail: input.transaction.donorEmail,
-    donorPan: input.transaction.donorPan,
-  });
+  const pdfBuffer = await buildReceiptPdfBuffer(
+    {
+      templeName: input.tenant.name,
+      templeAddress: input.tenant.address,
+      receiptNumber,
+      transactionId: input.transaction.id,
+      providerPaymentId: input.transaction.providerPaymentId,
+      campaignTitle: input.campaignTitle,
+      amount: input.transaction.amount,
+      currency: input.transaction.currency,
+      date: now.toLocaleString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      paymentMethod: input.transaction.providerKey,
+      donorName: input.transaction.isAnonymous ? "Anonymous" : input.transaction.donorName,
+      donorPhone: input.transaction.donorPhone,
+      donorEmail: input.transaction.donorEmail,
+      donorPan: input.transaction.donorPan,
+    },
+    ENGLISH_RECEIPT_LABELS,
+  );
 
   const uploaded = await uploadImage(Buffer.from(pdfBuffer), "receipts", `${receiptNumber}.pdf`);
   return { receiptNumber, receiptUrl: uploaded.url };

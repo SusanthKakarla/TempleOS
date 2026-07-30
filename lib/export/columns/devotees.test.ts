@@ -1,6 +1,37 @@
 import { describe, expect, it } from "vitest";
 import type { Devotee } from "@/types/db";
-import { DEVOTEE_EXPORT_COLUMNS } from "./devotees";
+import { buildDevoteeExportColumns, type DevoteeExportLabels } from "./devotees";
+
+const LABELS: DevoteeExportLabels = {
+  headers: {
+    name: "Name",
+    phone: "Phone",
+    whatsappOptIn: "WhatsApp Opt-in",
+    language: "Language",
+    donor: "Donor",
+    totalDonated: "Total Donated",
+    birthStar: "Birth Star",
+    gothram: "Gothram",
+    dateOfBirth: "Date of Birth",
+    gender: "Gender",
+    maritalStatus: "Marital Status",
+    weddingAnniversary: "Wedding Anniversary",
+    registrationType: "Registration Type",
+    familyName: "Family Name",
+    relationship: "Relationship",
+    firstSeen: "First Seen",
+    lastSeen: "Last Seen",
+  },
+  yes: "Yes",
+  no: "No",
+  individual: "Individual",
+  family: "Family",
+  relationshipLabels: { head_of_family: "Head of Family" },
+  genderLabels: {},
+  maritalStatusLabels: {},
+};
+
+const DEVOTEE_EXPORT_COLUMNS = buildDevoteeExportColumns(LABELS);
 
 function makeDevotee(overrides: Partial<Devotee> = {}): Devotee {
   return {
