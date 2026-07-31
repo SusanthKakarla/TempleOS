@@ -17,6 +17,7 @@ function makeDonation(overrides: Partial<DonationWithDonor> = {}): DonationWithD
     amount: "500.00",
     purpose: "General",
     paymentMethod: "upi",
+    itemDescription: null,
     notes: null,
     donatedAt: "2026-01-15T00:00:00.000Z",
     recordedBy: null,

@@ -77,6 +77,7 @@ describe("identity and session isolation guardrails", () => {
     vi.doUnmock("@/lib/db/super-admins");
     vi.doUnmock("@/lib/db/tenant-memberships");
     vi.doUnmock("@/lib/db/tenant-domains");
+    vi.doUnmock("@/lib/db/tenants");
     vi.doUnmock("@/lib/db/persons");
     vi.doUnmock("@/lib/firebase/admin");
     vi.doUnmock("@/lib/firebase/errors");
@@ -235,6 +236,9 @@ describe("identity and session isolation guardrails", () => {
     }));
     vi.doMock("@/lib/db/tenant-memberships", () => ({
       getTenantMembershipById: vi.fn(),
+    }));
+    vi.doMock("@/lib/db/tenants", () => ({
+      getTenantById: vi.fn(),
     }));
 
     const headers = await import("next/headers");
