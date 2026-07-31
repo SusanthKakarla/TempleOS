@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, Download, History, Pencil, Trash2, Upload, UserCog, UserPlus, Users as UsersIcon, UserX } from "lucide-react";
+import { Activity, History, Pencil, Trash2, Upload, UserCog, UserPlus, Users as UsersIcon, UserX } from "lucide-react";
 import type { TenantMembershipListItem } from "@/lib/db/tenant-memberships";
 import type { RoleCode, SupportedLanguage } from "@/types/db";
 import { ROLE_CODES } from "@/types/db";
@@ -89,7 +89,6 @@ export function UsersTable({
   const t = useTranslations("userManagement");
   const tCommon = useTranslations("common");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [exportOpen, setExportOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TenantMembershipListItem | null>(null);
   const [deletingMember, setDeletingMember] = useState<TenantMembershipListItem | null>(null);
   const [changingRoleMember, setChangingRoleMember] = useState<TenantMembershipListItem | null>(null);
@@ -226,44 +225,19 @@ export function UsersTable({
             <>
               <Link
                 href="/dashboard/users/activity"
-                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
               >
                 <History className="size-4" />
                 {t("activityLog.pageTitle")}
               </Link>
               <Link
                 href="/dashboard/users/import"
-                className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
               >
                 <Upload className="size-4" />
                 {t("importButton")}
               </Link>
-              <div className="hidden lg:block">
-                <ExportMenu
-                  exportUrl="/api/users/export"
-                  filterParams={searchParams}
-                  selectedIds={selectedIds}
-                  moduleLabel="users"
-                />
-              </div>
-              <OverflowActionMenu
-                label="Activity / Import / Export"
-                items={[
-                  { label: t("activityLog.pageTitle"), icon: <History className="size-4" />, onClick: () => router.push("/dashboard/users/activity") },
-                  { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/users/import") },
-                  { label: "Export", icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
-                ]}
-              />
-              {/* Rendered without its own trigger — opened programmatically from the overflow menu above (mobile/tablet path). */}
-              <ExportMenu
-                exportUrl="/api/users/export"
-                filterParams={searchParams}
-                selectedIds={selectedIds}
-                moduleLabel="users"
-                open={exportOpen}
-                onOpenChange={setExportOpen}
-                hideTrigger
-              />
+              <ExportMenu exportUrl="/api/users/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="users" />
             </>
           }
         />

@@ -1503,7 +1503,7 @@
       "devotee_registered": "New devotee alerts",
       "event_reminder": "Event reminders"
     },
-    "channels": { "inApp": "In-app", "whatsapp": "WhatsApp" },
+    "channels": { "whatsapp": "WhatsApp" },
     "saveError": "Failed to save preference"
   },
   "settings": {

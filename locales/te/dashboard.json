@@ -1512,7 +1512,7 @@
       "devotee_registered": "కొత్త భక్తుడు అలర్ట్‌లు",
       "event_reminder": "కార్యక్రమ రిమైండర్‌లు"
     },
-    "channels": { "inApp": "యాప్‌లో", "whatsapp": "వాట్సాప్" },
+    "channels": { "whatsapp": "వాట్సాప్" },
     "saveError": "ప్రాధాన్యతను సేవ్ చేయడంలో విఫలమైంది"
   },
   "settings": {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
-import { listPreferencesForPerson, upsertPreference } from "@/lib/db/notification-preferences";
+import { getPreference, listPreferencesForPerson, upsertPreference } from "@/lib/db/notification-preferences";
 import type { NotificationType } from "@/types/db";
 
 const PREFERENCE_TYPES: NotificationType[] = [
@@ -13,7 +13,6 @@ const PREFERENCE_TYPES: NotificationType[] = [
 
 const bodySchema = z.object({
   notificationType: z.enum(["birthday_priest", "user_welcome", "devotee_registered", "event_reminder"]),
-  inAppEnabled: z.boolean(),
   whatsappEnabled: z.boolean(),
 });
 
@@ -52,10 +51,14 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
+  // inAppEnabled is no longer settable from the UI — preserve whatever value
+  // is already on record (defaulting to true for a brand-new row, matching
+  // the no-row-means-opted-in convention documented on getPreference).
+  const existing = await getPreference(session.personId, parsed.data.notificationType);
   const preference = await upsertPreference({
     personId: session.personId,
     notificationType: parsed.data.notificationType,
-    inAppEnabled: parsed.data.inAppEnabled,
+    inAppEnabled: existing?.inAppEnabled ?? true,
     whatsappEnabled: parsed.data.whatsappEnabled,
   });
 

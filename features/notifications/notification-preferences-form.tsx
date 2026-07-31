@@ -10,7 +10,6 @@ import type { NotificationType } from "@/types/db";
 
 interface PreferenceRow {
   notificationType: NotificationType;
-  inAppEnabled: boolean;
   whatsappEnabled: boolean;
 }
 
@@ -19,8 +18,8 @@ export function NotificationPreferencesForm({ preferences }: { preferences: Pref
   const [rows, setRows] = useState(preferences);
   const [savingType, setSavingType] = useState<NotificationType | null>(null);
 
-  async function handleToggle(notificationType: NotificationType, field: "inAppEnabled" | "whatsappEnabled", value: boolean) {
-    const next = rows.map((row) => (row.notificationType === notificationType ? { ...row, [field]: value } : row));
+  async function handleToggle(notificationType: NotificationType, value: boolean) {
+    const next = rows.map((row) => (row.notificationType === notificationType ? { ...row, whatsappEnabled: value } : row));
     setRows(next);
     setSavingType(notificationType);
 
@@ -50,31 +49,18 @@ export function NotificationPreferencesForm({ preferences }: { preferences: Pref
       </CardHeader>
       <CardContent className="space-y-4">
         {rows.map((row) => (
-          <div key={row.notificationType} className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 last:border-b-0 last:pb-0">
-            <p className="text-sm font-medium">{t(`types.${row.notificationType}`)}</p>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id={`${row.notificationType}-in-app`}
-                  checked={row.inAppEnabled}
-                  disabled={savingType === row.notificationType}
-                  onCheckedChange={(checked) => handleToggle(row.notificationType, "inAppEnabled", checked)}
-                />
-                <Label htmlFor={`${row.notificationType}-in-app`} className="text-sm text-muted-foreground">
-                  {t("channels.inApp")}
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id={`${row.notificationType}-whatsapp`}
-                  checked={row.whatsappEnabled}
-                  disabled={savingType === row.notificationType}
-                  onCheckedChange={(checked) => handleToggle(row.notificationType, "whatsappEnabled", checked)}
-                />
-                <Label htmlFor={`${row.notificationType}-whatsapp`} className="text-sm text-muted-foreground">
-                  {t("channels.whatsapp")}
-                </Label>
-              </div>
+          <div key={row.notificationType} className="flex items-center justify-between gap-4 border-b pb-4 last:border-b-0 last:pb-0">
+            <p className="min-w-0 flex-1 text-sm font-medium">{t(`types.${row.notificationType}`)}</p>
+            <div className="flex shrink-0 items-center gap-2">
+              <Switch
+                id={`${row.notificationType}-whatsapp`}
+                checked={row.whatsappEnabled}
+                disabled={savingType === row.notificationType}
+                onCheckedChange={(checked) => handleToggle(row.notificationType, checked)}
+              />
+              <Label htmlFor={`${row.notificationType}-whatsapp`} className="text-sm text-muted-foreground">
+                {t("channels.whatsapp")}
+              </Label>
             </div>
           </div>
         ))}

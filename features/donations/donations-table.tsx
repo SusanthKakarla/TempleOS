@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarRange, Download, Eye, HandCoins, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { CalendarRange, Eye, HandCoins, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import type { Devotee, DonationSummary, DonationWithDonor, SupportedLanguage } from "@/types/db";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { Button } from "@/components/ui/button";
@@ -107,7 +107,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("donations");
   const tCommon = useTranslations("common");
-  const tExport = useTranslations("export");
 
   function paymentMethodLabel(value: string | null, itemDescription: string | null): string {
     if (itemDescription) return t("nonCashBadge");
@@ -119,7 +118,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [exportOpen, setExportOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState<DonationWithDonor | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
 
@@ -290,7 +288,21 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   return (
     <div className="space-y-6">
       <StickyToolbar>
-      <PageHeader title={t("pageHeader.title")} />
+      <PageHeader
+        title={t("pageHeader.title")}
+        actions={
+          <>
+            <Link
+              href="/dashboard/donations/import"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              <Upload className="size-4" />
+              {t("importButton")}
+            </Link>
+            <ExportMenu exportUrl="/api/donations/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="donations" />
+          </>
+        }
+      />
 
       <ResponsiveSearchBar
         pathname={PATHNAME}
@@ -313,26 +325,6 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
             >
               {filterSheetContent}
             </FilterBottomSheet>
-            <Link
-              href="/dashboard/donations/import"
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-            >
-              <Upload className="size-4" />
-              <span className="hidden sm:inline">{t("importButton")}</span>
-            </Link>
-            <Button variant="outline" className="shrink-0 gap-1.5" onClick={() => setExportOpen(true)}>
-              <Download className="size-4" />
-              <span className="hidden sm:inline">{tExport("exportButton")}</span>
-            </Button>
-            <ExportMenu
-              exportUrl="/api/donations/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="donations"
-              open={exportOpen}
-              onOpenChange={setExportOpen}
-              hideTrigger
-            />
             <DonationFormDialog
               mode="create"
               devotees={devotees}

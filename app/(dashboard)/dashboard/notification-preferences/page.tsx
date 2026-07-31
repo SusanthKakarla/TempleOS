@@ -22,7 +22,6 @@ export default async function NotificationPreferencesPage() {
     const existing = savedByType.get(notificationType);
     return {
       notificationType,
-      inAppEnabled: existing?.inAppEnabled ?? true,
       whatsappEnabled: existing?.whatsappEnabled ?? true,
     };
   });
