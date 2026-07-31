@@ -360,7 +360,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
       />
       </StickyToolbar>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         <MetricCard
           label={t("summary.totalThisMonth")}
           value={Number(summary.totalThisMonth)}

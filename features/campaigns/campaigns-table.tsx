@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { Copy, Download, Eye, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
+import { Copy, Eye, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
 import type { Campaign, CampaignStatus } from "@/types/db";
 import { CAMPAIGN_TYPES } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -71,9 +71,7 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
   const tStatus = useTranslations("campaigns.status");
   const tTypes = useTranslations("campaigns.types");
   const tCommon = useTranslations("common");
-  const tExport = useTranslations("export");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [exportOpen, setExportOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
@@ -234,24 +232,7 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
       <PageHeader
         title={t("pageHeader.title")}
         actions={
-          <>
-            <div className="hidden lg:block">
-              <ExportMenu exportUrl="/api/campaigns/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="campaigns" />
-            </div>
-            <OverflowActionMenu
-              label={tExport("exportButton")}
-              items={[{ label: tExport("exportButton"), icon: <Download className="size-4" />, onClick: () => setExportOpen(true) }]}
-            />
-            <ExportMenu
-              exportUrl="/api/campaigns/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="campaigns"
-              open={exportOpen}
-              onOpenChange={setExportOpen}
-              hideTrigger
-            />
-          </>
+          <ExportMenu exportUrl="/api/campaigns/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="campaigns" />
         }
       />
 
