@@ -37,7 +37,7 @@ export function ResponsiveSearchBar({
   return (
     <div
       className={cn(
-        "flex items-center gap-2",
+        "flex flex-wrap items-center gap-2",
         sticky &&
           "sticky top-0 z-10 -mx-4 border-b bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:border-none sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none",
         className,

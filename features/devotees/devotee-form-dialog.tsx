@@ -497,7 +497,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                                 size="icon-sm"
                                 onClick={clearSelectedFamily}
                                 aria-label={t("familySection.clearFamily")}
-                                className="absolute top-2 right-2"
+                                className="absolute top-2 right-2 max-md:size-11"
                               >
                                 <X className="size-4" />
                               </Button>
@@ -646,7 +646,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                             size="icon-sm"
                             onClick={clearSelectedFamily}
                             aria-label={t("familySection.clearFamily")}
-                            className="absolute top-2 right-2"
+                            className="absolute top-2 right-2 max-md:size-11"
                           >
                             <X className="size-4" />
                           </Button>
@@ -797,7 +797,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                                 <p className="text-xs text-muted-foreground">{t("familySection.currentFamily", { family: member.devotee.familyName })}</p>
                               )}
                             </div>
-                            <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeMember(member.localId)} aria-label={t("familySection.removeMember")}>
+                            <Button type="button" variant="ghost" size="icon-sm" className="max-md:size-11" onClick={() => removeMember(member.localId)} aria-label={t("familySection.removeMember")}>
                               <Trash2 className="size-4 text-destructive" />
                             </Button>
                           </div>

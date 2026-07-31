@@ -85,15 +85,15 @@ export function SpecialDaysTable({ specialDays }: { specialDays: TempleSpecialDa
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <p className="font-heading text-sm font-semibold">{t("cardTitle")}</p>
           <p className="text-sm text-muted-foreground">{t("cardDescription")}</p>
         </div>
         <SpecialDayFormDialog
           mode="create"
           trigger={
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="shrink-0 gap-1.5">
               <Plus className="size-4" />
               {t("addButton")}
             </Button>

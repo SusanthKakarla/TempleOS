@@ -60,14 +60,14 @@ function DateOnlyField({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="min-w-0 space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Popover>
         <PopoverTrigger
           render={
-            <Button type="button" variant="outline" size="xl" id={id} className="w-full justify-start gap-2 font-normal">
-              <CalendarIcon className="size-4 text-muted-foreground" />
-              {selected ? formatDate(selected, locale) : label}
+            <Button type="button" variant="outline" size="xl" id={id} className="w-full min-w-0 justify-start gap-2 font-normal">
+              <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+              {selected && <span className="truncate">{formatDate(selected, locale)}</span>}
             </Button>
           }
         />

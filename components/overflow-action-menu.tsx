@@ -40,7 +40,15 @@ export function OverflowActionMenu({ items, label = "More actions", stopPropagat
               className="max-md:size-11"
               aria-label={label}
               onClick={(event) => {
-                if (stopPropagation) event.stopPropagation();
+                if (stopPropagation) {
+                  // stopPropagation alone only blocks JS listeners on ancestors —
+                  // it does NOT cancel a wrapping <Link>'s native anchor
+                  // navigation (e.g. MobileListRow's href), so without
+                  // preventDefault() too, tapping this icon both opens the menu
+                  // AND navigates away immediately.
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
               }}
             />
           )

@@ -290,39 +290,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   return (
     <div className="space-y-6">
       <StickyToolbar>
-      <PageHeader
-        title={t("pageHeader.title")}
-        actions={
-          <>
-            <Link
-              href="/dashboard/donations/import"
-              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted lg:inline-flex"
-            >
-              <Upload className="size-4" />
-              {t("importButton")}
-            </Link>
-            <div className="hidden lg:block">
-              <ExportMenu exportUrl="/api/donations/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="donations" />
-            </div>
-            <OverflowActionMenu
-              label={tExport("exportButton")}
-              items={[
-                { label: t("importButton"), icon: <Upload className="size-4" />, onClick: () => router.push("/dashboard/donations/import") },
-                { label: tExport("exportButton"), icon: <Download className="size-4" />, onClick: () => setExportOpen(true) },
-              ]}
-            />
-            <ExportMenu
-              exportUrl="/api/donations/export"
-              filterParams={searchParams}
-              selectedIds={selectedIds}
-              moduleLabel="donations"
-              open={exportOpen}
-              onOpenChange={setExportOpen}
-              hideTrigger
-            />
-          </>
-        }
-      />
+      <PageHeader title={t("pageHeader.title")} />
 
       <ResponsiveSearchBar
         pathname={PATHNAME}
@@ -345,6 +313,26 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
             >
               {filterSheetContent}
             </FilterBottomSheet>
+            <Link
+              href="/dashboard/donations/import"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
+            >
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">{t("importButton")}</span>
+            </Link>
+            <Button variant="outline" className="shrink-0 gap-1.5" onClick={() => setExportOpen(true)}>
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{tExport("exportButton")}</span>
+            </Button>
+            <ExportMenu
+              exportUrl="/api/donations/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="donations"
+              open={exportOpen}
+              onOpenChange={setExportOpen}
+              hideTrigger
+            />
             <DonationFormDialog
               mode="create"
               devotees={devotees}

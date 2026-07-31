@@ -64,15 +64,15 @@ export function SevasTable({ sevas }: { sevas: TempleSeva[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <p className="font-heading text-sm font-semibold">{tForm("cardTitle")}</p>
           <p className="text-sm text-muted-foreground">{tForm("cardDescription")}</p>
         </div>
         <SevaFormDialog
           mode="create"
           trigger={
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="shrink-0 gap-1.5">
               <Plus className="size-4" />
               {tForm("addButton")}
             </Button>

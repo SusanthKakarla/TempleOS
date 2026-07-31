@@ -95,7 +95,7 @@ export function EventCard({
               event={event}
               onSaved={onSaved}
               trigger={
-                <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={tCommon("edit")}>
+                <Button variant="ghost" size="icon-sm" className="max-md:size-11" disabled={pending} aria-label={tCommon("edit")}>
                   <Pencil className="size-4" />
                 </Button>
               }
@@ -105,7 +105,7 @@ export function EventCard({
                 event={event}
                 onAnnounced={onSaved}
                 trigger={
-                  <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={t("buttons.announce")}>
+                  <Button variant="ghost" size="icon-sm" className="max-md:size-11" disabled={pending} aria-label={t("buttons.announce")}>
                     <Megaphone className="size-4" />
                   </Button>
                 }
@@ -115,6 +115,7 @@ export function EventCard({
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="max-md:size-11"
                 disabled={pending}
                 onClick={() => onReopen(event)}
                 aria-label={t("buttons.reopen")}
@@ -125,6 +126,7 @@ export function EventCard({
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="max-md:size-11"
                 disabled={pending}
                 onClick={() => onCancel(event)}
                 aria-label={tCommon("cancel")}
@@ -135,6 +137,7 @@ export function EventCard({
             <Button
               variant="destructive"
               size="icon-sm"
+              className="max-md:size-11"
               disabled={pending}
               onClick={() => onDelete(event)}
               aria-label={tCommon("delete")}

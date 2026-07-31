@@ -43,7 +43,7 @@ export function NotificationDetailDrawer({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={
-          <Button variant="ghost" size="icon-sm" aria-label={t("viewDetails")}>
+          <Button variant="ghost" size="icon-sm" className="max-md:size-11" aria-label={t("viewDetails")}>
             <Info className="size-4" />
           </Button>
         }

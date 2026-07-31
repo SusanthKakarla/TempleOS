@@ -182,7 +182,7 @@ export default async function SuperAdminTempleDetailPage({
 
         <TableShell>
           <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base font-semibold tracking-normal">
                 Members
               </h2>
@@ -191,7 +191,7 @@ export default async function SuperAdminTempleDetailPage({
                 assignments.
               </p>
             </div>
-            <Badge variant="secondary">{temple.members.length} active</Badge>
+            <Badge variant="secondary" className="shrink-0">{temple.members.length} active</Badge>
           </div>
           {temple.members.length === 0 ? (
             <EmptyState
