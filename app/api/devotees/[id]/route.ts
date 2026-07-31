@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deactivateDevotee, updateDevotee } from "@/lib/db/devotees";
+import { createFamilyForExistingDevotee } from "@/lib/db/devotee-families";
 import { updateDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
@@ -37,8 +38,24 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    const { newFamily, ...devoteeFields } = parsed.data;
+
+    // If creating a new family for this devotee, do it first so we can pass the familyId along
+    let resolvedFamilyId = devoteeFields.familyId;
+    if (newFamily) {
+      const family = await createFamilyForExistingDevotee(session.tenantId, id, newFamily.relationship, {
+        familyName: newFamily.familyName,
+        address: newFamily.address ?? null,
+        city: newFamily.city ?? null,
+        state: newFamily.state ?? null,
+        pincode: newFamily.pincode ?? null,
+      });
+      resolvedFamilyId = family.id;
+    }
+
     const devotee = await updateDevotee(session.tenantId, id, {
-      ...parsed.data,
+      ...devoteeFields,
+      familyId: resolvedFamilyId,
       whatsappPhone: normalizedPhone,
     });
     if (!devotee) {

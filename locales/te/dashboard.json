@@ -815,6 +815,32 @@
     "selectRow": "{name} ఎంచుకోండి",
     "optedIn": "చేరారు",
     "notOptedIn": "చేరలేదు",
+    "notificationTypeLabels": {
+      "birthday_devotee": "పుట్టినరోజు శుభాకాంక్షలు",
+      "birthday_priest": "పుట్టినరోజు శుభాకాంక్షలు (పూజారి)",
+      "user_welcome": "స్వాగతం",
+      "devotee_registered": "భక్తుడు నమోదు అయ్యారు",
+      "event_reminder": "కార్యక్రమ రిమైండర్",
+      "anniversary_devotee": "వార్షికోత్సవ శుభాకాంక్షలు",
+      "anniversary_priest": "వార్షికోత్సవ శుభాకాంక్షలు (పూజారి)",
+      "family_occasion_reminder": "కుటుంబ సందర్భం రిమైండర్",
+      "tenant_config_changed": "దేవాలయ కాన్ఫిగ్ మారింది",
+      "tenant_status_changed": "దేవాలయ స్థితి మారింది",
+      "donation_thank_you": "దానం ధన్యవాదాలు",
+      "donation_recorded": "దానం నమోదు అయింది",
+      "festival_greeting": "పండుగ శుభాకాంక్షలు",
+      "new_event": "కొత్త కార్యక్రమం",
+      "event_updated": "కార్యక్రమం నవీకరించబడింది",
+      "event_cancelled": "కార్యక్రమం రద్దు అయింది",
+      "event_announcement": "కార్యక్రమ ప్రకటన",
+      "campaign_broadcast": "ప్రచారం",
+      "donation_campaign_broadcast": "దాన ప్రచారం",
+      "donation_receipt": "దాన రసీదు",
+      "payment_captured": "చెల్లింపు అందింది",
+      "payment_failed": "చెల్లింపు విఫలమైంది",
+      "payment_refunded": "చెల్లింపు తిరిగి ఇవ్వబడింది",
+      "temple_announcement": "దేవాలయ ప్రకటన"
+    },
     "emptyState": {
       "title": "భక్తులు కనుగొనబడలేదు",
       "description": "భక్తులు ఆలయ వాట్సాప్ నంబర్‌కు సందేశం పంపిన తర్వాత ఇక్కడ కనిపిస్తారు, లేదా మీరు మాన్యువల్‌గా ఒకరిని జోడించవచ్చు."
@@ -831,6 +857,7 @@
     "formDialog": {
       "createTitle": "భక్తుడిని జోడించండి",
       "editTitle": "భక్తుడిని సవరించండి",
+      "createDescription": "భక్తుడిని జోడించి అవసరమైతే కుటుంబంలో చేర్చండి.",
       "editDescription": "ఈ భక్తుడి వివరాలను నవీకరించండి.",
       "registrationType": {
         "title": "మీరు ఎలా నమోదు చేయాలనుకుంటున్నారు?",
@@ -872,8 +899,44 @@
         "description": "కొత్త, నవీకరించిన లేదా రద్దైన కార్యక్రమాల గురించి స్వయంచాలకంగా తెలియజేయండి."
       },
       "whatsappStatus": {
-        "label": "వాట్సాప్ స్థితి",
-        "description": "భక్తుడు ఆలయ వాట్సాప్ నంబర్‌కు సందేశం పంపినప్పుడు స్వయంచాలకంగా సెట్ చేయబడుతుంది — మాన్యువల్‌గా సెట్ చేయలేరు."
+        "label": "వాట్సాప్ ఆప్ట్-ఇన్",
+        "description": "ఈ భక్తుడు వాట్సాప్ ప్రకటనలు మరియు ఆటోమేటెడ్ సందేశాలు అందుకునేలా అనుమతించండి."
+      },
+      "familySection": {
+        "title": "కుటుంబం / గృహం",
+        "description": "ఒక భక్తుడు ఒకేసారి ఒక ప్రస్తుత కుటుంబ గృహానికి మాత్రమే చెందుతారు.",
+        "modes": {
+          "none": "కుటుంబం లేదు",
+          "existing": "ఉన్న కుటుంబం",
+          "new": "కొత్త కుటుంబం"
+        },
+        "existingFamily": "ఉన్న కుటుంబం",
+        "existingFamilyPlaceholder": "కుటుంబం, పెద్ద, సభ్యుడు, ఫోన్, గ్రామం లేదా పిన్‌తో వెతకండి",
+        "typeToSearchFamilies": "కుటుంబాలను వెతకడానికి టైప్ చేయండి.",
+        "noFamiliesFound": "సరిపోలే కుటుంబాలు కనిపించలేదు.",
+        "headSummary": "పెద్ద: {name}",
+        "memberCount": "{count, plural, one {# సభ్యుడు} other {# సభ్యులు}}",
+        "similarFamiliesTitle": "ఇలాంటి కుటుంబాలు ఇప్పటికే ఉన్నాయి",
+        "primaryRelationship": "సంబంధం",
+        "relationship": "సంబంధం",
+        "relationshipPlaceholder": "సంబంధాన్ని ఎంచుకోండి",
+        "familyName": "కుటుంబం పేరు",
+        "address": "చిరునామా (ఐచ్ఛికం)",
+        "city": "నగరం (ఐచ్ఛికం)",
+        "state": "రాష్ట్రం (ఐచ్ఛికం)",
+        "pincode": "పిన్ కోడ్ (ఐచ్ఛికం)",
+        "members": "అదనపు కుటుంబ సభ్యులు",
+        "addNewMember": "కొత్త సభ్యుడు",
+        "search": "వెతకండి",
+        "searchExistingPlaceholder": "పేరు లేదా ఫోన్‌తో ఉన్న భక్తులను వెతకండి",
+        "newMember": "కొత్త కుటుంబ సభ్యుడు",
+        "memberName": "సభ్యుడి పేరు",
+        "memberPhone": "మొబైల్ నంబర్ (ఐచ్ఛికం)",
+        "removeMember": "సభ్యుడిని తొలగించండి",
+        "currentFamily": "ప్రస్తుత కుటుంబం: {family}",
+        "confirmMove": "ఈ భక్తుడిని వారి ప్రస్తుత కుటుంబం నుండి మార్చండి",
+        "clearFamily": "ఎంచుకున్న కుటుంబాన్ని క్లియర్ చేయండి",
+        "noPhone": "ఫోన్ నంబర్ లేదు"
       },
       "errorFallback": "భక్తుడిని సేవ్ చేయడంలో విఫలమైంది"
     },
@@ -960,7 +1023,9 @@
       "birthday": "పుట్టినరోజు",
       "anniversary": "వార్షికోత్సవం",
       "today": "ఈరోజు",
-      "inDays": "{count, plural, one {# రోజులో} other {# రోజుల్లో}}"
+      "inDays": "{count, plural, one {# రోజులో} other {# రోజుల్లో}}",
+      "notificationHistory": "నోటిఫికేషన్ చరిత్ర",
+      "noNotifications": "ఇంకా నోటిఫికేషన్‌లు పంపబడలేదు."
     },
     "donationsCard": {
       "title": "విరాళాలు",
@@ -1055,6 +1120,7 @@
     "deleteError": "విరాళాన్ని తొలగించడంలో విఫలమైంది",
     "anonymousDonor": "అనామక దాత",
     "manualDonorBadge": "నమోదు కాలేదు",
+    "nonCashBadge": "నగదేతరం",
     "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "సాధారణ విరాళం",
@@ -1076,12 +1142,20 @@
       "fields": {
         "devotee": "భక్తుడు",
         "devoteePlaceholder": "భక్తుడిని ఎంచుకోండి",
+        "devoteeSearchPlaceholder": "పేరు లేదా ఫోన్ ద్వారా భక్తులను వెతకండి",
+        "noDevoteesFound": "భక్తులు కనబడలేదు",
+        "noPhone": "ఫోన్ లేదు",
         "donationFor": "విరాళం దీని కోసం",
         "existingDevotee": "నమోదైన భక్తుడు",
         "manualDonor": "మాన్యువల్ దాత",
         "amount": "మొత్తం (₹)",
+        "amountPlaceholder": "మొత్తాన్ని నమోదు చేయండి",
         "customAmount": "అనుకూలం",
         "customAmountPlaceholder": "మొత్తాన్ని నమోదు చేయండి",
+        "nonCashDonation": "నగదేతర / వస్తు విరాళం",
+        "itemDescription": "వస్తువు వివరణ",
+        "itemDescriptionPlaceholder": "ఉదా. 5కిలోల బియ్యం, 20 కొబ్బరికాయలు",
+        "switchToCash": "నగదు విరాళం",
         "paymentMethod": "చెల్లింపు పద్ధతి",
         "purpose": "ప్రయోజనం",
         "purposePlaceholder": "ప్రయోజనాన్ని వివరించండి",
@@ -1092,6 +1166,7 @@
         "selectDevotee": "భక్తుడిని ఎంచుకోండి",
         "enterDonorName": "దాత పేరును నమోదు చేయండి",
         "invalidAmount": "సున్నా కంటే ఎక్కువ సరైన మొత్తాన్ని నమోదు చేయండి",
+        "enterItemDescription": "విరాళంగా ఇచ్చే వస్తువును వివరించండి",
         "enterPurpose": "ప్రయోజనాన్ని నమోదు చేయండి",
         "dateRequired": "విరాళ తేదీ అవసరం"
       },

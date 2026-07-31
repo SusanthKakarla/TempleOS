@@ -20,7 +20,7 @@ export function StickyToolbar({ children, className }: StickyToolbarProps) {
   return (
     <div
       className={cn(
-        "glass-card sticky top-0 z-20 space-y-3 rounded-2xl p-4 shadow-sm",
+        "sticky top-0 z-20 space-y-3 bg-background py-4",
         className,
       )}
     >

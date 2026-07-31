@@ -706,6 +706,13 @@ export interface DevoteeFamily {
   updatedAt: string;
 }
 
+export interface DevoteeFamilySummary extends DevoteeFamily {
+  primaryDevoteeName: string | null;
+  primaryDevoteePhone: string | null;
+  memberCount: number;
+  memberNames: string[];
+}
+
 export interface FamilyMember {
   id: string;
   familyId: string;
@@ -812,9 +819,11 @@ export interface Donation {
   tenantId: string;
   /** Null when this donation has no registered devotee — see manualDonor*. Exactly one of devoteeId / manualDonorName is ever set. */
   devoteeId: string | null;
-  amount: string; // NUMERIC comes back from pg as a string to avoid float precision loss on money
+  /** NUMERIC comes back from pg as a string to avoid float precision loss on money. Null for non-cash / in-kind donations. */
+  amount: string | null;
   purpose: string;
-  paymentMethod: PaymentMethod;
+  /** Null for non-cash / in-kind donations — see itemDescription. */
+  paymentMethod: PaymentMethod | null;
   notes: string | null;
   donatedAt: string;
   recordedBy: string | null;
@@ -824,6 +833,8 @@ export interface Donation {
   manualDonorEmail: string | null;
   manualDonorAddress: string | null;
   isAnonymous: boolean;
+  /** Description of a material / in-kind gift (e.g. "5kg rice"). Set only when amount and paymentMethod are null. */
+  itemDescription: string | null;
   createdAt: string;
   updatedAt: string;
 }

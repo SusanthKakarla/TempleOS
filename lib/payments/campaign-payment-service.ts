@@ -238,6 +238,7 @@ export async function runCaptureSideEffects(transactionId: string): Promise<void
         amount: transaction.amount,
         purpose: campaign?.linkedDonationPurpose ?? "online_donation",
         paymentMethod: "razorpay",
+        itemDescription: null,
         notes,
         donatedAt: new Date().toISOString(),
         recordedBy: null,

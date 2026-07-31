@@ -10,6 +10,11 @@ describe("createDevoteeSchema", () => {
     expect(result.dateOfBirth).toBeUndefined();
   });
 
+  it("accepts an explicit WhatsApp opt-in value", () => {
+    const result = createDevoteeSchema.parse({ ...base, whatsappOptInStatus: false });
+    expect(result.whatsappOptInStatus).toBe(false);
+  });
+
   it("rejects a blank name", () => {
     const result = createDevoteeSchema.safeParse({ ...base, displayName: "  " });
     expect(result.success).toBe(false);
@@ -42,6 +47,11 @@ describe("updateDevoteeSchema", () => {
     const result = updateDevoteeSchema.parse({ birthStar: "" });
     expect("birthStar" in result).toBe(true);
     expect(result.birthStar).toBeNull();
+  });
+
+  it("accepts an explicit WhatsApp opt-out on update", () => {
+    const result = updateDevoteeSchema.parse({ whatsappOptInStatus: false });
+    expect(result.whatsappOptInStatus).toBe(false);
   });
 
   it("rejects a malformed date of birth on update", () => {

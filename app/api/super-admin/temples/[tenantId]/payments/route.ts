@@ -87,7 +87,6 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         { status: 502 },
       );
     }
-
     const account = await connectPaymentAccountForSuperAdmin(tenantId, {
       providerKey: "razorpay",
       keyId: parsed.data.keyId,

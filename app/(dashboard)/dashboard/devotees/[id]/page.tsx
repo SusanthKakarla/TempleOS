@@ -1,24 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
+import { ArrowLeft, Bell, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getFamilyWithMembers } from "@/lib/db/devotee-families";
 import { listDonationsByDevotee } from "@/lib/db/donations";
+import { listNotificationsForDevotee } from "@/lib/db/notifications";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { formatInr } from "@/lib/currency";
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
+import { DevoteeDetailActions } from "@/features/devotees/devotee-detail-actions";
 import { translateFields } from "@/lib/i18n/translate-rows";
 
 interface DevoteeDetailPageProps {
   params: Promise<{ id: string }>;
 }
+
+const OPTED_IN_BADGE_CLASS =
+  "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100";
+const DONOR_BADGE_CLASS =
+  "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100";
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -45,9 +51,10 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
   const devoteeRaw = await getDevoteeById(session.tenantId, id);
   if (!devoteeRaw) notFound();
 
-  const [donations, familyRaw] = await Promise.all([
+  const [donations, familyRaw, notifications] = await Promise.all([
     listDonationsByDevotee(session.tenantId, id),
     devoteeRaw.familyId ? getFamilyWithMembers(session.tenantId, devoteeRaw.familyId) : Promise.resolve(null),
+    listNotificationsForDevotee(session.tenantId, id),
   ]);
 
   const [devotee] = await translateFields([devoteeRaw], locale, ["displayName", "birthStar", "ancestralLineage"]);
@@ -88,7 +95,7 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
       </Link>
 
       <FadeIn>
-      <Card className="glass-card gap-4 rounded-2xl p-5">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="size-12">
@@ -105,12 +112,16 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant={devotee.whatsappOptInStatus ? "default" : "secondary"}>
+            {devotee.isActive && <DevoteeDetailActions devotee={devotee} />}
+            <Badge
+              variant={devotee.whatsappOptInStatus ? "outline" : "secondary"}
+              className={devotee.whatsappOptInStatus ? OPTED_IN_BADGE_CLASS : undefined}
+            >
               <MessageCircle className="size-3.5" />
               {devotee.whatsappOptInStatus ? tDevotees("optedIn") : tDevotees("notOptedIn")}
             </Badge>
             {devotee.isDonor && (
-              <Badge className="gradient-saffron-gold text-saffron-foreground">
+              <Badge variant="outline" className={DONOR_BADGE_CLASS}>
                 <HandCoins className="size-3.5" />
                 {t("donor")}
               </Badge>
@@ -187,12 +198,12 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
             </div>
           </div>
         )}
-      </Card>
+      </div>
       </FadeIn>
 
       {family && (
         <FadeIn>
-          <Card className="glass-card gap-4 rounded-2xl p-5">
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
                 <UsersRound className="size-5 text-primary" />
@@ -264,11 +275,32 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
                 </ul>
               </div>
             )}
-          </Card>
+          </div>
         </FadeIn>
       )}
 
       <DevoteeDonationsCard devotee={devotee} donations={donations} />
+
+      <FadeIn>
+        <div className="space-y-4">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+            <Bell className="size-5 text-saffron" />
+            {t("notificationHistory")}
+          </h2>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noNotifications")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {notifications.map((n) => (
+                <li key={n.id} className="flex items-center justify-between gap-3 border-b pb-2 text-sm last:border-0 last:pb-0">
+                  <span>{tDevotees(`notificationTypeLabels.${n.notificationType}`)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(n.createdAt, locale)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </FadeIn>
     </div>
   );
 }

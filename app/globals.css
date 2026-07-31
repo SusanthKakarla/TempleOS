@@ -222,6 +222,7 @@ html[lang="te"] {
   }
   html {
     @apply font-sans scroll-smooth;
+    scrollbar-gutter: stable;
   }
   h1, h2, h3 {
     @apply font-heading;

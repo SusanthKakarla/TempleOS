@@ -7,6 +7,7 @@ const tenantDashboardApiRoutes = [
   "app/api/events/[id]/route.ts",
   "app/api/events/[id]/announce/route.ts",
   "app/api/devotees/route.ts",
+  "app/api/devotees/registration/route.ts",
   "app/api/devotees/[id]/route.ts",
   "app/api/devotees/[id]/donations/route.ts",
   "app/api/devotees/families/route.ts",

@@ -71,11 +71,12 @@ export async function listCampaignDonations(tenantId: string, purpose: string, l
     id: string;
     devotee_id: string;
     donor_name: string;
-    amount: string;
-    payment_method: string;
+    amount: string | null;
+    payment_method: string | null;
+    item_description: string | null;
     donated_at: Date;
   }>(
-    `SELECT d.id, d.devotee_id, dv.display_name AS donor_name, d.amount, d.payment_method, d.donated_at
+    `SELECT d.id, d.devotee_id, dv.display_name AS donor_name, d.amount, d.payment_method, d.item_description, d.donated_at
      FROM donations d
      JOIN devotees dv ON dv.id = d.devotee_id
      WHERE d.tenant_id = $1 AND d.purpose = $2
@@ -89,6 +90,7 @@ export async function listCampaignDonations(tenantId: string, purpose: string, l
     donorName: row.donor_name,
     amount: row.amount,
     paymentMethod: row.payment_method,
+    itemDescription: row.item_description,
     donatedAt: row.donated_at.toISOString(),
   }));
 }

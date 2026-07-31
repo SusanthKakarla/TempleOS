@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from "@/types/db";
+import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS, RELATIONSHIP_CODES } from "@/types/db";
 
 const nullableTrimmedString = z
   .string()
@@ -26,6 +26,7 @@ const familyIdSchema = z.string().uuid().nullable().optional();
 export const createDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required"),
   displayName: z.string().trim().min(1, "Name is required").max(200),
+  whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
@@ -34,9 +35,19 @@ export const createDevoteeSchema = z.object({
   weddingAnniversary: dateOfBirthSchema,
 });
 
+export const newFamilyForDevoteeSchema = z.object({
+  familyName: z.string().trim().min(1, "Family name is required").max(200),
+  relationship: z.enum(RELATIONSHIP_CODES),
+  address: z.string().trim().optional().nullable(),
+  city: z.string().trim().optional().nullable(),
+  state: z.string().trim().optional().nullable(),
+  pincode: z.string().trim().optional().nullable(),
+});
+
 export const updateDevoteeSchema = z.object({
   whatsappPhone: z.string().trim().min(1, "Phone number is required").optional(),
   displayName: z.string().trim().min(1, "Name is required").max(200).optional(),
+  whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,
   ancestralLineage: nullableTrimmedString,
@@ -48,6 +59,7 @@ export const updateDevoteeSchema = z.object({
   address: nullableTrimmedString,
   notes: nullableTrimmedString,
   preferredLanguage: preferredLanguageSchema,
+  newFamily: newFamilyForDevoteeSchema.optional(),
 });
 
 export type CreateDevoteePayload = z.infer<typeof createDevoteeSchema>;

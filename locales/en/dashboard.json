@@ -812,6 +812,32 @@
     "selectRow": "Select {name}",
     "optedIn": "Opted in",
     "notOptedIn": "Not opted in",
+    "notificationTypeLabels": {
+      "birthday_devotee": "Birthday wish",
+      "birthday_priest": "Birthday wish (priest)",
+      "user_welcome": "Welcome",
+      "devotee_registered": "Devotee registered",
+      "event_reminder": "Event reminder",
+      "anniversary_devotee": "Anniversary wish",
+      "anniversary_priest": "Anniversary wish (priest)",
+      "family_occasion_reminder": "Family occasion reminder",
+      "tenant_config_changed": "Temple config changed",
+      "tenant_status_changed": "Temple status changed",
+      "donation_thank_you": "Donation thank you",
+      "donation_recorded": "Donation recorded",
+      "festival_greeting": "Festival greeting",
+      "new_event": "New event",
+      "event_updated": "Event updated",
+      "event_cancelled": "Event cancelled",
+      "event_announcement": "Event announcement",
+      "campaign_broadcast": "Campaign broadcast",
+      "donation_campaign_broadcast": "Donation campaign",
+      "donation_receipt": "Donation receipt",
+      "payment_captured": "Payment received",
+      "payment_failed": "Payment failed",
+      "payment_refunded": "Payment refunded",
+      "temple_announcement": "Temple announcement"
+    },
     "emptyState": {
       "title": "No devotees found",
       "description": "Devotees appear here once they message the temple WhatsApp number, or you can add one manually."
@@ -828,6 +854,7 @@
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
+      "createDescription": "Add a devotee and optionally place them in a family.",
       "editDescription": "Update this devotee's details.",
       "registrationType": {
         "title": "How would you like to register?",
@@ -869,8 +896,44 @@
         "description": "Automatically notify about new, updated, or cancelled events."
       },
       "whatsappStatus": {
-        "label": "WhatsApp status",
-        "description": "Set automatically when a devotee messages the temple WhatsApp number — can't be set manually."
+        "label": "WhatsApp opt-in",
+        "description": "Allow this devotee to receive WhatsApp announcements and automated messages."
+      },
+      "familySection": {
+        "title": "Family / household",
+        "description": "A devotee can belong to one current family household at a time.",
+        "modes": {
+          "none": "No family",
+          "existing": "Existing family",
+          "new": "New family"
+        },
+        "existingFamily": "Existing family",
+        "existingFamilyPlaceholder": "Search by family, head, member, phone, village, or PIN",
+        "typeToSearchFamilies": "Type to search families.",
+        "noFamiliesFound": "No matching families found.",
+        "headSummary": "Head: {name}",
+        "memberCount": "{count, plural, one {# member} other {# members}}",
+        "similarFamiliesTitle": "Similar families already exist",
+        "primaryRelationship": "Relationship",
+        "relationship": "Relationship",
+        "relationshipPlaceholder": "Select relationship",
+        "familyName": "Family name",
+        "address": "Address (optional)",
+        "city": "City (optional)",
+        "state": "State (optional)",
+        "pincode": "PIN code (optional)",
+        "members": "Additional family members",
+        "addNewMember": "New member",
+        "search": "Search",
+        "searchExistingPlaceholder": "Search existing devotees by name or phone",
+        "newMember": "New family member",
+        "memberName": "Member name",
+        "memberPhone": "Mobile number (optional)",
+        "removeMember": "Remove member",
+        "currentFamily": "Current family: {family}",
+        "confirmMove": "Move this devotee from their current family",
+        "clearFamily": "Clear selected family",
+        "noPhone": "No phone number"
       },
       "errorFallback": "Failed to save devotee"
     },
@@ -957,7 +1020,9 @@
       "birthday": "Birthday",
       "anniversary": "Anniversary",
       "today": "Today",
-      "inDays": "in {count, plural, one {# day} other {# days}}"
+      "inDays": "in {count, plural, one {# day} other {# days}}",
+      "notificationHistory": "Notification history",
+      "noNotifications": "No notifications sent yet."
     },
     "donationsCard": {
       "title": "Donations",
@@ -1049,6 +1114,7 @@
     "deleteError": "Failed to delete donation",
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
+    "nonCashBadge": "Non-cash",
     "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
     "purposePresets": {
       "generalDonation": "General Donation",
@@ -1070,12 +1136,20 @@
       "fields": {
         "devotee": "Devotee",
         "devoteePlaceholder": "Select a devotee",
+        "devoteeSearchPlaceholder": "Search devotees by name or phone",
+        "noDevoteesFound": "No devotees found",
+        "noPhone": "No phone",
         "donationFor": "Donation for",
         "existingDevotee": "Existing devotee",
         "manualDonor": "Manual donor",
         "amount": "Amount (₹)",
+        "amountPlaceholder": "Enter amount",
         "customAmount": "Custom",
         "customAmountPlaceholder": "Enter amount",
+        "nonCashDonation": "Non-cash / Material Donation",
+        "itemDescription": "Item description",
+        "itemDescriptionPlaceholder": "e.g. 5kg rice, 20 coconuts",
+        "switchToCash": "Cash donation",
         "paymentMethod": "Payment method",
         "purpose": "Purpose",
         "purposePlaceholder": "Describe the purpose",
@@ -1086,6 +1160,7 @@
         "selectDevotee": "Select a devotee",
         "enterDonorName": "Enter the donor's name",
         "invalidAmount": "Enter a valid amount greater than zero",
+        "enterItemDescription": "Describe the item being donated",
         "enterPurpose": "Enter a purpose",
         "dateRequired": "Donation date is required"
       },

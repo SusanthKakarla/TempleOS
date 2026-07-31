@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     const devotee = await createDevotee(session.tenantId, {
       whatsappPhone: normalizedPhone,
       displayName: parsed.data.displayName,
+      whatsappOptInStatus: parsed.data.whatsappOptInStatus ?? true,
       dateOfBirth: parsed.data.dateOfBirth ?? null,
       birthStar: parsed.data.birthStar ?? null,
       ancestralLineage: parsed.data.ancestralLineage ?? null,

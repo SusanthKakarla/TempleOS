@@ -74,3 +74,42 @@ Calm, reverent, and effortless. TempleOS should feel like walking into a well-ke
 - Overloaded navigation: mobile has four tabs, desktop has four links plus Donate. Resist adding more.
 - Deep-linking devotees into dead ends: every screen offers a clear way forward (watch, directions, next event, donate).
 
+---
+
+## Admin Dashboard Principles
+
+The dashboard is used by temple staff and administrators — often on a phone, between other duties. Apply the same mobile-first constraint, but the goal here is speed and clarity for repeated use rather than first impressions.
+
+### Layout
+
+**No nested containers.** Tab panels, form sections, and data tables do not need a card wrapper just because they exist. The tab itself is the container. Wrapping content in a `Card` inside a `SettingsSection` inside a tab panel is three levels of indentation for no organisational gain — it eats horizontal space on mobile and adds visual noise. Render flat.
+
+**No collapsible wrappers around full-page content.** A collapsible that wraps 100% of a settings page just adds a mandatory tap before the user can do anything. Use tabs for organisation; only use collapsibles when a section is genuinely optional or advanced and its default-closed state is the right default for most users.
+
+**Consolidate related features into one place.** Don't split related UI across the page based on state (e.g. showing a connection card above settings when disconnected and below when connected). Put it in the tab where it belongs and keep it there always.
+
+### Content
+
+**Remove subtitle text that restates the obvious.** `PageHeader` subtitles like "Changes take effect immediately, no deployment needed" are noise for repeat users. If the information is genuinely important, it belongs closer to the field it describes, not in a header above unrelated content.
+
+**Don't add context banners that duplicate the UI.** A "Connect your WhatsApp first" prompt banner above a connection card is redundant — the card already communicates the unconnected state. One surface per concept.
+
+### Navigation
+
+**Scrollable tab lists need a visible overflow hint.** When a `TabsList` can scroll horizontally, add a right-edge fade gradient (`pointer-events-none absolute right-0 bg-gradient-to-l from-background`) so users know there are more tabs off-screen. Never rely on hidden scrollbars alone.
+
+**Section headings within a tab panel** use `font-heading text-sm font-semibold`. Plain `font-medium` at the same size as body text doesn't create enough hierarchy — the heading has to read as a heading without being large.
+
+**Section dividers between groups within a tab** use a simple `<div className="border-t" />` — not a new card, not a heading with a background, not a collapsible. The separation cue should be as quiet as possible while still being visible.
+
+### Forms
+
+**The Save button belongs at the bottom of the form, not in a CardFooter.** When there is no card, place the submit button as the last element in the `<form>`. No `form`+`id` split pattern unless the form genuinely wraps elements outside a natural parent.
+
+**Each tab panel section that has a title and description** renders them as:
+```tsx
+<p className="font-heading text-sm font-semibold">{title}</p>
+<p className="text-sm text-muted-foreground">{description}</p>
+```
+Not as `CardTitle`/`CardDescription` — those imply a Card surface.
+

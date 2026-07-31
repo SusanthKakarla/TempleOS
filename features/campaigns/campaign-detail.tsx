@@ -8,7 +8,6 @@ import { Archive, ArrowLeft, CalendarClock, Copy, Eye, HandCoins, Pause, Play, S
 import type { Campaign, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -16,14 +15,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { formatDate, formatDateTime } from "@/lib/date";
-import { formatInr } from "@/lib/currency";
+import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
 
 interface CampaignAnalytics {
   delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
   donation: { totalAmount: number; donationCount: number; donorCount: number } | null;
-  donations: { id: string; donorName: string; amount: string; paymentMethod: string; donatedAt: string }[];
+  donations: { id: string; donorName: string; amount: string | null; paymentMethod: string | null; itemDescription: string | null; donatedAt: string }[];
 }
 
 const STATUS_BADGE_VARIANT: Record<Campaign["status"], "default" | "secondary" | "destructive" | "outline"> = {
@@ -240,18 +239,12 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
           <TabsTrigger value="analytics">{tDetail("tabs.analytics")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>{tDetail("aboutTitle")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{campaign.description || tDetail("noDescription")}</p>
-              {campaign.customMessage && (
-                <div className="mt-4 rounded-xl border bg-muted/40 p-4 text-sm whitespace-pre-wrap">{campaign.customMessage}</div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="overview" className="space-y-3">
+          <p className="font-heading text-sm font-semibold">{tDetail("aboutTitle")}</p>
+          <p className="text-sm text-muted-foreground">{campaign.description || tDetail("noDescription")}</p>
+          {campaign.customMessage && (
+            <div className="rounded-xl border bg-muted/40 p-4 text-sm whitespace-pre-wrap">{campaign.customMessage}</div>
+          )}
         </TabsContent>
 
         {campaign.linkedDonationPurpose && (
@@ -262,29 +255,27 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
               <StatCard label={tDetail("tabs.donations")} value={analytics?.donation?.donationCount ?? 0} />
             </div>
             {campaign.goalAmount && (
-              <Card size="sm">
-                <CardContent className="space-y-2">
-                  {(() => {
-                    const goal = Number(campaign.goalAmount);
-                    const raised = Number(analytics?.donation?.totalAmount ?? 0);
-                    const rawPercentage = computeRaisedPercentage(raised, goal);
-                    const displayPercentage = Math.min(100, Math.round(rawPercentage));
-                    return (
-                      <>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {tDetail("goalProgress", { raised: formatInr(raised), goal: formatInr(goal) })}
-                          </span>
-                          <span className="font-medium tabular-nums">
-                            {rawPercentage >= 100 ? tDetail("goalReached") : `${displayPercentage}%`}
-                          </span>
-                        </div>
-                        <Progress value={displayPercentage} />
-                      </>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+              <div className="space-y-2 rounded-xl border bg-muted/40 p-3">
+                {(() => {
+                  const goal = Number(campaign.goalAmount);
+                  const raised = Number(analytics?.donation?.totalAmount ?? 0);
+                  const rawPercentage = computeRaisedPercentage(raised, goal);
+                  const displayPercentage = Math.min(100, Math.round(rawPercentage));
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {tDetail("goalProgress", { raised: formatInr(raised), goal: formatInr(goal) })}
+                        </span>
+                        <span className="font-medium tabular-nums">
+                          {rawPercentage >= 100 ? tDetail("goalReached") : `${displayPercentage}%`}
+                        </span>
+                      </div>
+                      <Progress value={displayPercentage} />
+                    </>
+                  );
+                })()}
+              </div>
             )}
             {!analytics || analytics.donations.length === 0 ? (
               <EmptyState icon={<HandCoins className="size-6" />} title={tDetail("donationsEmpty")} />
@@ -301,7 +292,7 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
                   {analytics.donations.map((donation) => (
                     <TableRow key={donation.id}>
                       <TableCell className="font-medium">{donation.donorName}</TableCell>
-                      <TableCell className="tabular-nums">{formatInr(Number(donation.amount))}</TableCell>
+                      <TableCell className="tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDateTime(donation.donatedAt, locale)}</TableCell>
                     </TableRow>
                   ))}
@@ -355,11 +346,9 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <Card size="sm">
-      <CardContent className="space-y-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-heading text-xl font-semibold tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
+    <div className="glass-card space-y-1 rounded-2xl p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-heading text-xl font-semibold tabular-nums">{value}</p>
+    </div>
   );
 }

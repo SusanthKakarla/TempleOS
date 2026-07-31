@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
 import { createAuditLogEntry } from "./audit-log";
@@ -267,12 +268,12 @@ export async function createTenantForSuperAdmin(
   return mapTenant(rows[0]);
 }
 
-export async function getTenantById(tenantId: string): Promise<Tenant | null> {
+export const getTenantById = cache(async (tenantId: string): Promise<Tenant | null> => {
   const { rows } = await getPool().query<TenantRow>("SELECT * FROM tenants WHERE id = $1", [
     tenantId,
   ]);
   return rows[0] ? mapTenant(rows[0]) : null;
-}
+});
 
 /** Public-facing lookup (the donation page resolves a tenant from its URL slug, not a session). */
 export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
