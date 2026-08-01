@@ -78,7 +78,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   if (featureBlocked) return featureBlocked;
 
   const { id } = await params;
-  const deleted = await deleteDonation(session.tenantId, id);
+  const deleted = await deleteDonation(session.tenantId, id, session.membershipId);
   if (!deleted) {
     return NextResponse.json({ error: "Donation not found" }, { status: 404 });
   }

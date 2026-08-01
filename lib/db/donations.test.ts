@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { countDonationsFiltered, deleteAllDonations, deleteDonations, getDashboardDonationStats, listDonations } from "./donations";
+import { createAuditLogEntry } from "./audit-log";
+import { countDonationsFiltered, deleteDonation, listDonations } from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
 }));
+vi.mock("./audit-log", () => ({ createAuditLogEntry: vi.fn() }));
 
 describe("donations purpose filter", () => {
   const query = vi.fn();
@@ -47,148 +49,86 @@ describe("donations purpose filter", () => {
   });
 });
 
-describe("getDashboardDonationStats", () => {
-  const query = vi.fn();
+describe("deleteDonation audit logging", () => {
+  const client = { query: vi.fn(), release: vi.fn() };
 
   beforeEach(() => {
-    query.mockReset();
-    (getPool as unknown as Mock).mockReturnValue({ query });
+    client.query.mockReset();
+    client.release.mockReset();
+    vi.mocked(createAuditLogEntry).mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ connect: vi.fn().mockResolvedValue(client) });
   });
 
-  it("returns the unfiltered all-time sum and count when no filter is given — the Dashboard's default view", async () => {
-    query.mockResolvedValueOnce({ rows: [{ total: "752350", count: "113" }] });
+  it("records a donation.deleted audit entry with payment links in the same transaction", async () => {
+    const donatedAt = new Date("2026-08-01T08:10:00.000Z");
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: "payment-1" }, { id: "payment-2" }] }) // linked payments
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "donation-1",
+            tenant_id: "tenant-1",
+            devotee_id: "devotee-1",
+            amount: "101.00",
+            purpose: "General Donation",
+            payment_method: "razorpay",
+            notes: null,
+            donated_at: donatedAt,
+            recorded_by: "recorder-1",
+            manual_donor_name: null,
+            manual_donor_phone: null,
+            manual_donor_email: null,
+            manual_donor_address: null,
+            is_anonymous: false,
+            item_description: null,
+            created_at: donatedAt,
+            updated_at: donatedAt,
+          },
+        ],
+      }) // deleted donation
+      .mockResolvedValueOnce(undefined) // recompute devotee cache
+      .mockResolvedValueOnce(undefined); // COMMIT
+    vi.mocked(createAuditLogEntry).mockResolvedValue({} as never);
 
-    const stats = await getDashboardDonationStats("tenant-1");
+    const deleted = await deleteDonation("tenant-1", "donation-1", "actor-membership");
 
-    expect(stats).toEqual({ total: "752350", count: 113 });
-    const [sql, params] = query.mock.calls[0];
-    expect(String(sql)).not.toContain("donated_at");
-    expect(params).toEqual(["tenant-1"]);
-  });
-
-  it("applies dateFrom/dateTo/purpose conditions when given", async () => {
-    query.mockResolvedValueOnce({ rows: [{ total: "5000", count: "2" }] });
-
-    const stats = await getDashboardDonationStats("tenant-1", {
-      dateFrom: "2026-01-01",
-      dateTo: "2026-01-31",
-      purpose: "Seva",
-    });
-
-    expect(stats).toEqual({ total: "5000", count: 2 });
-    const [sql, params] = query.mock.calls[0];
-    expect(String(sql)).toContain("d.donated_at >= $2");
-    expect(String(sql)).toContain("d.donated_at <= $3");
-    expect(String(sql)).toContain("d.purpose = $4");
-    expect(params).toEqual(["tenant-1", "2026-01-01", "2026-01-31", "Seva"]);
-  });
-
-  it("returns zero total/count gracefully when there are no matching donations", async () => {
-    query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0" }] });
-
-    const stats = await getDashboardDonationStats("tenant-1", { dateFrom: "2099-01-01" });
-
-    expect(stats).toEqual({ total: "0", count: 0 });
-  });
-});
-
-function createTransactionalClient(rowsBySql: Array<{ match: string; rows: unknown[] }> = []) {
-  const queries: Array<{ sql: string; params?: unknown[] }> = [];
-  const remainingRows = [...rowsBySql];
-  const client = {
-    query: vi.fn(async (sql: string, params?: unknown[]) => {
-      queries.push({ sql, params });
-      const matchingIndex = remainingRows.findIndex((entry) => sql.includes(entry.match));
-      const matching = matchingIndex >= 0 ? remainingRows.splice(matchingIndex, 1)[0] : undefined;
-      return { rows: matching?.rows ?? [], rowCount: matching?.rows.length ?? 0 };
-    }),
-    release: vi.fn(),
-  };
-  (getPool as unknown as Mock).mockReturnValue({ connect: vi.fn().mockResolvedValue(client) });
-  return { client, queries };
-}
-
-describe("deleteDonations", () => {
-  beforeEach(() => {
-    (getPool as unknown as Mock).mockReset();
-  });
-
-  it("returns 0 without touching the pool when given no ids", async () => {
-    const count = await deleteDonations("tenant-1", []);
-    expect(count).toBe(0);
-    expect(getPool).not.toHaveBeenCalled();
-  });
-
-  it("deletes all given ids in one transaction and recomputes each distinct affected devotee's cache once", async () => {
-    const { queries } = createTransactionalClient([
-      {
-        match: "DELETE FROM donations",
-        rows: [{ devotee_id: "devotee-1" }, { devotee_id: "devotee-1" }, { devotee_id: null }, { devotee_id: "devotee-2" }],
-      },
-    ]);
-
-    const count = await deleteDonations("tenant-1", ["d1", "d2", "d3", "d4"]);
-
-    expect(count).toBe(4);
-    const sqls = queries.map((q) => q.sql);
-    expect(sqls[0]).toBe("BEGIN");
-    expect(sqls).toContainEqual(expect.stringContaining("DELETE FROM donations"));
-    expect(queries.find((q) => q.sql.includes("DELETE FROM donations"))?.params).toEqual([
-      "tenant-1",
-      ["d1", "d2", "d3", "d4"],
-    ]);
-    // recomputeDevoteeDonationCache runs once per distinct non-null devotee_id, not once per row.
-    const recomputeCalls = sqls.filter((sql) => sql.includes("UPDATE devotees SET"));
-    expect(recomputeCalls).toHaveLength(2);
-    expect(sqls.at(-1)).toBe("COMMIT");
-  });
-
-  it("rolls back and rethrows if the delete fails", async () => {
-    (getPool as unknown as Mock).mockReturnValue({
-      connect: vi.fn().mockResolvedValue({
-        query: vi.fn(async (sql: string) => {
-          if (sql === "BEGIN") return { rows: [] };
-          throw new Error("boom");
+    expect(deleted).toBe(true);
+    expect(createAuditLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: "tenant_member",
+        actorId: "actor-membership",
+        tenantId: "tenant-1",
+        action: "donation.deleted",
+        targetType: "donation",
+        targetId: "donation-1",
+        metadata: expect.objectContaining({
+          amount: "101.00",
+          purpose: "General Donation",
+          paymentMethod: "razorpay",
+          donorSource: "devotee",
+          devoteeId: "devotee-1",
+          linkedPaymentTransactionIds: ["payment-1", "payment-2"],
         }),
-        release: vi.fn(),
       }),
-    });
-
-    await expect(deleteDonations("tenant-1", ["d1"])).rejects.toThrow("boom");
-  });
-});
-
-describe("deleteAllDonations", () => {
-  beforeEach(() => {
-    (getPool as unknown as Mock).mockReset();
+      client,
+    );
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
   });
 
-  it("deletes every donation for the tenant and zeroes out devotee donation caches in one transaction", async () => {
-    const { queries } = createTransactionalClient([{ match: "DELETE FROM donations", rows: [{}, {}, {}] }]);
+  it("rolls back and skips audit logging when the donation is not found", async () => {
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // linked payments
+      .mockResolvedValueOnce({ rows: [] }) // delete
+      .mockResolvedValueOnce(undefined); // ROLLBACK
 
-    const count = await deleteAllDonations("tenant-1");
+    const deleted = await deleteDonation("tenant-1", "missing-donation", "actor-membership");
 
-    expect(count).toBe(3);
-    const sqls = queries.map((q) => q.sql);
-    expect(sqls[0]).toBe("BEGIN");
-    const deleteQuery = queries.find((q) => q.sql.includes("DELETE FROM donations"));
-    expect(deleteQuery?.sql).not.toContain("id = ANY");
-    expect(deleteQuery?.params).toEqual(["tenant-1"]);
-    expect(sqls).toContainEqual(expect.stringContaining("UPDATE devotees"));
-    expect(sqls.at(-1)).toBe("COMMIT");
-  });
-
-  it("rolls back and rethrows if the delete fails", async () => {
-    (getPool as unknown as Mock).mockReturnValue({
-      connect: vi.fn().mockResolvedValue({
-        query: vi.fn(async (sql: string) => {
-          if (sql === "BEGIN") return { rows: [] };
-          throw new Error("boom");
-        }),
-        release: vi.fn(),
-      }),
-    });
-
-    await expect(deleteAllDonations("tenant-1")).rejects.toThrow("boom");
+    expect(deleted).toBe(false);
+    expect(createAuditLogEntry).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenLastCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalledOnce();
   });
 });

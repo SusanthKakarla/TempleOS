@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { getPool } from "./pool";
+import { createAuditLogEntry } from "./audit-log";
 import type { Donation, DonationSummary, DonationWithDonor, PaymentMethod } from "@/types/db";
 import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
@@ -266,19 +267,50 @@ export async function updateDonation(
   }
 }
 
-export async function deleteDonation(tenantId: string, donationId: string): Promise<boolean> {
+export async function deleteDonation(tenantId: string, donationId: string, actorMembershipId: string): Promise<boolean> {
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");
-    const { rows } = await client.query<{ devotee_id: string | null }>(
-      "DELETE FROM donations WHERE tenant_id = $1 AND id = $2 RETURNING devotee_id",
+
+    const linkedPayments = await client.query<{ id: string }>(
+      "SELECT id FROM payment_transactions WHERE tenant_id = $1 AND donation_id = $2 ORDER BY created_at ASC",
       [tenantId, donationId],
     );
-    if (!rows[0]) {
+
+    const { rows } = await client.query<DonationRow>(
+      "DELETE FROM donations WHERE tenant_id = $1 AND id = $2 RETURNING *",
+      [tenantId, donationId],
+    );
+    const deleted = rows[0];
+    if (!deleted) {
       await client.query("ROLLBACK");
       return false;
     }
-    await recomputeDevoteeDonationCache(client, rows[0].devotee_id);
+
+    await createAuditLogEntry(
+      {
+        actorType: "tenant_member",
+        actorId: actorMembershipId,
+        tenantId,
+        action: "donation.deleted",
+        targetType: "donation",
+        targetId: donationId,
+        metadata: {
+          amount: deleted.amount,
+          purpose: deleted.purpose,
+          paymentMethod: deleted.payment_method,
+          itemDescription: deleted.item_description,
+          donatedAt: deleted.donated_at.toISOString(),
+          donorSource: deleted.devotee_id ? "devotee" : "manual",
+          devoteeId: deleted.devotee_id,
+          manualDonorPresent: deleted.manual_donor_name !== null,
+          isAnonymous: deleted.is_anonymous,
+          linkedPaymentTransactionIds: linkedPayments.rows.map((row) => row.id),
+        },
+      },
+      client,
+    );
+    await recomputeDevoteeDonationCache(client, deleted.devotee_id);
     await client.query("COMMIT");
     return true;
   } catch (err) {
