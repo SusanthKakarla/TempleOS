@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { DateRangePicker } from "@/components/ui/date-picker";
 import {
   Table,
   TableBody,
@@ -33,7 +32,7 @@ import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
 import { formatDonationAmount } from "@/lib/currency";
-import { formatDate } from "@/lib/date";
+import { formatDate, toISODateString } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
 import { ExportMenu } from "@/features/export/export-menu";
@@ -45,29 +44,25 @@ const PATHNAME = "/dashboard/donations";
 
 type DatePreset = "today" | "last7" | "last30" | "thisMonth" | "custom";
 
-function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function rangeForPreset(preset: DatePreset): { dateFrom: string; dateTo: string } | null {
   const today = new Date();
-  const todayIso = toISODate(today);
+  const todayIso = toISODateString(today);
   switch (preset) {
     case "today":
       return { dateFrom: todayIso, dateTo: todayIso };
     case "last7": {
       const from = new Date(today);
       from.setDate(from.getDate() - 6);
-      return { dateFrom: toISODate(from), dateTo: todayIso };
+      return { dateFrom: toISODateString(from), dateTo: todayIso };
     }
     case "last30": {
       const from = new Date(today);
       from.setDate(from.getDate() - 29);
-      return { dateFrom: toISODate(from), dateTo: todayIso };
+      return { dateFrom: toISODateString(from), dateTo: todayIso };
     }
     case "thisMonth": {
       const from = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { dateFrom: toISODate(from), dateTo: todayIso };
+      return { dateFrom: toISODateString(from), dateTo: todayIso };
     }
     case "custom":
       return null;
@@ -233,34 +228,17 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
           </SelectContent>
         </Select>
         {pendingFilters.preset === "custom" && (
-          <Popover>
-            <PopoverTrigger
-              render={
-                <Button variant="outline" className="w-full justify-start font-normal">
-                  {pendingFilters.dateFrom && pendingFilters.dateTo
-                    ? `${pendingFilters.dateFrom} → ${pendingFilters.dateTo}`
-                    : t("filters.pickCustomRange")}
-                </Button>
-              }
-            />
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: pendingFilters.dateFrom ? new Date(pendingFilters.dateFrom) : undefined,
-                  to: pendingFilters.dateTo ? new Date(pendingFilters.dateTo) : undefined,
-                }}
-                onSelect={(range) =>
-                  setPendingFilters((f) => ({
-                    ...f,
-                    dateFrom: range?.from ? toISODate(range.from) : "",
-                    dateTo: range?.to ? toISODate(range.to) : "",
-                  }))
-                }
-                autoFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <DateRangePicker
+            placeholder={t("filters.pickCustomRange")}
+            value={{ from: pendingFilters.dateFrom || undefined, to: pendingFilters.dateTo || undefined }}
+            onChange={(range) =>
+              setPendingFilters((f) => ({
+                ...f,
+                dateFrom: range.from ?? "",
+                dateTo: range.to ?? "",
+              }))
+            }
+          />
         )}
       </div>
       <div className="space-y-1.5">

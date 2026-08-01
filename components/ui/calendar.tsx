@@ -199,6 +199,7 @@ function CalendarDayButton({
       variant="ghost"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}
+      data-focus-target={modifiers.focused || undefined}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

@@ -8,6 +8,7 @@ import { ChevronDown, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
 import type { Devotee, DevoteeFamily, Gender, MaritalStatus, RelationshipCode } from "@/types/db";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS, RELATIONSHIP_CODES } from "@/types/db";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -422,11 +423,11 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="memberDraftDob">{t("fields.dateOfBirth")}</Label>
-                  <Input
+                  <DatePicker
                     id="memberDraftDob"
-                    type="date"
                     value={memberDraft.dateOfBirth}
-                    onChange={(e) => updateMemberDraft({ dateOfBirth: e.target.value })}
+                    onChange={(value) => updateMemberDraft({ dateOfBirth: value })}
+                    maxDate={new Date()}
                   />
                 </div>
                 <div className="space-y-2">
@@ -469,11 +470,11 @@ export function FamilyFormWizard({ mode, family, members: initialMembers }: Fami
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="memberDraftAnniversary">{t("fields.weddingAnniversary")}</Label>
-                  <Input
+                  <DatePicker
                     id="memberDraftAnniversary"
-                    type="date"
                     value={memberDraft.weddingAnniversary}
-                    onChange={(e) => updateMemberDraft({ weddingAnniversary: e.target.value })}
+                    onChange={(value) => updateMemberDraft({ weddingAnniversary: value })}
+                    maxDate={new Date()}
                   />
                 </div>
                 <div className="space-y-2">

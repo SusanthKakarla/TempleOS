@@ -1,28 +1,8 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
-import { CalendarIcon } from "lucide-react";
-import type { SupportedLanguage } from "@/types/db";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatDate } from "@/lib/date";
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function splitValue(value: string): { datePart: string } {
-  return { datePart: value.slice(0, 10) };
-}
-
-function toDate(datePart: string): Date | undefined {
-  if (!datePart) return undefined;
-  const [year, month, day] = datePart.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
+import { parseISODate, toISODateString } from "@/lib/date";
 
 export function DateTimeField({
   id,
@@ -42,15 +22,12 @@ export function DateTimeField({
   requiredLabel?: string;
   size?: "default" | "lg";
 }) {
-  const locale = useLocale() as SupportedLanguage;
-  const t = useTranslations("events.formDialog");
-  const { datePart } = splitValue(value);
-  const selectedDate = toDate(datePart);
+  const datePart = value.slice(0, 10);
 
-  function handleDateSelect(date: Date | undefined) {
+  function handleDateChange(nextDatePart: string) {
+    const date = parseISODate(nextDatePart);
     if (!date) return;
-    const nextDatePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    onChange(`${nextDatePart}T09:00`);
+    onChange(`${toISODateString(date)}T09:00`);
   }
 
   return (
@@ -61,25 +38,14 @@ export function DateTimeField({
           <span className="text-xs font-normal text-muted-foreground">{requiredLabel}</span>
         )}
       </Label>
-      <Popover>
-        <PopoverTrigger
-          render={
-            <Button
-              type="button"
-              variant="outline"
-              size={size === "lg" ? "lg" : "default"}
-              id={id}
-              className={`w-full justify-start gap-2 font-normal${size === "lg" ? " h-10" : ""}`}
-            >
-              <CalendarIcon className="size-4 text-muted-foreground" />
-              {selectedDate ? formatDate(selectedDate, locale) : t("pickDate")}
-            </Button>
-          }
-        />
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} autoFocus />
-        </PopoverContent>
-      </Popover>
+      <DatePicker
+        id={id}
+        value={datePart}
+        onChange={handleDateChange}
+        size={size === "lg" ? "lg" : "default"}
+        required={required}
+        className={size === "lg" ? "h-10" : undefined}
+      />
     </div>
   );
 }

@@ -10,7 +10,15 @@
     "viewDetails": "View Details",
     "filters": "Filters",
     "loading": "Loading...",
-    "required": "Required"
+    "required": "Required",
+    "datePicker": {
+      "pickDate": "Pick a date",
+      "pickRange": "Pick a date range",
+      "selectMonth": "Select month",
+      "selectYear": "Select year",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -584,8 +592,7 @@
       "published": { "label": "Published", "description": "Visible to devotees on WhatsApp." },
       "preview": "Preview",
       "startRequired": "Start date/time is required",
-      "errorFallback": "Failed to save event",
-      "pickDate": "Pick a date"
+      "errorFallback": "Failed to save event"
     },
     "announceDialog": {
       "title": "Send WhatsApp Announcement",

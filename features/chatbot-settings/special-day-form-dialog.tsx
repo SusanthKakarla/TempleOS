@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -108,17 +109,14 @@ export function SpecialDayFormDialog({ mode, specialDay, trigger, onSaved }: Spe
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="special-day-date">{tForm("fields.date")}</Label>
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="special-day-date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="pl-9"
-                  required
-                />
-              </div>
+              <DatePicker
+                id="special-day-date"
+                name="specialDayDate"
+                value={date}
+                onChange={setDate}
+                required
+                icon={<CalendarDays className="size-4 shrink-0 text-muted-foreground" />}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="special-day-occasion">{tForm("fields.occasion")}</Label>

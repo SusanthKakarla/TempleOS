@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactElement } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { CalendarIcon, ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,11 +18,9 @@ import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DatePicker } from "@/components/ui/date-picker";
 import { MediaUpload } from "@/features/media/media-upload";
 import { DateTimeField } from "@/features/events/date-time-field";
-import { formatDate } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { RECURRENCE_RULES, type RecurrenceRule } from "@/lib/campaigns/recurrence";
 import type { Campaign, CampaignAudienceFilter, NotificationMedia, SupportedLanguage } from "@/types/db";
@@ -45,36 +43,10 @@ function DateOnlyField({
   value: string | null;
   onChange: (value: string | null) => void;
 }) {
-  const locale = useLocale() as SupportedLanguage;
-  const selected = value ? new Date(`${value}T00:00:00`) : undefined;
-
-  function handleSelect(date: Date | undefined) {
-    if (!date) {
-      onChange(null);
-      return;
-    }
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    onChange(`${y}-${m}-${d}`);
-  }
-
   return (
     <div className="min-w-0 space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Popover>
-        <PopoverTrigger
-          render={
-            <Button type="button" variant="outline" size="xl" id={id} className="w-full min-w-0 justify-start gap-2 font-normal">
-              <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
-              {selected && <span className="truncate">{formatDate(selected, locale)}</span>}
-            </Button>
-          }
-        />
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={selected} onSelect={handleSelect} autoFocus />
-        </PopoverContent>
-      </Popover>
+      <DatePicker id={id} size="xl" value={value ?? ""} onChange={(next) => onChange(next || null)} />
     </div>
   );
 }

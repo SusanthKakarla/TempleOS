@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
@@ -413,10 +414,14 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="min-w-0 space-y-2">
                 <Label htmlFor="dateOfBirth">{t("fields.dateOfBirth")}</Label>
-                <div className="relative">
-                  <Cake className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="dateOfBirth" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} inputSize="lg" className="pl-9" />
-                </div>
+                <DatePicker
+                  id="dateOfBirth"
+                  size="lg"
+                  value={dateOfBirth}
+                  onChange={setDateOfBirth}
+                  maxDate={new Date()}
+                  icon={<Cake className="size-4 shrink-0 text-muted-foreground" />}
+                />
               </div>
               <div className="min-w-0 space-y-2">
                 <Label htmlFor="gender">{t("fields.gender")}</Label>
@@ -608,10 +613,14 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               </div>
               <div className="min-w-0 space-y-2">
                 <Label htmlFor="weddingAnniversary">{t("fields.weddingAnniversary")}</Label>
-                <div className="relative">
-                  <Heart className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="weddingAnniversary" type="date" value={weddingAnniversary} onChange={(e) => setWeddingAnniversary(e.target.value)} inputSize="lg" className="pl-9" />
-                </div>
+                <DatePicker
+                  id="weddingAnniversary"
+                  size="lg"
+                  value={weddingAnniversary}
+                  onChange={setWeddingAnniversary}
+                  maxDate={new Date()}
+                  icon={<Heart className="size-4 shrink-0 text-muted-foreground" />}
+                />
               </div>
             </div>
             {mode === "create" && (
