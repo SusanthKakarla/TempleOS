@@ -461,6 +461,7 @@ export function DonationFormDialog({
                 required
                 requiredLabel={tCommon("required")}
                 size="lg"
+                allowPastDates
               />
 
               <div className="space-y-2">

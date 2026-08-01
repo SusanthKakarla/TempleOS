@@ -32,6 +32,7 @@ export function DateTimeField({
   required,
   requiredLabel,
   size = "default",
+  allowPastDates = false,
 }: {
   id: string;
   label: string;
@@ -41,11 +42,14 @@ export function DateTimeField({
   /** Text shown next to the label when `required` is set (e.g. the localized word for "Required") — omit to show no indicator at all. */
   requiredLabel?: string;
   size?: "default" | "lg";
+  allowPastDates?: boolean;
 }) {
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("events.formDialog");
   const { datePart } = splitValue(value);
   const selectedDate = toDate(datePart);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   function handleDateSelect(date: Date | undefined) {
     if (!date) return;
@@ -77,7 +81,14 @@ export function DateTimeField({
           }
         />
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} autoFocus />
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            disabled={allowPastDates ? undefined : { before: today }}
+            startMonth={allowPastDates ? new Date(1900, 0) : today}
+            autoFocus
+          />
         </PopoverContent>
       </Popover>
     </div>
