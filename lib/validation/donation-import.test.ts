@@ -72,10 +72,10 @@ describe("validateImportRow", () => {
     expect(result.data.amount).toBe(1500);
   });
 
-  it("flags a missing purpose as invalid", () => {
+  it("accepts a missing purpose — purpose is optional", () => {
     const result = validateImportRow(11, row({ purpose: "" }));
-    expect(result.status).toBe("invalid");
-    expect(result.errors).toContain("Purpose is required");
+    expect(result.status).toBe("valid");
+    expect(result.data.purpose).toBe("");
   });
 
   it("accepts case-insensitive, space-separated payment method aliases", () => {
@@ -95,10 +95,10 @@ describe("validateImportRow", () => {
     expect(result.status).toBe("invalid");
   });
 
-  it("flags a missing payment method as invalid", () => {
+  it("accepts a missing payment method — payment method is optional", () => {
     const result = validateImportRow(15, row({ paymentMethod: "" }));
-    expect(result.status).toBe("invalid");
-    expect(result.errors).toContain("Payment method is required");
+    expect(result.status).toBe("valid");
+    expect(result.data.paymentMethod).toBeNull();
   });
 
   it("accepts a valid YYYY-MM-DD donation date", () => {
@@ -119,9 +119,34 @@ describe("validateImportRow", () => {
     expect(result.data.donatedAt).toBe("2026-02-01");
   });
 
-  it("flags a missing donation date as invalid", () => {
+  it("accepts a missing donation date — date is optional", () => {
     const result = validateImportRow(19, row({ donatedAt: "" }));
-    expect(result.status).toBe("invalid");
-    expect(result.errors).toContain("Date is required");
+    expect(result.status).toBe("valid");
+    expect(result.data.donatedAt).toBeNull();
+  });
+
+  it("accepts a row with only donor name and amount — every other column is optional", () => {
+    const result = validateImportRow(20, {
+      donorName: "Anonymous Well-Wisher",
+      donorPhone: null,
+      donorEmail: null,
+      amount: 250,
+      purpose: null,
+      paymentMethod: null,
+      donatedAt: null,
+      notes: null,
+    });
+    expect(result.status).toBe("valid");
+    expect(result.errors).toEqual([]);
+    expect(result.data).toEqual({
+      donorName: "Anonymous Well-Wisher",
+      donorPhone: "",
+      donorEmail: "",
+      amount: 250,
+      purpose: "",
+      paymentMethod: null,
+      donatedAt: null,
+      notes: "",
+    });
   });
 });

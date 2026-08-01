@@ -121,19 +121,17 @@ export function validateImportRow(rowNumber: number, raw: RawImportRow): Preview
   if (amountResult === null) errors.push("Amount is required");
   const amount = amountResult === "invalid" ? null : amountResult;
 
-  if (!purpose) errors.push("Purpose is required");
-
+  // Purpose, payment method, and date are optional — only validate the value's
+  // shape when one was actually supplied; a blank cell is not an error.
   const methodResult = parsePaymentMethod(raw.paymentMethod);
   if (methodResult === "invalid") {
     errors.push(`Unknown payment method (expected one of: ${IMPORTABLE_PAYMENT_METHODS.join(", ")})`);
   }
-  if (methodResult === null) errors.push("Payment method is required");
-  const paymentMethod = methodResult === "invalid" ? null : methodResult;
+  const paymentMethod = methodResult === "invalid" || methodResult === null ? null : methodResult;
 
   const dateResult = parseDateCell(raw.donatedAt);
   if (dateResult === "invalid") errors.push("Invalid date (expected YYYY-MM-DD)");
-  if (dateResult === null) errors.push("Date is required");
-  const donatedAt = dateResult === "invalid" ? null : dateResult;
+  const donatedAt = dateResult === "invalid" || dateResult === null ? null : dateResult;
 
   const data: ImportRowData = {
     donorName,

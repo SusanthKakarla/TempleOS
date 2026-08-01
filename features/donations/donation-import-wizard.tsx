@@ -117,7 +117,7 @@ export function DonationImportWizard() {
         <p className="text-sm text-muted-foreground">{t("pageHeader.subtitle")}</p>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm whitespace-pre-line text-destructive">{error}</p>}
 
       {step === "upload" && (
         <Card className="glass-card rounded-2xl border-dashed">

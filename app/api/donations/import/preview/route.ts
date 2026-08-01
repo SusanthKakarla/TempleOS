@@ -17,9 +17,11 @@ const HEADER_ALIASES: Record<string, keyof RawImportRow> = {
   "donor email (optional)": "donorEmail",
   email: "donorEmail",
   amount: "amount",
+  "amount (inr)": "amount",
   purpose: "purpose",
   "payment method": "paymentMethod",
   "payment method (cash, upi, bank_transfer, cheque, other)": "paymentMethod",
+  "payment method (cash/upi/bank_transfer/cheque/other)": "paymentMethod",
   method: "paymentMethod",
   date: "donatedAt",
   "date (yyyy-mm-dd)": "donatedAt",
@@ -73,16 +75,21 @@ export async function POST(req: NextRequest) {
 
   const columnMap: Partial<Record<keyof RawImportRow, number>> = {};
   worksheet.getRow(1).eachCell((cell, colNumber) => {
-    const key = String(cell.value ?? "").trim().toLowerCase();
+    const key = String(cell.value ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s*\((required|optional)\)\s*$/, "");
     const field = HEADER_ALIASES[key];
     if (field) columnMap[field] = colNumber;
   });
 
-  if (!columnMap.donorName || !columnMap.amount || !columnMap.purpose || !columnMap.paymentMethod || !columnMap.donatedAt) {
+  const missingRequiredColumns: string[] = [];
+  if (!columnMap.donorName) missingRequiredColumns.push("Donor Name");
+  if (!columnMap.amount) missingRequiredColumns.push("Amount");
+  if (missingRequiredColumns.length > 0) {
     return NextResponse.json(
       {
-        error:
-          'The file must have "Donor Name", "Amount", "Purpose", "Payment Method", and "Date" columns. Download the template for the exact format.',
+        error: missingRequiredColumns.map((column) => `Missing required column: ${column}`).join("\n"),
       },
       { status: 400 },
     );

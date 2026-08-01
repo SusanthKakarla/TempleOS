@@ -47,13 +47,18 @@ interface DonationImportRow {
 }
 
 export const DONATION_IMPORT_TEMPLATE_COLUMNS: ColumnDef<DonationImportRow>[] = [
-  { key: "donorName", header: "Donor Name", accessor: (r) => r.donorName, width: 24 },
-  { key: "donorPhone", header: "Phone", accessor: (r) => r.donorPhone, width: 18 },
-  { key: "amount", header: "Amount (INR)", accessor: (r) => r.amount, width: 14 },
-  { key: "purpose", header: "Purpose", accessor: (r) => r.purpose, width: 20 },
-  { key: "paymentMethod", header: "Payment Method (cash/upi/bank_transfer/cheque/other)", accessor: (r) => r.paymentMethod, width: 36 },
-  { key: "date", header: "Date (YYYY-MM-DD)", accessor: (r) => r.date, width: 18 },
-  { key: "notes", header: "Notes", accessor: (r) => r.notes, width: 24 },
+  { key: "donorName", header: "Donor Name (Required)", accessor: (r) => r.donorName, width: 26 },
+  { key: "donorPhone", header: "Phone (Optional)", accessor: (r) => r.donorPhone, width: 18 },
+  { key: "amount", header: "Amount (INR) (Required)", accessor: (r) => r.amount, width: 18 },
+  { key: "purpose", header: "Purpose (Optional)", accessor: (r) => r.purpose, width: 22 },
+  {
+    key: "paymentMethod",
+    header: "Payment Method (cash/upi/bank_transfer/cheque/other) (Optional)",
+    accessor: (r) => r.paymentMethod,
+    width: 42,
+  },
+  { key: "date", header: "Date (YYYY-MM-DD) (Optional)", accessor: (r) => r.date, width: 22 },
+  { key: "notes", header: "Notes (Optional)", accessor: (r) => r.notes, width: 24 },
 ];
 
 export const DONATION_IMPORT_TEMPLATE_EXAMPLE_ROWS: DonationImportRow[] = [

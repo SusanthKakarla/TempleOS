@@ -5,6 +5,11 @@ import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createDonation } from "@/lib/db/donations";
 import { getDevoteeByPhone } from "@/lib/db/devotees";
 import { paymentMethodSchema } from "@/lib/validation/donations";
+import { toISODateString } from "@/lib/date";
+
+/** Purpose/payment method/date are optional at import time (only donor name + amount are required) — these fill in the DB's non-nullable columns when a row didn't specify them. Matches the "General Donation" preset and the DB's cash/non-cash XOR constraint (a positive amount always requires a payment_method). */
+const DEFAULT_PURPOSE = "General Donation";
+const DEFAULT_PAYMENT_METHOD = "other";
 
 const rowSchema = z.object({
   rowNumber: z.number(),
@@ -52,9 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const candidateRows = parsed.data.rows.filter(
-    (r) => r.status === "valid" && r.data.amount !== null && r.data.paymentMethod !== null && r.data.donatedAt !== null,
-  );
+  const candidateRows = parsed.data.rows.filter((r) => r.status === "valid" && r.data.amount !== null);
 
   let imported = 0;
   const skipped = parsed.data.rows.length - candidateRows.length;
@@ -77,11 +80,11 @@ export async function POST(req: NextRequest) {
               isAnonymous: false,
             },
         amount: row.data.amount!,
-        purpose: row.data.purpose,
-        paymentMethod: row.data.paymentMethod!,
+        purpose: row.data.purpose || DEFAULT_PURPOSE,
+        paymentMethod: row.data.paymentMethod ?? DEFAULT_PAYMENT_METHOD,
         itemDescription: null,
         notes: row.data.notes || null,
-        donatedAt: row.data.donatedAt!,
+        donatedAt: row.data.donatedAt ?? toISODateString(new Date()),
         recordedBy: session.membershipId,
       });
       imported += 1;

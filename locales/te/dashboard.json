@@ -1195,7 +1195,7 @@
       },
       "upload": {
         "title": ".csv లేదా .xlsx ఫైల్‌ను అప్‌లోడ్ చేయండి",
-        "description": "కనీసం \"Donor Name\", \"Amount\", \"Purpose\", \"Payment Method\", మరియు \"Date\" కాలమ్‌లు అవసరం.",
+        "description": "కనీసం అవసరమైన కాలమ్‌లు: \"Donor Name\" మరియు \"Amount\". మిగతా అన్ని కాలమ్‌లు ఐచ్ఛికం.",
         "uploadButton": "ఫైల్ అప్‌లోడ్ చేయండి",
         "reading": "ఫైల్ చదువుతోంది…",
         "downloadTemplate": "టెంప్లేట్ డౌన్‌లోడ్ చేయండి"

@@ -1189,7 +1189,7 @@
       },
       "upload": {
         "title": "Upload a .csv or .xlsx file",
-        "description": "Needs \"Donor Name\", \"Amount\", \"Purpose\", \"Payment Method\", and \"Date\" columns at minimum.",
+        "description": "Minimum required columns: \"Donor Name\" and \"Amount\". All other columns are optional.",
         "uploadButton": "Upload file",
         "reading": "Reading file…",
         "downloadTemplate": "Download template"
