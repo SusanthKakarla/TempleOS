@@ -4,6 +4,12 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { parseISODate, toISODateString } from "@/lib/date";
 
+function startOfToday(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
 export function DateTimeField({
   id,
   label,
@@ -12,6 +18,7 @@ export function DateTimeField({
   required,
   requiredLabel,
   size = "default",
+  allowPastDates = false,
 }: {
   id: string;
   label: string;
@@ -21,6 +28,7 @@ export function DateTimeField({
   /** Text shown next to the label when `required` is set (e.g. the localized word for "Required") — omit to show no indicator at all. */
   requiredLabel?: string;
   size?: "default" | "lg";
+  allowPastDates?: boolean;
 }) {
   const datePart = value.slice(0, 10);
 
@@ -45,6 +53,7 @@ export function DateTimeField({
         size={size === "lg" ? "lg" : "default"}
         required={required}
         className={size === "lg" ? "h-10" : undefined}
+        minDate={allowPastDates ? undefined : startOfToday()}
       />
     </div>
   );
