@@ -11,6 +11,7 @@
     "filters": "Filters",
     "loading": "Loading...",
     "required": "Required",
+    "bulkDeleteConfirm": "Are you sure you want to delete the selected records? This action cannot be undone.",
     "datePicker": {
       "pickDate": "Pick a date",
       "pickRange": "Pick a date range",
@@ -858,6 +859,12 @@
     },
     "deactivateError": "Failed to deactivate devotee",
     "reactivateError": "Failed to reactivate devotee",
+    "bulkDelete": {
+      "selectedCount": "{count} selected",
+      "dialogTitle": "Deactivate selected devotees?",
+      "successToast": "{count} devotees deactivated",
+      "error": "Failed to deactivate devotees"
+    },
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
@@ -1119,6 +1126,12 @@
     "emptyState": { "title": "No donations found", "description": "Record a donation to start tracking donor history." },
     "confirmDelete": "Delete this {amount} donation from {name}? This cannot be undone.",
     "deleteError": "Failed to delete donation",
+    "bulkDelete": {
+      "selectedCount": "{count} selected",
+      "dialogTitle": "Delete selected donations?",
+      "successToast": "{count} donations deleted",
+      "error": "Failed to delete donations"
+    },
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
     "nonCashBadge": "Non-cash",

@@ -1,10 +1,13 @@
 import { after, NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
-import { createDonation, listDonations } from "@/lib/db/donations";
+import { createDonation, deleteDonations, listDonations } from "@/lib/db/donations";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getTenantById } from "@/lib/db/tenants";
 import { createDonationSchema } from "@/lib/validation/donations";
+
+const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(500) });
 import { formatInr } from "@/lib/currency";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { enqueueDonationRecordedBroadcast } from "@/lib/db/donation-broadcasts";
@@ -113,6 +116,26 @@ export async function POST(req: NextRequest) {
     }
     throw err;
   }
+}
+
+/** Bulk delete for the Donations table's multi-select toolbar — a single hard delete per id, same as the existing DELETE /api/donations/[id] route, just batched into one transaction. */
+export async function DELETE(req: NextRequest) {
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
+  }
+  const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "donations");
+  if (featureBlocked) return featureBlocked;
+
+  const json = await req.json().catch(() => null);
+  const parsed = bulkDeleteSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+  }
+
+  const deleted = await deleteDonations(session.tenantId, parsed.data.ids);
+  return NextResponse.json({ deleted });
 }
 
 function isForeignKeyViolation(err: unknown): boolean {

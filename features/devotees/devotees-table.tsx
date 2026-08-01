@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Eye, Pencil, RotateCcw, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import type { Devotee, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
 import { StickyToolbar } from "@/components/sticky-toolbar";
+import { BulkActionToolbar } from "@/components/bulk-action-toolbar";
+import { BulkDeleteDialog } from "@/components/bulk-delete-dialog";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
 import { formatDate } from "@/lib/date";
@@ -99,6 +102,9 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   const [editingDevotee, setEditingDevotee] = useState<Devotee | null>(null);
   const [deactivatingDevotee, setDeactivatingDevotee] = useState<Devotee | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
 
   function refresh() {
     router.refresh();
@@ -149,6 +155,31 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
       setError(err instanceof Error ? err.message : t("reactivateError"));
     } finally {
       setPendingId(null);
+    }
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleteError(null);
+    setBulkDeleting(true);
+    try {
+      const response = await fetch("/api/devotees", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? t("bulkDelete.error"));
+      }
+      toast.success(t("bulkDelete.successToast", { count: selectedIds.length }));
+      setSelectedIds([]);
+      setSelectMode(false);
+      setBulkDeleteOpen(false);
+      refresh();
+    } catch (err) {
+      setBulkDeleteError(err instanceof Error ? err.message : t("bulkDelete.error"));
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -400,6 +431,13 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      <BulkActionToolbar
+        count={selectedIds.length}
+        selectedLabel={t("bulkDelete.selectedCount", { count: selectedIds.length })}
+        deleteLabel={tCommon("delete")}
+        onDelete={() => setBulkDeleteOpen(true)}
+      />
+
       {devotees.length === 0 ? (
         <EmptyState
           icon={<Users className="size-6" />}
@@ -429,6 +467,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                     <TableHead className="w-10">
                       <Checkbox
                         checked={selectedIds.length > 0 && selectedIds.length === devotees.length}
+                        indeterminate={selectedIds.length > 0 && selectedIds.length < devotees.length}
                         onCheckedChange={(checked) => toggleSelectAll(checked === true)}
                         aria-label={t("selectAll")}
                       />
@@ -594,6 +633,21 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteOpen(open);
+          if (!open) setBulkDeleteError(null);
+        }}
+        title={t("bulkDelete.dialogTitle")}
+        description={tCommon("bulkDeleteConfirm")}
+        cancelLabel={tCommon("cancel")}
+        confirmLabel={tCommon("delete")}
+        onConfirm={handleBulkDelete}
+        pending={bulkDeleting}
+        error={bulkDeleteError}
+      />
     </div>
   );
 }

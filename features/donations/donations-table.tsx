@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { CalendarRange, Eye, HandCoins, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import type { Devotee, DonationSummary, DonationWithDonor, SupportedLanguage } from "@/types/db";
 import { MetricCard } from "@/features/dashboard/metric-card";
@@ -31,6 +32,8 @@ import { PageHeader } from "@/components/page-header";
 import { OverflowActionMenu } from "@/components/overflow-action-menu";
 import { FilterBottomSheet } from "@/components/filter-bottom-sheet";
 import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
+import { BulkActionToolbar } from "@/components/bulk-action-toolbar";
+import { BulkDeleteDialog } from "@/components/bulk-delete-dialog";
 import { formatDonationAmount } from "@/lib/currency";
 import { formatDate, toISODateString } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
@@ -115,6 +118,9 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingDonation, setEditingDonation] = useState<DonationWithDonor | null>(null);
   const [pendingFilters, setPendingFilters] = useState<PendingFilters>(() => filtersFromSearchParams(searchParams));
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
 
   function toggleSelected(id: string, checked: boolean) {
     setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
@@ -145,6 +151,30 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
       setError(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setPendingId(null);
+    }
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleteError(null);
+    setBulkDeleting(true);
+    try {
+      const response = await fetch("/api/donations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? t("bulkDelete.error"));
+      }
+      toast.success(t("bulkDelete.successToast", { count: selectedIds.length }));
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
+      refresh();
+    } catch (err) {
+      setBulkDeleteError(err instanceof Error ? err.message : t("bulkDelete.error"));
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -340,6 +370,13 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      <BulkActionToolbar
+        count={selectedIds.length}
+        selectedLabel={t("bulkDelete.selectedCount", { count: selectedIds.length })}
+        deleteLabel={tCommon("delete")}
+        onDelete={() => setBulkDeleteOpen(true)}
+      />
+
       {donations.length === 0 ? (
         <EmptyState
           icon={<HandCoins className="size-6" />}
@@ -370,6 +407,7 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                     <TableHead className="w-10">
                       <Checkbox
                         checked={selectedIds.length > 0 && selectedIds.length === donations.length}
+                        indeterminate={selectedIds.length > 0 && selectedIds.length < donations.length}
                         onCheckedChange={(checked) => toggleSelectAll(checked === true)}
                         aria-label={t("selectAll")}
                       />
@@ -432,6 +470,15 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedIds.length > 0 && selectedIds.length === donations.length}
+                        indeterminate={selectedIds.length > 0 && selectedIds.length < donations.length}
+                        onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                        aria-label={t("selectAll")}
+                        className="size-5"
+                      />
+                    </TableHead>
                     <TableHead>{t("columns.donor")}</TableHead>
                     <TableHead>{t("columns.amount")}</TableHead>
                     <TableHead>{t("columns.purpose")}</TableHead>
@@ -445,6 +492,18 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
                       stopPropagation={false}
                       trigger={
                         <TableRow className="h-14 cursor-pointer">
+                          <TableCell
+                            className="py-3"
+                            onClick={(event) => event.stopPropagation()}
+                            onMouseDown={(event) => event.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={selectedIds.includes(donation.id)}
+                              onCheckedChange={(checked) => toggleSelected(donation.id, checked === true)}
+                              aria-label={t("selectRow", { name: donation.donorName })}
+                              className="size-5"
+                            />
+                          </TableCell>
                           <TableCell className="max-w-32 truncate py-3" title={donorDisplayName(donation)}>
                             {donorDisplayName(donation)}
                           </TableCell>
@@ -483,6 +542,20 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         />
       )}
 
+      <BulkDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteOpen(open);
+          if (!open) setBulkDeleteError(null);
+        }}
+        title={t("bulkDelete.dialogTitle")}
+        description={tCommon("bulkDeleteConfirm")}
+        cancelLabel={tCommon("cancel")}
+        confirmLabel={tCommon("delete")}
+        onConfirm={handleBulkDelete}
+        pending={bulkDeleting}
+        error={bulkDeleteError}
+      />
     </div>
   );
 }

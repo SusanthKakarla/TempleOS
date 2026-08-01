@@ -554,6 +554,16 @@ export async function deactivateDevotee(tenantId: string, devoteeId: string): Pr
   return setDevoteeActiveState(tenantId, devoteeId, false);
 }
 
+/** Bulk variant of {@link deactivateDevotee} — "delete" in the devotees UI has always meant deactivate (see the DELETE handler in app/api/devotees/[id]/route.ts): devotees keep their donation/notification history and can be reactivated, unlike the hard-delete used for donations. Returns how many rows were actually deactivated (ids that don't belong to this tenant are silently skipped, not an error). */
+export async function deactivateDevotees(tenantId: string, devoteeIds: string[]): Promise<number> {
+  if (devoteeIds.length === 0) return 0;
+  const { rows } = await getPool().query<{ id: string }>(
+    "UPDATE devotees SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND id = ANY($2::uuid[]) RETURNING id",
+    [tenantId, devoteeIds],
+  );
+  return rows.length;
+}
+
 export async function reactivateDevotee(tenantId: string, devoteeId: string): Promise<Devotee | null> {
   return setDevoteeActiveState(tenantId, devoteeId, true);
 }

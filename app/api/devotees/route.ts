@@ -1,13 +1,16 @@
 import { after, NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
-import { createDevotee, listDevotees } from "@/lib/db/devotees";
+import { createDevotee, deactivateDevotees, listDevotees } from "@/lib/db/devotees";
 import { listTenantMembershipsForTenant } from "@/lib/db/tenant-memberships";
 import { createDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { formatDateTime } from "@/lib/date";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { processNotifications } from "@/lib/notifications/delivery";
+
+const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(500) });
 
 export async function GET(req: NextRequest) {
   const auth = await requireTenantAdminSession();
@@ -96,6 +99,26 @@ export async function POST(req: NextRequest) {
     }
     throw err;
   }
+}
+
+/** Bulk delete for the Devotees table's multi-select toolbar — same as the existing DELETE /api/devotees/[id] route, this deactivates rather than removes (devotees keep their history and can be reactivated), just batched into one query. */
+export async function DELETE(req: NextRequest) {
+  const auth = await requireTenantAdminSession();
+  if (!auth.ok) {
+    return tenantAdminAuthResponse(auth);
+  }
+  const { session } = auth;
+  const featureBlocked = await requireTenantFeatureApi(session.tenantId, "devotees");
+  if (featureBlocked) return featureBlocked;
+
+  const json = await req.json().catch(() => null);
+  const parsed = bulkDeleteSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+  }
+
+  const deactivated = await deactivateDevotees(session.tenantId, parsed.data.ids);
+  return NextResponse.json({ deactivated });
 }
 
 function isUniqueViolation(err: unknown): boolean {

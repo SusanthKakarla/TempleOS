@@ -289,6 +289,30 @@ export async function deleteDonation(tenantId: string, donationId: string): Prom
   }
 }
 
+/** Bulk variant of {@link deleteDonation} — one transaction, one round trip, dedupes affected devotees before recomputing their cached donation totals. Returns how many rows were actually deleted (ids that don't belong to this tenant are silently skipped, not an error). */
+export async function deleteDonations(tenantId: string, donationIds: string[]): Promise<number> {
+  if (donationIds.length === 0) return 0;
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<{ devotee_id: string | null }>(
+      "DELETE FROM donations WHERE tenant_id = $1 AND id = ANY($2::uuid[]) RETURNING devotee_id",
+      [tenantId, donationIds],
+    );
+    const affectedDevoteeIds = [...new Set(rows.map((row) => row.devotee_id).filter((id): id is string => id !== null))];
+    for (const devoteeId of affectedDevoteeIds) {
+      await recomputeDevoteeDonationCache(client, devoteeId);
+    }
+    await client.query("COMMIT");
+    return rows.length;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getDonationById(tenantId: string, donationId: string): Promise<Donation | null> {
   const { rows } = await getPool().query<DonationRow>(
     "SELECT * FROM donations WHERE tenant_id = $1 AND id = $2",
