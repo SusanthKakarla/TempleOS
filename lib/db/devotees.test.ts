@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { deactivateAllDevotees, deactivateDevotees, getDevoteeByPhone, listExistingPhones } from "./devotees";
+import { countDevoteesFiltered, deactivateAllDevotees, deactivateDevotees, getDevoteeByPhone, listExistingPhones } from "./devotees";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -99,5 +99,35 @@ describe("getDevoteeByPhone", () => {
     expect(String(sql)).toContain("ORDER BY d.is_active DESC");
     expect(String(sql)).toContain("LIMIT 1");
     expect(params).toEqual(["tenant-1", "+919876500000"]);
+  });
+});
+
+describe("countDevoteesFiltered", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("counts only active devotees by default — the Dashboard's Total Devotees card relies on this to match the Devotees page", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "3" }] });
+
+    const count = await countDevoteesFiltered("tenant-1", {});
+
+    expect(count).toBe(3);
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.is_active = true");
+    expect(params).toEqual(["tenant-1"]);
+  });
+
+  it("includes inactive devotees only when explicitly requested", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "138" }] });
+
+    const count = await countDevoteesFiltered("tenant-1", { includeInactive: true });
+
+    expect(count).toBe(138);
+    const [sql] = query.mock.calls[0];
+    expect(String(sql)).not.toContain("d.is_active = true");
   });
 });

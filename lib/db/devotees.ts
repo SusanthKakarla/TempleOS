@@ -593,14 +593,6 @@ export async function reactivateDevotee(tenantId: string, devoteeId: string): Pr
   return setDevoteeActiveState(tenantId, devoteeId, true);
 }
 
-export async function countDevotees(tenantId: string): Promise<number> {
-  const { rows } = await getPool().query<{ count: string }>(
-    "SELECT count(*) FROM devotees WHERE tenant_id = $1",
-    [tenantId],
-  );
-  return Number(rows[0].count);
-}
-
 export async function countOptedInDevotees(tenantId: string): Promise<number> {
   const { rows } = await getPool().query<{ count: string }>(
     "SELECT count(*) FROM devotees WHERE tenant_id = $1 AND whatsapp_opt_in_status = true",

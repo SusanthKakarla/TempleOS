@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countUpcomingPublishedEvents } from "@/lib/db/events";
-import { countDevotees } from "@/lib/db/devotees";
+import { countDevoteesFiltered } from "@/lib/db/devotees";
 import { getDonationSummary, getDonationsPerDay } from "@/lib/db/donations";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -28,7 +28,7 @@ export default async function DashboardHomePage() {
   const [tenant, upcomingEvents, totalDevotees, donationSummary, donationsPerDayRaw, locale] = await Promise.all([
     getTenantById(session.tenantId),
     countUpcomingPublishedEvents(session.tenantId),
-    countDevotees(session.tenantId),
+    countDevoteesFiltered(session.tenantId, {}),
     getDonationSummary(session.tenantId),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
     getLocaleCookie(),
