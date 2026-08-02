@@ -564,6 +564,15 @@ export async function deactivateDevotees(tenantId: string, devoteeIds: string[])
   return rows.length;
 }
 
+/** "Delete All Devotees" — deactivates every currently-active devotee for the tenant in one statement. Same soft-delete semantics as {@link deactivateDevotees}: history preserved, reactivatable, donations untouched. */
+export async function deactivateAllDevotees(tenantId: string): Promise<number> {
+  const { rows } = await getPool().query<{ id: string }>(
+    "UPDATE devotees SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND is_active = true RETURNING id",
+    [tenantId],
+  );
+  return rows.length;
+}
+
 export async function reactivateDevotee(tenantId: string, devoteeId: string): Promise<Devotee | null> {
   return setDevoteeActiveState(tenantId, devoteeId, true);
 }

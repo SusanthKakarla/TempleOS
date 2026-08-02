@@ -865,6 +865,13 @@
       "successToast": "{count} devotees deactivated",
       "error": "Failed to deactivate devotees"
     },
+    "deleteAll": {
+      "buttonLabel": "Delete All",
+      "dialogTitle": "Deactivate all devotees?",
+      "dialogDescription": "This will deactivate every devotee, not just the ones currently shown — they'll disappear from the active list. Donation and notification history is preserved, and each devotee can be reactivated individually. This action cannot be undone in bulk.",
+      "successToast": "{count} devotees deactivated",
+      "error": "Failed to deactivate all devotees"
+    },
     "formDialog": {
       "createTitle": "Add devotee",
       "editTitle": "Edit devotee",
@@ -1055,7 +1062,7 @@
       },
       "upload": {
         "title": "Upload a .csv or .xlsx file",
-        "description": "Needs “Name” and “WhatsApp Phone” columns at minimum.",
+        "description": "Needs “Name” and “WhatsApp Phone” columns at minimum. Add optional “Donation” and “Donation Date” columns to record a donation for each devotee automatically.",
         "uploadButton": "Upload file",
         "reading": "Reading file…",
         "downloadTemplate": "Download template"
@@ -1077,12 +1084,14 @@
         "phone": "Phone",
         "familyName": "Family Name",
         "relationship": "Relationship",
+        "donation": "Donation",
         "status": "Status",
         "issues": "Issues"
       },
       "importing": { "title": "Importing devotees…", "description": "This may take a moment for larger files." },
       "done": {
         "imported": "{count} imported",
+        "donationsImported": "{count, plural, one {# donation recorded} other {# donations recorded}}",
         "skipped": "{count} skipped",
         "failed": "{count} failed",
         "rowError": "Row {row}: {message}",
@@ -1131,6 +1140,13 @@
       "dialogTitle": "Delete selected donations?",
       "successToast": "{count} donations deleted",
       "error": "Failed to delete donations"
+    },
+    "deleteAll": {
+      "buttonLabel": "Delete All",
+      "dialogTitle": "Delete all donations?",
+      "dialogDescription": "This will permanently delete every donation record, not just the ones currently shown. Devotee donation totals and donor status will reset accordingly. This action cannot be undone.",
+      "successToast": "{count} donations deleted",
+      "error": "Failed to delete all donations"
     },
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",

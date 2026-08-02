@@ -313,6 +313,33 @@ export async function deleteDonations(tenantId: string, donationIds: string[]): 
   }
 }
 
+/**
+ * Deletes every donation for the tenant — the "Delete All Donations" action.
+ * Unlike {@link deleteDonations}, this doesn't need to dedupe/loop affected
+ * devotees one at a time: since every donation is gone, every devotee's
+ * donation cache resets to the same zeroed-out values in a single statement.
+ */
+export async function deleteAllDonations(tenantId: string): Promise<number> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const { rowCount } = await client.query("DELETE FROM donations WHERE tenant_id = $1", [tenantId]);
+    await client.query(
+      `UPDATE devotees
+       SET is_donor = false, total_donated_amount = 0, last_donation_at = NULL, updated_at = now()
+       WHERE tenant_id = $1 AND (is_donor OR total_donated_amount <> 0 OR last_donation_at IS NOT NULL)`,
+      [tenantId],
+    );
+    await client.query("COMMIT");
+    return rowCount ?? 0;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getDonationById(tenantId: string, donationId: string): Promise<Donation | null> {
   const { rows } = await getPool().query<DonationRow>(
     "SELECT * FROM donations WHERE tenant_id = $1 AND id = $2",

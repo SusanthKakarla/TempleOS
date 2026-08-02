@@ -2,16 +2,19 @@ import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
-import { createDonation, deleteDonations, listDonations } from "@/lib/db/donations";
+import { createDonation, deleteAllDonations, deleteDonations, listDonations } from "@/lib/db/donations";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getTenantById } from "@/lib/db/tenants";
 import { createDonationSchema } from "@/lib/validation/donations";
-
-const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(500) });
 import { formatInr } from "@/lib/currency";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { enqueueDonationRecordedBroadcast } from "@/lib/db/donation-broadcasts";
 import { processNotifications } from "@/lib/notifications/delivery";
+
+const bulkDeleteSchema = z.union([
+  z.object({ all: z.literal(true) }),
+  z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }),
+]);
 
 export async function GET(req: NextRequest) {
   const auth = await requireTenantAdminSession();
@@ -118,7 +121,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** Bulk delete for the Donations table's multi-select toolbar — a single hard delete per id, same as the existing DELETE /api/donations/[id] route, just batched into one transaction. */
+/**
+ * Bulk delete for the Donations table's multi-select toolbar — a single hard
+ * delete per id, same as the existing DELETE /api/donations/[id] route, just
+ * batched into one transaction. `{ all: true }` instead deletes every
+ * donation for the tenant ("Delete All Donations") — an entirely independent
+ * action from the Devotees "Delete All", which only ever deactivates.
+ */
 export async function DELETE(req: NextRequest) {
   const auth = await requireTenantAdminSession();
   if (!auth.ok) {
@@ -134,7 +143,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const deleted = await deleteDonations(session.tenantId, parsed.data.ids);
+  const deleted =
+    "all" in parsed.data ? await deleteAllDonations(session.tenantId) : await deleteDonations(session.tenantId, parsed.data.ids);
   return NextResponse.json({ deleted });
 }
 

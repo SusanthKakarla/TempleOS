@@ -121,6 +121,9 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllPending, setDeleteAllPending] = useState(false);
+  const [deleteAllError, setDeleteAllError] = useState<string | null>(null);
 
   function toggleSelected(id: string, checked: boolean) {
     setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
@@ -175,6 +178,31 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
       setBulkDeleteError(err instanceof Error ? err.message : t("bulkDelete.error"));
     } finally {
       setBulkDeleting(false);
+    }
+  }
+
+  async function handleDeleteAll() {
+    setDeleteAllError(null);
+    setDeleteAllPending(true);
+    try {
+      const response = await fetch("/api/donations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? t("deleteAll.error"));
+      }
+      const body = (await response.json().catch(() => ({}))) as { deleted?: number };
+      toast.success(t("deleteAll.successToast", { count: body.deleted ?? 0 }));
+      setSelectedIds([]);
+      setDeleteAllOpen(false);
+      refresh();
+    } catch (err) {
+      setDeleteAllError(err instanceof Error ? err.message : t("deleteAll.error"));
+    } finally {
+      setDeleteAllPending(false);
     }
   }
 
@@ -308,6 +336,15 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
               {t("importButton")}
             </Link>
             <ExportMenu exportUrl="/api/donations/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="donations" />
+            <Button
+              variant="destructive"
+              className="gap-1.5"
+              onClick={() => setDeleteAllOpen(true)}
+              aria-label={t("deleteAll.buttonLabel")}
+            >
+              <Trash2 className="size-4" />
+              <span className="hidden sm:inline">{t("deleteAll.buttonLabel")}</span>
+            </Button>
           </>
         }
       />
@@ -555,6 +592,21 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         onConfirm={handleBulkDelete}
         pending={bulkDeleting}
         error={bulkDeleteError}
+      />
+
+      <BulkDeleteDialog
+        open={deleteAllOpen}
+        onOpenChange={(open) => {
+          setDeleteAllOpen(open);
+          if (!open) setDeleteAllError(null);
+        }}
+        title={t("deleteAll.dialogTitle")}
+        description={t("deleteAll.dialogDescription")}
+        cancelLabel={tCommon("cancel")}
+        confirmLabel={t("deleteAll.buttonLabel")}
+        onConfirm={handleDeleteAll}
+        pending={deleteAllPending}
+        error={deleteAllError}
       />
     </div>
   );

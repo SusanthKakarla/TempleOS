@@ -26,6 +26,10 @@ export interface ImportRowData {
   state: string | null;
   pincode: string | null;
   primaryLanguage: SupportedLanguage | null;
+  /** Optional — set only when the row's Donation column carries a positive amount; drives an automatic linked donation record at commit time. */
+  donationAmount: number | null;
+  /** "YYYY-MM-DD" — optional, defaults to today at commit time when a donation amount is present but this is blank. */
+  donationDate: string | null;
 }
 
 export type ImportRowStatus = "valid" | "invalid" | "duplicate_in_file" | "duplicate_in_db" | "empty";
@@ -55,6 +59,8 @@ export interface RawImportRow {
   state: unknown;
   pincode: unknown;
   primaryLanguage: unknown;
+  donation: unknown;
+  donationDate: unknown;
 }
 
 function cellToString(value: unknown): string {
@@ -100,7 +106,17 @@ function emptyData(): ImportRowData {
     state: null,
     pincode: null,
     primaryLanguage: null,
+    donationAmount: null,
+    donationDate: null,
   };
+}
+
+/** Mirrors lib/validation/donation-import.ts's parseAmount — accepts a numeric or comma-formatted string cell, rejects non-positive/non-numeric values. */
+function parseDonationAmount(raw: unknown): number | "invalid" | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const value = typeof raw === "number" ? raw : Number(String(raw).replace(/,/g, "").trim());
+  if (Number.isNaN(value)) return "invalid";
+  return value > 0 ? value : "invalid";
 }
 
 function parseLanguage(raw: string): SupportedLanguage | "invalid" | null {
@@ -124,6 +140,11 @@ function parseLanguage(raw: string): SupportedLanguage | "invalid" | null {
  * route's Head of Family row — see validateFamilyGroups below for the
  * "exactly one head per family" cross-row check this function can't do
  * alone.
+ *
+ * Donation/Donation Date are entirely optional and orthogonal to devotee
+ * validity — a bad donation amount/date is surfaced as a row error for
+ * visibility but never flips the row's status; the devotee still imports
+ * normally, it just means no donation gets attached for that row.
  */
 export function validateImportRow(
   rowNumber: number,
@@ -212,6 +233,19 @@ export function validateImportRow(
     }
   }
 
+  // Donation errors are deliberately kept out of `errors` above and merged in
+  // afterward, for display only — a malformed Donation column must never
+  // block the devotee itself from importing ("continue importing devotees
+  // exactly as it does today"); it just means no donation gets attached.
+  const donationErrors: string[] = [];
+  const donationAmountResult = parseDonationAmount(raw.donation);
+  if (donationAmountResult === "invalid") donationErrors.push("Donation amount must be a positive number");
+  const donationAmount = donationAmountResult === "invalid" ? null : donationAmountResult;
+
+  const donationDateResult = parseDateCell(raw.donationDate);
+  if (donationDateResult === "invalid") donationErrors.push("Invalid donation date (expected YYYY-MM-DD)");
+  const donationDate = donationDateResult === "invalid" ? null : donationDateResult;
+
   const data: ImportRowData = {
     displayName: name,
     whatsappPhone: phoneRaw,
@@ -229,10 +263,12 @@ export function validateImportRow(
     state,
     pincode,
     primaryLanguage,
+    donationAmount,
+    donationDate,
   };
 
   if (errors.length > 0) {
-    return { rowNumber, data, normalizedPhone, status: "invalid", errors };
+    return { rowNumber, data, normalizedPhone, status: "invalid", errors: [...errors, ...donationErrors] };
   }
   if (normalizedPhone && seenPhones.has(normalizedPhone)) {
     return {
@@ -240,7 +276,7 @@ export function validateImportRow(
       data,
       normalizedPhone,
       status: "duplicate_in_file",
-      errors: ["Duplicate phone number elsewhere in this file"],
+      errors: ["Duplicate phone number elsewhere in this file", ...donationErrors],
     };
   }
   if (normalizedPhone && existingPhones.has(normalizedPhone)) {
@@ -249,11 +285,11 @@ export function validateImportRow(
       data,
       normalizedPhone,
       status: "duplicate_in_db",
-      errors: ["A devotee with this phone number already exists"],
+      errors: ["A devotee with this phone number already exists", ...donationErrors],
     };
   }
 
-  return { rowNumber, data, normalizedPhone, status: "valid", errors: [] };
+  return { rowNumber, data, normalizedPhone, status: "valid", errors: donationErrors };
 }
 
 /**

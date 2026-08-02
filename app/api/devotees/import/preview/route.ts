@@ -38,6 +38,12 @@ const HEADER_ALIASES: Record<string, keyof RawImportRow> = {
   pincode: "pincode",
   "primary language (family only)": "primaryLanguage",
   "primary language": "primaryLanguage",
+  donation: "donation",
+  "donation amount": "donation",
+  "donation (optional)": "donation",
+  "donation date": "donationDate",
+  "donation date (yyyy-mm-dd)": "donationDate",
+  "donation date (optional)": "donationDate",
 };
 
 /**
@@ -121,6 +127,8 @@ export async function POST(req: NextRequest) {
         state: columnMap.state ? row.getCell(columnMap.state).value : null,
         pincode: columnMap.pincode ? row.getCell(columnMap.pincode).value : null,
         primaryLanguage: columnMap.primaryLanguage ? row.getCell(columnMap.primaryLanguage).value : null,
+        donation: columnMap.donation ? row.getCell(columnMap.donation).value : null,
+        donationDate: columnMap.donationDate ? row.getCell(columnMap.donationDate).value : null,
       },
     });
   });

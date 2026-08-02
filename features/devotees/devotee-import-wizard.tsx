@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { PreviewRow } from "@/lib/validation/devotee-import";
 import { cn } from "@/lib/utils";
+import { formatDonationAmount } from "@/lib/currency";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,6 +35,7 @@ interface CommitResponse {
   imported: number;
   skipped: number;
   failed: number;
+  donationsImported: number;
   errors: { rowNumber: number; message: string }[];
 }
 
@@ -197,6 +199,7 @@ export function DevoteeImportWizard() {
                   <TableHead className="hidden md:table-cell">{t("columns.phone")}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t("columns.familyName")}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t("columns.relationship")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("columns.donation")}</TableHead>
                   <TableHead>{t("columns.status")}</TableHead>
                   <TableHead>{t("columns.issues")}</TableHead>
                 </TableRow>
@@ -210,6 +213,9 @@ export function DevoteeImportWizard() {
                     <TableCell className="hidden lg:table-cell">{row.data.familyName || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {row.data.relationship ? tRelationship(row.data.relationship) : "—"}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {row.data.donationAmount !== null ? formatDonationAmount(row.data.donationAmount) : "—"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[row.status]}>{t(`statusLabels.${row.status}`)}</Badge>
@@ -238,6 +244,9 @@ export function DevoteeImportWizard() {
             <div>
               <p className="text-sm font-medium">
                 <span className="text-emerald">{t("done.imported", { count: result.imported })}</span>
+                {result.donationsImported > 0 && (
+                  <span className="text-emerald"> · {t("done.donationsImported", { count: result.donationsImported })}</span>
+                )}
                 {result.skipped > 0 && (
                   <span className="text-muted-foreground"> · {t("done.skipped", { count: result.skipped })}</span>
                 )}

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { countDonationsFiltered, deleteDonations, listDonations } from "./donations";
+import { countDonationsFiltered, deleteAllDonations, deleteDonations, listDonations } from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -110,5 +110,40 @@ describe("deleteDonations", () => {
     });
 
     await expect(deleteDonations("tenant-1", ["d1"])).rejects.toThrow("boom");
+  });
+});
+
+describe("deleteAllDonations", () => {
+  beforeEach(() => {
+    (getPool as unknown as Mock).mockReset();
+  });
+
+  it("deletes every donation for the tenant and zeroes out devotee donation caches in one transaction", async () => {
+    const { queries } = createTransactionalClient([{ match: "DELETE FROM donations", rows: [{}, {}, {}] }]);
+
+    const count = await deleteAllDonations("tenant-1");
+
+    expect(count).toBe(3);
+    const sqls = queries.map((q) => q.sql);
+    expect(sqls[0]).toBe("BEGIN");
+    const deleteQuery = queries.find((q) => q.sql.includes("DELETE FROM donations"));
+    expect(deleteQuery?.sql).not.toContain("id = ANY");
+    expect(deleteQuery?.params).toEqual(["tenant-1"]);
+    expect(sqls).toContainEqual(expect.stringContaining("UPDATE devotees"));
+    expect(sqls.at(-1)).toBe("COMMIT");
+  });
+
+  it("rolls back and rethrows if the delete fails", async () => {
+    (getPool as unknown as Mock).mockReturnValue({
+      connect: vi.fn().mockResolvedValue({
+        query: vi.fn(async (sql: string) => {
+          if (sql === "BEGIN") return { rows: [] };
+          throw new Error("boom");
+        }),
+        release: vi.fn(),
+      }),
+    });
+
+    await expect(deleteAllDonations("tenant-1")).rejects.toThrow("boom");
   });
 });

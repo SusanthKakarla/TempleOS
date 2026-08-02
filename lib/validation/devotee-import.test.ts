@@ -19,6 +19,8 @@ function row(overrides: Partial<RawImportRow> = {}): RawImportRow {
     state: null,
     pincode: null,
     primaryLanguage: null,
+    donation: null,
+    donationDate: null,
     ...overrides,
   };
 }
@@ -143,6 +145,55 @@ describe("validateImportRow", () => {
     const result = validateImportRow(18, row({ anniversary: "2000-02-14" }), new Set(), new Set());
     expect(result.data.weddingAnniversary).toBe("2000-02-14");
   });
+
+  it("imports the devotee as normal when donation columns are absent", () => {
+    const result = validateImportRow(19, row(), new Set(), new Set());
+    expect(result.status).toBe("valid");
+    expect(result.data.donationAmount).toBeNull();
+    expect(result.data.donationDate).toBeNull();
+    expect(result.errors).toEqual([]);
+  });
+
+  it("parses a valid donation amount and date", () => {
+    const result = validateImportRow(20, row({ donation: "1,500", donationDate: "2026-01-15" }), new Set(), new Set());
+    expect(result.status).toBe("valid");
+    expect(result.data.donationAmount).toBe(1500);
+    expect(result.data.donationDate).toBe("2026-01-15");
+  });
+
+  it("still imports the devotee when the donation amount is malformed, flagging it without invalidating the row", () => {
+    const result = validateImportRow(21, row({ donation: "not-a-number" }), new Set(), new Set());
+    expect(result.status).toBe("valid");
+    expect(result.data.donationAmount).toBeNull();
+    expect(result.errors).toContain("Donation amount must be a positive number");
+  });
+
+  it("still imports the devotee when the donation date is malformed, flagging it without invalidating the row", () => {
+    const result = validateImportRow(22, row({ donation: 500, donationDate: "15/01/2026" }), new Set(), new Set());
+    expect(result.status).toBe("valid");
+    expect(result.data.donationAmount).toBe(500);
+    expect(result.data.donationDate).toBeNull();
+    expect(result.errors).toContain("Invalid donation date (expected YYYY-MM-DD)");
+  });
+
+  it("rejects a zero or negative donation amount", () => {
+    expect(validateImportRow(23, row({ donation: 0 }), new Set(), new Set()).data.donationAmount).toBeNull();
+    expect(validateImportRow(24, row({ donation: -50 }), new Set(), new Set()).data.donationAmount).toBeNull();
+  });
+
+  it("still surfaces a donation issue on an otherwise-invalid row alongside the devotee error", () => {
+    const result = validateImportRow(25, row({ name: "", donation: "bad" }), new Set(), new Set());
+    expect(result.status).toBe("invalid");
+    expect(result.errors).toContain("Name is required");
+    expect(result.errors).toContain("Donation amount must be a positive number");
+  });
+
+  it("carries a donation amount through on a duplicate row so it can still be linked at commit time", () => {
+    const seenPhones = new Set(["+919876500000"]);
+    const result = validateImportRow(26, row({ donation: 250 }), seenPhones, new Set());
+    expect(result.status).toBe("duplicate_in_file");
+    expect(result.data.donationAmount).toBe(250);
+  });
 });
 
 describe("validateFamilyGroups", () => {
@@ -166,6 +217,8 @@ describe("validateFamilyGroups", () => {
         state: null,
         pincode: null,
         primaryLanguage: null,
+        donationAmount: null,
+        donationDate: null,
         ...overrides,
       },
       normalizedPhone: null,
@@ -228,6 +281,8 @@ describe("validateFamilyGroups", () => {
         state: null,
         pincode: null,
         primaryLanguage: null,
+        donationAmount: null,
+        donationDate: null,
       },
       normalizedPhone: "+919876500000",
       status: "valid",

@@ -263,7 +263,7 @@ export async function createFamilyWithMembers(
       const devoteeResult = await client.query<{ id: string }>(
         `INSERT INTO devotees
            (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
-         VALUES ($1, $2, $3, $4, $5, $6, ($2 IS NOT NULL), $7, $8, $9, $10)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id`,
         [
           tenantId,
@@ -272,6 +272,7 @@ export async function createFamilyWithMembers(
           member.dateOfBirth ?? null,
           member.birthStar ?? null,
           member.ancestralLineage ?? null,
+          member.whatsappPhone != null,
           member.gender ?? null,
           member.maritalStatus ?? null,
           member.weddingAnniversary ?? null,
@@ -388,7 +389,7 @@ export async function updateFamilyWithMembers(
         const devoteeResult = await client.query<{ id: string }>(
           `INSERT INTO devotees
              (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
-           VALUES ($1, $2, $3, $4, $5, $6, ($2 IS NOT NULL), $7, $8, $9, $10)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            RETURNING id`,
           [
             tenantId,
@@ -397,6 +398,7 @@ export async function updateFamilyWithMembers(
             member.dateOfBirth ?? null,
             member.birthStar ?? null,
             member.ancestralLineage ?? null,
+            member.whatsappPhone != null,
             member.gender ?? null,
             member.maritalStatus ?? null,
             member.weddingAnniversary ?? null,
@@ -513,7 +515,7 @@ export async function addMembersToFamily(
       const devoteeResult = await client.query<{ id: string }>(
         `INSERT INTO devotees
            (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
-         VALUES ($1, $2, $3, $4, $5, $6, ($2 IS NOT NULL), $7, $8, $9, $10)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id`,
         [
           tenantId,
@@ -522,6 +524,7 @@ export async function addMembersToFamily(
           member.dateOfBirth ?? null,
           member.birthStar ?? null,
           member.ancestralLineage ?? null,
+          member.whatsappPhone != null,
           member.gender ?? null,
           member.maritalStatus ?? null,
           member.weddingAnniversary ?? null,

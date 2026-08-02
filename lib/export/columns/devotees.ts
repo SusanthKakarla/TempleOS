@@ -102,6 +102,8 @@ interface TemplateExampleRow {
   state: string;
   pincode: string;
   primaryLanguage: string;
+  donation: string;
+  donationDate: string;
 }
 
 export const DEVOTEE_IMPORT_TEMPLATE_COLUMNS: ColumnDef<TemplateExampleRow>[] = [
@@ -121,6 +123,8 @@ export const DEVOTEE_IMPORT_TEMPLATE_COLUMNS: ColumnDef<TemplateExampleRow>[] = 
   { key: "state", header: "State (family only)", accessor: (r) => r.state, width: 16 },
   { key: "pincode", header: "Pincode (family only)", accessor: (r) => r.pincode, width: 12 },
   { key: "primaryLanguage", header: "Primary Language (family only)", accessor: (r) => r.primaryLanguage, width: 20 },
+  { key: "donation", header: "Donation", accessor: (r) => r.donation, width: 16 },
+  { key: "donationDate", header: "Donation Date (YYYY-MM-DD)", accessor: (r) => r.donationDate, width: 26 },
 ];
 
 /**
@@ -146,6 +150,8 @@ export const DEVOTEE_IMPORT_TEMPLATE_EXAMPLE_ROWS: TemplateExampleRow[] = [
     state: "",
     pincode: "",
     primaryLanguage: "",
+    donation: "1001",
+    donationDate: "2026-01-15",
   },
   {
     name: "Ramesh Reddy",
@@ -164,6 +170,8 @@ export const DEVOTEE_IMPORT_TEMPLATE_EXAMPLE_ROWS: TemplateExampleRow[] = [
     state: "Andhra Pradesh",
     pincode: "520001",
     primaryLanguage: "Telugu",
+    donation: "5000",
+    donationDate: "2026-01-20",
   },
   {
     name: "Lakshmi Reddy",
@@ -182,6 +190,8 @@ export const DEVOTEE_IMPORT_TEMPLATE_EXAMPLE_ROWS: TemplateExampleRow[] = [
     state: "",
     pincode: "",
     primaryLanguage: "",
+    donation: "",
+    donationDate: "",
   },
   {
     name: "Rahul Reddy",
@@ -200,5 +210,7 @@ export const DEVOTEE_IMPORT_TEMPLATE_EXAMPLE_ROWS: TemplateExampleRow[] = [
     state: "",
     pincode: "",
     primaryLanguage: "",
+    donation: "",
+    donationDate: "",
   },
 ];
