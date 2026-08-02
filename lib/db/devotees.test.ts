@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { deactivateAllDevotees, deactivateDevotees } from "./devotees";
+import { deactivateAllDevotees, deactivateDevotees, getDevoteeByPhone, listExistingPhones } from "./devotees";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -52,5 +52,52 @@ describe("deactivateAllDevotees", () => {
     expect(String(sql)).toContain("UPDATE devotees SET is_active = false");
     expect(String(sql)).toContain("is_active = true");
     expect(params).toEqual(["tenant-1"]);
+  });
+});
+
+describe("listExistingPhones", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockClear();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("returns an empty set without touching the pool when given no phones", async () => {
+    const result = await listExistingPhones("tenant-1", []);
+    expect(result).toEqual(new Set());
+    expect(getPool).not.toHaveBeenCalled();
+  });
+
+  it("only counts active devotees as existing — a deactivated phone (e.g. after Delete All Devotees) must not block re-import", async () => {
+    query.mockResolvedValueOnce({ rows: [{ whatsapp_phone: "+919876500000" }] });
+
+    const result = await listExistingPhones("tenant-1", ["+919876500000", "+919876500001"]);
+
+    expect(result).toEqual(new Set(["+919876500000"]));
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("is_active = true");
+    expect(params).toEqual(["tenant-1", ["+919876500000", "+919876500001"]]);
+  });
+});
+
+describe("getDevoteeByPhone", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("prefers the active devotee and limits to one row when a phone is shared with a deactivated devotee", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await getDevoteeByPhone("tenant-1", "+919876500000");
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("ORDER BY d.is_active DESC");
+    expect(String(sql)).toContain("LIMIT 1");
+    expect(params).toEqual(["tenant-1", "+919876500000"]);
   });
 });
