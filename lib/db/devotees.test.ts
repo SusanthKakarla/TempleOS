@@ -143,4 +143,15 @@ describe("countDevoteesFiltered", () => {
     const [sql] = query.mock.calls[0];
     expect(String(sql)).toContain("d.whatsapp_phone IS NULL");
   });
+
+  it("filters by first_seen_at date range when dateFrom/dateTo are set — used by the Dashboard's date-range filter", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "4" }] });
+
+    await countDevoteesFiltered("tenant-1", { dateFrom: "2026-01-01", dateTo: "2026-01-31" });
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.first_seen_at >= $2");
+    expect(String(sql)).toContain("d.first_seen_at <= $3");
+    expect(params).toEqual(["tenant-1", "2026-01-01", "2026-01-31"]);
+  });
 });

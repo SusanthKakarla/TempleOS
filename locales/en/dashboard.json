@@ -11,6 +11,7 @@
     "filters": "Filters",
     "loading": "Loading...",
     "required": "Required",
+    "clearFilters": "Clear Filters",
     "bulkDeleteConfirm": "Are you sure you want to delete the selected records? This action cannot be undone.",
     "datePicker": {
       "pickDate": "Pick a date",
@@ -52,7 +53,9 @@
     "todayIs": "{greeting}. Today is {date}.",
     "metrics": {
       "totalDonations": "Total Donations",
+      "donationCount": "Donations Count",
       "upcomingEvents": "Upcoming Events",
+      "totalEvents": "Total Events",
       "totalDevotees": "Total Devotees",
       "whatsappOptIns": "WhatsApp Opt-ins",
       "totalDonationsThisMonth": "Total Donations (This Month)",

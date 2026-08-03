@@ -1,14 +1,15 @@
-import { CalendarDays, HandCoins, Users } from "lucide-react";
+import { CalendarDays, HandCoins, Receipt, Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
-import { countUpcomingPublishedEvents } from "@/lib/db/events";
+import { countEventsFiltered } from "@/lib/db/events";
 import { countDevoteesFiltered } from "@/lib/db/devotees";
-import { getDonationSummary, getDonationsPerDay } from "@/lib/db/donations";
+import { getDashboardDonationStats, getDonationsPerDay } from "@/lib/db/donations";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
+import { DashboardFilters } from "@/features/dashboard/dashboard-filters";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { translateOne } from "@/lib/i18n/translate";
 
@@ -21,15 +22,20 @@ function greetingKey(): "greetingMorning" | "greetingAfternoon" | "greetingEveni
   return "greetingEvening";
 }
 
-export default async function DashboardHomePage() {
+interface DashboardHomePageProps {
+  searchParams: Promise<{ dateFrom?: string; dateTo?: string; purpose?: string }>;
+}
+
+export default async function DashboardHomePage({ searchParams }: DashboardHomePageProps) {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("dashboardHome");
+  const { dateFrom, dateTo, purpose } = await searchParams;
 
-  const [tenant, upcomingEvents, totalDevotees, donationSummary, donationsPerDayRaw, locale] = await Promise.all([
+  const [tenant, totalEvents, totalDevotees, donationStats, donationsPerDayRaw, locale] = await Promise.all([
     getTenantById(session.tenantId),
-    countUpcomingPublishedEvents(session.tenantId),
-    countDevoteesFiltered(session.tenantId, {}),
-    getDonationSummary(session.tenantId),
+    countEventsFiltered(session.tenantId, { dateFrom, dateTo }),
+    countDevoteesFiltered(session.tenantId, { dateFrom, dateTo }),
+    getDashboardDonationStats(session.tenantId, { dateFrom, dateTo, purpose }),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
     getLocaleCookie(),
   ]);
@@ -55,16 +61,23 @@ export default async function DashboardHomePage() {
         subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <DashboardFilters />
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
           label={t("metrics.totalDonations")}
-          value={Number(donationSummary.totalThisMonth)}
+          value={Number(donationStats.total)}
           format="currency"
           icon={<HandCoins className="size-4.5" />}
         />
         <MetricCard
-          label={t("metrics.upcomingEvents")}
-          value={upcomingEvents}
+          label={t("metrics.donationCount")}
+          value={donationStats.count}
+          icon={<Receipt className="size-4.5" />}
+        />
+        <MetricCard
+          label={t("metrics.totalEvents")}
+          value={totalEvents}
           icon={<CalendarDays className="size-4.5" />}
         />
         <MetricCard

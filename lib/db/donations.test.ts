@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { countDonationsFiltered, deleteAllDonations, deleteDonations, listDonations } from "./donations";
+import { countDonationsFiltered, deleteAllDonations, deleteDonations, getDashboardDonationStats, listDonations } from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -44,6 +44,51 @@ describe("donations purpose filter", () => {
     const [sql, params] = query.mock.calls[0];
     expect(String(sql)).toContain("d.purpose = $2");
     expect(params).toEqual(["tenant-1", "Annadanam (Food Offering)"]);
+  });
+});
+
+describe("getDashboardDonationStats", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("returns the unfiltered all-time sum and count when no filter is given — the Dashboard's default view", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "752350", count: "113" }] });
+
+    const stats = await getDashboardDonationStats("tenant-1");
+
+    expect(stats).toEqual({ total: "752350", count: 113 });
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).not.toContain("donated_at");
+    expect(params).toEqual(["tenant-1"]);
+  });
+
+  it("applies dateFrom/dateTo/purpose conditions when given", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "5000", count: "2" }] });
+
+    const stats = await getDashboardDonationStats("tenant-1", {
+      dateFrom: "2026-01-01",
+      dateTo: "2026-01-31",
+      purpose: "Seva",
+    });
+
+    expect(stats).toEqual({ total: "5000", count: 2 });
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.donated_at >= $2");
+    expect(String(sql)).toContain("d.donated_at <= $3");
+    expect(String(sql)).toContain("d.purpose = $4");
+    expect(params).toEqual(["tenant-1", "2026-01-01", "2026-01-31", "Seva"]);
+  });
+
+  it("returns zero total/count gracefully when there are no matching donations", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0" }] });
+
+    const stats = await getDashboardDonationStats("tenant-1", { dateFrom: "2099-01-01" });
+
+    expect(stats).toEqual({ total: "0", count: 0 });
   });
 });
 

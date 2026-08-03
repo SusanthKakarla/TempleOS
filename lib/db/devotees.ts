@@ -116,6 +116,9 @@ export interface ListDevoteesOptions {
   timezone?: string;
   /** Default false — deactivated devotees are hidden from the list unless explicitly requested (e.g. to reactivate one). */
   includeInactive?: boolean;
+  /** Filters by first_seen_at — used by the Dashboard's date-range filter. */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 const DEVOTEE_SORT_COLUMNS: Record<NonNullable<ListDevoteesOptions["sort"]>, string> = {
@@ -152,6 +155,14 @@ function buildDevoteeConditions(opts: DevoteeFilterOptions = {}): { conditions: 
   }
   if (opts.hasPhone === true) conditions.push("d.whatsapp_phone IS NOT NULL");
   if (opts.hasPhone === false) conditions.push("d.whatsapp_phone IS NULL");
+  if (opts.dateFrom) {
+    params.push(opts.dateFrom);
+    conditions.push(`d.first_seen_at >= $${params.length + 1}`);
+  }
+  if (opts.dateTo) {
+    params.push(opts.dateTo);
+    conditions.push(`d.first_seen_at <= $${params.length + 1}`);
+  }
   if (opts.occasion && opts.timezone) {
     params.push(opts.timezone);
     const tzIdx = params.length + 1;

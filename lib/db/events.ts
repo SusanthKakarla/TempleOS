@@ -37,6 +37,8 @@ function mapEvent(row: EventRow): Event {
 export interface ListEventsFilter {
   status?: EventStatus;
   upcomingOnly?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
   sort?: "date" | "title" | "status";
@@ -49,7 +51,7 @@ const EVENT_SORT_COLUMNS: Record<NonNullable<ListEventsFilter["sort"]>, string> 
   status: "status",
 };
 
-function buildEventConditions(filter: Pick<ListEventsFilter, "status" | "upcomingOnly">) {
+function buildEventConditions(filter: Pick<ListEventsFilter, "status" | "upcomingOnly" | "dateFrom" | "dateTo">) {
   const conditions = ["tenant_id = $1"];
   const params: unknown[] = [];
 
@@ -59,6 +61,14 @@ function buildEventConditions(filter: Pick<ListEventsFilter, "status" | "upcomin
   }
   if (filter.upcomingOnly) {
     conditions.push("starts_at >= now()");
+  }
+  if (filter.dateFrom) {
+    params.push(filter.dateFrom);
+    conditions.push(`starts_at >= $${params.length + 1}`);
+  }
+  if (filter.dateTo) {
+    params.push(filter.dateTo);
+    conditions.push(`starts_at <= $${params.length + 1}`);
   }
   return { conditions, params };
 }
@@ -85,7 +95,7 @@ export async function listEvents(tenantId: string, filter: ListEventsFilter = {}
 
 export async function countEventsFiltered(
   tenantId: string,
-  filter: Pick<ListEventsFilter, "status" | "upcomingOnly"> = {},
+  filter: Pick<ListEventsFilter, "status" | "upcomingOnly" | "dateFrom" | "dateTo"> = {},
 ): Promise<number> {
   const { conditions, params: filterParams } = buildEventConditions(filter);
   const params: unknown[] = [tenantId, ...filterParams];

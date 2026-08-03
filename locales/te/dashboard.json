@@ -11,6 +11,7 @@
     "filters": "ఫిల్టర్‌లు",
     "loading": "లోడ్ అవుతోంది...",
     "required": "తప్పనిసరి",
+    "clearFilters": "ఫిల్టర్‌లను తీసివేయండి",
     "bulkDeleteConfirm": "మీరు ఎంచుకున్న రికార్డులను తొలగించాలనుకుంటున్నారా? ఈ చర్యను రద్దు చేయలేరు.",
     "datePicker": {
       "pickDate": "తేదీని ఎంచుకోండి",
@@ -52,7 +53,9 @@
     "todayIs": "{greeting}. ఈరోజు {date}.",
     "metrics": {
       "totalDonations": "మొత్తం విరాళాలు",
+      "donationCount": "విరాళాల సంఖ్య",
       "upcomingEvents": "రాబోయే కార్యక్రమాలు",
+      "totalEvents": "మొత్తం కార్యక్రమాలు",
       "totalDevotees": "మొత్తం భక్తులు",
       "whatsappOptIns": "వాట్సాప్ ఆప్ట్-ఇన్‌లు",
       "totalDonationsThisMonth": "మొత్తం విరాళాలు (ఈ నెల)",

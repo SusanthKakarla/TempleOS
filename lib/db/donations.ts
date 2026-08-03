@@ -490,6 +490,27 @@ export async function getDonationSummary(tenantId: string): Promise<DonationSumm
   };
 }
 
+export interface DashboardDonationStats {
+  total: string;
+  count: number;
+}
+
+/** Sum + count of donations matching the given filter — unfiltered (defaults), this is the all-time total, exactly what the Dashboard's "Total Donations" card shows when no date range/purpose is selected. */
+export async function getDashboardDonationStats(
+  tenantId: string,
+  filter: Pick<ListDonationsFilter, "dateFrom" | "dateTo" | "purpose"> = {},
+): Promise<DashboardDonationStats> {
+  const { conditions, params: filterParams } = buildDonationConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
+  const { rows } = await getPool().query<{ total: string; count: string }>(
+    `SELECT COALESCE(SUM(d.amount), 0) AS total, count(*) AS count
+     FROM donations d
+     WHERE ${conditions.join(" AND ")}`,
+    params,
+  );
+  return { total: rows[0]?.total ?? "0", count: Number(rows[0]?.count ?? 0) };
+}
+
 export interface DonationsPerDayRow {
   date: string;
   total: string;
