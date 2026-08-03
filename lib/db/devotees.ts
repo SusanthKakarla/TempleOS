@@ -109,6 +109,8 @@ export interface ListDevoteesOptions {
   registrationType?: "individual" | "family";
   isDonor?: boolean;
   whatsappOptIn?: boolean;
+  /** "Phone Number" filter — true: only devotees with a phone on file; false: only devotees with none. */
+  hasPhone?: boolean;
   /** "_week" variants need `timezone` set — silently ignored otherwise. */
   occasion?: "birthday_today" | "birthday_week" | "anniversary_today" | "anniversary_week";
   timezone?: string;
@@ -148,6 +150,8 @@ function buildDevoteeConditions(opts: DevoteeFilterOptions = {}): { conditions: 
     params.push(opts.whatsappOptIn);
     conditions.push(`d.whatsapp_opt_in_status = $${params.length + 1}`);
   }
+  if (opts.hasPhone === true) conditions.push("d.whatsapp_phone IS NOT NULL");
+  if (opts.hasPhone === false) conditions.push("d.whatsapp_phone IS NULL");
   if (opts.occasion && opts.timezone) {
     params.push(opts.timezone);
     const tzIdx = params.length + 1;
@@ -201,15 +205,23 @@ export async function listDevoteesByIds(tenantId: string, ids: string[]): Promis
   return rows.map(mapDevotee);
 }
 
-/** Devotee import — checks a batch of normalized phone numbers against existing devotees in one query. */
-/** Import duplicate-detection — only active devotees count as "existing": a deactivated devotee ("Delete All Devotees", or a single deactivate) no longer occupies that phone number, matching migration 035's partial unique index. */
-export async function listExistingPhones(tenantId: string, phones: string[]): Promise<Set<string>> {
-  if (phones.length === 0) return new Set();
-  const { rows } = await getPool().query<{ whatsapp_phone: string }>(
-    "SELECT whatsapp_phone FROM devotees WHERE tenant_id = $1 AND whatsapp_phone = ANY($2::text[]) AND is_active = true",
-    [tenantId, phones],
+/**
+ * "Shared Phone Members" — every OTHER active devotee using the same phone
+ * number as `excludeId`. Phone numbers are never a dedup/identity key in
+ * this app (migration 036) — multiple real, independent people can share
+ * one household or business number — so this is purely informational,
+ * surfaced on the devotee detail page.
+ */
+export async function listDevoteesSharingPhone(
+  tenantId: string,
+  whatsappPhone: string,
+  excludeId: string,
+): Promise<Devotee[]> {
+  const { rows } = await getPool().query<DevoteeRow>(
+    `${DEVOTEE_SELECT} WHERE d.tenant_id = $1 AND d.whatsapp_phone = $2 AND d.id != $3 AND d.is_active = true ORDER BY d.display_name ASC`,
+    [tenantId, whatsappPhone, excludeId],
   );
-  return new Set(rows.map((r) => r.whatsapp_phone));
+  return rows.map(mapDevotee);
 }
 
 /** Dashboard "Recent Devotees" widget. */
@@ -419,33 +431,46 @@ export interface UpsertDevoteeFromWhatsAppInput {
 }
 
 /**
- * Called from the inbound WhatsApp webhook. Auto-creates a new devotee opted
- * in, or reuses an existing one, refreshing last-seen/interaction without
- * touching a display name an admin may have already edited. Never touches
- * family_id — a devotee created this way starts with no family, always.
+ * Called from the inbound WhatsApp webhook. Reuses an existing devotee for
+ * this phone if one is active (refreshing last-seen/interaction without
+ * touching a display name an admin may have already edited), or creates a
+ * new one opted in. Never touches family_id — a devotee created this way
+ * starts with no family, always.
  *
- * The ON CONFLICT target must repeat migration 035's partial unique index
- * predicate (`WHERE is_active`) verbatim — Postgres only accepts a partial
- * index as an arbiter when the conflict clause's WHERE matches it exactly.
- * This also gives the right behavior for a deactivated ("Delete All
- * Devotees") phone number messaging back in: since only active rows are in
- * the arbiter index, that's an INSERT of a fresh active devotee, not a
- * DO UPDATE resurrecting the old deactivated row.
+ * Since migration 036, phone numbers are never unique (multiple devotees
+ * may legitimately share one, by design), so this can no longer be a single
+ * atomic `INSERT ... ON CONFLICT` — there's no unique index left to serve as
+ * an arbiter. Instead it explicitly looks up a match first via
+ * getDevoteeByPhone (active-first, deterministic), then updates that one
+ * row or inserts a fresh one. A message from a phone number whose only
+ * matching devotee was deactivated ("Delete All Devotees") correctly
+ * inserts a new active devotee rather than resurrecting the old row, since
+ * getDevoteeByPhone only returns active matches for this purpose (see the
+ * `active` check below) — the same behavior migration 035 originally
+ * documented, now expressed in application code instead of a partial index.
  */
 export async function upsertDevoteeFromWhatsApp(
   tenantId: string,
   input: UpsertDevoteeFromWhatsAppInput,
 ): Promise<Devotee> {
+  const existing = await getDevoteeByPhone(tenantId, input.whatsappPhone);
+  if (existing?.isActive) {
+    await getPool().query(
+      `UPDATE devotees SET
+         whatsapp_opt_in_status = true,
+         last_interaction_type = $2,
+         last_seen_at = now(),
+         updated_at = now()
+       WHERE id = $1`,
+      [existing.id, input.lastInteractionType],
+    );
+    return await getDevoteeById(tenantId, existing.id) as Devotee;
+  }
+
   const { rows } = await getPool().query<DevoteeRow>(
     `INSERT INTO devotees
        (tenant_id, whatsapp_phone, display_name, whatsapp_opt_in_status, last_interaction_type, first_seen_at, last_seen_at)
      VALUES ($1, $2, $3, true, $4, now(), now())
-     ON CONFLICT (tenant_id, whatsapp_phone) WHERE is_active
-     DO UPDATE SET
-       whatsapp_opt_in_status = true,
-       last_interaction_type = EXCLUDED.last_interaction_type,
-       last_seen_at = now(),
-       updated_at = now()
      RETURNING *`,
     [tenantId, input.whatsappPhone, input.displayName, input.lastInteractionType],
   );

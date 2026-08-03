@@ -17,7 +17,8 @@ const languageSchema = z.enum(["en", "te"]);
 
 const devoteeSchema = z.object({
   displayName: z.string().trim().min(1, "Name is required").max(200),
-  whatsappPhone: z.string().trim().min(1, "Phone number is required"),
+  /** Optional — phone number is contact info only, never required to create a devotee (Scenario 2). */
+  whatsappPhone: nullableTrimmedString,
   whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
   birthStar: nullableTrimmedString,

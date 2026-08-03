@@ -18,6 +18,7 @@ interface DevoteesPageProps {
     occasion?: string;
     isDonor?: string;
     whatsappOptIn?: string;
+    hasPhone?: string;
     status?: string;
   }>;
 }
@@ -44,6 +45,7 @@ export default async function DevoteesPage({ searchParams }: DevoteesPageProps) 
     occasion: occasionParam,
     isDonor: isDonorParam,
     whatsappOptIn: whatsappOptInParam,
+    hasPhone: hasPhoneParam,
     status: statusParam,
   } = await searchParams;
   const page = parsePageParam(pageParam);
@@ -53,6 +55,7 @@ export default async function DevoteesPage({ searchParams }: DevoteesPageProps) 
   const occasion = OCCASION_VALUES.find((value) => value === occasionParam);
   const isDonor = isDonorParam === "true" ? true : isDonorParam === "false" ? false : undefined;
   const whatsappOptIn = whatsappOptInParam === "true" ? true : whatsappOptInParam === "false" ? false : undefined;
+  const hasPhone = hasPhoneParam === "true" ? true : hasPhoneParam === "false" ? false : undefined;
   const includeInactive = statusParam === "all";
 
   const locale = await getLocaleCookie();
@@ -65,6 +68,7 @@ export default async function DevoteesPage({ searchParams }: DevoteesPageProps) 
     registrationType,
     isDonor,
     whatsappOptIn,
+    hasPhone,
     occasion,
     includeInactive,
     timezone: tenant?.timezone,

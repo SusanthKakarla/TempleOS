@@ -75,6 +75,7 @@ interface PendingFilters {
   occasion: string;
   isDonor: string;
   whatsappOptIn: string;
+  hasPhone: string;
   status: string;
 }
 
@@ -84,6 +85,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters 
     occasion: searchParams.get("occasion") ?? "all",
     isDonor: searchParams.get("isDonor") ?? "all",
     whatsappOptIn: searchParams.get("whatsappOptIn") ?? "all",
+    hasPhone: searchParams.get("hasPhone") ?? "all",
     status: searchParams.get("status") ?? "active",
   };
 }
@@ -237,13 +239,18 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
   };
   const donorItems: Record<string, string> = {
     all: t("filters.allDonorStatus"),
-    true: t("filters.donor"),
-    false: t("filters.nonDonor"),
+    true: t("filters.withDonations"),
+    false: t("filters.withoutDonations"),
   };
   const whatsappItems: Record<string, string> = {
     all: t("filters.allWhatsappStatus"),
     true: t("optedIn"),
     false: t("notOptedIn"),
+  };
+  const phoneItems: Record<string, string> = {
+    all: t("filters.allPhoneStatus"),
+    true: t("filters.withPhone"),
+    false: t("filters.withoutPhone"),
   };
   const statusItems: Record<string, string> = {
     active: t("filters.activeOnly"),
@@ -371,6 +378,25 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
         </Select>
       </div>
       <div className="space-y-1.5">
+        <Label>{t("filters.phoneLabel")}</Label>
+        <Select
+          value={pendingFilters.hasPhone}
+          onValueChange={(v) => setPendingFilters((f) => ({ ...f, hasPhone: v ?? "all" }))}
+          items={phoneItems}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(phoneItems).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
         <Label>{t("filters.statusLabel")}</Label>
         <Select
           value={pendingFilters.status}
@@ -443,6 +469,7 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                     occasion: "all",
                     isDonor: "all",
                     whatsappOptIn: "all",
+                    hasPhone: "all",
                     status: "active",
                   };
                   setPendingFilters(reset);

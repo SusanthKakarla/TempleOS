@@ -75,7 +75,7 @@ async function insertDevotee(
       input.dateOfBirth ?? null,
       input.birthStar ?? null,
       input.ancestralLineage ?? null,
-      "kind" in input && input.kind === "new" ? (normalizedPhone !== null) : (whatsappOptInStatus ?? true),
+      normalizedPhone !== null && ("kind" in input && input.kind === "new" ? true : (whatsappOptInStatus ?? true)),
       input.gender ?? null,
       input.maritalStatus ?? null,
       input.weddingAnniversary ?? null,

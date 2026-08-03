@@ -37,44 +37,30 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     normalizedPhone = result;
   }
 
-  try {
-    const { newFamily, ...devoteeFields } = parsed.data;
+  const { newFamily, ...devoteeFields } = parsed.data;
 
-    // If creating a new family for this devotee, do it first so we can pass the familyId along
-    let resolvedFamilyId = devoteeFields.familyId;
-    if (newFamily) {
-      const family = await createFamilyForExistingDevotee(session.tenantId, id, newFamily.relationship, {
-        familyName: newFamily.familyName,
-        address: newFamily.address ?? null,
-        city: newFamily.city ?? null,
-        state: newFamily.state ?? null,
-        pincode: newFamily.pincode ?? null,
-      });
-      resolvedFamilyId = family.id;
-    }
-
-    const devotee = await updateDevotee(session.tenantId, id, {
-      ...devoteeFields,
-      familyId: resolvedFamilyId,
-      whatsappPhone: normalizedPhone,
+  // If creating a new family for this devotee, do it first so we can pass the familyId along
+  let resolvedFamilyId = devoteeFields.familyId;
+  if (newFamily) {
+    const family = await createFamilyForExistingDevotee(session.tenantId, id, newFamily.relationship, {
+      familyName: newFamily.familyName,
+      address: newFamily.address ?? null,
+      city: newFamily.city ?? null,
+      state: newFamily.state ?? null,
+      pincode: newFamily.pincode ?? null,
     });
-    if (!devotee) {
-      return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
-    }
-    return NextResponse.json({ devotee });
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      return NextResponse.json(
-        { error: "A devotee with this phone number already exists" },
-        { status: 409 },
-      );
-    }
-    throw err;
+    resolvedFamilyId = family.id;
   }
-}
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
+  const devotee = await updateDevotee(session.tenantId, id, {
+    ...devoteeFields,
+    familyId: resolvedFamilyId,
+    whatsappPhone: normalizedPhone,
+  });
+  if (!devotee) {
+    return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
+  }
+  return NextResponse.json({ devotee });
 }
 
 /**

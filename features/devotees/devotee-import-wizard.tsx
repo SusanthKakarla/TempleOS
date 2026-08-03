@@ -42,8 +42,6 @@ interface CommitResponse {
 const STATUS_VARIANT: Record<PreviewRow["status"], "default" | "secondary" | "destructive"> = {
   valid: "default",
   invalid: "destructive",
-  duplicate_in_file: "secondary",
-  duplicate_in_db: "secondary",
   empty: "secondary",
 };
 

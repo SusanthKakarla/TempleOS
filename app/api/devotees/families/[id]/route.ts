@@ -15,10 +15,6 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
-}
-
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const auth = await requireTenantAdminSession();
   if (!auth.ok) {
@@ -82,9 +78,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
     return NextResponse.json(result);
   } catch (err) {
-    if (isUniqueViolation(err)) {
-      return NextResponse.json({ error: "A member with this phone number already exists" }, { status: 409 });
-    }
     if (err instanceof FamilyValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }

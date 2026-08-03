@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, Bell, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, UsersRound, Users } from "lucide-react";
+import { ArrowLeft, Bell, Cake, HandCoins, Heart, MapPin, MessageCircle, Phone, Sparkles, Users2, UsersRound, Users } from "lucide-react";
 import { requireDashboardAdmin } from "../../require-dashboard-admin";
-import { getDevoteeById } from "@/lib/db/devotees";
+import { getDevoteeById, listDevoteesSharingPhone } from "@/lib/db/devotees";
 import { getFamilyWithMembers } from "@/lib/db/devotee-families";
 import { listDonationsByDevotee } from "@/lib/db/donations";
 import { listNotificationsForDevotee } from "@/lib/db/notifications";
@@ -15,6 +15,7 @@ import { formatDate, formatDateTime } from "@/lib/date";
 import type { SupportedLanguage } from "@/types/db";
 import { DevoteeDonationsCard } from "@/features/donations/devotee-donations-card";
 import { DevoteeDetailActions } from "@/features/devotees/devotee-detail-actions";
+import { AddPhoneNumberButton } from "@/features/devotees/add-phone-number-button";
 import { translateFields } from "@/lib/i18n/translate-rows";
 
 interface DevoteeDetailPageProps {
@@ -51,13 +52,15 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
   const devoteeRaw = await getDevoteeById(session.tenantId, id);
   if (!devoteeRaw) notFound();
 
-  const [donations, familyRaw, notifications] = await Promise.all([
+  const [donations, familyRaw, notifications, sharedPhoneMembersRaw] = await Promise.all([
     listDonationsByDevotee(session.tenantId, id),
     devoteeRaw.familyId ? getFamilyWithMembers(session.tenantId, devoteeRaw.familyId) : Promise.resolve(null),
     listNotificationsForDevotee(session.tenantId, id),
+    devoteeRaw.whatsappPhone ? listDevoteesSharingPhone(session.tenantId, devoteeRaw.whatsappPhone, id) : Promise.resolve([]),
   ]);
 
   const [devotee] = await translateFields([devoteeRaw], locale, ["displayName", "birthStar", "ancestralLineage"]);
+  const sharedPhoneMembers = await translateFields(sharedPhoneMembersRaw, locale, ["displayName"]);
   const family = familyRaw
     ? {
         family: (await translateFields([familyRaw.family], locale, ["familyName"]))[0],
@@ -105,10 +108,13 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
             </Avatar>
             <div>
               <h1 className="font-heading text-2xl font-semibold">{devotee.displayName}</h1>
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Phone className="size-3.5" />
-                {devotee.whatsappPhone ?? t("noPhone")}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Phone className="size-3.5" />
+                  {devotee.whatsappPhone ?? t("noPhone")}
+                </p>
+                {!devotee.whatsappPhone && devotee.isActive && <AddPhoneNumberButton devotee={devotee} />}
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -200,6 +206,29 @@ export default async function DevoteeDetailPage({ params }: DevoteeDetailPagePro
         )}
       </div>
       </FadeIn>
+
+      {sharedPhoneMembers.length > 0 && (
+        <FadeIn>
+          <div className="space-y-3">
+            <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+              <Users2 className="size-5 text-primary" />
+              {t("sharedPhoneMembers")}
+            </h2>
+            <p className="text-sm text-muted-foreground">{t("sharedPhoneMembersDescription")}</p>
+            <div className="flex flex-wrap gap-2">
+              {sharedPhoneMembers.map((member) => (
+                <Link
+                  key={member.id}
+                  href={`/dashboard/devotees/${member.id}`}
+                  className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm hover:bg-muted"
+                >
+                  {member.displayName}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+      )}
 
       {family && (
         <FadeIn>

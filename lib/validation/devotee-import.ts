@@ -32,7 +32,7 @@ export interface ImportRowData {
   donationDate: string | null;
 }
 
-export type ImportRowStatus = "valid" | "invalid" | "duplicate_in_file" | "duplicate_in_db" | "empty";
+export type ImportRowStatus = "valid" | "invalid" | "empty";
 
 export interface PreviewRow {
   rowNumber: number;
@@ -127,11 +127,15 @@ function parseLanguage(raw: string): SupportedLanguage | "invalid" | null {
 }
 
 /**
- * Pure — the caller (app/api/devotees/import/preview/route.ts) owns the
- * `seenPhones` Set and adds each row's normalizedPhone to it after calling
- * this, so within-file duplicates are detected incrementally row by row.
- * `existingPhones` is fetched once for the whole batch before validating any
- * row (lib/db/devotees.ts's listExistingPhones).
+ * Pure — every row is validated independently and always produces its own
+ * devotee (never merged, skipped, or matched to another row/an existing DB
+ * row by phone number). Phone number is contact info only, never an
+ * identity or dedup key: multiple rows sharing a phone are all created as
+ * separate devotees, exactly as if each had a unique number — see
+ * migration 036. A shared phone number across active devotees is instead
+ * surfaced, dynamically, as "Shared Phone Members" on each devotee's detail
+ * page (lib/db/devotees.ts's listDevoteesSharingPhone) — nothing about that
+ * relationship needs to be computed or stored at import time.
  *
  * A row with a Family Name is a family member: its WhatsApp phone becomes
  * optional (family members may have none) and it must carry a recognized
@@ -146,12 +150,7 @@ function parseLanguage(raw: string): SupportedLanguage | "invalid" | null {
  * visibility but never flips the row's status; the devotee still imports
  * normally, it just means no donation gets attached for that row.
  */
-export function validateImportRow(
-  rowNumber: number,
-  raw: RawImportRow,
-  seenPhones: ReadonlySet<string>,
-  existingPhones: ReadonlySet<string>,
-): PreviewRow {
+export function validateImportRow(rowNumber: number, raw: RawImportRow): PreviewRow {
   const name = cellToString(raw.name);
   const phoneRaw = cellToString(raw.phone);
   const birthStar = cellToString(raw.birthStar) || null;
@@ -175,12 +174,12 @@ export function validateImportRow(
   const errors: string[] = [];
   if (!name) errors.push("Name is required");
 
+  // Phone number is always optional — every devotee is created regardless
+  // (Scenario 2/Case 3/5). A malformed (non-blank) phone is still flagged.
   let normalizedPhone: string | null = null;
   if (phoneRaw) {
     normalizedPhone = normalizePhoneNumber(phoneRaw, "IN");
     if (!normalizedPhone) errors.push("Invalid WhatsApp number");
-  } else if (!isFamilyRow) {
-    errors.push("WhatsApp phone is required");
   }
 
   const dobResult = parseDateCell(raw.dob);
@@ -246,6 +245,20 @@ export function validateImportRow(
   if (donationDateResult === "invalid") donationErrors.push("Invalid donation date (expected YYYY-MM-DD)");
   const donationDate = donationDateResult === "invalid" ? null : donationDateResult;
 
+  // Non-blocking, informational warnings (Import Logic Case 3 / Case 5) — a
+  // missing phone never prevents the devotee from being created. Checked
+  // against donationAmountResult (not donationAmount) so a malformed-but-
+  // present donation isn't mistaken for "no donation at all" here — that
+  // case already gets its own message via donationErrors above.
+  const warnings: string[] = [];
+  if (!phoneRaw) {
+    if (typeof donationAmountResult === "number") {
+      warnings.push("Phone number is missing. The devotee has been created without a phone number.");
+    } else if (donationAmountResult === null) {
+      warnings.push("This devotee has no phone number and no donations.");
+    }
+  }
+
   const data: ImportRowData = {
     displayName: name,
     whatsappPhone: phoneRaw,
@@ -270,26 +283,8 @@ export function validateImportRow(
   if (errors.length > 0) {
     return { rowNumber, data, normalizedPhone, status: "invalid", errors: [...errors, ...donationErrors] };
   }
-  if (normalizedPhone && seenPhones.has(normalizedPhone)) {
-    return {
-      rowNumber,
-      data,
-      normalizedPhone,
-      status: "duplicate_in_file",
-      errors: ["Duplicate phone number elsewhere in this file", ...donationErrors],
-    };
-  }
-  if (normalizedPhone && existingPhones.has(normalizedPhone)) {
-    return {
-      rowNumber,
-      data,
-      normalizedPhone,
-      status: "duplicate_in_db",
-      errors: ["A devotee with this phone number already exists", ...donationErrors],
-    };
-  }
 
-  return { rowNumber, data, normalizedPhone, status: "valid", errors: donationErrors };
+  return { rowNumber, data, normalizedPhone, status: "valid", errors: [...donationErrors, ...warnings] };
 }
 
 /**

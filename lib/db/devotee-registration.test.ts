@@ -41,6 +41,21 @@ describe("registerDevoteeWithFamilyIntent", () => {
     );
   });
 
+  it("creates a devotee with no phone number at all — a donation without a known phone must still succeed (Scenario 2)", async () => {
+    const { queries } = createClient([{ match: "INSERT INTO devotees", rows: [{ id: "devotee-2" }] }]);
+
+    const result = await registerDevoteeWithFamilyIntent("tenant-1", {
+      devotee: { displayName: "Krishna", whatsappPhone: null },
+      family: { mode: "none" },
+    });
+
+    expect(result).toEqual({ devoteeId: "devotee-2", familyId: null });
+    const insertCall = queries.find((q) => q.sql.includes("INSERT INTO devotees"));
+    // whatsapp_phone param (index 1) is null, and whatsapp_opt_in_status (index 6) is forced false — never opted in with no number to message.
+    expect(insertCall?.params?.[1]).toBeNull();
+    expect(insertCall?.params?.[6]).toBe(false);
+  });
+
   it("rejects moving an existing devotee from another family without explicit move intent", async () => {
     createClient([
       { match: "INSERT INTO devotees", rows: [{ id: "devotee-1" }] },

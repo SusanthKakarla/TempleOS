@@ -46,62 +46,56 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const normalizedPhone = normalizePhoneNumber(parsed.data.whatsappPhone);
-  if (!normalizedPhone) {
-    return NextResponse.json({ error: "Enter a valid phone number" }, { status: 400 });
+  // Phone number is optional (Scenario 2) — only validate its format when one was actually given.
+  let normalizedPhone: string | null = null;
+  if (parsed.data.whatsappPhone) {
+    normalizedPhone = normalizePhoneNumber(parsed.data.whatsappPhone);
+    if (!normalizedPhone) {
+      return NextResponse.json({ error: "Enter a valid phone number" }, { status: 400 });
+    }
   }
 
-  try {
-    const devotee = await createDevotee(session.tenantId, {
-      whatsappPhone: normalizedPhone,
-      displayName: parsed.data.displayName,
-      whatsappOptInStatus: parsed.data.whatsappOptInStatus ?? true,
-      dateOfBirth: parsed.data.dateOfBirth ?? null,
-      birthStar: parsed.data.birthStar ?? null,
-      ancestralLineage: parsed.data.ancestralLineage ?? null,
-      gender: parsed.data.gender ?? null,
-      maritalStatus: parsed.data.maritalStatus ?? null,
-      weddingAnniversary: parsed.data.weddingAnniversary ?? null,
+  const devotee = await createDevotee(session.tenantId, {
+    whatsappPhone: normalizedPhone,
+    displayName: parsed.data.displayName,
+    whatsappOptInStatus: parsed.data.whatsappOptInStatus ?? true,
+    dateOfBirth: parsed.data.dateOfBirth ?? null,
+    birthStar: parsed.data.birthStar ?? null,
+    ancestralLineage: parsed.data.ancestralLineage ?? null,
+    gender: parsed.data.gender ?? null,
+    maritalStatus: parsed.data.maritalStatus ?? null,
+    weddingAnniversary: parsed.data.weddingAnniversary ?? null,
+  });
+
+  // New-devotee alert to staff (see migrations/013_notification_engine.sql).
+  // Enqueue happens synchronously (fast, bounded DB insert); the actual
+  // WhatsApp send happens post-response via after() — mirrors the
+  // event-notification pattern in app/api/events/[id]/route.ts.
+  const staff = await listTenantMembershipsForTenant(session.tenantId, { status: "active" });
+  const eligibleStaff = staff.filter((member) => member.roles.includes("admin") || member.roles.includes("priest"));
+  const createdIds: string[] = [];
+  for (const member of eligibleStaff) {
+    const language = member.preferredUiLanguage ?? "en";
+    const created = await enqueueNotification({
+      tenantId: session.tenantId,
+      recipient: { personId: member.personId },
+      notificationType: "devotee_registered",
+      category: "devotee",
+      language,
+      templateVars: {
+        devoteeName: devotee.displayName,
+        phoneNumber: devotee.whatsappPhone ?? "",
+        addedBy: session.displayName,
+        registrationTime: formatDateTime(devotee.createdAt, language),
+      },
     });
-
-    // New-devotee alert to staff (see migrations/013_notification_engine.sql).
-    // Enqueue happens synchronously (fast, bounded DB insert); the actual
-    // WhatsApp send happens post-response via after() — mirrors the
-    // event-notification pattern in app/api/events/[id]/route.ts.
-    const staff = await listTenantMembershipsForTenant(session.tenantId, { status: "active" });
-    const eligibleStaff = staff.filter((member) => member.roles.includes("admin") || member.roles.includes("priest"));
-    const createdIds: string[] = [];
-    for (const member of eligibleStaff) {
-      const language = member.preferredUiLanguage ?? "en";
-      const created = await enqueueNotification({
-        tenantId: session.tenantId,
-        recipient: { personId: member.personId },
-        notificationType: "devotee_registered",
-        category: "devotee",
-        language,
-        templateVars: {
-          devoteeName: devotee.displayName,
-          phoneNumber: devotee.whatsappPhone ?? "",
-          addedBy: session.displayName,
-          registrationTime: formatDateTime(devotee.createdAt, language),
-        },
-      });
-      createdIds.push(...created.map((n) => n.id));
-    }
-    if (createdIds.length > 0) {
-      after(() => processNotifications(createdIds));
-    }
-
-    return NextResponse.json({ devotee }, { status: 201 });
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      return NextResponse.json(
-        { error: "A devotee with this phone number already exists" },
-        { status: 409 },
-      );
-    }
-    throw err;
+    createdIds.push(...created.map((n) => n.id));
   }
+  if (createdIds.length > 0) {
+    after(() => processNotifications(createdIds));
+  }
+
+  return NextResponse.json({ devotee }, { status: 201 });
 }
 
 /**
@@ -130,8 +124,4 @@ export async function DELETE(req: NextRequest) {
   const deactivated =
     "all" in parsed.data ? await deactivateAllDevotees(session.tenantId) : await deactivateDevotees(session.tenantId, parsed.data.ids);
   return NextResponse.json({ deactivated });
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
 }

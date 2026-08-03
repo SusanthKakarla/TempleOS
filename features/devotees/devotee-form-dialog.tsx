@@ -408,8 +408,7 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
               value={whatsappPhone}
               onChange={(e) => setWhatsappPhone(e.target.value)}
               inputSize="lg"
-              required
-              requiredLabel={tCommon("required")}
+              placeholder={t("fields.phonePlaceholder")}
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="min-w-0 space-y-2">

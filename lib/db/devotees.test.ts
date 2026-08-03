@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
-import { countDevoteesFiltered, deactivateAllDevotees, deactivateDevotees, getDevoteeByPhone, listExistingPhones } from "./devotees";
+import { countDevoteesFiltered, deactivateAllDevotees, deactivateDevotees, getDevoteeByPhone, listDevoteesSharingPhone } from "./devotees";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -55,7 +55,7 @@ describe("deactivateAllDevotees", () => {
   });
 });
 
-describe("listExistingPhones", () => {
+describe("listDevoteesSharingPhone", () => {
   const query = vi.fn();
 
   beforeEach(() => {
@@ -64,21 +64,16 @@ describe("listExistingPhones", () => {
     (getPool as unknown as Mock).mockReturnValue({ query });
   });
 
-  it("returns an empty set without touching the pool when given no phones", async () => {
-    const result = await listExistingPhones("tenant-1", []);
-    expect(result).toEqual(new Set());
-    expect(getPool).not.toHaveBeenCalled();
-  });
+  it("finds every other active devotee sharing the same phone number, excluding the current one", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
 
-  it("only counts active devotees as existing — a deactivated phone (e.g. after Delete All Devotees) must not block re-import", async () => {
-    query.mockResolvedValueOnce({ rows: [{ whatsapp_phone: "+919876500000" }] });
+    await listDevoteesSharingPhone("tenant-1", "+919876500000", "devotee-1");
 
-    const result = await listExistingPhones("tenant-1", ["+919876500000", "+919876500001"]);
-
-    expect(result).toEqual(new Set(["+919876500000"]));
     const [sql, params] = query.mock.calls[0];
-    expect(String(sql)).toContain("is_active = true");
-    expect(params).toEqual(["tenant-1", ["+919876500000", "+919876500001"]]);
+    expect(String(sql)).toContain("d.whatsapp_phone = $2");
+    expect(String(sql)).toContain("d.id != $3");
+    expect(String(sql)).toContain("d.is_active = true");
+    expect(params).toEqual(["tenant-1", "+919876500000", "devotee-1"]);
   });
 });
 
@@ -129,5 +124,23 @@ describe("countDevoteesFiltered", () => {
     expect(count).toBe(138);
     const [sql] = query.mock.calls[0];
     expect(String(sql)).not.toContain("d.is_active = true");
+  });
+
+  it("filters to devotees with a phone number when hasPhone is true", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    await countDevoteesFiltered("tenant-1", { hasPhone: true });
+
+    const [sql] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.whatsapp_phone IS NOT NULL");
+  });
+
+  it("filters to devotees without a phone number when hasPhone is false", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "2" }] });
+
+    await countDevoteesFiltered("tenant-1", { hasPhone: false });
+
+    const [sql] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.whatsapp_phone IS NULL");
   });
 });

@@ -8,10 +8,6 @@ import {
 } from "@/lib/db/devotee-registration";
 import { devoteeRegistrationSchema } from "@/lib/validation/devotee-registration";
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
-}
-
 export async function POST(req: NextRequest) {
   const auth = await requireTenantAdminSession();
   if (!auth.ok) {
@@ -40,9 +36,6 @@ export async function POST(req: NextRequest) {
         },
         { status: 409 },
       );
-    }
-    if (isUniqueViolation(err)) {
-      return NextResponse.json({ error: "A devotee with this phone number already exists" }, { status: 409 });
     }
     if (err instanceof DevoteeRegistrationValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });

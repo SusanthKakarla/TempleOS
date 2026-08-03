@@ -10,10 +10,6 @@ import {
 import { createFamilySchema } from "@/lib/validation/devotee-families";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "23505";
-}
-
 /** For devotee/family pickers. Supports search for same-name household disambiguation. */
 export async function GET(req: NextRequest) {
   const auth = await requireTenantAdminSession();
@@ -71,9 +67,6 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ family: result.family, members: result.members }, { status: 201 });
   } catch (err) {
-    if (isUniqueViolation(err)) {
-      return NextResponse.json({ error: "A member with this phone number already exists" }, { status: 409 });
-    }
     if (err instanceof FamilyValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
