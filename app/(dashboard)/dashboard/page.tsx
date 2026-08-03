@@ -9,7 +9,6 @@ import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { zeroFillDays } from "@/lib/dashboard-timeseries";
 import { DonationsChart } from "@/features/dashboard/donations-chart";
-import { DashboardFilters } from "@/features/dashboard/dashboard-filters";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { translateOne } from "@/lib/i18n/translate";
 
@@ -22,20 +21,15 @@ function greetingKey(): "greetingMorning" | "greetingAfternoon" | "greetingEveni
   return "greetingEvening";
 }
 
-interface DashboardHomePageProps {
-  searchParams: Promise<{ dateFrom?: string; dateTo?: string; purpose?: string }>;
-}
-
-export default async function DashboardHomePage({ searchParams }: DashboardHomePageProps) {
+export default async function DashboardHomePage() {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("dashboardHome");
-  const { dateFrom, dateTo, purpose } = await searchParams;
 
   const [tenant, totalEvents, totalDevotees, donationStats, donationsPerDayRaw, locale] = await Promise.all([
     getTenantById(session.tenantId),
-    countEventsFiltered(session.tenantId, { dateFrom, dateTo }),
-    countDevoteesFiltered(session.tenantId, { dateFrom, dateTo }),
-    getDashboardDonationStats(session.tenantId, { dateFrom, dateTo, purpose }),
+    countEventsFiltered(session.tenantId, {}),
+    countDevoteesFiltered(session.tenantId, {}),
+    getDashboardDonationStats(session.tenantId, {}),
     getDonationsPerDay(session.tenantId, CHART_DAYS),
     getLocaleCookie(),
   ]);
@@ -60,8 +54,6 @@ export default async function DashboardHomePage({ searchParams }: DashboardHomeP
         title={`${t("namaste")} ${tenantName ? `— ${tenantName}` : ""}`}
         subtitle={t("todayIs", { greeting: t(greetingKey()), date: today })}
       />
-
-      <DashboardFilters />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard

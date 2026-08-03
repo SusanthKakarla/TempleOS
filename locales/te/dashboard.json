@@ -12,6 +12,8 @@
     "loading": "లోడ్ అవుతోంది...",
     "required": "తప్పనిసరి",
     "clearFilters": "ఫిల్టర్‌లను తీసివేయండి",
+    "resetFilters": "రీసెట్",
+    "applyFilters": "ఫిల్టర్‌లను వర్తింపజేయండి",
     "bulkDeleteConfirm": "మీరు ఎంచుకున్న రికార్డులను తొలగించాలనుకుంటున్నారా? ఈ చర్యను రద్దు చేయలేరు.",
     "datePicker": {
       "pickDate": "తేదీని ఎంచుకోండి",
@@ -1128,11 +1130,15 @@
     "filters": {
       "dateRangeLabel": "తేదీ పరిధి",
       "presetToday": "ఈరోజు",
+      "presetYesterday": "నిన్న",
       "presetLast7": "గత 7 రోజులు",
       "presetLast30": "గత 30 రోజులు",
       "presetThisMonth": "ఈ నెల",
+      "presetLastMonth": "గత నెల",
+      "presetThisYear": "ఈ సంవత్సరం",
       "presetCustom": "అనుకూల పరిధి",
       "pickCustomRange": "తేదీ పరిధిని ఎంచుకోండి",
+      "invalidRange": "నుండి తేదీ, వరకు తేదీ తర్వాత ఉండకూడదు.",
       "allPurposes": "అన్ని ప్రయోజనాలు"
     },
     "columns": {

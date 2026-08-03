@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DateRangePicker } from "@/components/ui/date-picker";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Table,
   TableBody,
@@ -35,7 +36,7 @@ import { ResponsiveSearchBar } from "@/components/responsive-search-bar";
 import { BulkActionToolbar } from "@/components/bulk-action-toolbar";
 import { BulkDeleteDialog } from "@/components/bulk-delete-dialog";
 import { formatDonationAmount } from "@/lib/currency";
-import { formatDate, toISODateString } from "@/lib/date";
+import { formatDate, parseISODate, toISODateString } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
 import { ExportMenu } from "@/features/export/export-menu";
@@ -45,7 +46,7 @@ import { DonationFormDialog } from "./donation-form-dialog";
 const MotionTableRow = motion.create(TableRow);
 const PATHNAME = "/dashboard/donations";
 
-type DatePreset = "today" | "last7" | "last30" | "thisMonth" | "custom";
+type DatePreset = "today" | "yesterday" | "last7" | "last30" | "thisMonth" | "lastMonth" | "thisYear" | "custom";
 
 function rangeForPreset(preset: DatePreset): { dateFrom: string; dateTo: string } | null {
   const today = new Date();
@@ -53,6 +54,11 @@ function rangeForPreset(preset: DatePreset): { dateFrom: string; dateTo: string 
   switch (preset) {
     case "today":
       return { dateFrom: todayIso, dateTo: todayIso };
+    case "yesterday": {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return { dateFrom: toISODateString(yesterday), dateTo: toISODateString(yesterday) };
+    }
     case "last7": {
       const from = new Date(today);
       from.setDate(from.getDate() - 6);
@@ -67,10 +73,21 @@ function rangeForPreset(preset: DatePreset): { dateFrom: string; dateTo: string 
       const from = new Date(today.getFullYear(), today.getMonth(), 1);
       return { dateFrom: toISODateString(from), dateTo: todayIso };
     }
+    case "lastMonth": {
+      const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const to = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { dateFrom: toISODateString(from), dateTo: toISODateString(to) };
+    }
+    case "thisYear": {
+      const from = new Date(today.getFullYear(), 0, 1);
+      return { dateFrom: toISODateString(from), dateTo: todayIso };
+    }
     case "custom":
       return null;
   }
 }
+
+const DATE_PRESETS: DatePreset[] = ["today", "yesterday", "last7", "last30", "thisMonth", "lastMonth", "thisYear", "custom"];
 
 interface DonationsTableProps {
   donations: DonationWithDonor[];
@@ -90,11 +107,24 @@ interface PendingFilters {
   purpose: string;
 }
 
+/** Highlights the matching preset radio when the applied range happens to equal one — falls back to "custom" (e.g. for an open-ended or hand-picked range). */
+function presetForRange(dateFrom: string, dateTo: string): DatePreset {
+  if (!dateFrom && !dateTo) return "custom";
+  for (const preset of DATE_PRESETS) {
+    if (preset === "custom") continue;
+    const range = rangeForPreset(preset);
+    if (range && range.dateFrom === dateFrom && range.dateTo === dateTo) return preset;
+  }
+  return "custom";
+}
+
 function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters {
+  const dateFrom = searchParams.get("dateFrom") ?? "";
+  const dateTo = searchParams.get("dateTo") ?? "";
   return {
-    preset: "custom",
-    dateFrom: searchParams.get("dateFrom") ?? "",
-    dateTo: searchParams.get("dateTo") ?? "",
+    preset: presetForRange(dateFrom, dateTo),
+    dateFrom,
+    dateTo,
     purpose: searchParams.get("purpose") ?? "all",
   };
 }
@@ -220,11 +250,14 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
     all: t("filters.allPurposes"),
     ...Object.fromEntries(DONATION_PURPOSE_PRESETS.map((preset) => [preset, preset])),
   };
-  const presetItems: Record<DatePreset, string> = {
+  const presetLabels: Record<DatePreset, string> = {
     today: t("filters.presetToday"),
+    yesterday: t("filters.presetYesterday"),
     last7: t("filters.presetLast7"),
     last30: t("filters.presetLast30"),
     thisMonth: t("filters.presetThisMonth"),
+    lastMonth: t("filters.presetLastMonth"),
+    thisYear: t("filters.presetThisYear"),
     custom: t("filters.presetCustom"),
   };
 
@@ -232,6 +265,13 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
     searchParams.get("dateFrom") || searchParams.get("dateTo") ? 1 : 0,
     searchParams.get("purpose") ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
+
+  /** Only meaningful for "custom" — presets always produce an already-ordered range. */
+  const customRangeInvalid =
+    pendingFilters.preset === "custom" &&
+    Boolean(pendingFilters.dateFrom) &&
+    Boolean(pendingFilters.dateTo) &&
+    pendingFilters.dateFrom > pendingFilters.dateTo;
 
   function donationActionItems(donation: DonationWithDonor) {
     return [
@@ -266,37 +306,56 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
   }
 
   const filterSheetContent = (
-    <div className="space-y-4 py-4">
-      <div className="space-y-1.5">
+    <div className="space-y-5 py-4">
+      <div className="space-y-2">
         <Label>{t("filters.dateRangeLabel")}</Label>
-        <Select
+        <RadioGroup
           value={pendingFilters.preset}
-          onValueChange={(v) => setPendingFilters((f) => ({ ...f, preset: (v as DatePreset) ?? "custom" }))}
-          items={presetItems}
+          onValueChange={(v) => {
+            const preset = v as DatePreset;
+            const range = preset === "custom" ? null : rangeForPreset(preset);
+            setPendingFilters((f) => ({
+              ...f,
+              preset,
+              dateFrom: range?.dateFrom ?? f.dateFrom,
+              dateTo: range?.dateTo ?? f.dateTo,
+            }));
+          }}
+          className="gap-0 divide-y divide-border rounded-lg border"
         >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(presetItems).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {DATE_PRESETS.map((preset) => (
+            <label
+              key={preset}
+              htmlFor={`date-preset-${preset}`}
+              className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted/50"
+            >
+              <RadioGroupItem id={`date-preset-${preset}`} value={preset} />
+              {presetLabels[preset]}
+            </label>
+          ))}
+        </RadioGroup>
         {pendingFilters.preset === "custom" && (
-          <DateRangePicker
-            placeholder={t("filters.pickCustomRange")}
-            value={{ from: pendingFilters.dateFrom || undefined, to: pendingFilters.dateTo || undefined }}
-            onChange={(range) =>
-              setPendingFilters((f) => ({
-                ...f,
-                dateFrom: range.from ?? "",
-                dateTo: range.to ?? "",
-              }))
-            }
-          />
+          <div className="space-y-2 pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("dateFromLabel")}</Label>
+                <DatePicker
+                  value={pendingFilters.dateFrom}
+                  onChange={(value) => setPendingFilters((f) => ({ ...f, dateFrom: value }))}
+                  maxDate={pendingFilters.dateTo ? parseISODate(pendingFilters.dateTo) : undefined}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("dateToLabel")}</Label>
+                <DatePicker
+                  value={pendingFilters.dateTo}
+                  onChange={(value) => setPendingFilters((f) => ({ ...f, dateTo: value }))}
+                  minDate={pendingFilters.dateFrom ? parseISODate(pendingFilters.dateFrom) : undefined}
+                />
+              </div>
+            </div>
+            {customRangeInvalid && <p className="text-xs text-destructive">{t("filters.invalidRange")}</p>}
+          </div>
         )}
       </div>
       <div className="space-y-1.5">
@@ -358,6 +417,9 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
             <FilterBottomSheet
               title={tCommon("filters")}
               activeCount={activeFilterCount}
+              resetLabel={tCommon("resetFilters")}
+              applyLabel={tCommon("applyFilters")}
+              applyDisabled={customRangeInvalid}
               onOpenChange={(open) => {
                 if (open) setPendingFilters(filtersFromSearchParams(searchParams));
               }}

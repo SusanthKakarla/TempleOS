@@ -5,6 +5,8 @@ import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface FilterBottomSheetProps {
   title?: string;
@@ -18,9 +20,19 @@ interface FilterBottomSheetProps {
   onApply: () => void;
   /** Fires whenever the sheet opens/closes — use this to resync any locally-staged filter state from the current applied values each time it opens. */
   onOpenChange?: (open: boolean) => void;
+  resetLabel?: string;
+  applyLabel?: string;
+  /** Disables the Apply button — used when staged filter fields are in an invalid state (e.g. a custom date range with From after To). */
+  applyDisabled?: boolean;
 }
 
-/** Bottom-sheet filter panel — the shared "Filters" trigger + sheet used by every list/table page instead of always-visible filter controls. */
+/**
+ * Responsive filter panel — a right-side drawer on tablet/desktop, a bottom
+ * sheet on mobile (matches modern SaaS filter UX: Stripe/HubSpot/Linear all
+ * use a side drawer on wide viewports and fall back to a bottom sheet only
+ * on touch-sized screens). Shared "Filters" trigger + panel used by every
+ * list/table page instead of always-visible filter controls.
+ */
 export function FilterBottomSheet({
   title = "Filters",
   activeCount = 0,
@@ -28,8 +40,13 @@ export function FilterBottomSheet({
   onReset,
   onApply,
   onOpenChange,
+  resetLabel = "Reset",
+  applyLabel = "Apply",
+  applyDisabled = false,
 }: FilterBottomSheetProps) {
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const side = isMobile ? "bottom" : "right";
 
   return (
     <Sheet
@@ -52,11 +69,17 @@ export function FilterBottomSheet({
           </Button>
         }
       />
-      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl">
+      <SheetContent
+        side={side}
+        className={cn(
+          "flex flex-col",
+          side === "bottom" ? "max-h-[85vh] rounded-t-2xl" : "w-full sm:max-w-sm",
+        )}
+      >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <div className="max-h-[55vh] overflow-y-auto px-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4">{children}</div>
         <SheetFooter className="flex-row gap-2">
           <Button
             variant="outline"
@@ -66,17 +89,18 @@ export function FilterBottomSheet({
               setOpen(false);
             }}
           >
-            Reset
+            {resetLabel}
           </Button>
           <SheetClose
             render={
               <Button
                 className="flex-1"
+                disabled={applyDisabled}
                 onClick={() => {
                   onApply();
                 }}
               >
-                Apply
+                {applyLabel}
               </Button>
             }
           />

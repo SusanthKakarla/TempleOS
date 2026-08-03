@@ -12,6 +12,8 @@
     "loading": "Loading...",
     "required": "Required",
     "clearFilters": "Clear Filters",
+    "resetFilters": "Reset",
+    "applyFilters": "Apply Filters",
     "bulkDeleteConfirm": "Are you sure you want to delete the selected records? This action cannot be undone.",
     "datePicker": {
       "pickDate": "Pick a date",
@@ -1125,11 +1127,15 @@
     "filters": {
       "dateRangeLabel": "Date Range",
       "presetToday": "Today",
+      "presetYesterday": "Yesterday",
       "presetLast7": "Last 7 Days",
       "presetLast30": "Last 30 Days",
       "presetThisMonth": "This Month",
+      "presetLastMonth": "Last Month",
+      "presetThisYear": "This Year",
       "presetCustom": "Custom Range",
       "pickCustomRange": "Pick a date range",
+      "invalidRange": "From Date cannot be after To Date.",
       "allPurposes": "All purposes"
     },
     "columns": {
