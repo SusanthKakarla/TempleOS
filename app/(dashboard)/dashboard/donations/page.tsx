@@ -1,6 +1,12 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
-import { listDonations, countDonationsFiltered, getDonationSummary, type ListDonationsFilter } from "@/lib/db/donations";
+import {
+  listDonations,
+  countDonationsFiltered,
+  getDonationSummary,
+  getDashboardDonationStats,
+  type ListDonationsFilter,
+} from "@/lib/db/donations";
 import { listDevotees } from "@/lib/db/devotees";
 import { DonationsTable } from "@/features/donations/donations-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -35,23 +41,36 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
   const locale = await getLocaleCookie();
   const translatedSearch = search ? await toEnglishSearchQuery(search) : search;
 
-  const [donationsRaw, totalCount, devotees, summary] = await Promise.all([
+  // Same filter object listDonations/countDonationsFiltered use below — the
+  // summary card's total is a SQL aggregate over this exact filter set, never
+  // a second, hand-rolled definition of "what counts as filtered."
+  const activeFilters = { search: translatedSearch, dateFrom, dateTo, purpose };
+  const hasActiveFilters = Boolean(translatedSearch || dateFrom || dateTo || purpose);
+
+  const [donationsRaw, totalCount, devotees, summary, filteredStats] = await Promise.all([
     listDonations(session.tenantId, {
-      search: translatedSearch,
-      dateFrom,
-      dateTo,
-      purpose,
+      ...activeFilters,
       page,
       pageSize: DEFAULT_PAGE_SIZE,
       sort,
       dir,
     }),
-    countDonationsFiltered(session.tenantId, { search: translatedSearch, dateFrom, dateTo, purpose }),
+    countDonationsFiltered(session.tenantId, activeFilters),
     listDevotees(session.tenantId),
     getDonationSummary(session.tenantId),
+    hasActiveFilters ? getDashboardDonationStats(session.tenantId, activeFilters) : Promise.resolve(null),
   ]);
   const donationsWithPurposes = await resolveDonationPurposes(donationsRaw, locale);
   const donations = await translateFields(donationsWithPurposes, locale, ["donorName"]);
+
+  // The primary summary card: current month's total by default, or the sum of
+  // every donation matching the active filters (across all pages) once any
+  // filter is applied — computed once here so the table and the card can
+  // never disagree about what "filtered" means.
+  const primaryCard =
+    hasActiveFilters && filteredStats
+      ? { labelKey: "filteredTotal" as const, amount: filteredStats.total }
+      : { labelKey: "totalThisMonth" as const, amount: summary.totalThisMonth };
 
   return (
     <DonationsTable
@@ -63,6 +82,7 @@ export default async function DonationsPage({ searchParams }: DonationsPageProps
       sort={sort}
       dir={dir}
       summary={summary}
+      primaryCard={primaryCard}
     />
   );
 }

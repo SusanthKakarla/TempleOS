@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import { createAuditLogEntry } from "./audit-log";
-import { countDonationsFiltered, deleteDonation, listDonations } from "./donations";
+import { countDonationsFiltered, deleteDonation, getDashboardDonationStats, listDonations } from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -46,6 +46,68 @@ describe("donations purpose filter", () => {
     const [sql, params] = query.mock.calls[0];
     expect(String(sql)).toContain("d.purpose = $2");
     expect(params).toEqual(["tenant-1", "Annadanam (Food Offering)"]);
+  });
+});
+
+describe("getDashboardDonationStats", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("returns the unfiltered all-time sum/count when no filter is given", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "752350", count: "113" }] });
+
+    const stats = await getDashboardDonationStats("tenant-1");
+
+    expect(stats).toEqual({ total: "752350", count: 113 });
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).not.toContain("d.donated_at");
+    expect(String(sql)).not.toContain("dev.display_name");
+    expect(params).toEqual(["tenant-1"]);
+  });
+
+  it(
+    "supports a search filter (joins devotees so dev.display_name/whatsapp_phone can match) — this is what " +
+      "the Donations page's 'Total Filtered Amount' summary card relies on to stay in sync with a text search, " +
+      "not just date range/purpose",
+    async () => {
+      query.mockResolvedValueOnce({ rows: [{ total: "5000", count: "2" }] });
+
+      await getDashboardDonationStats("tenant-1", { search: "Ravi" });
+
+      const [sql, params] = query.mock.calls[0];
+      expect(String(sql)).toContain("LEFT JOIN devotees dev");
+      expect(String(sql)).toContain("dev.display_name ILIKE");
+      expect(params).toEqual(["tenant-1", "%Ravi%"]);
+    },
+  );
+
+  it("combines search + date range + purpose into a single aggregate query — matches whatever combination of filters the table applies", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "1200", count: "3" }] });
+
+    await getDashboardDonationStats("tenant-1", {
+      search: "Lakshmi",
+      dateFrom: "2026-01-01",
+      dateTo: "2026-01-31",
+      purpose: "Seva",
+    });
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.donated_at >=");
+    expect(String(sql)).toContain("d.donated_at <=");
+    expect(String(sql)).toContain("d.purpose =");
+    expect(params).toEqual(["tenant-1", "%Lakshmi%", "2026-01-01", "2026-01-31", "Seva"]);
+  });
+
+  it("returns zero gracefully when nothing matches the filter (e.g. no donations for the searched term)", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0" }] });
+
+    const stats = await getDashboardDonationStats("tenant-1", { search: "nonexistent-donor-xyz" });
+
+    expect(stats).toEqual({ total: "0", count: 0 });
   });
 });
 

@@ -98,6 +98,8 @@ interface DonationsTableProps {
   sort?: "date" | "amount" | "donor";
   dir: "asc" | "desc";
   summary: DonationSummary;
+  /** "Total this month" (no filters active) or "Total Filtered Amount" (any filter active) — decided server-side from the same filter set the table query uses, so it can't disagree with what's actually being shown. */
+  primaryCard: { labelKey: "totalThisMonth" | "filteredTotal"; amount: string };
 }
 
 interface PendingFilters {
@@ -129,7 +131,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): PendingFilters 
   };
 }
 
-export function DonationsTable({ donations, devotees, page, pageSize, totalCount, sort, dir, summary }: DonationsTableProps) {
+export function DonationsTable({ donations, devotees, page, pageSize, totalCount, sort, dir, summary, primaryCard }: DonationsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale() as SupportedLanguage;
@@ -450,8 +452,8 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
 
       <div className="grid grid-cols-2 gap-4">
         <MetricCard
-          label={t("summary.totalThisMonth")}
-          value={Number(summary.totalThisMonth)}
+          label={t(`summary.${primaryCard.labelKey}`)}
+          value={Number(primaryCard.amount)}
           format="currency"
           icon={<HandCoins className="size-4.5" />}
           gradient="gradient-saffron-gold"

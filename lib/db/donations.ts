@@ -527,16 +527,28 @@ export interface DashboardDonationStats {
   count: number;
 }
 
-/** Sum + count of donations matching the given filter — unfiltered (defaults), this is the all-time total, exactly what the Dashboard's "Total Donations" card shows when no date range/purpose is selected. */
+/**
+ * Sum + count of donations matching the given filter — unfiltered (defaults),
+ * this is the all-time total, exactly what the Dashboard's "Total Donations"
+ * card shows when no date range/purpose is selected. Also powers the
+ * Donations page's "Total Filtered Amount" summary card: same
+ * buildDonationConditions() the table's own listDonations/countDonationsFiltered
+ * use, so the card can never drift from what's actually in the filtered list
+ * (a single SQL aggregate over every matching row, not just the current page).
+ * The LEFT JOIN exists only so a `search` filter can match on
+ * dev.display_name/whatsapp_phone — harmless when search is unset, and
+ * donation_id -> devotee_id is one-to-one so it can't multiply rows.
+ */
 export async function getDashboardDonationStats(
   tenantId: string,
-  filter: Pick<ListDonationsFilter, "dateFrom" | "dateTo" | "purpose"> = {},
+  filter: Pick<ListDonationsFilter, "search" | "dateFrom" | "dateTo" | "purpose"> = {},
 ): Promise<DashboardDonationStats> {
   const { conditions, params: filterParams } = buildDonationConditions(filter);
   const params: unknown[] = [tenantId, ...filterParams];
   const { rows } = await getPool().query<{ total: string; count: string }>(
     `SELECT COALESCE(SUM(d.amount), 0) AS total, count(*) AS count
      FROM donations d
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
      WHERE ${conditions.join(" AND ")}`,
     params,
   );

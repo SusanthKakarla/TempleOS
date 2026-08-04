@@ -1117,7 +1117,7 @@
   },
   "donations": {
     "pageHeader": { "title": "Donations" },
-    "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time" },
+    "summary": { "totalThisMonth": "Total this month", "totalAllTime": "Total all time", "filteredTotal": "Total Filtered Amount" },
     "addButton": "Add donation",
     "importButton": "Import",
     "searchPlaceholder": "Search",

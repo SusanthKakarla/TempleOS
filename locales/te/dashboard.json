@@ -1120,7 +1120,7 @@
   },
   "donations": {
     "pageHeader": { "title": "విరాళాలు" },
-    "summary": { "totalThisMonth": "ఈ నెల మొత్తం", "totalAllTime": "ఇప్పటివరకు మొత్తం" },
+    "summary": { "totalThisMonth": "ఈ నెల మొత్తం", "totalAllTime": "ఇప్పటివరకు మొత్తం", "filteredTotal": "ఫిల్టర్ చేసిన మొత్తం" },
     "addButton": "విరాళం జోడించండి",
     "importButton": "దిగుమతి",
     "searchPlaceholder": "వెతకండి",
