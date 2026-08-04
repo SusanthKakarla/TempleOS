@@ -3,6 +3,7 @@ import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/t
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { deactivateDevotee, updateDevotee } from "@/lib/db/devotees";
 import { createFamilyForExistingDevotee } from "@/lib/db/devotee-families";
+import { attachExistingDevoteeToFamily, DevoteeFamilyMoveConflictError, DevoteeRegistrationValidationError } from "@/lib/db/devotee-registration";
 import { updateDevoteeSchema } from "@/lib/validation/devotees";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
 
@@ -37,30 +38,56 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     normalizedPhone = result;
   }
 
-  const { newFamily, ...devoteeFields } = parsed.data;
+  const { newFamily, familyRelationship, ...devoteeFields } = parsed.data;
 
-  // If creating a new family for this devotee, do it first so we can pass the familyId along
-  let resolvedFamilyId = devoteeFields.familyId;
-  if (newFamily) {
-    const family = await createFamilyForExistingDevotee(session.tenantId, id, newFamily.relationship, {
-      familyName: newFamily.familyName,
-      address: newFamily.address ?? null,
-      city: newFamily.city ?? null,
-      state: newFamily.state ?? null,
-      pincode: newFamily.pincode ?? null,
+  try {
+    // If creating a new family for this devotee, do it first so we can pass the familyId along
+    let resolvedFamilyId = devoteeFields.familyId;
+    if (newFamily) {
+      const family = await createFamilyForExistingDevotee(session.tenantId, id, newFamily.relationship, {
+        familyName: newFamily.familyName,
+        address: newFamily.address ?? null,
+        city: newFamily.city ?? null,
+        state: newFamily.state ?? null,
+        pincode: newFamily.pincode ?? null,
+      });
+      resolvedFamilyId = family.id;
+    } else if (resolvedFamilyId && familyRelationship) {
+      // Attaching to an already-existing family — must go through the same
+      // family_members upsert + primary_devotee_id bookkeeping the
+      // registration flow uses, not a bare devotees.family_id column write
+      // (which would leave the devotee invisible to the family's own member
+      // list/count). moveFromExistingFamily: true because this is an
+      // explicit admin action from the Edit dialog, not an ambiguous import row.
+      await attachExistingDevoteeToFamily(session.tenantId, id, resolvedFamilyId, familyRelationship, true);
+    }
+
+    // updateDevotee treats "key present" (even set to undefined) as "update this
+    // column" — so when attachExistingDevoteeToFamily already wrote family_id
+    // above, the key must be omitted entirely here, not set to undefined,
+    // or this would immediately overwrite it back to null.
+    const { familyId: _familyId, ...restFields } = devoteeFields;
+    const devotee = await updateDevotee(session.tenantId, id, {
+      ...restFields,
+      ...(familyRelationship ? {} : { familyId: resolvedFamilyId }),
+      whatsappPhone: normalizedPhone,
     });
-    resolvedFamilyId = family.id;
+    if (!devotee) {
+      return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
+    }
+    return NextResponse.json({ devotee });
+  } catch (err) {
+    if (err instanceof DevoteeFamilyMoveConflictError) {
+      return NextResponse.json(
+        { error: err.message, devoteeId: err.devoteeId, currentFamilyId: err.currentFamilyId },
+        { status: 409 },
+      );
+    }
+    if (err instanceof DevoteeRegistrationValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
   }
-
-  const devotee = await updateDevotee(session.tenantId, id, {
-    ...devoteeFields,
-    familyId: resolvedFamilyId,
-    whatsappPhone: normalizedPhone,
-  });
-  if (!devotee) {
-    return NextResponse.json({ error: "Devotee not found" }, { status: 404 });
-  }
-  return NextResponse.json({ devotee });
 }
 
 /**

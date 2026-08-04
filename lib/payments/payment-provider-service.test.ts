@@ -65,7 +65,7 @@ describe("PaymentProviderService", () => {
 
   it("returns false from verifyWebhookSignatureForAccount when credentials can't be decrypted", async () => {
     vi.mocked(getDecryptedCredentialsForAccount).mockResolvedValue(null);
-    const verified = await verifyWebhookSignatureForAccount("acct-1", "razorpay", "{}", "sig");
+    const verified = await verifyWebhookSignatureForAccount("tenant-1", "acct-1", "razorpay", "{}", "sig");
     expect(verified).toBe(false);
   });
 

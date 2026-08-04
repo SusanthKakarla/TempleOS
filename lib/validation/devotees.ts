@@ -15,6 +15,9 @@ export const dateOfBirthSchema = z
   .refine((value) => value === null || /^\d{4}-\d{2}-\d{2}$/.test(value), {
     message: "Must be a YYYY-MM-DD date",
   })
+  .refine((value) => value === null || value <= new Date().toISOString().slice(0, 10), {
+    message: "Date cannot be in the future",
+  })
   .nullable()
   .optional();
 
@@ -46,7 +49,8 @@ export const newFamilyForDevoteeSchema = z.object({
 });
 
 export const updateDevoteeSchema = z.object({
-  whatsappPhone: z.string().trim().min(1, "Phone number is required").optional(),
+  /** Optional and clearable — phone is contact info only, never required (Scenario 2); an empty string clears it. */
+  whatsappPhone: nullableTrimmedString,
   displayName: z.string().trim().min(1, "Name is required").max(200).optional(),
   whatsappOptInStatus: z.boolean().optional(),
   dateOfBirth: dateOfBirthSchema,
@@ -57,6 +61,8 @@ export const updateDevoteeSchema = z.object({
   maritalStatus: maritalStatusSchema,
   weddingAnniversary: dateOfBirthSchema,
   familyId: familyIdSchema,
+  /** Required alongside familyId when attaching to an already-existing family (as opposed to leaving familyId untouched, or creating one via newFamily). */
+  familyRelationship: z.enum(RELATIONSHIP_CODES).optional(),
   address: nullableTrimmedString,
   notes: nullableTrimmedString,
   preferredLanguage: preferredLanguageSchema,

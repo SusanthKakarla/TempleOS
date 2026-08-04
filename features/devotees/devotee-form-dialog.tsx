@@ -339,6 +339,9 @@ export function DevoteeFormDialog({ mode, devotee, trigger, onSaved, open: contr
                 eventNotificationsEnabled,
                 preferredLanguage: preferredLanguage || null,
                 familyId: familyMode === "existing" ? (selectedFamilyId || null) : (familyMode === "new" ? undefined : (familyId || null)),
+                ...(familyMode === "existing" && selectedFamilyId
+                  ? { familyRelationship: primaryRelationship || "head_of_family" }
+                  : {}),
                 address,
                 notes,
                 ...(familyMode === "new" ? {

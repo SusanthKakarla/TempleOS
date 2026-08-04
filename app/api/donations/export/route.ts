@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
     search,
     dateFrom: req.nextUrl.searchParams.get("dateFrom") ?? undefined,
     dateTo: req.nextUrl.searchParams.get("dateTo") ?? undefined,
+    purpose: req.nextUrl.searchParams.get("purpose") ?? undefined,
   });
   const donationsWithPurposes = await resolveDonationPurposes(donationsRaw, locale);
   const donations = await translateFields(donationsWithPurposes, locale, ["donorName"]);

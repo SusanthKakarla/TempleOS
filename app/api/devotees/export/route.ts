@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getTenantById } from "@/lib/db/tenants";
-import { listDevotees, listDevoteesByIds } from "@/lib/db/devotees";
+import { listDevotees, listDevoteesByIds, type ListDevoteesOptions } from "@/lib/db/devotees";
 import { buildExportFile, type ExportFormat } from "@/lib/export";
 import { fileResponse } from "@/lib/export/response";
 import { buildExportMetaLabels } from "@/lib/export/locale-labels";
@@ -15,6 +15,36 @@ import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS, RELATIONSHIP_CODES } from "@/types/db";
 
 const formatSchema = z.enum(["xlsx", "csv", "pdf"]);
+const REGISTRATION_TYPE_VALUES: NonNullable<ListDevoteesOptions["registrationType"]>[] = ["individual", "family"];
+const OCCASION_VALUES: NonNullable<ListDevoteesOptions["occasion"]>[] = [
+  "birthday_today",
+  "birthday_week",
+  "anniversary_today",
+  "anniversary_week",
+];
+
+/**
+ * Mirrors app/(dashboard)/dashboard/devotees/page.tsx's searchParams parsing
+ * exactly — "Export Filtered" must reflect every filter the Devotees table
+ * currently applies, not just free-text search, or the export silently
+ * contains rows the admin didn't ask for.
+ */
+export function parseDevoteeFilters(searchParams: URLSearchParams, timezone: string | undefined): ListDevoteesOptions {
+  const registrationType = REGISTRATION_TYPE_VALUES.find((value) => value === searchParams.get("registrationType"));
+  const occasion = OCCASION_VALUES.find((value) => value === searchParams.get("occasion"));
+  const isDonorParam = searchParams.get("isDonor");
+  const whatsappOptInParam = searchParams.get("whatsappOptIn");
+  const hasPhoneParam = searchParams.get("hasPhone");
+  return {
+    registrationType,
+    isDonor: isDonorParam === "true" ? true : isDonorParam === "false" ? false : undefined,
+    whatsappOptIn: whatsappOptInParam === "true" ? true : whatsappOptInParam === "false" ? false : undefined,
+    hasPhone: hasPhoneParam === "true" ? true : hasPhoneParam === "false" ? false : undefined,
+    occasion,
+    includeInactive: searchParams.get("status") === "all",
+    timezone,
+  };
+}
 
 async function buildDevoteeColumnsAndLabels() {
   const [t, tRelationship, tGender, tMaritalStatus] = await Promise.all([
@@ -77,7 +107,8 @@ export async function GET(req: NextRequest) {
   const locale = await getLocaleCookie();
   const rawSearch = req.nextUrl.searchParams.get("search") ?? undefined;
   const search = rawSearch ? await toEnglishSearchQuery(rawSearch) : rawSearch;
-  const devoteesRaw = await listDevotees(session.tenantId, { search });
+  const filters = parseDevoteeFilters(req.nextUrl.searchParams, tenant.timezone);
+  const devoteesRaw = await listDevotees(session.tenantId, { ...filters, search });
   const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   const generatedAt = new Date();

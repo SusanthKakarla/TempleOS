@@ -27,7 +27,7 @@ const REFRESH_WITHIN_DAYS = 7;
  */
 async function refreshOAuthTokenIfNeeded(account: TenantPaymentAccount): Promise<void> {
   if (account.connectionMethod !== "partner") return;
-  const creds = await getDecryptedCredentialsForAccount(account.id);
+  const creds = await getDecryptedCredentialsForAccount(account.tenantId, account.id);
   if (!creds || creds.mode !== "oauth") return;
 
   const expiresAt = new Date(creds.accessTokenExpiresAt).getTime();

@@ -58,4 +58,20 @@ describe("updateDevoteeSchema", () => {
     const result = updateDevoteeSchema.safeParse({ dateOfBirth: "not-a-date" });
     expect(result.success).toBe(false);
   });
+
+  it("rejects a future date of birth", () => {
+    const result = updateDevoteeSchema.safeParse({ dateOfBirth: "2099-01-01" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts clearing whatsappPhone to an empty string — editing a devotee with no phone must not require re-entering one (regression: this previously rejected any edit of a phone-less devotee with 'Phone number is required')", () => {
+    const result = updateDevoteeSchema.parse({ whatsappPhone: "", displayName: "New Name" });
+    expect("whatsappPhone" in result).toBe(true);
+    expect(result.whatsappPhone).toBeNull();
+  });
+
+  it("still normalizes a real whatsappPhone value on update", () => {
+    const result = updateDevoteeSchema.parse({ whatsappPhone: "  +919876543210  " });
+    expect(result.whatsappPhone).toBe("+919876543210");
+  });
 });

@@ -43,7 +43,7 @@ export async function createOrderForTenant(
 ): Promise<{ account: TenantPaymentAccount; providerOrderId: string; keyId: string } | null> {
   const active = await getActiveProviderForTenant(tenantId);
   if (!active) return null;
-  const creds = await getDecryptedCredentialsForAccount(active.account.id);
+  const creds = await getDecryptedCredentialsForAccount(tenantId, active.account.id);
   if (!creds) return null;
   const order = await active.adapter.createOrder(creds, input);
   // Checkout.js needs a public-facing key: the tenant's own key_id in manual
@@ -55,11 +55,12 @@ export async function createOrderForTenant(
 }
 
 export async function verifyCheckoutSignatureForAccount(
+  tenantId: string,
   accountId: string,
   providerKey: PaymentProviderKey,
   input: { providerOrderId: string; providerPaymentId: string; signature: string },
 ): Promise<boolean> {
-  const creds = await getDecryptedCredentialsForAccount(accountId);
+  const creds = await getDecryptedCredentialsForAccount(tenantId, accountId);
   if (!creds) return false;
   return getAdapter(providerKey).verifyCheckoutSignature(creds, input);
 }
@@ -88,12 +89,13 @@ export function verifyPartnerWebhookSignature(rawBody: string, signatureHeader: 
 }
 
 export async function verifyWebhookSignatureForAccount(
+  tenantId: string,
   accountId: string,
   providerKey: PaymentProviderKey,
   rawBody: string,
   signatureHeader: string,
 ): Promise<boolean> {
-  const creds = await getDecryptedCredentialsForAccount(accountId);
+  const creds = await getDecryptedCredentialsForAccount(tenantId, accountId);
   if (!creds) return false;
   return getAdapter(providerKey).verifyWebhookSignature(creds, rawBody, signatureHeader);
 }
@@ -117,7 +119,7 @@ export async function fetchOrderPaymentForTenant(
 ): Promise<{ capturedPaymentId: string | null; amountPaise: number | null } | null> {
   const active = await getActiveProviderForTenant(tenantId);
   if (!active) return null;
-  const creds = await getDecryptedCredentialsForAccount(active.account.id);
+  const creds = await getDecryptedCredentialsForAccount(tenantId, active.account.id);
   if (!creds) return null;
   return active.adapter.fetchOrderPayment(creds, providerOrderId);
 }

@@ -36,11 +36,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ verified: false }, { status: 404 });
   }
 
-  const verified = await verifyCheckoutSignatureForAccount(transaction.paymentAccountId, transaction.providerKey, {
-    providerOrderId: parsed.data.providerOrderId,
-    providerPaymentId: parsed.data.providerPaymentId,
-    signature: parsed.data.signature,
-  });
+  const verified = await verifyCheckoutSignatureForAccount(
+    transaction.tenantId,
+    transaction.paymentAccountId,
+    transaction.providerKey,
+    {
+      providerOrderId: parsed.data.providerOrderId,
+      providerPaymentId: parsed.data.providerPaymentId,
+      signature: parsed.data.signature,
+    },
+  );
 
   return NextResponse.json({ verified });
 }

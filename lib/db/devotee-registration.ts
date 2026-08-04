@@ -158,6 +158,51 @@ function assertExactlyOneHead(relationships: string[]) {
   }
 }
 
+/**
+ * Attaches an already-registered devotee to an existing family from the
+ * Devotee Edit dialog. Reuses the same attachDevoteeToFamily logic the
+ * registration flow uses (proper family_members upsert + primary_devotee_id
+ * bookkeeping + move-conflict detection) instead of a bare `family_id`
+ * column update, which would leave the devotee with no family_members row
+ * at all — invisible to the family's own member list/count.
+ */
+export async function attachExistingDevoteeToFamily(
+  tenantId: string,
+  devoteeId: string,
+  familyId: string,
+  relationship: string,
+  moveFromExistingFamily = false,
+): Promise<void> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const family = await loadFamilyForUpdate(client, tenantId, familyId);
+    if (relationship === "head_of_family" && family.primary_devotee_id && family.primary_devotee_id !== devoteeId) {
+      throw new DevoteeRegistrationValidationError("This family already has a Head of Family");
+    }
+    await attachDevoteeToFamily(client, {
+      tenantId,
+      familyId,
+      devoteeId,
+      relationship,
+      isPrimary: relationship === "head_of_family",
+      moveFromExistingFamily,
+    });
+    if (relationship === "head_of_family") {
+      await client.query("UPDATE devotee_families SET primary_devotee_id = $2, updated_at = now() WHERE id = $1", [
+        familyId,
+        devoteeId,
+      ]);
+    }
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function registerDevoteeWithFamilyIntent(
   tenantId: string,
   input: DevoteeRegistrationPayload,

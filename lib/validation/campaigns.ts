@@ -54,6 +54,7 @@ export const createCampaignSchema = z.object({
   scheduledAt: z
     .string()
     .refine((value) => !Number.isNaN(Date.parse(value)), { message: "Must be a valid date/time" })
+    .refine((value) => Date.parse(value) > Date.now(), { message: "Scheduled time must be in the future" })
     .nullable()
     .optional(),
   recurrenceRule: nullableTrimmedString,

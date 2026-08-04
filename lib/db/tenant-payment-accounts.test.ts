@@ -30,7 +30,7 @@ describe("getDecryptedCredentialsForAccount", () => {
 
   it("returns null when no credentials row exists for the account", async () => {
     query.mockResolvedValueOnce({ rows: [] });
-    expect(await getDecryptedCredentialsForAccount("acct-missing")).toBeNull();
+    expect(await getDecryptedCredentialsForAccount("tenant-1", "acct-missing")).toBeNull();
   });
 
   it("returns the api_key variant when key_id/encrypted_key_secret columns are populated", async () => {
@@ -48,7 +48,7 @@ describe("getDecryptedCredentialsForAccount", () => {
       ],
     });
 
-    const creds = await getDecryptedCredentialsForAccount("acct-manual");
+    const creds = await getDecryptedCredentialsForAccount("tenant-1", "acct-manual");
     expect(creds).toEqual({
       mode: "api_key",
       keyId: "rzp_test_123",
@@ -73,7 +73,7 @@ describe("getDecryptedCredentialsForAccount", () => {
       ],
     });
 
-    const creds = await getDecryptedCredentialsForAccount("acct-partner");
+    const creds = await getDecryptedCredentialsForAccount("tenant-1", "acct-partner");
     expect(creds).toEqual({
       mode: "oauth",
       accessToken: "access-token-value",

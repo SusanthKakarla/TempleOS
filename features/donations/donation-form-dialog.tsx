@@ -27,6 +27,7 @@ import {
   DONATION_PURPOSE_PRESETS,
   PAYMENT_METHOD_OPTIONS,
 } from "./donation-options";
+import { ManualDonorFields, BLANK_MANUAL_DONOR, type ManualDonorValue } from "./manual-donor-fields";
 
 const AMOUNT_PRESETS = [101, 501, 1001, 5001] as const;
 const NON_CASH_SUGGESTIONS = ["Rice", "Milk", "Coconuts", "Flowers", "Oil"] as const;
@@ -171,6 +172,20 @@ export function DonationFormDialog({
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [devoteeId, setDevoteeId] = useState(donation?.devoteeId ?? fixedDevoteeId ?? "");
+  const [donorMode, setDonorMode] = useState<"devotee" | "manual">(
+    donation && !donation.devoteeId ? "manual" : "devotee",
+  );
+  const [manualDonor, setManualDonor] = useState<ManualDonorValue>(
+    donation && !donation.devoteeId
+      ? {
+          name: donation.manualDonorName ?? "",
+          phone: donation.manualDonorPhone ?? "",
+          email: donation.manualDonorEmail ?? "",
+          address: donation.manualDonorAddress ?? "",
+          isAnonymous: donation.isAnonymous,
+        }
+      : BLANK_MANUAL_DONOR,
+  );
   const [amount, setAmount] = useState(donation?.amount ?? "");
   const [isNonCash, setIsNonCash] = useState(Boolean(donation?.itemDescription));
   const [itemDescription, setItemDescription] = useState(donation?.itemDescription ?? "");
@@ -187,6 +202,18 @@ export function DonationFormDialog({
 
   function resetToDonation() {
     setDevoteeId(donation?.devoteeId ?? fixedDevoteeId ?? "");
+    setDonorMode(donation && !donation.devoteeId ? "manual" : "devotee");
+    setManualDonor(
+      donation && !donation.devoteeId
+        ? {
+            name: donation.manualDonorName ?? "",
+            phone: donation.manualDonorPhone ?? "",
+            email: donation.manualDonorEmail ?? "",
+            address: donation.manualDonorAddress ?? "",
+            isAnonymous: donation.isAnonymous,
+          }
+        : BLANK_MANUAL_DONOR,
+    );
     setAmount(donation?.amount ?? "");
     setIsNonCash(Boolean(donation?.itemDescription));
     setItemDescription(donation?.itemDescription ?? "");
@@ -203,8 +230,13 @@ export function DonationFormDialog({
     formEvent.preventDefault();
     setError(null);
 
-    if (!devoteeId) {
-      setError(tForm("errors.selectDevotee"));
+    if (donorMode === "devotee") {
+      if (!devoteeId) {
+        setError(tForm("errors.selectDevotee"));
+        return;
+      }
+    } else if (!manualDonor.name.trim()) {
+      setError(tForm("errors.enterDonorName"));
       return;
     }
     let amountNumber: number | null = null;
@@ -231,6 +263,24 @@ export function DonationFormDialog({
       return;
     }
 
+    const manualDonorPayload = {
+      name: manualDonor.name.trim(),
+      phone: manualDonor.phone.trim() || null,
+      email: manualDonor.email.trim() || null,
+      address: manualDonor.address.trim() || null,
+      isAnonymous: manualDonor.isAnonymous,
+    };
+    // Create's schema wants devoteeId/manualDonor nullable so the XOR check can
+    // compare truthiness; update's schema treats "key present at all" as "change
+    // this field" (and devoteeId there isn't nullable), so an edit must omit
+    // whichever side isn't active rather than sending it as null.
+    const donorFields =
+      mode === "create"
+        ? { devoteeId: donorMode === "devotee" ? devoteeId : null, manualDonor: donorMode === "manual" ? manualDonorPayload : null }
+        : donorMode === "devotee"
+          ? { devoteeId }
+          : { manualDonor: manualDonorPayload };
+
     setSubmitting(true);
     try {
       const url = mode === "create" ? "/api/donations" : `/api/donations/${donation!.id}`;
@@ -239,8 +289,7 @@ export function DonationFormDialog({
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          devoteeId,
-          manualDonor: null,
+          ...donorFields,
           amount: isNonCash ? null : amountNumber,
           purpose,
           paymentMethod: isNonCash ? null : paymentMethod,
@@ -288,18 +337,42 @@ export function DonationFormDialog({
             <div className="space-y-4 [direction:ltr]">
               <div className="space-y-2">
                 <Label htmlFor="devotee-search" className="justify-between">
-                  <span>{tForm("fields.devotee")}</span>
+                  <span>{donorMode === "devotee" ? tForm("fields.devotee") : tForm("fields.manualDonor")}</span>
                   <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
                 </Label>
-                <DevoteeSearchField
-                  devotees={devotees}
-                  value={devoteeId}
-                  onChange={setDevoteeId}
-                  disabled={Boolean(fixedDevoteeId)}
-                  placeholder={tForm("fields.devoteeSearchPlaceholder")}
-                  noResultsLabel={tForm("fields.noDevoteesFound")}
-                  noPhoneLabel={tForm("fields.noPhone")}
-                />
+                {!fixedDevoteeId && (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={donorMode === "devotee" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDonorMode("devotee")}
+                    >
+                      {tForm("fields.existingDevotee")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={donorMode === "manual" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDonorMode("manual")}
+                    >
+                      {tForm("fields.manualDonor")}
+                    </Button>
+                  </div>
+                )}
+                {donorMode === "devotee" ? (
+                  <DevoteeSearchField
+                    devotees={devotees}
+                    value={devoteeId}
+                    onChange={setDevoteeId}
+                    disabled={Boolean(fixedDevoteeId)}
+                    placeholder={tForm("fields.devoteeSearchPlaceholder")}
+                    noResultsLabel={tForm("fields.noDevoteesFound")}
+                    noPhoneLabel={tForm("fields.noPhone")}
+                  />
+                ) : (
+                  <ManualDonorFields value={manualDonor} onChange={setManualDonor} requiredLabel={tCommon("required")} />
+                )}
               </div>
 
               <div className="space-y-2">

@@ -50,10 +50,19 @@ export interface CampaignDonationSummary {
   donorCount: number;
 }
 
-/** Fundraising rollup for a donation-type campaign — a live query against the existing donations table, matched by purpose tag. Never a stored "raised" counter. */
+/**
+ * Fundraising rollup for a donation-type campaign — a live query against the
+ * existing donations table, matched by purpose tag. Never a stored "raised"
+ * counter. Donor count treats every manual/anonymous donation (devotee_id
+ * IS NULL — e.g. public Razorpay checkout donations) as its own distinct
+ * donor via COALESCE onto the donation's own id, since count(DISTINCT
+ * devotee_id) alone silently excludes every NULL and would undercount (or
+ * zero out) campaigns funded primarily through the public donation link.
+ */
 export async function getCampaignDonationSummary(tenantId: string, purpose: string): Promise<CampaignDonationSummary> {
   const { rows } = await getPool().query<{ total: string; count: string; donors: string }>(
-    `SELECT COALESCE(SUM(amount), 0) AS total, count(*) AS count, count(DISTINCT devotee_id) AS donors
+    `SELECT COALESCE(SUM(amount), 0) AS total, count(*) AS count,
+            count(DISTINCT COALESCE(devotee_id::text, id::text)) AS donors
      FROM donations
      WHERE tenant_id = $1 AND purpose = $2`,
     [tenantId, purpose],
@@ -65,20 +74,29 @@ export async function getCampaignDonationSummary(tenantId: string, purpose: stri
   };
 }
 
-/** Donations recorded against this campaign's purpose tag, most recent first — reuses the existing donations table directly, no campaign-specific donation storage. */
+/**
+ * Donations recorded against this campaign's purpose tag, most recent first
+ * — reuses the existing donations table directly, no campaign-specific
+ * donation storage. LEFT JOINs devotees (not INNER) so manual/anonymous
+ * donations (devotee_id IS NULL — e.g. public Razorpay checkout) still
+ * appear here instead of being silently dropped, which previously
+ * contradicted the non-zero totals shown by getCampaignDonationSummary
+ * above on the same page.
+ */
 export async function listCampaignDonations(tenantId: string, purpose: string, limit = 20) {
   const { rows } = await getPool().query<{
     id: string;
-    devotee_id: string;
+    devotee_id: string | null;
     donor_name: string;
     amount: string | null;
     payment_method: string | null;
     item_description: string | null;
     donated_at: Date;
   }>(
-    `SELECT d.id, d.devotee_id, dv.display_name AS donor_name, d.amount, d.payment_method, d.item_description, d.donated_at
+    `SELECT d.id, d.devotee_id, COALESCE(dv.display_name, d.manual_donor_name) AS donor_name,
+            d.amount, d.payment_method, d.item_description, d.donated_at
      FROM donations d
-     JOIN devotees dv ON dv.id = d.devotee_id
+     LEFT JOIN devotees dv ON dv.id = d.devotee_id
      WHERE d.tenant_id = $1 AND d.purpose = $2
      ORDER BY d.donated_at DESC
      LIMIT $3`,

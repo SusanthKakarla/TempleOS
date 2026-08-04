@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
   let approved = 0;
   let stillPending = 0;
   let errors = 0;
+  const errorDetails: { tenantId: string; templateId: string; templateName: string; message: string }[] = [];
 
   for (const account of accounts) {
     const pending = await listPendingTemplatesForTenant(account.tenantId);
@@ -51,8 +52,18 @@ export async function POST(req: NextRequest) {
         } else {
           stillPending += 1;
         }
-      } catch {
+      } catch (err) {
         errors += 1;
+        // Kept per-template (tenant/template/message), not just a bare count —
+        // an admin whose template is stuck "pending" otherwise has no way to
+        // tell from this cron's audit log whether it's a real Meta-side issue
+        // or a transient failure.
+        errorDetails.push({
+          tenantId: account.tenantId,
+          templateId: template.id,
+          templateName: template.metaTemplateName,
+          message: err instanceof Error ? err.message : "Unknown error",
+        });
       }
     }
   }
@@ -63,6 +74,7 @@ export async function POST(req: NextRequest) {
     approved,
     stillPending,
     errors,
+    errorDetails,
   });
   return NextResponse.json({ tenantsChecked: accounts.length, templatesChecked, approved, stillPending, errors });
 }

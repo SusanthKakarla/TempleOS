@@ -44,6 +44,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // The schema's own refine only catches startsAt/endsAt ordering when BOTH
+  // fields are sent in the same PATCH — it has no way to see the existing
+  // row. Re-check against the merged (patch-over-existing) values here, since
+  // priorEvent is already loaded above for the notification-policy diff.
+  const mergedStartsAt = parsed.data.startsAt ?? priorEvent.startsAt;
+  const mergedEndsAt = "endsAt" in parsed.data ? parsed.data.endsAt : priorEvent.endsAt;
+  if (mergedEndsAt && Date.parse(mergedEndsAt) < Date.parse(mergedStartsAt)) {
+    return NextResponse.json({ error: "End time must be after start time" }, { status: 400 });
+  }
+
   const event = await updateEvent(session.tenantId, id, parsed.data);
   if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });

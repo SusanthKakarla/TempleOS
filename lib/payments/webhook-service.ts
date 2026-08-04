@@ -98,7 +98,7 @@ export async function handleRazorpayWebhook(
       return { status: 400 };
     }
 
-    const signatureValid = await verifyWebhookSignatureForAccount(account.id, "razorpay", rawBody, signatureHeader);
+    const signatureValid = await verifyWebhookSignatureForAccount(tenantId, account.id, "razorpay", rawBody, signatureHeader);
     const event = parseWebhookEvent("razorpay", rawBody);
 
     await logPaymentWebhook({

@@ -11,7 +11,11 @@ interface RouteParams {
 }
 
 const scheduleSchema = z.object({
-  scheduledAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Must be a valid date/time").optional(),
+  scheduledAt: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Must be a valid date/time")
+    .refine((value) => Date.parse(value) > Date.now(), "Scheduled time must be in the future")
+    .optional(),
   recurrenceRule: z.enum(["daily", "weekly", "monthly"]).optional(),
 });
 

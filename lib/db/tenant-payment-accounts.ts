@@ -264,12 +264,27 @@ interface CredentialsRow {
   public_token: string | null;
 }
 
-/** The only function that ever decrypts credentials — used exclusively by PaymentProviderService. Branches on which columns are populated: `tenant_payment_credentials_mode_check` guarantees exactly one shape ever exists per row. */
-export async function getDecryptedCredentialsForAccount(accountId: string): Promise<DecryptedCredentials | null> {
+/**
+ * The only function that ever decrypts credentials — used exclusively by
+ * PaymentProviderService. Branches on which columns are populated:
+ * `tenant_payment_credentials_mode_check` guarantees exactly one shape ever
+ * exists per row. Requires tenantId and joins through tenant_payment_accounts
+ * to confirm the account actually belongs to that tenant — this is the
+ * highest-blast-radius function in the codebase (it decrypts a live payment
+ * provider secret), so it must never trust a bare accountId alone, even
+ * though every current caller already resolves the id via a tenant-scoped
+ * path; a future caller passing an unscoped id must fail closed here.
+ */
+export async function getDecryptedCredentialsForAccount(
+  tenantId: string,
+  accountId: string,
+): Promise<DecryptedCredentials | null> {
   const { rows } = await getPool().query<CredentialsRow>(
-    `SELECT key_id, encrypted_key_secret, encrypted_webhook_secret, encrypted_access_token, encrypted_refresh_token, access_token_expires_at, public_token
-     FROM tenant_payment_credentials WHERE payment_account_id = $1`,
-    [accountId],
+    `SELECT c.key_id, c.encrypted_key_secret, c.encrypted_webhook_secret, c.encrypted_access_token, c.encrypted_refresh_token, c.access_token_expires_at, c.public_token
+     FROM tenant_payment_credentials c
+     JOIN tenant_payment_accounts a ON a.id = c.payment_account_id
+     WHERE c.payment_account_id = $1 AND a.tenant_id = $2`,
+    [accountId, tenantId],
   );
   const row = rows[0];
   if (!row) return null;
