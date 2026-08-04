@@ -15,6 +15,7 @@ export interface OnboardingResultPayload {
   code: string;
   wabaId: string;
   phoneNumberId: string;
+  businessId: string | null;
   exp: number;
 }
 
@@ -35,6 +36,7 @@ export function createResultToken(input: {
   code: string;
   wabaId: string;
   phoneNumberId: string;
+  businessId: string | null;
 }): string {
   return createSignedSessionToken(input, RESULT_MAX_AGE_SECONDS);
 }
@@ -66,11 +68,13 @@ function isOnboardingResultPayload(payload: unknown): payload is OnboardingResul
     "code" in payload &&
     "wabaId" in payload &&
     "phoneNumberId" in payload &&
+    "businessId" in payload &&
     "exp" in payload &&
     typeof payload.tenantId === "string" &&
     typeof payload.code === "string" &&
     typeof payload.wabaId === "string" &&
     typeof payload.phoneNumberId === "string" &&
+    (payload.businessId === null || typeof payload.businessId === "string") &&
     typeof payload.exp === "number"
   );
 }

@@ -7,6 +7,7 @@ const bodySchema = z.object({
   code: z.string().min(1),
   wabaId: z.string().min(1),
   phoneNumberId: z.string().min(1),
+  businessId: z.string().min(1).nullable().optional(),
 });
 
 /**
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     code: parsed.data.code,
     wabaId: parsed.data.wabaId,
     phoneNumberId: parsed.data.phoneNumberId,
+    businessId: parsed.data.businessId ?? null,
   });
 
   const redirectUrl = `${handoff.returnUrl}?whatsapp_connect_token=${encodeURIComponent(resultToken)}`;

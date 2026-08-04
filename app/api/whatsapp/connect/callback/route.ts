@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
-  const { code, wabaId, phoneNumberId } = parsed.data;
+  const { code, wabaId, phoneNumberId, businessId } = parsed.data;
 
   const confirmation = await exchangeCodeForConfirmation(code);
   if (!confirmation.success) {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     action: existingAccount ? "whatsapp_integration.reconnected" : "whatsapp_integration.connected",
     targetType: "whatsapp_account",
     targetId: account.id,
-    metadata: { metaPhoneNumberId: phoneNumberId, metaBusinessAccountId: wabaId },
+    metadata: { metaPhoneNumberId: phoneNumberId, metaBusinessAccountId: wabaId, metaBusinessId: businessId ?? null },
   });
 
   // Best-effort: a bootstrap failure must never fail the connection itself —

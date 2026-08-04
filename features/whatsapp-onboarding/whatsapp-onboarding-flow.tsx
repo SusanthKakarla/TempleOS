@@ -31,6 +31,7 @@ const FINISH_EVENTS = new Set([
 interface EmbeddedSignupData {
   wabaId: string;
   phoneNumberId: string;
+  businessId: string | null;
 }
 
 function loadFacebookSdk(): Promise<void> {
@@ -86,13 +87,14 @@ export function WhatsAppOnboardingFlow({
       }
       const payload = data as {
         event?: string;
-        data?: { waba_id?: string; phone_number_id?: string; error_message?: string };
+        data?: { waba_id?: string; phone_number_id?: string; business_id?: string; error_message?: string };
       };
       if (payload.event && FINISH_EVENTS.has(payload.event)) {
         const wabaId = payload.data?.waba_id;
         const phoneNumberId = payload.data?.phone_number_id;
+        const businessId = payload.data?.business_id;
         if (wabaId && phoneNumberId) {
-          signupDataRef.current = { wabaId, phoneNumberId };
+          signupDataRef.current = { wabaId, phoneNumberId, businessId: businessId ?? null };
           void maybeComplete();
         }
       } else if (payload.event === "CANCEL") {
@@ -111,14 +113,14 @@ export function WhatsAppOnboardingFlow({
     submittedRef.current = true;
     setStatus("finishing");
 
-    const { wabaId, phoneNumberId } = signupDataRef.current;
+    const { wabaId, phoneNumberId, businessId } = signupDataRef.current;
     const code = signupCodeRef.current;
 
     try {
       const response = await fetch("/api/whatsapp/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handoffToken, code, wabaId, phoneNumberId }),
+        body: JSON.stringify({ handoffToken, code, wabaId, phoneNumberId, businessId }),
       });
       const body = (await response.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
       if (!response.ok || !body.redirectUrl) {
@@ -170,7 +172,7 @@ export function WhatsAppOnboardingFlow({
         config_id: configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { setup: {} },
+        extras: { setup: {}, featureType: "", sessionInfoVersion: "3" },
       },
     );
   }

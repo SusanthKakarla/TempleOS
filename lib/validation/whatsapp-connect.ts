@@ -4,6 +4,7 @@ export const embeddedSignupCallbackSchema = z.object({
   code: z.string().min(1),
   wabaId: z.string().min(1),
   phoneNumberId: z.string().min(1),
+  businessId: z.string().min(1).nullable().optional(),
 });
 
 export type EmbeddedSignupCallbackInput = z.infer<typeof embeddedSignupCallbackSchema>;

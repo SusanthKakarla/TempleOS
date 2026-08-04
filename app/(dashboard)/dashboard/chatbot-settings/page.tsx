@@ -91,7 +91,12 @@ export default async function ChatbotSettingsPage({ searchParams }: ChatbotSetti
   const decodedResult = params.whatsapp_connect_token ? verifyResultToken(params.whatsapp_connect_token) : null;
   const initialConnectResult =
     decodedResult && decodedResult.tenantId === session.tenantId
-      ? { code: decodedResult.code, wabaId: decodedResult.wabaId, phoneNumberId: decodedResult.phoneNumberId }
+      ? {
+          code: decodedResult.code,
+          wabaId: decodedResult.wabaId,
+          phoneNumberId: decodedResult.phoneNumberId,
+          businessId: decodedResult.businessId,
+        }
       : null;
   const initialCancelled = params.whatsapp_connect_error === "cancelled";
 

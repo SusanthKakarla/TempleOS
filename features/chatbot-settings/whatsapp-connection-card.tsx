@@ -15,6 +15,7 @@ interface ConnectResult {
   code: string;
   wabaId: string;
   phoneNumberId: string;
+  businessId: string | null;
 }
 
 interface WhatsAppConnectionCardProps {
@@ -42,7 +43,7 @@ export function WhatsAppConnectionCard({
 
   const isConnected = account !== null && account.status === "connected";
 
-  async function submitConnectResult({ code, wabaId, phoneNumberId }: ConnectResult) {
+  async function submitConnectResult({ code, wabaId, phoneNumberId, businessId }: ConnectResult) {
     // No setPending() here — the initial pending state is already "finishing"
     // for this mount-triggered path (see useState above), so setting it again
     // synchronously from the effect that calls this would trigger a
@@ -51,7 +52,7 @@ export function WhatsAppConnectionCard({
       const response = await fetch("/api/whatsapp/connect/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, wabaId, phoneNumberId }),
+        body: JSON.stringify({ code, wabaId, phoneNumberId, businessId }),
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
