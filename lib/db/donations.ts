@@ -478,13 +478,22 @@ function buildDonationConditions(
     params.push(filter.devoteeId);
     conditions.push(`d.devotee_id = $${params.length + 1}`);
   }
+  // dateFrom/dateTo are plain "YYYY-MM-DD" calendar dates from the UI's date
+  // pickers, never timestamps — comparing donated_at (timestamptz) directly
+  // against dateTo with `<=` implicitly casts it to midnight (00:00:00) of
+  // that day, silently excluding every donation recorded later that same
+  // day. Both bounds are cast to `::date` explicitly and dateTo's bound is
+  // the start of the NEXT day (exclusive), so the full To Date — every
+  // second from 00:00:00 through 23:59:59 — is included regardless of
+  // donation source (manual, imported, or online all share this one
+  // donated_at column and this one query builder).
   if (filter.dateFrom) {
     params.push(filter.dateFrom);
-    conditions.push(`d.donated_at >= $${params.length + 1}`);
+    conditions.push(`d.donated_at >= $${params.length + 1}::date`);
   }
   if (filter.dateTo) {
     params.push(filter.dateTo);
-    conditions.push(`d.donated_at <= $${params.length + 1}`);
+    conditions.push(`d.donated_at < ($${params.length + 1}::date + INTERVAL '1 day')`);
   }
   if (filter.purpose) {
     params.push(filter.purpose);

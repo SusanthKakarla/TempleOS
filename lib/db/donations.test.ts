@@ -49,6 +49,79 @@ describe("donations purpose filter", () => {
   });
 });
 
+describe(
+  "donation date range filtering — inclusive boundaries",
+  () => {
+    const query = vi.fn();
+
+    beforeEach(() => {
+      query.mockReset();
+      (getPool as unknown as Mock).mockReturnValue({ query });
+    });
+
+    it(
+      "regression: To Date must include the ENTIRE day, not just midnight — comparing " +
+        "donated_at (timestamptz) with `<= dateTo` implicitly casts dateTo to 00:00:00 of " +
+        "that day, silently excluding every donation recorded later that day (manual, " +
+        "imported, or online — all share this one query). The fix casts dateTo to `::date` " +
+        "and uses an exclusive upper bound at the START OF THE NEXT DAY instead.",
+      async () => {
+        query.mockResolvedValueOnce({ rows: [] });
+
+        await listDonations("tenant-1", { dateFrom: "2026-08-01", dateTo: "2026-08-05" });
+
+        const [sql, params] = query.mock.calls[0];
+        expect(String(sql)).toContain("d.donated_at >= $2::date");
+        expect(String(sql)).toContain("d.donated_at < ($3::date + INTERVAL '1 day')");
+        expect(String(sql)).not.toContain("d.donated_at <= $3");
+        expect(params).toEqual(["tenant-1", "2026-08-01", "2026-08-05"]);
+      },
+    );
+
+    it("applies the same inclusive dateTo bound in countDonationsFiltered", async () => {
+      query.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+      const count = await countDonationsFiltered("tenant-1", { dateFrom: "2026-08-01", dateTo: "2026-08-05" });
+
+      expect(count).toBe(5);
+      const [sql, params] = query.mock.calls[0];
+      expect(String(sql)).toContain("d.donated_at < ($3::date + INTERVAL '1 day')");
+      expect(params).toEqual(["tenant-1", "2026-08-01", "2026-08-05"]);
+    });
+
+    it("applies the same inclusive dateTo bound in getDashboardDonationStats (the Donations page's 'Total Filtered Amount' card)", async () => {
+      query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0" }] });
+
+      await getDashboardDonationStats("tenant-1", { dateFrom: "2026-08-01", dateTo: "2026-08-05" });
+
+      const [sql] = query.mock.calls[0];
+      expect(String(sql)).toContain("d.donated_at < ($3::date + INTERVAL '1 day')");
+    });
+
+    it("supports a From-Date-only range (no dateTo) — every donation from that date onward", async () => {
+      query.mockResolvedValueOnce({ rows: [] });
+
+      await listDonations("tenant-1", { dateFrom: "2026-08-01" });
+
+      const [sql, params] = query.mock.calls[0];
+      expect(String(sql)).toContain("d.donated_at >= $2::date");
+      expect(String(sql)).not.toContain("donated_at <");
+      expect(params).toEqual(["tenant-1", "2026-08-01"]);
+    });
+
+    it("supports a To-Date-only range (no dateFrom) — every donation up to and including that date", async () => {
+      query.mockResolvedValueOnce({ rows: [] });
+
+      await listDonations("tenant-1", { dateTo: "2026-08-05" });
+
+      const [sql, params] = query.mock.calls[0];
+      expect(String(sql)).toContain("d.donated_at < ($2::date + INTERVAL '1 day')");
+      expect(String(sql)).not.toContain("donated_at >=");
+      expect(params).toEqual(["tenant-1", "2026-08-05"]);
+    });
+  },
+);
+
 describe("getDashboardDonationStats", () => {
   const query = vi.fn();
 
@@ -96,8 +169,8 @@ describe("getDashboardDonationStats", () => {
     });
 
     const [sql, params] = query.mock.calls[0];
-    expect(String(sql)).toContain("d.donated_at >=");
-    expect(String(sql)).toContain("d.donated_at <=");
+    expect(String(sql)).toContain("d.donated_at >= $3::date");
+    expect(String(sql)).toContain("d.donated_at < ($4::date + INTERVAL '1 day')");
     expect(String(sql)).toContain("d.purpose =");
     expect(params).toEqual(["tenant-1", "%Lakshmi%", "2026-01-01", "2026-01-31", "Seva"]);
   });
