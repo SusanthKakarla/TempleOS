@@ -28,6 +28,7 @@ import {
   PAYMENT_METHOD_OPTIONS,
 } from "./donation-options";
 import { ManualDonorFields, BLANK_MANUAL_DONOR, type ManualDonorValue } from "./manual-donor-fields";
+import { DonorPicker, type DonorSelection } from "./donor-picker";
 
 const AMOUNT_PRESETS = [101, 501, 1001, 5001] as const;
 const NON_CASH_SUGGESTIONS = ["Rice", "Milk", "Coconuts", "Flowers", "Oil"] as const;
@@ -175,6 +176,8 @@ export function DonationFormDialog({
   const [donorMode, setDonorMode] = useState<"devotee" | "manual">(
     donation && !donation.devoteeId ? "manual" : "devotee",
   );
+  /** Create mode only — the smart donor search replaces the devotee/manual-donor toggle entirely there. Edit mode keeps donorMode/manualDonor above unchanged. */
+  const [donorSelection, setDonorSelection] = useState<DonorSelection>({ kind: "none" });
   const [manualDonor, setManualDonor] = useState<ManualDonorValue>(
     donation && !donation.devoteeId
       ? {
@@ -203,6 +206,7 @@ export function DonationFormDialog({
   function resetToDonation() {
     setDevoteeId(donation?.devoteeId ?? fixedDevoteeId ?? "");
     setDonorMode(donation && !donation.devoteeId ? "manual" : "devotee");
+    setDonorSelection({ kind: "none" });
     setManualDonor(
       donation && !donation.devoteeId
         ? {
@@ -230,14 +234,31 @@ export function DonationFormDialog({
     formEvent.preventDefault();
     setError(null);
 
-    if (donorMode === "devotee") {
-      if (!devoteeId) {
+    if (mode === "create" && !fixedDevoteeId) {
+      if (donorSelection.kind === "none") {
         setError(tForm("errors.selectDevotee"));
         return;
       }
-    } else if (!manualDonor.name.trim()) {
-      setError(tForm("errors.enterDonorName"));
-      return;
+      if (donorSelection.kind === "new") {
+        if (!donorSelection.draft.displayName.trim()) {
+          setError(tForm("donorPicker.errors.nameRequired"));
+          return;
+        }
+        if (!donorSelection.draft.whatsappPhone.trim()) {
+          setError(tForm("donorPicker.errors.phoneRequired"));
+          return;
+        }
+      }
+    } else if (mode === "edit") {
+      if (donorMode === "devotee") {
+        if (!devoteeId) {
+          setError(tForm("errors.selectDevotee"));
+          return;
+        }
+      } else if (!manualDonor.name.trim()) {
+        setError(tForm("errors.enterDonorName"));
+        return;
+      }
     }
     let amountNumber: number | null = null;
     if (isNonCash) {
@@ -270,13 +291,29 @@ export function DonationFormDialog({
       address: manualDonor.address.trim() || null,
       isAnonymous: manualDonor.isAnonymous,
     };
-    // Create's schema wants devoteeId/manualDonor nullable so the XOR check can
-    // compare truthiness; update's schema treats "key present at all" as "change
-    // this field" (and devoteeId there isn't nullable), so an edit must omit
-    // whichever side isn't active rather than sending it as null.
+    // Create's schema wants devoteeId/manualDonor/newDevotee nullable so the
+    // XOR check can compare truthiness; update's schema treats "key present
+    // at all" as "change this field" (and devoteeId there isn't nullable),
+    // so an edit must omit whichever side isn't active rather than sending
+    // it as null.
     const donorFields =
       mode === "create"
-        ? { devoteeId: donorMode === "devotee" ? devoteeId : null, manualDonor: donorMode === "manual" ? manualDonorPayload : null }
+        ? fixedDevoteeId
+          ? { devoteeId: fixedDevoteeId, manualDonor: null, newDevotee: null }
+          : donorSelection.kind === "existing"
+            ? { devoteeId: donorSelection.devotee.id, manualDonor: null, newDevotee: null }
+            : donorSelection.kind === "new"
+              ? {
+                  devoteeId: null,
+                  manualDonor: null,
+                  newDevotee: {
+                    displayName: donorSelection.draft.displayName.trim(),
+                    whatsappPhone: donorSelection.draft.whatsappPhone.trim(),
+                    gender: donorSelection.draft.gender || null,
+                    dateOfBirth: donorSelection.draft.dateOfBirth || null,
+                  },
+                }
+              : { devoteeId: null, manualDonor: null, newDevotee: null }
         : donorMode === "devotee"
           ? { devoteeId }
           : { manualDonor: manualDonorPayload };
@@ -335,45 +372,55 @@ export function DonationFormDialog({
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 pl-3 [direction:rtl]">
             <div className="space-y-4 [direction:ltr]">
-              <div className="space-y-2">
-                <Label htmlFor="devotee-search" className="justify-between">
-                  <span>{donorMode === "devotee" ? tForm("fields.devotee") : tForm("fields.manualDonor")}</span>
-                  <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
-                </Label>
-                {!fixedDevoteeId && (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={donorMode === "devotee" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setDonorMode("devotee")}
-                    >
-                      {tForm("fields.existingDevotee")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={donorMode === "manual" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setDonorMode("manual")}
-                    >
-                      {tForm("fields.manualDonor")}
-                    </Button>
-                  </div>
-                )}
-                {donorMode === "devotee" ? (
-                  <DevoteeSearchField
-                    devotees={devotees}
-                    value={devoteeId}
-                    onChange={setDevoteeId}
-                    disabled={Boolean(fixedDevoteeId)}
-                    placeholder={tForm("fields.devoteeSearchPlaceholder")}
-                    noResultsLabel={tForm("fields.noDevoteesFound")}
-                    noPhoneLabel={tForm("fields.noPhone")}
-                  />
-                ) : (
-                  <ManualDonorFields value={manualDonor} onChange={setManualDonor} requiredLabel={tCommon("required")} />
-                )}
-              </div>
+              {mode === "create" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="donor-search" className="justify-between">
+                    <span>{tForm("donorPicker.label")}</span>
+                    <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+                  </Label>
+                  <DonorPicker fixedDevoteeId={fixedDevoteeId} devotees={devotees} value={donorSelection} onChange={setDonorSelection} />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="devotee-search" className="justify-between">
+                    <span>{donorMode === "devotee" ? tForm("fields.devotee") : tForm("fields.manualDonor")}</span>
+                    <span className="text-xs font-normal text-muted-foreground">{tCommon("required")}</span>
+                  </Label>
+                  {!fixedDevoteeId && (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={donorMode === "devotee" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDonorMode("devotee")}
+                      >
+                        {tForm("fields.existingDevotee")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={donorMode === "manual" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDonorMode("manual")}
+                      >
+                        {tForm("fields.manualDonor")}
+                      </Button>
+                    </div>
+                  )}
+                  {donorMode === "devotee" ? (
+                    <DevoteeSearchField
+                      devotees={devotees}
+                      value={devoteeId}
+                      onChange={setDevoteeId}
+                      disabled={Boolean(fixedDevoteeId)}
+                      placeholder={tForm("fields.devoteeSearchPlaceholder")}
+                      noResultsLabel={tForm("fields.noDevoteesFound")}
+                      noPhoneLabel={tForm("fields.noPhone")}
+                    />
+                  ) : (
+                    <ManualDonorFields value={manualDonor} onChange={setManualDonor} requiredLabel={tCommon("required")} />
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="donation-value" className="justify-between">

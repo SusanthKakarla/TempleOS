@@ -1214,6 +1214,30 @@
         "notes": "గమనికలు (ఐచ్ఛికం)",
         "donationDate": "విరాళ తేదీ"
       },
+      "donorPicker": {
+        "label": "దాత",
+        "searchPlaceholder": "పేరు లేదా మొబైల్ నంబర్ ద్వారా వెతకండి",
+        "searching": "వెతుకుతోంది…",
+        "noResults": "సరిపోలే భక్తుడు కనుగొనబడలేదు.",
+        "createNew": "కొత్త భక్తుడిని సృష్టించండి",
+        "change": "మార్చు",
+        "cancel": "రద్దు చేయండి",
+        "creatingNewDevotee": "కొత్త భక్తుడిని సృష్టిస్తోంది",
+        "nameLabel": "పూర్తి పేరు",
+        "namePlaceholder": "పూర్తి పేరును నమోదు చేయండి",
+        "phoneLabel": "మొబైల్ నంబర్",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "additionalInformation": "అదనపు సమాచారం",
+        "required": "తప్పనిసరి",
+        "noPhone": "ఫోన్ లేదు",
+        "duplicateFoundTitle": "ఇప్పటికే ఉన్న భక్తుడు కనుగొనబడి ఉండవచ్చు",
+        "useExisting": "ఇప్పటికే ఉన్నదాన్ని వాడండి",
+        "createAnyway": "అయినా కొత్తగా సృష్టించండి",
+        "errors": {
+          "nameRequired": "భక్తుడి పేరును నమోదు చేయండి",
+          "phoneRequired": "మొబైల్ నంబర్‌ను నమోదు చేయండి"
+        }
+      },
       "errors": {
         "selectDevotee": "భక్తుడిని ఎంచుకోండి",
         "enterDonorName": "దాత పేరును నమోదు చేయండి",

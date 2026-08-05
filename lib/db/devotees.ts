@@ -1,3 +1,4 @@
+import type { Pool, PoolClient } from "pg";
 import { getPool } from "./pool";
 import type { Devotee, Gender, MaritalStatus, RelationshipCode, SupportedLanguage } from "@/types/db";
 import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
@@ -412,8 +413,10 @@ export interface CreateDevoteeInput {
 export async function createDevotee(
   tenantId: string,
   input: CreateDevoteeInput,
+  /** Pass an open transaction's client to insert as part of a larger atomic operation (e.g. lib/db/donations.ts's createDonationWithNewDevotee) — defaults to a plain pool query when omitted. */
+  client: Pool | PoolClient = getPool(),
 ): Promise<Devotee> {
-  const { rows } = await getPool().query<DevoteeRow>(
+  const { rows } = await client.query<DevoteeRow>(
     `INSERT INTO devotees
        (tenant_id, whatsapp_phone, display_name, date_of_birth, birth_star, ancestral_lineage, whatsapp_opt_in_status, gender, marital_status, wedding_anniversary, family_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)

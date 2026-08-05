@@ -2,10 +2,11 @@ import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
-import { createDonation, deleteAllDonations, deleteDonations, listDonations } from "@/lib/db/donations";
+import { createDonation, createDonationWithNewDevotee, deleteAllDonations, deleteDonations, listDonations } from "@/lib/db/donations";
 import { getDevoteeById } from "@/lib/db/devotees";
 import { getTenantById } from "@/lib/db/tenants";
 import { createDonationSchema } from "@/lib/validation/donations";
+import { normalizePhoneNumber } from "@/lib/phone.mts";
 import { formatInr } from "@/lib/currency";
 import { enqueueNotification } from "@/lib/notifications/engine";
 import { enqueueDonationRecordedBroadcast } from "@/lib/db/donation-broadcasts";
@@ -52,18 +53,20 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // The "smart donor search" no-match path: a devotee and phone number are
+  // supplied together, validated up front (same normalizePhoneNumber every
+  // other devotee-creating path uses) so a bad phone fails before either
+  // insert runs, rather than mid-transaction.
+  let normalizedNewDevoteePhone: string | null = null;
+  if (parsed.data.newDevotee) {
+    normalizedNewDevoteePhone = normalizePhoneNumber(parsed.data.newDevotee.whatsappPhone);
+    if (!normalizedNewDevoteePhone) {
+      return NextResponse.json({ error: "Enter a valid phone number" }, { status: 400 });
+    }
+  }
+
   try {
-    const donation = await createDonation(session.tenantId, {
-      devoteeId: parsed.data.devoteeId ?? null,
-      manualDonor: parsed.data.manualDonor
-        ? {
-            name: parsed.data.manualDonor.name,
-            phone: parsed.data.manualDonor.phone ?? null,
-            email: parsed.data.manualDonor.email ?? null,
-            address: parsed.data.manualDonor.address ?? null,
-            isAnonymous: parsed.data.manualDonor.isAnonymous,
-          }
-        : null,
+    const donationInputFields = {
       amount: parsed.data.amount ?? null,
       purpose: parsed.data.purpose,
       paymentMethod: parsed.data.paymentMethod ?? null,
@@ -71,7 +74,33 @@ export async function POST(req: NextRequest) {
       notes: parsed.data.notes ?? null,
       donatedAt: parsed.data.donatedAt,
       recordedBy: session.membershipId,
-    });
+    };
+
+    const { donation } = parsed.data.newDevotee
+      ? await createDonationWithNewDevotee(session.tenantId, {
+          devotee: {
+            displayName: parsed.data.newDevotee.displayName,
+            whatsappPhone: normalizedNewDevoteePhone!,
+            gender: parsed.data.newDevotee.gender ?? null,
+            dateOfBirth: parsed.data.newDevotee.dateOfBirth ?? null,
+          },
+          donation: donationInputFields,
+        })
+      : {
+          donation: await createDonation(session.tenantId, {
+            devoteeId: parsed.data.devoteeId ?? null,
+            manualDonor: parsed.data.manualDonor
+              ? {
+                  name: parsed.data.manualDonor.name,
+                  phone: parsed.data.manualDonor.phone ?? null,
+                  email: parsed.data.manualDonor.email ?? null,
+                  address: parsed.data.manualDonor.address ?? null,
+                  isAnonymous: parsed.data.manualDonor.isAnonymous,
+                }
+              : null,
+            ...donationInputFields,
+          }),
+        };
 
     // Thank-you WhatsApp message (migrations/016_notification_media.sql adds
     // the reusable banner support). Fire-and-forget, same pattern as

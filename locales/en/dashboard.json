@@ -1208,6 +1208,30 @@
         "notes": "Notes (optional)",
         "donationDate": "Donation date"
       },
+      "donorPicker": {
+        "label": "Donor",
+        "searchPlaceholder": "Search by name or mobile number",
+        "searching": "Searching…",
+        "noResults": "No matching devotee found.",
+        "createNew": "Create New Devotee",
+        "change": "Change",
+        "cancel": "Cancel",
+        "creatingNewDevotee": "Creating new devotee",
+        "nameLabel": "Full Name",
+        "namePlaceholder": "Enter full name",
+        "phoneLabel": "Mobile Number",
+        "phonePlaceholder": "+91XXXXXXXXXX",
+        "additionalInformation": "Additional Information",
+        "required": "Required",
+        "noPhone": "No phone",
+        "duplicateFoundTitle": "Possible existing devotee found",
+        "useExisting": "Use Existing",
+        "createAnyway": "Create New Anyway",
+        "errors": {
+          "nameRequired": "Enter the devotee's name",
+          "phoneRequired": "Enter a mobile number"
+        }
+      },
       "errors": {
         "selectDevotee": "Select a devotee",
         "enterDonorName": "Enter the donor's name",

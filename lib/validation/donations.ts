@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { GENDER_OPTIONS } from "@/types/db";
+import { dateOfBirthSchema } from "./devotees";
 
 const isoDateTime = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
   message: "Must be a valid date/time",
@@ -13,7 +15,7 @@ const nullableTrimmedString = z
 
 export const paymentMethodSchema = z.enum(["cash", "upi", "bank_transfer", "cheque", "other", "razorpay"]);
 
-/** A donor with no devotee record — see migrations/024_donation_manual_donor.sql. */
+/** A donor with no devotee record — see migrations/024_donation_manual_donor.sql. Kept for the API/DB layer's existing manual-donor capability (e.g. bulk import's phone-mismatch fallback); the Add Donation dialog itself no longer exposes a manual-donor mode — see newDevoteeForDonationSchema below. */
 export const manualDonorSchema = z.object({
   name: z.string().trim().min(1, "Donor name is required"),
   phone: nullableTrimmedString,
@@ -22,10 +24,26 @@ export const manualDonorSchema = z.object({
   isAnonymous: z.boolean().default(false),
 });
 
+/**
+ * The "smart donor search" flow's no-match path — record a donation for
+ * someone with no existing devotee record by creating one inline, in the
+ * same request. Deliberately minimal: only what temple staff would actually
+ * know while standing at the counter. Reuses dateOfBirthSchema from
+ * lib/validation/devotees.ts (same YYYY-MM-DD + no-future-date rules) rather
+ * than redefining it.
+ */
+export const newDevoteeForDonationSchema = z.object({
+  displayName: z.string().trim().min(1, "Name is required").max(200),
+  whatsappPhone: z.string().trim().min(1, "Mobile number is required"),
+  gender: z.enum(GENDER_OPTIONS).nullable().optional(),
+  dateOfBirth: dateOfBirthSchema,
+});
+
 export const createDonationSchema = z
   .object({
     devoteeId: z.string().uuid("Select a devotee").nullable().optional(),
     manualDonor: manualDonorSchema.nullable().optional(),
+    newDevotee: newDevoteeForDonationSchema.nullable().optional(),
     amount: z.number().positive("Amount must be greater than zero").nullable().optional(),
     purpose: z.string().trim().min(1, "Purpose is required").max(200),
     paymentMethod: paymentMethodSchema.nullable().optional(),
@@ -34,15 +52,17 @@ export const createDonationSchema = z
     donatedAt: isoDateTime,
   })
   .superRefine((data, ctx) => {
-    // Donor: exactly one of devoteeId or manualDonor must be set.
-    const hasDevotee = Boolean(data.devoteeId);
-    const hasManual = Boolean(data.manualDonor?.name);
-    if (hasDevotee === hasManual) {
+    // Donor: exactly one of devoteeId / manualDonor / newDevotee must be set.
+    const donorModeCount = [Boolean(data.devoteeId), Boolean(data.manualDonor?.name), Boolean(data.newDevotee?.displayName)].filter(
+      Boolean,
+    ).length;
+    if (donorModeCount !== 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: hasDevotee
-          ? "Choose either an existing devotee or a manual donor, not both"
-          : "Select a devotee or enter a manual donor's name",
+        message:
+          donorModeCount === 0
+            ? "Select a devotee or enter donor details"
+            : "A donation can only have one donor — choose an existing devotee or provide new devotee details, not both",
         path: ["devoteeId"],
       });
     }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import { createAuditLogEntry } from "./audit-log";
-import { countDonationsFiltered, deleteDonation, getDashboardDonationStats, listDonations } from "./donations";
+import { countDonationsFiltered, createDonationWithNewDevotee, deleteDonation, getDashboardDonationStats, listDonations } from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -108,6 +108,168 @@ describe("getDashboardDonationStats", () => {
     const stats = await getDashboardDonationStats("tenant-1", { search: "nonexistent-donor-xyz" });
 
     expect(stats).toEqual({ total: "0", count: 0 });
+  });
+});
+
+describe("createDonationWithNewDevotee", () => {
+  const client = { query: vi.fn(), release: vi.fn() };
+
+  beforeEach(() => {
+    client.query.mockReset();
+    client.release.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ connect: vi.fn().mockResolvedValue(client) });
+  });
+
+  it(
+    "creates the devotee and the donation in one transaction, linking the donation to the new devotee's id — " +
+      "the 'smart donor search' no-match path (temple staff type a name/phone, nothing matches, they record the " +
+      "donation anyway) must never leave a devotee with no donation or a donation with no devotee if either insert fails",
+    async () => {
+      const now = new Date("2026-08-01T08:10:00.000Z");
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "devotee-new",
+              tenant_id: "tenant-1",
+              whatsapp_phone: "+919876543210",
+              display_name: "Gopala Krishna",
+              date_of_birth: null,
+              birth_star: null,
+              ancestral_lineage: null,
+              whatsapp_opt_in_status: true,
+              gender: null,
+              marital_status: null,
+              wedding_anniversary: null,
+              family_id: null,
+              is_active: true,
+              is_donor: false,
+              total_donated_amount: "0",
+              last_donation_at: null,
+              first_seen_at: now,
+              last_seen_at: now,
+              last_interaction_type: null,
+              preferred_language: null,
+              address: null,
+              notes: null,
+              event_notifications_enabled: true,
+              created_at: now,
+              updated_at: now,
+              family_name: null,
+              relationship: null,
+            },
+          ],
+        }) // devotee INSERT (via createDevotee, sharing this same client)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "donation-new",
+              tenant_id: "tenant-1",
+              devotee_id: "devotee-new",
+              amount: "501.00",
+              purpose: "General Donation",
+              payment_method: "cash",
+              notes: null,
+              donated_at: now,
+              recorded_by: "recorder-1",
+              manual_donor_name: null,
+              manual_donor_phone: null,
+              manual_donor_email: null,
+              manual_donor_address: null,
+              is_anonymous: false,
+              item_description: null,
+              created_at: now,
+              updated_at: now,
+            },
+          ],
+        }) // donation INSERT
+        .mockResolvedValueOnce(undefined) // recompute devotee cache
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      const result = await createDonationWithNewDevotee("tenant-1", {
+        devotee: { displayName: "Gopala Krishna", whatsappPhone: "+919876543210", gender: null, dateOfBirth: null },
+        donation: {
+          amount: 501,
+          purpose: "General Donation",
+          paymentMethod: "cash",
+          itemDescription: null,
+          notes: null,
+          donatedAt: now.toISOString(),
+          recordedBy: "recorder-1",
+        },
+      });
+
+      expect(result.devotee.id).toBe("devotee-new");
+      expect(result.donation.devoteeId).toBe("devotee-new");
+      expect(result.donation.id).toBe("donation-new");
+
+      const donationInsertCall = client.query.mock.calls[2];
+      expect(String(donationInsertCall[0])).toContain("INSERT INTO donations");
+      expect(donationInsertCall[1]).toContain("devotee-new");
+
+      expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+      expect(client.release).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("rolls back the devotee insert too if the donation insert fails — no orphaned devotee left behind", async () => {
+    const now = new Date("2026-08-01T08:10:00.000Z");
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "devotee-new",
+            tenant_id: "tenant-1",
+            whatsapp_phone: "+919876543210",
+            display_name: "Gopala Krishna",
+            date_of_birth: null,
+            birth_star: null,
+            ancestral_lineage: null,
+            whatsapp_opt_in_status: true,
+            gender: null,
+            marital_status: null,
+            wedding_anniversary: null,
+            family_id: null,
+            is_active: true,
+            is_donor: false,
+            total_donated_amount: "0",
+            last_donation_at: null,
+            first_seen_at: now,
+            last_seen_at: now,
+            last_interaction_type: null,
+            preferred_language: null,
+            address: null,
+            notes: null,
+            event_notifications_enabled: true,
+            created_at: now,
+            updated_at: now,
+            family_name: null,
+            relationship: null,
+          },
+        ],
+      }) // devotee INSERT succeeds
+      .mockRejectedValueOnce(new Error("donation insert failed")) // donation INSERT fails
+      .mockResolvedValueOnce(undefined); // ROLLBACK
+
+    await expect(
+      createDonationWithNewDevotee("tenant-1", {
+        devotee: { displayName: "Gopala Krishna", whatsappPhone: "+919876543210", gender: null, dateOfBirth: null },
+        donation: {
+          amount: 501,
+          purpose: "General Donation",
+          paymentMethod: "cash",
+          itemDescription: null,
+          notes: null,
+          donatedAt: now.toISOString(),
+          recordedBy: "recorder-1",
+        },
+      }),
+    ).rejects.toThrow("donation insert failed");
+
+    expect(client.query).toHaveBeenLastCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalledOnce();
   });
 });
 

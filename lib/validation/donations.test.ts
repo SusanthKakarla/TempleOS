@@ -50,6 +50,79 @@ describe("createDonationSchema", () => {
     const result = createDonationSchema.parse({ ...base, notes: "   " });
     expect(result.notes).toBeNull();
   });
+
+  describe("newDevotee (smart donor search's no-match path)", () => {
+    const newDevoteeBase = {
+      amount: 501,
+      purpose: "Annadanam",
+      paymentMethod: "upi" as const,
+      donatedAt: "2026-07-18T10:00:00.000Z",
+    };
+
+    it("accepts a devotee-free payload with newDevotee (name + phone only)", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        newDevotee: { displayName: "Gopala Krishna", whatsappPhone: "9876543210" },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects newDevotee with a blank name", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        newDevotee: { displayName: "  ", whatsappPhone: "9876543210" },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects newDevotee with a blank phone — unlike the general Devotee schema, phone is required for this quick-create flow", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        newDevotee: { displayName: "Gopala Krishna", whatsappPhone: "" },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects newDevotee with a future date of birth", () => {
+      const futureYear = new Date().getFullYear() + 1;
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        newDevotee: { displayName: "Gopala Krishna", whatsappPhone: "9876543210", dateOfBirth: `${futureYear}-01-01` },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects sending devoteeId and newDevotee together — a donation has exactly one donor", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        devoteeId: "8f14e45f-ceea-467e-adde-4d5e8b3f0a1c",
+        newDevotee: { displayName: "Gopala Krishna", whatsappPhone: "9876543210" },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects sending manualDonor and newDevotee together", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        manualDonor: { name: "Walk-in Donor", phone: null, email: null, address: null, isAnonymous: false },
+        newDevotee: { displayName: "Gopala Krishna", whatsappPhone: "9876543210" },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects when devoteeId, manualDonor, and newDevotee are all absent", () => {
+      const result = createDonationSchema.safeParse(newDevoteeBase);
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts optional gender on newDevotee", () => {
+      const result = createDonationSchema.safeParse({
+        ...newDevoteeBase,
+        newDevotee: { displayName: "Lakshmi", whatsappPhone: "9876543211", gender: "female" },
+      });
+      expect(result.success).toBe(true);
+    });
+  });
 });
 
 describe("updateDonationSchema", () => {

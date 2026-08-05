@@ -1,7 +1,8 @@
 import type { PoolClient } from "pg";
 import { getPool } from "./pool";
 import { createAuditLogEntry } from "./audit-log";
-import type { Donation, DonationSummary, DonationWithDonor, PaymentMethod } from "@/types/db";
+import { createDevotee } from "./devotees";
+import type { Devotee, Donation, DonationSummary, DonationWithDonor, Gender, PaymentMethod } from "@/types/db";
 import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 
 interface DonationRow {
@@ -104,38 +105,100 @@ export interface CreateDonationInput {
   recordedBy: string | null;
 }
 
+/** Shared by createDonation and createDonationWithNewDevotee — just the INSERT, no transaction/commit of its own, so callers can share one atomic transaction across a donation insert and whatever else it must be atomic with (e.g. a devotee insert). */
+async function insertDonationRow(client: PoolClient, tenantId: string, input: CreateDonationInput): Promise<Donation> {
+  const { rows } = await client.query<DonationRow>(
+    `INSERT INTO donations (
+       tenant_id, devotee_id, amount, purpose, payment_method, notes, donated_at, recorded_by,
+       manual_donor_name, manual_donor_phone, manual_donor_email, manual_donor_address, is_anonymous,
+       item_description
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+     RETURNING *`,
+    [
+      tenantId,
+      input.devoteeId,
+      input.amount,
+      input.purpose,
+      input.paymentMethod,
+      input.notes,
+      input.donatedAt,
+      input.recordedBy,
+      input.manualDonor?.name ?? null,
+      input.manualDonor?.phone ?? null,
+      input.manualDonor?.email ?? null,
+      input.manualDonor?.address ?? null,
+      input.manualDonor?.isAnonymous ?? false,
+      input.itemDescription,
+    ],
+  );
+  return mapDonation(rows[0]);
+}
+
 export async function createDonation(tenantId: string, input: CreateDonationInput): Promise<Donation> {
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");
-    const { rows } = await client.query<DonationRow>(
-      `INSERT INTO donations (
-         tenant_id, devotee_id, amount, purpose, payment_method, notes, donated_at, recorded_by,
-         manual_donor_name, manual_donor_phone, manual_donor_email, manual_donor_address, is_anonymous,
-         item_description
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       RETURNING *`,
-      [
-        tenantId,
-        input.devoteeId,
-        input.amount,
-        input.purpose,
-        input.paymentMethod,
-        input.notes,
-        input.donatedAt,
-        input.recordedBy,
-        input.manualDonor?.name ?? null,
-        input.manualDonor?.phone ?? null,
-        input.manualDonor?.email ?? null,
-        input.manualDonor?.address ?? null,
-        input.manualDonor?.isAnonymous ?? false,
-        input.itemDescription,
-      ],
-    );
+    const donation = await insertDonationRow(client, tenantId, input);
     await recomputeDevoteeDonationCache(client, input.devoteeId);
     await client.query("COMMIT");
-    return mapDonation(rows[0]);
+    return donation;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export interface CreateDonationWithNewDevoteeInput {
+  devotee: {
+    displayName: string;
+    /** Already normalized (E.164) — the API route validates/normalizes before this is called, same as every other devotee-creating path. */
+    whatsappPhone: string;
+    gender: Gender | null;
+    dateOfBirth: string | null;
+  };
+  /** Everything createDonation needs except devoteeId/manualDonor, which this function derives itself from the newly-created devotee. */
+  donation: Omit<CreateDonationInput, "devoteeId" | "manualDonor">;
+}
+
+/**
+ * The "smart donor search" flow's no-match path: temple staff type a name/
+ * phone, nothing matches, they record the donation anyway — this creates the
+ * devotee AND the donation as one atomic unit (never a devotee left behind
+ * with no donation, or vice versa, if either insert fails). Reuses
+ * createDevotee (lib/db/devotees.ts) and insertDonationRow above rather than
+ * duplicating either INSERT.
+ */
+export async function createDonationWithNewDevotee(
+  tenantId: string,
+  input: CreateDonationWithNewDevoteeInput,
+): Promise<{ donation: Donation; devotee: Devotee }> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const devotee = await createDevotee(
+      tenantId,
+      {
+        whatsappPhone: input.devotee.whatsappPhone,
+        displayName: input.devotee.displayName,
+        whatsappOptInStatus: true,
+        dateOfBirth: input.devotee.dateOfBirth,
+        birthStar: null,
+        ancestralLineage: null,
+        gender: input.devotee.gender,
+      },
+      client,
+    );
+    const donation = await insertDonationRow(client, tenantId, {
+      ...input.donation,
+      devoteeId: devotee.id,
+      manualDonor: null,
+    });
+    await recomputeDevoteeDonationCache(client, devotee.id);
+    await client.query("COMMIT");
+    return { donation, devotee };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
