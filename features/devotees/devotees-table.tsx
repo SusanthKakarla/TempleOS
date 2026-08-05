@@ -47,6 +47,7 @@ import { formatDate } from "@/lib/date";
 import { maskPhoneForDisplay } from "@/lib/phone.mts";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
+import { DEVOTEE_EXPORT_COLUMN_CATALOG } from "@/lib/export/columns/devotees-catalog";
 import { DevoteeFormDialog } from "./devotee-form-dialog";
 
 const MotionTableRow = motion.create(TableRow);
@@ -437,6 +438,8 @@ export function DevoteesTable({ devotees, page, pageSize, totalCount, sort, dir 
                 filterParams={searchParams}
                 selectedIds={selectedIds}
                 moduleLabel="devotees"
+                columns={DEVOTEE_EXPORT_COLUMN_CATALOG}
+                recordCount={totalCount}
               />
               <Button
                 variant="destructive"

@@ -563,6 +563,98 @@ export async function listDonationsByIds(tenantId: string, ids: string[]): Promi
   return rows.map(mapDonationWithDonor);
 }
 
+export interface DonationExportRow extends DonationWithDonor {
+  /** Razorpay/provider payment id — null for cash/manual donations, which have no payment_transactions row at all. */
+  providerPaymentId: string | null;
+  paymentStatus: string | null;
+  receiptNumber: string | null;
+  campaignTitle: string | null;
+}
+
+interface DonationExportRowDb extends DonationWithDonorRow {
+  provider_payment_id: string | null;
+  payment_status: string | null;
+  receipt_number: string | null;
+  campaign_title: string | null;
+}
+
+function mapDonationExportRow(row: DonationExportRowDb): DonationExportRow {
+  return {
+    ...mapDonationWithDonor(row),
+    providerPaymentId: row.provider_payment_id,
+    paymentStatus: row.payment_status,
+    receiptNumber: row.receipt_number,
+    campaignTitle: row.campaign_title,
+  };
+}
+
+/**
+ * A donation can only ever have been paid once, but payment_transactions has
+ * no unique constraint on donation_id (retried captures could in principle
+ * leave more than one row) — the LATERAL join with LIMIT 1 guarantees this
+ * never multiplies donation rows, taking the most recent transaction if
+ * there happens to be more than one.
+ */
+const DONATION_EXPORT_PAYMENT_JOIN = `
+     LEFT JOIN LATERAL (
+       SELECT provider_payment_id, status, receipt_number, campaign_id
+       FROM payment_transactions pt
+       WHERE pt.donation_id = d.id
+       ORDER BY pt.created_at DESC
+       LIMIT 1
+     ) pt ON true
+     LEFT JOIN campaigns c ON c.id = pt.campaign_id`;
+
+/**
+ * Export-only variant of listDonations — same filters/sort (shares
+ * buildDonationConditions, so "export exactly what the table is showing"
+ * can never drift from the table's own query), plus the payment/campaign
+ * columns only the export column picker needs (Transaction ID, Payment
+ * Status, Receipt Number, Campaign) that the table itself doesn't display
+ * and so doesn't otherwise fetch.
+ */
+export async function listDonationsForExport(
+  tenantId: string,
+  filter: ListDonationsFilter = {},
+): Promise<DonationExportRow[]> {
+  const { conditions, params: filterParams } = buildDonationConditions(filter);
+  const params: unknown[] = [tenantId, ...filterParams];
+
+  const sortColumn = filter.sort ? DONATION_SORT_COLUMNS[filter.sort] : "d.donated_at";
+  const dir = filter.dir === "asc" ? "ASC" : "DESC";
+
+  const query = `SELECT d.*,
+       COALESCE(dev.display_name, d.manual_donor_name) AS donor_name,
+       COALESCE(dev.whatsapp_phone, d.manual_donor_phone) AS donor_phone,
+       pt.provider_payment_id, pt.status AS payment_status, pt.receipt_number, c.title AS campaign_title
+     FROM donations d
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
+     ${DONATION_EXPORT_PAYMENT_JOIN}
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY ${sortColumn} ${dir}`;
+
+  const { rows } = await getPool().query<DonationExportRowDb>(query, params);
+  return rows.map(mapDonationExportRow);
+}
+
+/** "Export Selected" variant with the same extra payment/campaign columns as listDonationsForExport. */
+export async function listDonationsByIdsForExport(tenantId: string, ids: string[]): Promise<DonationExportRow[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await getPool().query<DonationExportRowDb>(
+    `SELECT d.*,
+       COALESCE(dev.display_name, d.manual_donor_name) AS donor_name,
+       COALESCE(dev.whatsapp_phone, d.manual_donor_phone) AS donor_phone,
+       pt.provider_payment_id, pt.status AS payment_status, pt.receipt_number, c.title AS campaign_title
+     FROM donations d
+     LEFT JOIN devotees dev ON dev.id = d.devotee_id
+     ${DONATION_EXPORT_PAYMENT_JOIN}
+     WHERE d.tenant_id = $1 AND d.id = ANY($2::uuid[])
+     ORDER BY d.donated_at DESC`,
+    [tenantId, ids],
+  );
+  return rows.map(mapDonationExportRow);
+}
+
 export async function listDonationsByDevotee(tenantId: string, devoteeId: string): Promise<Donation[]> {
   const { rows } = await getPool().query<DonationRow>(
     "SELECT * FROM donations WHERE tenant_id = $1 AND devotee_id = $2 ORDER BY donated_at DESC",

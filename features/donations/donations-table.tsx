@@ -40,6 +40,7 @@ import { formatDate, parseISODate, toISODateString } from "@/lib/date";
 import { rowFadeIn, staggerContainer } from "@/lib/motion";
 import { mergeSearchParam } from "@/lib/url-params";
 import { ExportMenu } from "@/features/export/export-menu";
+import { DONATION_EXPORT_COLUMN_CATALOG } from "@/lib/export/columns/donations-catalog";
 import { DONATION_PURPOSE_PRESETS, PAYMENT_METHOD_OPTIONS } from "./donation-options";
 import { DonationFormDialog } from "./donation-form-dialog";
 
@@ -396,7 +397,14 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
               <Upload className="size-4" />
               {t("importButton")}
             </Link>
-            <ExportMenu exportUrl="/api/donations/export" filterParams={searchParams} selectedIds={selectedIds} moduleLabel="donations" />
+            <ExportMenu
+              exportUrl="/api/donations/export"
+              filterParams={searchParams}
+              selectedIds={selectedIds}
+              moduleLabel="donations"
+              columns={DONATION_EXPORT_COLUMN_CATALOG}
+              recordCount={totalCount}
+            />
             <Button
               variant="destructive"
               className="gap-1.5"

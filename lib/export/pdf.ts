@@ -1,5 +1,14 @@
 import PDFDocument from "pdfkit";
 import type { ColumnDef, ExportMeta } from "./types";
+import { formatInr } from "@/lib/currency";
+
+/** pdfkit has no cell types — a Date/number accessor value needs the same "date"/"currency" formatting hint xlsx uses, or it would otherwise render as a raw ISO/decimal string. */
+function formatPdfValue(value: string | number | Date | null, format: ColumnDef<unknown>["format"]): string {
+  if (value === null) return "—";
+  if (value instanceof Date) return value.toLocaleDateString("en-IN");
+  if (format === "currency" && typeof value === "number") return formatInr(value);
+  return String(value);
+}
 
 const PAGE_MARGIN = 40;
 const ROW_HEIGHT = 20;
@@ -66,8 +75,7 @@ export function buildPdfBuffer<T>(columns: ColumnDef<T>[], rows: T[], meta: Expo
       }
       let x = PAGE_MARGIN;
       columns.forEach((col, i) => {
-        const value = col.accessor(row);
-        doc.text(value === null ? "—" : String(value), x, y, { width: colWidths[i], ellipsis: true });
+        doc.text(formatPdfValue(col.accessor(row), col.format), x, y, { width: colWidths[i], ellipsis: true });
         x += colWidths[i];
       });
       y += ROW_HEIGHT;

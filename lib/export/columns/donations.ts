@@ -1,6 +1,5 @@
-import type { DonationWithDonor } from "@/types/db";
-import { formatDonationAmount } from "@/lib/currency";
 import type { ColumnDef } from "../types";
+import type { DonationExportRow } from "@/lib/db/donations";
 
 export interface DonationExportLabels {
   headers: {
@@ -11,15 +10,37 @@ export interface DonationExportLabels {
     method: string;
     date: string;
     notes: string;
+    transactionId: string;
+    paymentStatus: string;
+    campaign: string;
+    receiptNumber: string;
+    email: string;
+    createdDate: string;
+    updatedDate: string;
   };
   paymentMethodLabels: Record<string, string>;
 }
 
-export function buildDonationExportColumns(labels: DonationExportLabels): ColumnDef<DonationWithDonor>[] {
+/**
+ * Order matches the requested column picker checklist (Donor Name through
+ * Updated Date). "PAN Number" from the original request is intentionally
+ * absent — no such column exists anywhere in the schema. Transaction ID/
+ * Payment Status/Campaign/Receipt Number come from payment_transactions via
+ * lib/db/donations.ts's listDonationsForExport — null for manual/cash
+ * donations, which never have a payment_transactions row, exactly as
+ * expected for an optional online-payment-only field.
+ */
+export function buildDonationExportColumns(labels: DonationExportLabels): ColumnDef<DonationExportRow>[] {
   return [
     { key: "donorName", header: labels.headers.donor, accessor: (d) => d.donorName, width: 24 },
-    { key: "donorPhone", header: labels.headers.phone, accessor: (d) => d.donorPhone, width: 18 },
-    { key: "amount", header: labels.headers.amount, accessor: (d) => formatDonationAmount(d.amount), width: 16 },
+    { key: "donorPhone", header: labels.headers.phone, accessor: (d) => d.donorPhone ?? "—", width: 18 },
+    {
+      key: "amount",
+      header: labels.headers.amount,
+      accessor: (d) => (d.amount === null ? "—" : Number(d.amount)),
+      width: 16,
+      format: "currency",
+    },
     { key: "purpose", header: labels.headers.purpose, accessor: (d) => d.purpose, width: 20 },
     {
       key: "paymentMethod",
@@ -27,8 +48,15 @@ export function buildDonationExportColumns(labels: DonationExportLabels): Column
       accessor: (d) => (d.paymentMethod ? (labels.paymentMethodLabels[d.paymentMethod] ?? d.paymentMethod) : "—"),
       width: 14,
     },
-    { key: "donatedAt", header: labels.headers.date, accessor: (d) => new Date(d.donatedAt).toLocaleDateString("en-IN"), width: 14 },
+    { key: "providerPaymentId", header: labels.headers.transactionId, accessor: (d) => d.providerPaymentId ?? "—", width: 22 },
+    { key: "paymentStatus", header: labels.headers.paymentStatus, accessor: (d) => d.paymentStatus ?? "—", width: 14 },
+    { key: "donatedAt", header: labels.headers.date, accessor: (d) => new Date(d.donatedAt), width: 14, format: "date" },
+    { key: "campaignTitle", header: labels.headers.campaign, accessor: (d) => d.campaignTitle ?? "—", width: 22 },
+    { key: "receiptNumber", header: labels.headers.receiptNumber, accessor: (d) => d.receiptNumber ?? "—", width: 18 },
+    { key: "manualDonorEmail", header: labels.headers.email, accessor: (d) => d.manualDonorEmail ?? "—", width: 24 },
     { key: "notes", header: labels.headers.notes, accessor: (d) => d.notes ?? "—", width: 24 },
+    { key: "createdAt", header: labels.headers.createdDate, accessor: (d) => new Date(d.createdAt), width: 14, format: "date" },
+    { key: "updatedAt", header: labels.headers.updatedDate, accessor: (d) => new Date(d.updatedAt), width: 14, format: "date" },
   ];
 }
 

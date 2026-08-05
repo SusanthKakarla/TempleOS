@@ -98,7 +98,16 @@
       "pdf": "PDF (.pdf)"
     },
     "preparing": "Preparing…",
-    "exportButton": "Export"
+    "exportButton": "Export",
+    "columns": {
+      "sectionTitle": "Columns",
+      "description": "Choose the columns you want to include in the file.",
+      "selectAll": "Select All",
+      "clearAll": "Clear All",
+      "columnsSelected": "{count, plural, one {# column} other {# columns}} selected",
+      "recordsToExport": "{count, plural, one {# record} other {# records}} will be exported",
+      "selectAtLeastOne": "Please select at least one column to export."
+    }
   },
   "exportLabels": {
     "common": {
@@ -123,19 +132,30 @@
       "relationship": "Relationship",
       "firstSeen": "First Seen",
       "lastSeen": "Last Seen",
+      "address": "Address",
+      "notes": "Notes",
+      "createdDate": "Created Date",
+      "updatedDate": "Updated Date",
       "yes": "Yes",
       "no": "No",
       "individual": "Individual",
       "family": "Family"
     },
     "donations": {
-      "donor": "Donor",
-      "phone": "Phone",
-      "amount": "Amount",
+      "donor": "Donor Name",
+      "phone": "Phone Number",
+      "amount": "Donation Amount",
       "purpose": "Purpose",
-      "method": "Method",
-      "date": "Date",
-      "notes": "Notes"
+      "method": "Payment Method",
+      "date": "Donation Date",
+      "notes": "Notes",
+      "transactionId": "Transaction ID",
+      "paymentStatus": "Payment Status",
+      "campaign": "Campaign",
+      "receiptNumber": "Receipt Number",
+      "email": "Email",
+      "createdDate": "Created Date",
+      "updatedDate": "Updated Date"
     },
     "events": {
       "title": "Title",

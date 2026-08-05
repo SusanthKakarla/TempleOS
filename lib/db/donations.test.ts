@@ -2,7 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import { createAuditLogEntry } from "./audit-log";
-import { countDonationsFiltered, createDonationWithNewDevotee, deleteDonation, getDashboardDonationStats, listDonations } from "./donations";
+import {
+  countDonationsFiltered,
+  createDonationWithNewDevotee,
+  deleteDonation,
+  getDashboardDonationStats,
+  listDonations,
+  listDonationsForExport,
+} from "./donations";
 
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
@@ -46,6 +53,122 @@ describe("donations purpose filter", () => {
     const [sql, params] = query.mock.calls[0];
     expect(String(sql)).toContain("d.purpose = $2");
     expect(params).toEqual(["tenant-1", "Annadanam (Food Offering)"]);
+  });
+});
+
+describe("listDonationsForExport", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it(
+    "joins payment_transactions (via a LATERAL + LIMIT 1, so a donation can never be duplicated even if " +
+      "more than one transaction row references it) and campaigns, exposing the Transaction ID/Payment " +
+      "Status/Receipt Number/Campaign columns the export column picker offers but the table itself never fetches",
+    async () => {
+      const now = new Date("2026-08-01T00:00:00.000Z");
+      query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: "donation-1",
+            tenant_id: "tenant-1",
+            devotee_id: "devotee-1",
+            amount: "501.00",
+            purpose: "General Donation",
+            payment_method: "razorpay",
+            notes: null,
+            donated_at: now,
+            recorded_by: null,
+            manual_donor_name: null,
+            manual_donor_phone: null,
+            manual_donor_email: null,
+            manual_donor_address: null,
+            is_anonymous: false,
+            item_description: null,
+            created_at: now,
+            updated_at: now,
+            donor_name: "Gopala Krishna",
+            donor_phone: "+919876543210",
+            provider_payment_id: "pay_ABC123",
+            payment_status: "captured",
+            receipt_number: "RCPT-0001",
+            campaign_title: "Annual Fundraiser 2026",
+          },
+        ],
+      });
+
+      const rows = await listDonationsForExport("tenant-1", {});
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: "donation-1",
+        providerPaymentId: "pay_ABC123",
+        paymentStatus: "captured",
+        receiptNumber: "RCPT-0001",
+        campaignTitle: "Annual Fundraiser 2026",
+      });
+
+      const [sql] = query.mock.calls[0];
+      expect(String(sql)).toContain("LEFT JOIN LATERAL");
+      expect(String(sql)).toContain("FROM payment_transactions pt");
+      expect(String(sql)).toContain("LIMIT 1");
+      expect(String(sql)).toContain("LEFT JOIN campaigns c ON c.id = pt.campaign_id");
+    },
+  );
+
+  it("returns null for the payment/campaign columns on a manual-donor donation with no payment_transactions row", async () => {
+    const now = new Date("2026-08-01T00:00:00.000Z");
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "donation-2",
+          tenant_id: "tenant-1",
+          devotee_id: null,
+          amount: "250.00",
+          purpose: "General Donation",
+          payment_method: "cash",
+          notes: null,
+          donated_at: now,
+          recorded_by: null,
+          manual_donor_name: "Walk-in Donor",
+          manual_donor_phone: null,
+          manual_donor_email: null,
+          manual_donor_address: null,
+          is_anonymous: false,
+          item_description: null,
+          created_at: now,
+          updated_at: now,
+          donor_name: "Walk-in Donor",
+          donor_phone: null,
+          provider_payment_id: null,
+          payment_status: null,
+          receipt_number: null,
+          campaign_title: null,
+        },
+      ],
+    });
+
+    const rows = await listDonationsForExport("tenant-1", {});
+
+    expect(rows[0]).toMatchObject({
+      providerPaymentId: null,
+      paymentStatus: null,
+      receiptNumber: null,
+      campaignTitle: null,
+    });
+  });
+
+  it("shares buildDonationConditions with listDonations — the same filters apply (e.g. purpose)", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await listDonationsForExport("tenant-1", { purpose: "Seva" });
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("d.purpose = $2");
+    expect(params).toEqual(["tenant-1", "Seva"]);
   });
 });
 

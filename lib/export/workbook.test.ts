@@ -41,6 +41,63 @@ describe("buildWorkbook + workbookToXlsxBuffer", () => {
     // is enforced in lib/export/index.ts's buildExportFile, tested there.
     expect(() => buildWorkbook(columns, [], "Devotees")).not.toThrow();
   });
+
+  it("bolds the header row and freezes it (worksheet.views ySplit: 1) so it stays visible while scrolling a large export", () => {
+    const workbook = buildWorkbook(columns, rows, "Devotees");
+    const sheet = workbook.getWorksheet("Devotees")!;
+    expect(sheet.getRow(1).font).toEqual({ bold: true });
+    expect(sheet.views).toEqual([{ state: "frozen", ySplit: 1 }]);
+  });
+
+  it("applies a date numFmt to Date-valued cells in columns tagged format: \"date\" — preserving them as real Excel dates, not text", async () => {
+    interface DateRow {
+      donatedAt: Date;
+    }
+    const dateColumns: ColumnDef<DateRow>[] = [
+      { key: "donatedAt", header: "Donated At", accessor: (r) => r.donatedAt, format: "date" },
+    ];
+    const workbook = buildWorkbook(dateColumns, [{ donatedAt: new Date("2026-08-05T00:00:00.000Z") }], "Donations");
+    const buffer = await workbookToXlsxBuffer(workbook);
+
+    const reloaded = new ExcelJS.Workbook();
+    await reloaded.xlsx.load(buffer as never);
+    const sheet = reloaded.getWorksheet("Donations")!;
+    const cell = sheet.getRow(2).getCell(1);
+    expect(cell.value).toBeInstanceOf(Date);
+    expect(cell.numFmt).toBe("dd-mmm-yyyy");
+  });
+
+  it("applies a currency numFmt to number-valued cells in columns tagged format: \"currency\"", async () => {
+    interface AmountRow {
+      amount: number;
+    }
+    const amountColumns: ColumnDef<AmountRow>[] = [
+      { key: "amount", header: "Amount", accessor: (r) => r.amount, format: "currency" },
+    ];
+    const workbook = buildWorkbook(amountColumns, [{ amount: 501 }], "Donations");
+    const buffer = await workbookToXlsxBuffer(workbook);
+
+    const reloaded = new ExcelJS.Workbook();
+    await reloaded.xlsx.load(buffer as never);
+    const sheet = reloaded.getWorksheet("Donations")!;
+    const cell = sheet.getRow(2).getCell(1);
+    expect(cell.value).toBe(501);
+    expect(cell.numFmt).toBe('"₹"#,##0.00');
+  });
+
+  it("does not apply a numFmt to a placeholder string (e.g. \"—\" for a null date) even when the column is tagged format: \"date\"", async () => {
+    interface DateRow {
+      donatedAt: Date | string;
+    }
+    const dateColumns: ColumnDef<DateRow>[] = [
+      { key: "donatedAt", header: "Donated At", accessor: (r) => r.donatedAt, format: "date" },
+    ];
+    const workbook = buildWorkbook(dateColumns, [{ donatedAt: "—" }], "Donations");
+    const sheet = workbook.getWorksheet("Donations")!;
+    const cell = sheet.getRow(2).getCell(1);
+    expect(cell.value).toBe("—");
+    expect(cell.numFmt).toBeUndefined();
+  });
 });
 
 describe("workbookToCsvBuffer", () => {

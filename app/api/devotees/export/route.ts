@@ -9,6 +9,7 @@ import { buildExportFile, type ExportFormat } from "@/lib/export";
 import { fileResponse } from "@/lib/export/response";
 import { buildExportMetaLabels } from "@/lib/export/locale-labels";
 import { buildDevoteeExportColumns, type DevoteeExportLabels } from "@/lib/export/columns/devotees";
+import { filterSelectedColumns } from "@/lib/export/select-columns";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { translateFields } from "@/lib/i18n/translate-rows";
 import { toEnglishSearchQuery } from "@/lib/i18n/search-query";
@@ -72,6 +73,10 @@ async function buildDevoteeColumnsAndLabels() {
       relationship: t("relationship"),
       firstSeen: t("firstSeen"),
       lastSeen: t("lastSeen"),
+      address: t("address"),
+      notes: t("notes"),
+      createdDate: t("createdDate"),
+      updatedDate: t("updatedDate"),
     },
     yes: t("yes"),
     no: t("no"),
@@ -112,10 +117,14 @@ export async function GET(req: NextRequest) {
   const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   const generatedAt = new Date();
-  const [columns, labels] = await Promise.all([
+  const [allColumns, labels] = await Promise.all([
     buildDevoteeColumnsAndLabels(),
     buildExportMetaLabels(session.displayName, generatedAt),
   ]);
+  const columns = filterSelectedColumns(allColumns, req.nextUrl.searchParams.get("columns"));
+  if (columns.length === 0) {
+    return NextResponse.json({ error: "Select at least one column to export" }, { status: 400 });
+  }
   const file = await buildExportFile(formatParam.data as ExportFormat, columns, devotees, {
     title: "Devotees",
     tenantName: tenant.name,
@@ -129,6 +138,7 @@ export async function GET(req: NextRequest) {
 const selectedExportSchema = z.object({
   format: formatSchema,
   ids: z.array(z.string()).min(1, "Select at least one devotee"),
+  columns: z.array(z.string()).optional(),
 });
 
 /** Export Selected — POST since a large ID list doesn't fit a GET query string reliably. */
@@ -157,10 +167,14 @@ export async function POST(req: NextRequest) {
   const devotees = await translateFields(devoteesRaw, locale, ["displayName", "familyName", "birthStar", "ancestralLineage"]);
 
   const generatedAt = new Date();
-  const [columns, labels] = await Promise.all([
+  const [allColumns, labels] = await Promise.all([
     buildDevoteeColumnsAndLabels(),
     buildExportMetaLabels(session.displayName, generatedAt),
   ]);
+  const columns = filterSelectedColumns(allColumns, parsed.data.columns ?? null);
+  if (columns.length === 0) {
+    return NextResponse.json({ error: "Select at least one column to export" }, { status: 400 });
+  }
   const file = await buildExportFile(parsed.data.format, columns, devotees, {
     title: "Devotees",
     tenantName: tenant.name,

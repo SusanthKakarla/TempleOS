@@ -1,6 +1,9 @@
 import ExcelJS from "exceljs";
 import type { ColumnDef } from "./types";
 
+const DATE_NUMFMT = "dd-mmm-yyyy";
+const CURRENCY_NUMFMT = '"₹"#,##0.00';
+
 /** One ExcelJS workbook shared by both xlsx and csv output — a single column-mapping pass. */
 export function buildWorkbook<T>(columns: ColumnDef<T>[], rows: T[], sheetName: string): ExcelJS.Workbook {
   const workbook = new ExcelJS.Workbook();
@@ -11,13 +14,26 @@ export function buildWorkbook<T>(columns: ColumnDef<T>[], rows: T[], sheetName: 
     width: col.width ?? 20,
   }));
   worksheet.getRow(1).font = { bold: true };
+  worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
   for (const row of rows) {
-    const values: Record<string, string | number | null> = {};
+    const values: Record<string, string | number | Date | null> = {};
     for (const col of columns) {
       values[col.key] = col.accessor(row);
     }
-    worksheet.addRow(values);
+    const addedRow = worksheet.addRow(values);
+    // Applying numFmt per-cell (not per-column) so a "—" placeholder string
+    // for a null date/amount stays plain text instead of being coerced into
+    // the date/currency format.
+    columns.forEach((col, index) => {
+      if (!col.format) return;
+      const cell = addedRow.getCell(index + 1);
+      if (col.format === "date" && cell.value instanceof Date) {
+        cell.numFmt = DATE_NUMFMT;
+      } else if (col.format === "currency" && typeof cell.value === "number") {
+        cell.numFmt = CURRENCY_NUMFMT;
+      }
+    });
   }
 
   return workbook;

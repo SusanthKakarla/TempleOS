@@ -98,7 +98,16 @@
       "pdf": "PDF (.pdf)"
     },
     "preparing": "సిద్ధమవుతోంది…",
-    "exportButton": "ఎగుమతి"
+    "exportButton": "ఎగుమతి",
+    "columns": {
+      "sectionTitle": "కాలమ్‌లు",
+      "description": "ఫైల్‌లో చేర్చాలనుకునే కాలమ్‌లను ఎంచుకోండి.",
+      "selectAll": "అన్నీ ఎంచుకోండి",
+      "clearAll": "అన్నీ తీసివేయండి",
+      "columnsSelected": "{count} కాలమ్‌లు ఎంచుకోబడ్డాయి",
+      "recordsToExport": "{count} రికార్డులు ఎగుమతి చేయబడతాయి",
+      "selectAtLeastOne": "దయచేసి ఎగుమతి చేయడానికి కనీసం ఒక కాలమ్‌ను ఎంచుకోండి."
+    }
   },
   "exportLabels": {
     "common": {
@@ -123,19 +132,30 @@
       "relationship": "బంధుత్వం",
       "firstSeen": "మొదట కనిపించింది",
       "lastSeen": "చివరిగా కనిపించింది",
+      "address": "చిరునామా",
+      "notes": "గమనికలు",
+      "createdDate": "సృష్టించిన తేదీ",
+      "updatedDate": "నవీకరించిన తేదీ",
       "yes": "అవును",
       "no": "కాదు",
       "individual": "వ్యక్తిగత",
       "family": "కుటుంబం"
     },
     "donations": {
-      "donor": "దాత",
-      "phone": "ఫోన్",
-      "amount": "మొత్తం",
+      "donor": "దాత పేరు",
+      "phone": "ఫోన్ నంబర్",
+      "amount": "విరాళ మొత్తం",
       "purpose": "ప్రయోజనం",
-      "method": "విధానం",
-      "date": "తేదీ",
-      "notes": "గమనికలు"
+      "method": "చెల్లింపు విధానం",
+      "date": "విరాళ తేదీ",
+      "notes": "గమనికలు",
+      "transactionId": "లావాదేవీ ID",
+      "paymentStatus": "చెల్లింపు స్థితి",
+      "campaign": "ప్రచారం",
+      "receiptNumber": "రసీదు నంబర్",
+      "email": "ఇమెయిల్",
+      "createdDate": "సృష్టించిన తేదీ",
+      "updatedDate": "నవీకరించిన తేదీ"
     },
     "events": {
       "title": "శీర్షిక",

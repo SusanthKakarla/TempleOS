@@ -21,6 +21,10 @@ const LABELS: DevoteeExportLabels = {
     relationship: "Relationship",
     firstSeen: "First Seen",
     lastSeen: "Last Seen",
+    address: "Address",
+    notes: "Notes",
+    createdDate: "Created Date",
+    updatedDate: "Updated Date",
   },
   yes: "Yes",
   no: "No",
@@ -86,9 +90,32 @@ describe("DEVOTEE_EXPORT_COLUMNS", () => {
     expect(accessorFor("ancestralLineage")(devotee)).toBe("—");
   });
 
-  it("formats the total donated amount as currency", () => {
+  it("returns the total donated amount as a real number, tagged for xlsx currency formatting (not a pre-formatted string)", () => {
     const devotee = makeDevotee({ totalDonatedAmount: "1500.00" });
-    expect(accessorFor("totalDonatedAmount")(devotee)).toContain("1,500");
+    expect(accessorFor("totalDonatedAmount")(devotee)).toBe(1500);
+    const column = DEVOTEE_EXPORT_COLUMNS.find((c) => c.key === "totalDonatedAmount");
+    expect(column?.format).toBe("currency");
+  });
+
+  it("returns date fields as real Date objects, tagged for xlsx date formatting", () => {
+    const devotee = makeDevotee({ dateOfBirth: "1990-05-20" });
+    const value = accessorFor("dateOfBirth")(devotee);
+    expect(value).toBeInstanceOf(Date);
+    const column = DEVOTEE_EXPORT_COLUMNS.find((c) => c.key === "dateOfBirth");
+    expect(column?.format).toBe("date");
+  });
+
+  it("falls back to an em dash (not null/NaN) for an unset date of birth", () => {
+    const devotee = makeDevotee({ dateOfBirth: null });
+    expect(accessorFor("dateOfBirth")(devotee)).toBe("—");
+  });
+
+  it("exposes the newly-added real-column fields: address, notes, createdAt, updatedAt", () => {
+    const devotee = makeDevotee({ address: "12 Temple Street", notes: "Regular volunteer" });
+    expect(accessorFor("address")(devotee)).toBe("12 Temple Street");
+    expect(accessorFor("notes")(devotee)).toBe("Regular volunteer");
+    expect(accessorFor("createdAt")(devotee)).toBeInstanceOf(Date);
+    expect(accessorFor("updatedAt")(devotee)).toBeInstanceOf(Date);
   });
 
   it("labels an unlinked devotee as Individual with no family fields", () => {

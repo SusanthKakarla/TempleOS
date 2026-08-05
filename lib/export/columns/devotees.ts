@@ -1,9 +1,8 @@
 import type { Devotee } from "@/types/db";
-import { formatInr } from "@/lib/currency";
 import type { ColumnDef } from "../types";
 
-function formatDate(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleDateString("en-IN") : "—";
+function toDateOrNull(iso: string | null): Date | null {
+  return iso ? new Date(iso) : null;
 }
 
 export interface DevoteeExportLabels {
@@ -25,6 +24,10 @@ export interface DevoteeExportLabels {
     relationship: string;
     firstSeen: string;
     lastSeen: string;
+    address: string;
+    notes: string;
+    createdDate: string;
+    updatedDate: string;
   };
   yes: string;
   no: string;
@@ -38,50 +41,71 @@ export interface DevoteeExportLabels {
   maritalStatusLabels: Record<string, string>;
 }
 
+/**
+ * Order matches the requested column picker checklist (Name through Updated
+ * Date), then the pre-existing extra columns (Language, Marital Status,
+ * Wedding Anniversary, Registration Type, Relationship) that were already
+ * part of this export before column selection existed — kept so choosing
+ * every column still reproduces the old always-export-everything file.
+ * Every accessor here maps onto a real `devotees` table column; "Email" and
+ * "Donation Count" from the original request are intentionally absent — the
+ * devotees table has no email column, and donation count is not a stored/
+ * cached value (only total_donated_amount is).
+ */
 export function buildDevoteeExportColumns(labels: DevoteeExportLabels): ColumnDef<Devotee>[] {
   return [
     { key: "displayName", header: labels.headers.name, accessor: (d) => d.displayName, width: 24 },
     { key: "whatsappPhone", header: labels.headers.phone, accessor: (d) => d.whatsappPhone ?? "—", width: 18 },
+    { key: "familyName", header: labels.headers.familyName, accessor: (d) => d.familyName ?? "—", width: 20 },
     {
       key: "whatsappOptInStatus",
       header: labels.headers.whatsappOptIn,
       accessor: (d) => (d.whatsappOptInStatus ? labels.yes : labels.no),
       width: 14,
     },
-    { key: "preferredLanguage", header: labels.headers.language, accessor: (d) => d.preferredLanguage?.toUpperCase() ?? "—", width: 10 },
-    { key: "isDonor", header: labels.headers.donor, accessor: (d) => (d.isDonor ? labels.yes : labels.no), width: 10 },
-    { key: "totalDonatedAmount", header: labels.headers.totalDonated, accessor: (d) => formatInr(Number(d.totalDonatedAmount)), width: 16 },
     { key: "birthStar", header: labels.headers.birthStar, accessor: (d) => d.birthStar ?? "—", width: 16 },
     { key: "ancestralLineage", header: labels.headers.gothram, accessor: (d) => d.ancestralLineage ?? "—", width: 16 },
-    { key: "dateOfBirth", header: labels.headers.dateOfBirth, accessor: (d) => d.dateOfBirth ?? "—", width: 14 },
     {
       key: "gender",
       header: labels.headers.gender,
       accessor: (d) => (d.gender ? (labels.genderLabels[d.gender] ?? d.gender) : "—"),
       width: 10,
     },
+    { key: "dateOfBirth", header: labels.headers.dateOfBirth, accessor: (d) => toDateOrNull(d.dateOfBirth) ?? "—", width: 14, format: "date" },
+    { key: "address", header: labels.headers.address, accessor: (d) => d.address ?? "—", width: 28 },
+    { key: "notes", header: labels.headers.notes, accessor: (d) => d.notes ?? "—", width: 28 },
+    { key: "firstSeenAt", header: labels.headers.firstSeen, accessor: (d) => toDateOrNull(d.firstSeenAt) ?? "—", width: 14, format: "date" },
+    { key: "lastSeenAt", header: labels.headers.lastSeen, accessor: (d) => toDateOrNull(d.lastSeenAt) ?? "—", width: 14, format: "date" },
+    {
+      key: "totalDonatedAmount",
+      header: labels.headers.totalDonated,
+      accessor: (d) => Number(d.totalDonatedAmount),
+      width: 16,
+      format: "currency",
+    },
+    { key: "isDonor", header: labels.headers.donor, accessor: (d) => (d.isDonor ? labels.yes : labels.no), width: 10 },
+    { key: "createdAt", header: labels.headers.createdDate, accessor: (d) => toDateOrNull(d.createdAt) ?? "—", width: 14, format: "date" },
+    { key: "updatedAt", header: labels.headers.updatedDate, accessor: (d) => toDateOrNull(d.updatedAt) ?? "—", width: 14, format: "date" },
+    { key: "preferredLanguage", header: labels.headers.language, accessor: (d) => d.preferredLanguage?.toUpperCase() ?? "—", width: 10 },
     {
       key: "maritalStatus",
       header: labels.headers.maritalStatus,
       accessor: (d) => (d.maritalStatus ? (labels.maritalStatusLabels[d.maritalStatus] ?? d.maritalStatus) : "—"),
       width: 14,
     },
-    { key: "weddingAnniversary", header: labels.headers.weddingAnniversary, accessor: (d) => d.weddingAnniversary ?? "—", width: 18 },
+    { key: "weddingAnniversary", header: labels.headers.weddingAnniversary, accessor: (d) => toDateOrNull(d.weddingAnniversary) ?? "—", width: 18, format: "date" },
     {
       key: "registrationType",
       header: labels.headers.registrationType,
       accessor: (d) => (d.familyId ? labels.family : labels.individual),
       width: 16,
     },
-    { key: "familyName", header: labels.headers.familyName, accessor: (d) => d.familyName ?? "—", width: 20 },
     {
       key: "relationship",
       header: labels.headers.relationship,
       accessor: (d) => (d.relationship ? (labels.relationshipLabels[d.relationship] ?? d.relationship) : "—"),
       width: 16,
     },
-    { key: "firstSeenAt", header: labels.headers.firstSeen, accessor: (d) => formatDate(d.firstSeenAt), width: 14 },
-    { key: "lastSeenAt", header: labels.headers.lastSeen, accessor: (d) => formatDate(d.lastSeenAt), width: 14 },
   ];
 }
 

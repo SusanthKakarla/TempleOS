@@ -6,9 +6,12 @@
 export interface ColumnDef<T> {
   key: string;
   header: string;
-  accessor: (row: T) => string | number | null;
+  /** A real Date/number (not a pre-formatted string) lets xlsx store the cell as an actual date/currency type — see `format` below. */
+  accessor: (row: T) => string | number | Date | null;
   /** Column width hint (character units for xlsx, proportional weight for pdf). */
   width?: number;
+  /** xlsx-only cell number format applied when the accessor returns a Date/number — "date" needs a Date value, "currency" needs a plain number (rupees, not paise). Ignored for string values, csv, and pdf (which renders its own text representation). */
+  format?: "date" | "currency";
 }
 
 export interface ExportMeta {
