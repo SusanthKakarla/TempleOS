@@ -27,7 +27,7 @@ export function DonateTrust({ providerKey }: DonateTrustProps) {
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 border-t border-[#E9E4DD] pt-6">
         {items.map((item) => (
           <div key={item} className="flex items-center gap-1.5 text-xs text-[#2B2B2B]/70">
-            <CheckCircle2 className="size-3.5 shrink-0 text-[#8B4513]" />
+            <CheckCircle2 className="size-3.5 shrink-0 text-[#EA580C]" />
             {item}
           </div>
         ))}

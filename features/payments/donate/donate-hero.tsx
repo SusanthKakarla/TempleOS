@@ -20,18 +20,19 @@ interface DonateHeroProps {
 function TempleMonogram({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || "T";
   return (
-    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#8B4513]/10 text-lg font-semibold text-[#8B4513]">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EA580C]/10 text-lg font-semibold text-[#EA580C]">
       {initial}
     </div>
   );
 }
 
 /**
- * Campaign Banner (edge-to-edge image or the SVG fallback, fixed height —
- * never a viewport-height takeover) followed by the Campaign Summary Card
- * (a real bounded white card, overlapping the banner slightly). Layout is
- * identical whether a real banner or the fallback renders — same
- * container height either way.
+ * Campaign Banner (edge-to-edge image or the CSS devotional-gradient
+ * fallback, sized to the requested 16:8 mobile / 16:5 desktop ratio — never
+ * a viewport-height takeover) followed by the Campaign Card (a real bounded
+ * white card, overlapping the banner by roughly a quarter to a third of its
+ * height). Layout is identical whether a real banner or the fallback
+ * renders — same aspect-ratio box either way.
  */
 export function DonateHero({
   templeName,
@@ -49,16 +50,16 @@ export function DonateHero({
 
   return (
     <section>
-      <div className="h-56 w-full overflow-hidden sm:h-80">
+      <div className="aspect-[16/8] w-full overflow-hidden sm:aspect-[16/5]">
         {bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
           <img src={bannerUrl} alt="" className="size-full object-cover" />
         ) : (
-          <DonateBannerFallback className="size-full object-cover" />
+          <DonateBannerFallback className="size-full" />
         )}
       </div>
 
-      <div className="mx-auto -mt-6 max-w-lg px-5 md:px-6">
+      <div className="mx-auto -mt-14 max-w-lg px-5 sm:-mt-20 md:px-6">
         <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-[#E9E4DD] bg-white p-5 shadow-sm duration-500 sm:p-6">
           <div className="flex items-center gap-2.5">
             <TempleMonogram name={templeName} />
@@ -87,7 +88,7 @@ export function DonateHero({
             <Button
               id="hero-donate-button"
               size="xl"
-              className="flex-1 bg-[#8B4513] text-white hover:bg-[#6e3610]"
+              className="flex-1 bg-[#EA580C] text-white hover:bg-[#C2410C]"
               render={<a href="#donate" />}
             >
               <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />

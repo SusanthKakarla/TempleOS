@@ -10,11 +10,11 @@ export function DonateFooter({ templeName }: DonateFooterProps) {
     <footer className="border-t border-[#E9E4DD] px-5 py-8 text-center text-xs text-[#2B2B2B]/50">
       <p className="text-[#2B2B2B]/70">{templeName}</p>
       <div className="mt-2 flex items-center justify-center gap-3">
-        <Link href="/privacy-policy" className="hover:text-[#8B4513] hover:underline">
+        <Link href="/privacy-policy" className="hover:text-[#EA580C] hover:underline">
           Privacy
         </Link>
         <span aria-hidden="true">·</span>
-        <Link href="/terms-of-service" className="hover:text-[#8B4513] hover:underline">
+        <Link href="/terms-of-service" className="hover:text-[#EA580C] hover:underline">
           Terms
         </Link>
       </div>

@@ -40,7 +40,10 @@ interface DonationCheckoutFormProps {
 
 type Status = "idle" | "processing" | "success" | "cancelled" | "error";
 
-const PRESET_AMOUNTS = [101, 501, 1001, 5001];
+const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
+
+/** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
+const FILLED_INPUT_CLASS = "border-transparent bg-[#FAF8F5] focus-visible:border-[#EA580C] focus-visible:bg-white focus-visible:ring-[#EA580C]/20";
 
 export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
@@ -198,10 +201,10 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               type="button"
               onClick={() => setAmount(String(preset))}
               className={cn(
-                "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
                 Number(amount) === preset
-                  ? "border-[#8B4513] bg-[#8B4513] text-white"
-                  : "border-[#E9E4DD] bg-white text-[#2B2B2B] hover:border-[#C6922F] hover:bg-[#FAF8F5]",
+                  ? "scale-[1.05] border-[#EA580C] bg-[#EA580C] text-white shadow-sm"
+                  : "border-[#E9E4DD] bg-[#FAF8F5] text-[#2B2B2B] hover:border-[#F59E0B] hover:bg-white",
               )}
             >
               {formatInr(preset)}
@@ -216,6 +219,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         type="number"
         min="1"
         inputSize="lg"
+        className={FILLED_INPUT_CLASS}
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
         onBlur={() => markTouched("amount")}
@@ -226,6 +230,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         id="donor-name"
         label="Full name"
         inputSize="lg"
+        className={FILLED_INPUT_CLASS}
         value={donorName}
         onChange={(event) => setDonorName(event.target.value)}
         onBlur={() => markTouched("donorName")}
@@ -236,6 +241,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         id="donor-phone"
         label="Mobile number"
         inputSize="lg"
+        className={FILLED_INPUT_CLASS}
         value={donorPhone}
         onChange={(event) => setDonorPhone(event.target.value)}
         onBlur={() => markTouched("donorPhone")}
@@ -248,7 +254,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       </label>
 
       <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#8B4513]">
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#EA580C]">
           Add optional details (email, PAN, message)
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
@@ -259,6 +265,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               label="Email (optional)"
               type="email"
               inputSize="lg"
+              className={FILLED_INPUT_CLASS}
               value={donorEmail}
               onChange={(event) => setDonorEmail(event.target.value)}
               onBlur={() => markTouched("donorEmail")}
@@ -269,6 +276,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               label="PAN (optional)"
               placeholder="AAAAA9999A"
               inputSize="lg"
+              className={FILLED_INPUT_CLASS}
               value={donorPan}
               onChange={(event) => setDonorPan(event.target.value.toUpperCase())}
               onBlur={() => markTouched("donorPan")}
@@ -285,6 +293,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
                 value={donationMessage}
                 onChange={(event) => setDonationMessage(event.target.value)}
                 maxLength={500}
+                className={FILLED_INPUT_CLASS}
               />
             </div>
           </div>
@@ -298,7 +307,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         onClick={handleDonate}
         disabled={!canSubmit}
         size="xl"
-        className="hidden w-full bg-[#8B4513] text-white hover:bg-[#6e3610] md:flex"
+        className="hidden w-full bg-[#EA580C] text-white hover:bg-[#C2410C] md:flex"
       >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
@@ -318,7 +327,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
           onClick={handleDonate}
           disabled={!canSubmit}
           size="xl"
-          className="w-full gap-1.5 bg-[#8B4513] text-white hover:bg-[#6e3610]"
+          className="w-full gap-1.5 bg-[#EA580C] text-white hover:bg-[#C2410C]"
         >
           {status === "processing" ? (
             <Loader2 className="size-4 animate-spin" />

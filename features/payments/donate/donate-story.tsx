@@ -28,7 +28,7 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="mt-2 text-sm font-semibold text-[#8B4513] underline-offset-4 hover:underline"
+            className="mt-2 text-sm font-semibold text-[#EA580C] underline-offset-4 hover:underline"
           >
             Read more
           </button>
