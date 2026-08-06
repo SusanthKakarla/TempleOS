@@ -1,9 +1,9 @@
+import Image from "next/image";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatInr } from "@/lib/currency";
 import { ShareButton } from "@/features/payments/share-button";
 import { DonateProgress } from "./donate-progress";
-import { DonateBannerFallback } from "./donate-banner-fallback";
 
 interface DonateHeroProps {
   templeName: string;
@@ -27,12 +27,11 @@ function TempleMonogram({ name }: { name: string }) {
 }
 
 /**
- * Campaign Banner (edge-to-edge image or the CSS devotional-gradient
- * fallback, sized to the requested 16:8 mobile / 16:5 desktop ratio — never
- * a viewport-height takeover) followed by the Campaign Card (a real bounded
- * white card, overlapping the banner by roughly a quarter to a third of its
- * height). Layout is identical whether a real banner or the fallback
- * renders — same aspect-ratio box either way.
+ * Campaign Banner — the temple's own uploaded image when set, otherwise the
+ * official TempleOS default banner (public/default-campaign-banner.png, a
+ * real image asset — not CSS/SVG). Fixed height (200px mobile / 300px
+ * desktop, never a viewport takeover), rounded bottom corners, soft shadow.
+ * The Campaign Card below overlaps it by a fixed 40px for visual depth.
  */
 export function DonateHero({
   templeName,
@@ -50,26 +49,35 @@ export function DonateHero({
 
   return (
     <section>
-      <div className="aspect-[16/8] w-full overflow-hidden sm:aspect-[16/5]">
+      <div className="relative z-0 h-[200px] w-full overflow-hidden rounded-b-2xl shadow-md sm:h-[300px]">
         {bannerUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
+          // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset next/image isn't configured for
           <img src={bannerUrl} alt="" className="size-full object-cover" />
         ) : (
-          <DonateBannerFallback className="size-full" />
+          <Image
+            src="/default-campaign-banner.png"
+            alt=""
+            width={1252}
+            height={752}
+            className="size-full object-cover"
+            priority={false}
+          />
         )}
       </div>
 
-      <div className="mx-auto -mt-14 max-w-lg px-5 sm:-mt-20 md:px-6">
-        <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-[#E9E4DD] bg-white p-5 shadow-sm duration-500 sm:p-6">
-          <div className="flex items-center gap-2.5">
+      <div className="relative z-10 mx-auto -mt-10 max-w-[760px] px-5 md:px-6">
+        <div className="animate-in fade-in slide-in-from-bottom-2 rounded-[20px] border border-[#E9E4DD] bg-white p-6 shadow-sm duration-500">
+          <div className="flex items-center gap-3">
             <TempleMonogram name={templeName} />
             <p className="text-xs font-medium tracking-[0.1em] text-[#2B2B2B]/55 uppercase">{templeName}</p>
           </div>
-          <h1 className="mt-3 font-heading text-2xl leading-[1.2] text-[#2B2B2B] sm:text-3xl">{campaignTitle}</h1>
-          <p className="mt-2 text-sm text-[#2B2B2B]/70">{subtitle}</p>
+
+          <h1 className="mt-4 font-heading text-2xl leading-[1.25] text-[#2B2B2B] sm:text-3xl">{campaignTitle}</h1>
+
+          <p className="mt-3 text-sm text-[#2B2B2B]/70">{subtitle}</p>
 
           {goalAmount > 0 && (
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-3">
               <DonateProgress value={displayPercentage} />
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold text-[#2B2B2B]">{formatInr(raisedAmount)} raised</span>
@@ -84,7 +92,7 @@ export function DonateHero({
             </div>
           )}
 
-          <div className="mt-4 flex gap-3">
+          <div className="mt-6 flex gap-4">
             <Button
               id="hero-donate-button"
               size="xl"

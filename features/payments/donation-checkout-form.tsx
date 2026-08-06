@@ -43,7 +43,8 @@ type Status = "idle" | "processing" | "success" | "cancelled" | "error";
 const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 
 /** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
-const FILLED_INPUT_CLASS = "border-transparent bg-[#FAF8F5] focus-visible:border-[#EA580C] focus-visible:bg-white focus-visible:ring-[#EA580C]/20";
+const FILLED_INPUT_CLASS =
+  "h-[52px] rounded-[14px] border-transparent bg-[#FAF8F5] focus-visible:border-[#EA580C] focus-visible:bg-white focus-visible:ring-[#EA580C]/20";
 
 export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
@@ -175,7 +176,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
   if (status === "success") {
     return (
-      <div id="donate" className="mx-auto flex max-w-lg flex-col items-center gap-3 rounded-2xl bg-white p-8 text-center border border-[#E9E4DD]">
+      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[20px] border border-[#E9E4DD] bg-white p-8 text-center">
         <CheckCircle2 className="size-10 text-emerald-600" />
         <p className="font-heading text-lg text-[#2B2B2B]">Thank you for your donation!</p>
         <p className="text-sm text-[#2B2B2B]/70">A confirmation and receipt will be sent to you shortly.</p>
@@ -187,79 +188,84 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const donateButtonLabel = status === "processing" ? "Processing..." : "Donate Now";
 
   return (
-    <div id="donate" className="mx-auto max-w-lg space-y-5 rounded-2xl bg-white p-6 border border-[#E9E4DD] sm:p-8">
+    <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[20px] border border-[#E9E4DD] bg-white p-6">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
       <h2 className="text-center font-heading text-2xl text-[#2B2B2B]">Support This Campaign</h2>
 
-      <div className="space-y-2">
-        <Label className="text-[#2B2B2B]">Choose an amount</Label>
-        <div className="flex flex-wrap gap-2">
-          {PRESET_AMOUNTS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => setAmount(String(preset))}
-              className={cn(
-                "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
-                Number(amount) === preset
-                  ? "scale-[1.05] border-[#EA580C] bg-[#EA580C] text-white shadow-sm"
-                  : "border-[#E9E4DD] bg-[#FAF8F5] text-[#2B2B2B] hover:border-[#F59E0B] hover:bg-white",
-              )}
-            >
-              {formatInr(preset)}
-            </button>
-          ))}
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Label className="text-[#2B2B2B]">Choose an amount</Label>
+          <div className="flex flex-wrap gap-3">
+            {PRESET_AMOUNTS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setAmount(String(preset))}
+                className={cn(
+                  "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
+                  Number(amount) === preset
+                    ? "scale-[1.05] border-[#EA580C] bg-[#EA580C] text-white shadow-sm"
+                    : "border-[#E9E4DD] bg-[#FAF8F5] text-[#2B2B2B] hover:border-[#F59E0B] hover:bg-white",
+                )}
+              >
+                {formatInr(preset)}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <LabeledInput
+          id="donation-amount"
+          label="Other amount (INR)"
+          type="number"
+          min="1"
+          inputSize="lg"
+          className={FILLED_INPUT_CLASS}
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          onBlur={() => markTouched("amount")}
+          error={fieldError("amount")}
+          required
+        />
       </div>
 
-      <LabeledInput
-        id="donation-amount"
-        label="Other amount (INR)"
-        type="number"
-        min="1"
-        inputSize="lg"
-        className={FILLED_INPUT_CLASS}
-        value={amount}
-        onChange={(event) => setAmount(event.target.value)}
-        onBlur={() => markTouched("amount")}
-        error={fieldError("amount")}
-        required
-      />
-      <LabeledInput
-        id="donor-name"
-        label="Full name"
-        inputSize="lg"
-        className={FILLED_INPUT_CLASS}
-        value={donorName}
-        onChange={(event) => setDonorName(event.target.value)}
-        onBlur={() => markTouched("donorName")}
-        error={fieldError("donorName")}
-        required
-      />
-      <LabeledInput
-        id="donor-phone"
-        label="Mobile number"
-        inputSize="lg"
-        className={FILLED_INPUT_CLASS}
-        value={donorPhone}
-        onChange={(event) => setDonorPhone(event.target.value)}
-        onBlur={() => markTouched("donorPhone")}
-        error={fieldError("donorPhone")}
-        required
-      />
-      <label className="flex items-center gap-2 text-sm text-[#2B2B2B]">
-        <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
-        Donate anonymously
-      </label>
+      <div className="space-y-5">
+        <LabeledInput
+          id="donor-name"
+          label="Full name"
+          inputSize="lg"
+          className={FILLED_INPUT_CLASS}
+          value={donorName}
+          onChange={(event) => setDonorName(event.target.value)}
+          onBlur={() => markTouched("donorName")}
+          error={fieldError("donorName")}
+          required
+        />
+        <LabeledInput
+          id="donor-phone"
+          label="Mobile number"
+          inputSize="lg"
+          className={FILLED_INPUT_CLASS}
+          value={donorPhone}
+          onChange={(event) => setDonorPhone(event.target.value)}
+          onBlur={() => markTouched("donorPhone")}
+          error={fieldError("donorPhone")}
+          required
+        />
+        <label className="flex items-center gap-2 text-sm text-[#2B2B2B]">
+          <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
+          Donate anonymously
+        </label>
+      </div>
 
-      <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
+      <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen} className="my-4">
         <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#EA580C]">
           Add optional details (email, PAN, message)
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-5 pt-4">
             <LabeledInput
               id="donor-email"
               label="Email (optional)"
@@ -283,7 +289,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               error={fieldError("donorPan")}
               maxLength={10}
             />
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="donation-message" className="text-[#2B2B2B]">
                 Donation message (optional)
               </Label>

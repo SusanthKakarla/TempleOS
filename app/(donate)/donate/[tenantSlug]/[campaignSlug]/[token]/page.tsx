@@ -85,13 +85,19 @@ export default async function DonatePage({ params }: PageParams) {
         shareUrl={buildDonationLink(tenant, campaign)}
       />
 
-      {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
+      {description && (
+        <div className="mt-8">
+          <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />
+        </div>
+      )}
 
-      <div className="px-5 md:px-6">
+      <div className="mt-8 px-5 md:px-6">
         <DonationCheckoutForm tenantSlug={tenantSlug} campaignSlug={campaignSlug} token={token} templeName={tenant.name} />
       </div>
 
-      <DonateTrust providerKey={account.providerKey} />
+      <div className="mt-6">
+        <DonateTrust providerKey={account.providerKey} />
+      </div>
 
       <DonateFooter templeName={tenant.name} />
     </div>

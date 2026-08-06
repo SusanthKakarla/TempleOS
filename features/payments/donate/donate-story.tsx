@@ -13,9 +13,9 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <section className="animate-in fade-in duration-500 mx-auto max-w-lg px-5 py-8 md:px-6">
-      <div className="rounded-2xl border border-[#E9E4DD] bg-white p-5 shadow-sm">
-        <h2 className="mb-3 font-heading text-xl text-[#2B2B2B]">The Story</h2>
+    <section className="animate-in fade-in duration-500 mx-auto max-w-[760px] px-5 md:px-6">
+      <div className="rounded-[20px] border border-[#E9E4DD] bg-white p-6 shadow-sm">
+        <h2 className="mb-4 font-heading text-xl text-[#2B2B2B]">The Story</h2>
 
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
