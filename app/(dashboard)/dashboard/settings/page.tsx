@@ -6,7 +6,7 @@ import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accoun
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
-import { RazorpayConnectionCard } from "@/features/payments/razorpay-connection-card";
+import { PaymentSettingsSection } from "@/features/payments/payment-settings-section";
 
 interface SettingsPageProps {
   searchParams: Promise<{ whatsapp_connect_token?: string; whatsapp_connect_error?: string }>;
@@ -57,7 +57,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {paymentsEnabled && (
         <section className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">{t("paymentsSection")}</h2>
-          <RazorpayConnectionCard account={paymentAccount} />
+          <PaymentSettingsSection account={paymentAccount} tenantId={session.tenantId} />
         </section>
       )}
     </div>

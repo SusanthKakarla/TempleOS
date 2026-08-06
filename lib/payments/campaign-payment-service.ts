@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/types/db";
 import { getTenantById } from "@/lib/db/tenants";
 import { getCampaignById } from "@/lib/db/campaigns";
 import { createDonation } from "@/lib/db/donations";
@@ -218,8 +219,9 @@ export async function runCaptureSideEffects(transactionId: string): Promise<void
 
   if (!transaction.donationId) {
     try {
+      const providerLabel = transaction.providerKey === "phonepe" ? "PhonePe" : "Razorpay";
       const notes = [
-        `Razorpay transaction ${transaction.id}`,
+        `${providerLabel} transaction ${transaction.id}`,
         transaction.donorPan ? `PAN: ${transaction.donorPan}` : null,
         transaction.donorMessage ? `Message: ${transaction.donorMessage}` : null,
       ]
@@ -237,7 +239,11 @@ export async function runCaptureSideEffects(transactionId: string): Promise<void
         },
         amount: transaction.amount,
         purpose: campaign?.linkedDonationPurpose ?? "online_donation",
-        paymentMethod: "razorpay",
+        // Cast is safe: only providers with an `active` row in
+        // payment_providers can ever produce a transaction here, and every
+        // active provider key is also a valid donations.payment_method value
+        // (kept in lockstep by migrations/025 and migrations/037).
+        paymentMethod: transaction.providerKey as PaymentMethod,
         itemDescription: null,
         notes,
         donatedAt: new Date().toISOString(),

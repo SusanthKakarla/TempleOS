@@ -31,6 +31,8 @@ const account = {
   providerKey: "razorpay" as const,
   connectionMethod: "manual" as const,
   razorpayAccountId: null,
+  providerMerchantId: null,
+  environment: "production" as const,
   status: "connected" as const,
   isActive: true,
   lastValidatedAt: null,

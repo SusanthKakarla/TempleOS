@@ -1639,6 +1639,62 @@
         "connected": "Razorpay connected successfully.",
         "error": "Razorpay connection failed. Please try again."
       }
+    },
+    "providerSelector": {
+      "title": "Payment Provider",
+      "description": "Choose which payment gateway your temple uses to accept online donations.",
+      "razorpay": "Razorpay",
+      "phonepe": "PhonePe"
+    },
+    "phonepe": {
+      "cardTitle": "PhonePe",
+      "cardDescription": "Connect your temple's own PhonePe Business account to accept online donations.",
+      "statusConnected": "Connected",
+      "statusNotConnected": "Not connected",
+      "validated": "Verified",
+      "validationPending": "Verification pending",
+      "fields": {
+        "merchantId": "Merchant ID",
+        "environment": "Environment",
+        "validationStatus": "Verification status"
+      },
+      "methodTabs": {
+        "manual": "Manual Configuration",
+        "guided": "Guided Setup"
+      },
+      "manual": {
+        "merchantId": "Merchant ID",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "environment": "Environment",
+        "environmentSandbox": "Sandbox (testing)",
+        "environmentProduction": "Production (live)",
+        "webhookSecret": "Webhook Secret (optional)",
+        "webhookSecretHelp": "From PhonePe Business Dashboard → Developer Settings → Webhook, formatted as username:password.",
+        "connectButton": "Connect PhonePe",
+        "connecting": "Connecting...",
+        "connectSuccess": "PhonePe connected successfully.",
+        "connectError": "Could not connect PhonePe."
+      },
+      "guided": {
+        "intro": "PhonePe doesn't yet offer one-click account linking — you'll copy a few values from your PhonePe Business Dashboard. This takes about 5 minutes.",
+        "step1Title": "1. Log into PhonePe Business Dashboard",
+        "step1Body": "Go to business.phonepe.com and sign in with your merchant account.",
+        "step2Title": "2. Copy your API credentials",
+        "step2Body": "Developer Settings → API Keys — copy your Merchant ID, Client ID, and Client Secret.",
+        "step3Title": "3. Create a webhook",
+        "step3Body": "Developer Settings → Webhook → Create Webhook. Enter the URL below, choose \"SHA (Username & Password)\" authentication, and remember the username/password you set.",
+        "webhookUrlLabel": "Webhook URL to enter in PhonePe",
+        "copy": "Copy",
+        "copied": "Copied",
+        "step4Title": "4. Enter your details below",
+        "continueButton": "I've done this — continue"
+      },
+      "disconnectButton": "Disconnect",
+      "disconnecting": "Disconnecting...",
+      "disconnectConfirm": "Disconnect this payment account? Online donations will stop working until you reconnect.",
+      "disconnectSuccess": "PhonePe disconnected.",
+      "disconnectError": "Failed to disconnect."
     }
   },
   "pwaInstall": {

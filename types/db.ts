@@ -231,6 +231,10 @@ export interface TenantPaymentAccount {
   connectionMethod: PaymentConnectionMethod;
   /** Partner (OAuth) mode only — the sub-merchant account id Razorpay assigns on connect. */
   razorpayAccountId: string | null;
+  /** PhonePe manual mode only — the merchant id sent as X-MERCHANT-ID on API calls. */
+  providerMerchantId: string | null;
+  /** PhonePe manual mode only — selects the sandbox vs production API host. */
+  environment: "sandbox" | "production";
   status: PaymentAccountStatus;
   isActive: boolean;
   lastValidatedAt: string | null;
@@ -812,7 +816,7 @@ export interface WhatsAppInteraction {
   createdAt: string;
 }
 
-export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other" | "razorpay";
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other" | "razorpay" | "phonepe";
 
 export interface Donation {
   id: string;

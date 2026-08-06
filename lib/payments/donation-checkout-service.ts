@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { DEFAULT_DONATION_LINK_BASE_URL } from "@/lib/campaigns/donation-message";
 import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary, type CampaignDonationSummary } from "@/lib/db/campaign-analytics";
@@ -134,13 +135,27 @@ function generateReceiptRef(): string {
   return randomUUID();
 }
 
+/**
+ * Where a redirect-based provider (PhonePe) sends the browser back after
+ * checkout — the donation page's own /return route, which resolves the
+ * outcome via the authoritative Order Status API, not a trusted query
+ * param. `order` carries the merchantOrderId (= receiptRef =
+ * payment_transactions.provider_order_id for PhonePe, see the adapter's own
+ * comment) so /return can look the transaction up — nothing else identifies
+ * it to an anonymous donor's browser.
+ */
+function buildReturnUrl(tenantSlug: string, campaignSlug: string, token: string, receiptRef: string): string {
+  const base = process.env.DONATION_LINK_BASE_URL?.trim() || DEFAULT_DONATION_LINK_BASE_URL;
+  return `${base.replace(/\/+$/, "")}/${tenantSlug}/${campaignSlug}/${token}/return?order=${encodeURIComponent(receiptRef)}`;
+}
+
 /** Server re-validates the full context again (never trusts that the client-rendered page state is still accurate). */
 export async function createCheckoutOrder(
   tenantSlug: string,
   campaignSlug: string,
   token: string,
   input: CreateCheckoutOrderInput,
-): Promise<{ transaction: PaymentTransaction; providerOrderId: string; keyId: string; currency: string } | null> {
+): Promise<{ transaction: PaymentTransaction; providerOrderId: string; keyId: string; currency: string; redirectUrl: string | null } | null> {
   const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
   if (!context) return null;
   if (!(input.amount > 0)) return null;
@@ -148,11 +163,13 @@ export async function createCheckoutOrder(
   // The order is created with the provider FIRST — payment_transactions.provider_order_id
   // is NOT NULL + unique, so there's no placeholder value to insert and then
   // patch; the real order id is known before the row is ever written.
+  const receiptRef = generateReceiptRef();
   const order = await createOrderForTenant(context.tenant.id, {
     amountPaise: Math.round(input.amount * RUPEE_TO_PAISE),
     currency: "INR",
-    receiptRef: generateReceiptRef(),
+    receiptRef,
     notes: { campaignId: context.campaign.id },
+    redirectUrl: buildReturnUrl(tenantSlug, campaignSlug, token, receiptRef),
   });
   if (!order) return null;
 
@@ -172,5 +189,11 @@ export async function createCheckoutOrder(
     isAnonymous: input.isAnonymous,
   });
 
-  return { transaction, providerOrderId: order.providerOrderId, keyId: order.keyId, currency: "INR" };
+  return {
+    transaction,
+    providerOrderId: order.providerOrderId,
+    keyId: order.keyId,
+    currency: "INR",
+    redirectUrl: order.redirectUrl,
+  };
 }

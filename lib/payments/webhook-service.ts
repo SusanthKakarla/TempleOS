@@ -141,6 +141,80 @@ export async function handleRazorpayWebhook(
 }
 
 /**
+ * PhonePe equivalent of `handleRazorpayWebhook` — same per-tenant URL shape
+ * (PhonePe has no Partner-OAuth aggregator equivalent to justify a
+ * platform-level endpoint, see this feature's design notes), same
+ * unconditional logging, same tenant-scoped-secret verification. The only
+ * difference is the header PhonePe signs with (`Authorization`, not
+ * `X-Razorpay-Signature`).
+ */
+export async function handlePhonePeWebhook(
+  tenantId: string,
+  rawBody: string,
+  signatureHeader: string | null,
+): Promise<WebhookOutcome> {
+  try {
+    const account = await getActivePaymentAccountForTenant(tenantId);
+    if (!account || account.providerKey !== "phonepe") {
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "phonepe",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: "No active PhonePe account for this tenant",
+      });
+      return { status: 404 };
+    }
+
+    if (!signatureHeader) {
+      await logPaymentWebhook({
+        tenantId,
+        providerKey: "phonepe",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: "Missing Authorization header",
+      });
+      return { status: 400 };
+    }
+
+    const signatureValid = await verifyWebhookSignatureForAccount(tenantId, account.id, "phonepe", rawBody, signatureHeader);
+    const event = parseWebhookEvent("phonepe", rawBody);
+
+    await logPaymentWebhook({
+      tenantId,
+      providerKey: "phonepe",
+      signatureValid,
+      eventType: event.type,
+      rawBody,
+      errorMessage: signatureValid ? null : "Signature verification failed",
+    });
+
+    if (!signatureValid) {
+      return { status: 400 };
+    }
+
+    await dispatchWebhookEvent(account.id, event);
+    return { status: 200 };
+  } catch (err) {
+    try {
+      await logPaymentWebhook({
+        tenantId: null,
+        providerKey: "phonepe",
+        signatureValid: false,
+        eventType: null,
+        rawBody,
+        errorMessage: `Unhandled exception: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } catch {
+      // best-effort — the original exception is already what matters here
+    }
+    return { status: 400 };
+  }
+}
+
+/**
  * The one platform-level endpoint every Partner-OAuth-connected tenant
  * shares (manual-mode tenants keep their own per-tenant URL above). Verified
  * against the Partner application's own webhook secret — not any individual

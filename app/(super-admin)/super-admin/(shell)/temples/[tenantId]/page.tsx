@@ -27,6 +27,7 @@ import { MobileListRow } from "@/components/mobile-list-row";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { RazorpayConnectionForm } from "@/features/super-admin/razorpay-connection-form";
+import { PhonePeConnectionForm } from "@/features/super-admin/phonepe-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
 import { TenantStatusControl } from "@/features/super-admin/tenant-status-control";
 import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-feature-management-card";
@@ -142,6 +143,8 @@ export default async function SuperAdminTempleDetailPage({
         <WhatsAppConnectionForm tenantId={temple.tenant.id} account={temple.whatsappAccount} />
 
         <RazorpayConnectionForm tenantId={temple.tenant.id} account={temple.paymentAccount} />
+
+        <PhonePeConnectionForm tenantId={temple.tenant.id} account={temple.paymentAccount} />
 
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="glass-card rounded-2xl p-4">

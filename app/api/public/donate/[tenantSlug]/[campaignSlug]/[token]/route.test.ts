@@ -26,10 +26,11 @@ describe("POST /api/public/donate/[tenantSlug]/[campaignSlug]/[token]", () => {
 
   it("returns the order fields on success", async () => {
     vi.mocked(createCheckoutOrder).mockResolvedValue({
-      transaction: { id: "txn-1", amount: 501 } as never,
+      transaction: { id: "txn-1", amount: 501, providerKey: "razorpay" } as never,
       providerOrderId: "order_abc",
       keyId: "rzp_test_abc",
       currency: "INR",
+      redirectUrl: null,
     });
 
     const res = await POST(request(validBody) as never, context());
@@ -42,6 +43,8 @@ describe("POST /api/public/donate/[tenantSlug]/[campaignSlug]/[token]", () => {
       amount: 501,
       currency: "INR",
       transactionId: "txn-1",
+      providerKey: "razorpay",
+      redirectUrl: null,
     });
   });
 

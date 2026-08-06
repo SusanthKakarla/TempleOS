@@ -198,10 +198,11 @@ describe("super admin auth boundary", () => {
           !whatsappOwnedSources.has(source) &&
           !source.includes(`new-temple-form`) &&
           !source.includes(`super-admin-login-form`) &&
-          // Payment Connection is a distinct, legitimate feature (Razorpay
-          // manual keys, not WhatsApp) that happens to share generic
+          // Payment Connection is a distinct, legitimate feature (Razorpay/
+          // PhonePe manual keys, not WhatsApp) that happens to share generic
           // connect/disconnect vocabulary with the WhatsApp guardrail below.
-          !source.includes(`razorpay-connection-form`),
+          !source.includes(`razorpay-connection-form`) &&
+          !source.includes(`phonepe-connection-form`),
       ),
       ...listSourcesIfPresent(path.join(process.cwd(), "app/api/super-admin")).filter(
         (source) =>

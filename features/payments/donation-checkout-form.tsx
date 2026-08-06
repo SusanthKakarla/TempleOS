@@ -78,11 +78,6 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       setError(validation.error.issues[0]?.message ?? "Please check the form for errors.");
       return;
     }
-    if (!scriptReady || typeof window.Razorpay !== "function") {
-      setError("Payment checkout is still loading — please try again in a moment.");
-      return;
-    }
-
     setStatus("processing");
     try {
       const orderRes = await fetch(`/api/public/donate/${tenantSlug}/${campaignSlug}/${token}`, {
@@ -96,10 +91,31 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         amount?: number;
         currency?: string;
         transactionId?: string;
+        providerKey?: string;
+        redirectUrl?: string | null;
         error?: string;
       };
-      if (!orderRes.ok || !order.orderId || !order.keyId || !order.transactionId) {
+      if (!orderRes.ok || !order.orderId || !order.transactionId) {
         throw new Error(order.error ?? "This donation link isn't available right now.");
+      }
+
+      // Redirect-based providers (PhonePe) never touch a client-side JS SDK —
+      // the backend already created the order, and the only thing left to
+      // do is navigate to the provider-hosted checkout page. Completion is
+      // resolved server-side (webhook + the /return page's Order Status
+      // poll), never trusted from this redirect alone.
+      if (order.redirectUrl) {
+        window.location.assign(order.redirectUrl);
+        return;
+      }
+
+      if (!order.keyId) {
+        throw new Error("This donation link isn't available right now.");
+      }
+      if (!scriptReady || typeof window.Razorpay !== "function") {
+        setStatus("idle");
+        setError("Payment checkout is still loading — please try again in a moment.");
+        return;
       }
 
       const razorpay = new window.Razorpay({

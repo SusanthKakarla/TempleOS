@@ -130,6 +130,8 @@ interface SuperAdminPaymentAccountRow {
   provider_key: PaymentProviderKey;
   connection_method: PaymentConnectionMethod;
   razorpay_account_id: string | null;
+  provider_merchant_id: string | null;
+  environment: "sandbox" | "production";
   status: PaymentAccountStatus;
   is_active: boolean;
   last_validated_at: Date | null;
@@ -212,6 +214,8 @@ function mapPaymentAccount(row: SuperAdminPaymentAccountRow): TenantPaymentAccou
     providerKey: row.provider_key,
     connectionMethod: row.connection_method,
     razorpayAccountId: row.razorpay_account_id,
+    providerMerchantId: row.provider_merchant_id,
+    environment: row.environment,
     status: row.status,
     isActive: row.is_active,
     lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,

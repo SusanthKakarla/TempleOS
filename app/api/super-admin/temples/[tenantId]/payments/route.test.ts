@@ -57,6 +57,8 @@ const account: TenantPaymentAccount = {
   providerKey: "razorpay",
   connectionMethod: "manual",
   razorpayAccountId: null,
+  providerMerchantId: null,
+  environment: "production" as const,
   status: "connected",
   isActive: true,
   lastValidatedAt: null,

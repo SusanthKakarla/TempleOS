@@ -63,5 +63,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     amount: result.transaction.amount,
     currency: result.currency,
     transactionId: result.transaction.id,
+    providerKey: result.transaction.providerKey,
+    redirectUrl: result.redirectUrl,
   });
 }

@@ -1,5 +1,6 @@
 import type { DecryptedCredentials, PaymentProviderAdapter, PaymentProviderKey, ValidateCredentialsResult } from "./provider";
 import { razorpayAdapter } from "./adapters/razorpay-adapter";
+import { phonepeAdapter } from "./adapters/phonepe-adapter";
 import {
   getActivePaymentAccountForTenant,
   getDecryptedCredentialsForAccount,
@@ -15,6 +16,7 @@ import type { TenantPaymentAccount } from "@/types/db";
  */
 const ADAPTERS: Partial<Record<PaymentProviderKey, PaymentProviderAdapter>> = {
   razorpay: razorpayAdapter,
+  phonepe: phonepeAdapter,
 };
 
 function getAdapter(key: PaymentProviderKey): PaymentProviderAdapter {
@@ -39,8 +41,8 @@ export async function getActiveProviderForTenant(tenantId: string): Promise<Acti
 
 export async function createOrderForTenant(
   tenantId: string,
-  input: { amountPaise: number; currency: string; receiptRef: string; notes?: Record<string, string> },
-): Promise<{ account: TenantPaymentAccount; providerOrderId: string; keyId: string } | null> {
+  input: { amountPaise: number; currency: string; receiptRef: string; notes?: Record<string, string>; redirectUrl?: string },
+): Promise<{ account: TenantPaymentAccount; providerOrderId: string; keyId: string; redirectUrl: string | null } | null> {
   const active = await getActiveProviderForTenant(tenantId);
   if (!active) return null;
   const creds = await getDecryptedCredentialsForAccount(tenantId, active.account.id);
@@ -49,9 +51,11 @@ export async function createOrderForTenant(
   // Checkout.js needs a public-facing key: the tenant's own key_id in manual
   // mode, or the Partner-issued public_token in OAuth mode (Razorpay docs:
   // "public_token can replace key_id for public-facing implementations such
-  // as Razorpay Checkout").
+  // as Razorpay Checkout"). PhonePe's redirect-based flow needs no
+  // public-facing key at all — the client never talks to PhonePe directly,
+  // it just navigates to `redirectUrl` below.
   const keyId = creds.mode === "api_key" ? creds.keyId : (creds.publicToken ?? "");
-  return { account: active.account, providerOrderId: order.providerOrderId, keyId };
+  return { account: active.account, providerOrderId: order.providerOrderId, keyId, redirectUrl: order.redirectUrl ?? null };
 }
 
 export async function verifyCheckoutSignatureForAccount(
@@ -107,7 +111,13 @@ export function parseWebhookEvent(providerKey: PaymentProviderKey, rawBody: stri
 /** Live credential check against the provider's own API — used by the Super Admin's manual-connect route to reject bad keys before saving them (mirrors the WhatsApp manual-connect route's "validate before persisting" posture). */
 export async function validateCredentials(
   providerKey: PaymentProviderKey,
-  creds: { keyId: string; keySecret: string; webhookSecret: string | null },
+  creds: {
+    keyId: string;
+    keySecret: string;
+    webhookSecret: string | null;
+    providerMerchantId?: string | null;
+    environment?: "sandbox" | "production";
+  },
 ): Promise<ValidateCredentialsResult> {
   const decrypted: DecryptedCredentials = { mode: "api_key", ...creds };
   return getAdapter(providerKey).validateCredentials(decrypted);

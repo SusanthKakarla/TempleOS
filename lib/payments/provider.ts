@@ -8,7 +8,16 @@ export type PaymentProviderKey = "razorpay" | "stripe" | "cashfree" | "phonepe" 
  * reconciliation) never need to know which mode a given tenant used.
  */
 export type DecryptedCredentials =
-  | { mode: "api_key"; keyId: string; keySecret: string; webhookSecret: string | null }
+  | {
+      mode: "api_key";
+      keyId: string;
+      keySecret: string;
+      webhookSecret: string | null;
+      /** PhonePe only — sent as X-MERCHANT-ID on API calls; null for providers (Razorpay) that don't need one. */
+      providerMerchantId?: string | null;
+      /** PhonePe only — selects the sandbox vs production API host; Razorpay encodes this in its key prefix instead. */
+      environment?: "sandbox" | "production" | null;
+    }
   | {
       mode: "oauth";
       accessToken: string;
@@ -25,10 +34,14 @@ export interface CreateOrderInput {
   currency: string;
   receiptRef: string;
   notes?: Record<string, string>;
+  /** Required by redirect-based providers (PhonePe) — where the provider sends the browser back after checkout. Ignored by popup-based providers (Razorpay). */
+  redirectUrl?: string;
 }
 
 export interface CreateOrderResult {
   providerOrderId: string;
+  /** Set only by redirect-based providers (PhonePe) — the provider-hosted checkout page the client must navigate to. Popup-based providers (Razorpay) leave this null/undefined. */
+  redirectUrl?: string | null;
 }
 
 export interface VerifyCheckoutSignatureInput {

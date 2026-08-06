@@ -10,6 +10,8 @@ interface PaymentAccountRow {
   provider_key: PaymentProviderKey;
   connection_method: "manual" | "partner";
   razorpay_account_id: string | null;
+  provider_merchant_id: string | null;
+  environment: "sandbox" | "production";
   status: "connected" | "disabled";
   is_active: boolean;
   last_validated_at: Date | null;
@@ -25,6 +27,8 @@ function mapAccount(row: PaymentAccountRow): TenantPaymentAccount {
     providerKey: row.provider_key,
     connectionMethod: row.connection_method,
     razorpayAccountId: row.razorpay_account_id,
+    providerMerchantId: row.provider_merchant_id,
+    environment: row.environment,
     status: row.status,
     isActive: row.is_active,
     lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,
@@ -55,6 +59,10 @@ export interface PaymentAccountCredentialsInput {
   keyId: string;
   keySecret: string;
   webhookSecret: string | null;
+  /** PhonePe only — ignored (stored as NULL) for providers that don't need it. */
+  providerMerchantId?: string | null;
+  /** PhonePe only — defaults to 'production' for providers that don't need it (e.g. Razorpay, which encodes this in its key prefix). */
+  environment?: "sandbox" | "production";
 }
 
 /**
@@ -75,18 +83,20 @@ export async function linkPaymentAccountForProvisioning(
   client: QueryClient,
 ): Promise<TenantPaymentAccount> {
   const { rows } = await client.query<PaymentAccountRow>(
-    `INSERT INTO tenant_payment_accounts (tenant_id, provider_key, connection_method, razorpay_account_id, status, is_active)
-     VALUES ($1, $2, 'manual', NULL, 'connected', true)
+    `INSERT INTO tenant_payment_accounts (tenant_id, provider_key, connection_method, razorpay_account_id, provider_merchant_id, environment, status, is_active)
+     VALUES ($1, $2, 'manual', NULL, $3, $4, 'connected', true)
      ON CONFLICT (tenant_id, provider_key) DO UPDATE SET
        connection_method = 'manual',
        razorpay_account_id = NULL,
+       provider_merchant_id = EXCLUDED.provider_merchant_id,
+       environment = EXCLUDED.environment,
        status = 'connected',
        is_active = true,
        last_validated_at = NULL,
        last_validation_error = NULL,
        updated_at = now()
      RETURNING *`,
-    [tenantId, input.providerKey],
+    [tenantId, input.providerKey, input.providerMerchantId ?? null, input.environment ?? "production"],
   );
   const account = mapAccount(rows[0]);
   await client.query(
@@ -262,6 +272,8 @@ interface CredentialsRow {
   encrypted_refresh_token: string | null;
   access_token_expires_at: Date | null;
   public_token: string | null;
+  provider_merchant_id: string | null;
+  environment: "sandbox" | "production";
 }
 
 /**
@@ -280,7 +292,8 @@ export async function getDecryptedCredentialsForAccount(
   accountId: string,
 ): Promise<DecryptedCredentials | null> {
   const { rows } = await getPool().query<CredentialsRow>(
-    `SELECT c.key_id, c.encrypted_key_secret, c.encrypted_webhook_secret, c.encrypted_access_token, c.encrypted_refresh_token, c.access_token_expires_at, c.public_token
+    `SELECT c.key_id, c.encrypted_key_secret, c.encrypted_webhook_secret, c.encrypted_access_token, c.encrypted_refresh_token, c.access_token_expires_at, c.public_token,
+            a.provider_merchant_id, a.environment
      FROM tenant_payment_credentials c
      JOIN tenant_payment_accounts a ON a.id = c.payment_account_id
      WHERE c.payment_account_id = $1 AND a.tenant_id = $2`,
@@ -304,5 +317,7 @@ export async function getDecryptedCredentialsForAccount(
     keyId: row.key_id as string,
     keySecret: decryptSecret(row.encrypted_key_secret as string),
     webhookSecret,
+    providerMerchantId: row.provider_merchant_id,
+    environment: row.environment,
   };
 }
