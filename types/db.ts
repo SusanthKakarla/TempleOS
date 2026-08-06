@@ -217,6 +217,11 @@ export interface PaymentProvider {
   key: PaymentProviderKey;
   label: string;
   status: PaymentProviderStatus;
+  /** Whether tenants may connect this provider via pasted-in credentials. */
+  manualEnabled: boolean;
+  /** Whether tenants may connect this provider via Partner/OAuth. False for every provider until real Partner API access exists (e.g. PhonePe today). */
+  partnerEnabled: boolean;
+  defaultConnectionMethod: PaymentConnectionMethod;
 }
 
 export type PaymentAccountStatus = "connected" | "disabled";

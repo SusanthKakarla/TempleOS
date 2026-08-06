@@ -19,6 +19,25 @@ import type {
  * (NOT the older X-VERIFY/salt-key checksum scheme, which is legacy and not
  * implemented here). All endpoints below were fetched directly from
  * PhonePe's own docs during this feature's research phase.
+ *
+ * Partner-readiness note (see docs/EL10-PHONEPE-PARTNER-READINESS.md): this
+ * adapter intentionally does NOT expose connect()/disconnect() methods.
+ * PaymentProviderAdapter is a pure, stateless API client — connect/disconnect
+ * are DB-writing repository operations that already exist, fully
+ * provider-generic, one layer up:
+ *   - connect()          → connectPaymentAccountForSuperAdmin (lib/db/tenant-payment-accounts.ts)
+ *   - disconnect()        → disconnectPaymentAccount (same file)
+ *   - verifyConnection()  → validateCredentials("phonepe", ...) (payment-provider-service.ts)
+ *   - refreshConnection() → N/A for manual mode; reconciliation-service.ts's
+ *                           refreshOAuthTokenIfNeeded is already guarded by
+ *                           `connectionMethod !== "partner"`, a no-op for
+ *                           every PhonePe account today
+ *   - createOrder / verifyPayment / refund / reconcilePayments / processWebhook
+ *                         → this file + webhook-service.ts + reconciliation-service.ts
+ * When PhonePe grants real Partner API access, only
+ * lib/payments/phonepe-oauth-client.ts, app/api/payments/phonepe/callback/route.ts,
+ * and handlePhonePePartnerWebhook (webhook-service.ts) need real
+ * implementations — this file's interface does not change.
  */
 function resolveEndpoints(environment: "sandbox" | "production") {
   if (environment === "sandbox") {

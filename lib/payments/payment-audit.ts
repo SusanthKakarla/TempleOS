@@ -125,6 +125,30 @@ export const PaymentAuditService = {
       metadata: { mismatchesFound, autoResolved },
     });
   },
+  /** Super Admin toggled a provider's platform-wide availability/connection-mode settings (Platform Payment Settings page) — affects every tenant simultaneously. `payment_providers.key` (e.g. "phonepe") is a text key, not a UUID, so it goes in metadata rather than the UUID-typed targetId column. */
+  platformProviderSettingsUpdated(superAdminId: string, providerKey: string, changes: Record<string, unknown>) {
+    return createAuditLogEntry({
+      actorType: "super_admin",
+      actorId: superAdminId,
+      tenantId: null,
+      action: "payment_provider.platform_settings_updated",
+      targetType: "payment_provider",
+      targetId: null,
+      metadata: { providerKey, ...changes },
+    });
+  },
+  /** Attempted a Partner-onboarding connect for a provider that doesn't support it yet (e.g. PhonePe today) — keeps the attempt visible in the audit trail even though nothing was actually connected. */
+  partnerOnboardingNotAvailable(tenantId: string, actorId: string, providerKey: string) {
+    return createAuditLogEntry({
+      actorType: "tenant_member",
+      actorId,
+      tenantId,
+      action: "payment_account.partner_onboarding_not_available",
+      targetType: "payment_account",
+      targetId: null,
+      metadata: { providerKey },
+    });
+  },
   oauthTokenRefreshFailed(tenantId: string, accountId: string, error: string) {
     return createAuditLogEntry({
       actorType: "system",

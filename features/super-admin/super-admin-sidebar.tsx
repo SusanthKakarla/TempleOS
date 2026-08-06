@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Landmark, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
+import { CreditCard, Landmark, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +24,7 @@ export const SUPER_ADMIN_NAV_ITEMS = [
   { href: "/super-admin/temples", label: "Temples", icon: Landmark, gradient: "gradient-maroon-orange" },
   { href: "/super-admin/roles", label: "Role Catalog", icon: ShieldCheck, gradient: "gradient-green-emerald" },
   { href: "/super-admin/admins", label: "Platform Admins", icon: UserCog, gradient: "gradient-blue-purple" },
+  { href: "/super-admin/payment-settings", label: "Payment Settings", icon: CreditCard, gradient: "gradient-maroon-orange" },
 ] as const;
 
 export function SuperAdminSidebar() {

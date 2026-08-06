@@ -7,7 +7,7 @@ import { verifyWebhookSignatureForAccount, parseWebhookEvent, verifyPartnerWebho
 import { applyPaymentEvent, applyRefundEvent } from "./campaign-payment-service";
 import type { PaymentWebhookEvent, PaymentWebhookEventType } from "./provider";
 
-export type WebhookOutcome = { status: 200 } | { status: 400 } | { status: 404 };
+export type WebhookOutcome = { status: 200 } | { status: 400 } | { status: 404 } | { status: 501 };
 
 /**
  * `payment.link.paid` is never emitted today (this app creates Orders +
@@ -276,4 +276,38 @@ export async function handleRazorpayPartnerWebhook(rawBody: string, signatureHea
     }
     return { status: 400 };
   }
+}
+
+/**
+ * Prepared landing point for a future PhonePe Partner webhook — mirrors
+ * handleRazorpayPartnerWebhook's shape (one platform-wide endpoint every
+ * partner-connected tenant would share, tenant resolved by a partner-issued
+ * account id rather than a URL path segment). PhonePe has no Partner API
+ * today, so there is no real platform-wide webhook secret or account-id
+ * scheme to verify against yet — fabricating one here would be worse than
+ * useless (it would look like a working security check that verifies
+ * nothing). Every hit is still logged via the same `logPaymentWebhook` every
+ * other webhook endpoint uses, so probing traffic leaves the same audit
+ * trail, then the request is rejected with 501.
+ *
+ * When PhonePe grants Partner API access: replace the body with signature
+ * verification against a real PHONEPE_PLATFORM_WEBHOOK_SECRET, resolve the
+ * tenant via a new (migrated) partner-account-id column, then call the
+ * already-generic `dispatchWebhookEvent` above — identical structure to
+ * handleRazorpayPartnerWebhook above.
+ */
+export async function handlePhonePePartnerWebhook(rawBody: string): Promise<WebhookOutcome> {
+  try {
+    await logPaymentWebhook({
+      tenantId: null,
+      providerKey: "phonepe",
+      signatureValid: false,
+      eventType: null,
+      rawBody,
+      errorMessage: "PhonePe Partner webhook is not yet available — no platform account is connected via this path",
+    });
+  } catch {
+    // best-effort — the original request is rejected regardless
+  }
+  return { status: 501 };
 }
