@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import { ArrowRight, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ interface DonationCheckoutFormProps {
 
 type Status = "idle" | "processing" | "success" | "cancelled" | "error";
 
-const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
+const PRESET_AMOUNTS = [101, 501, 1001, 5001];
 
 export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
@@ -55,6 +55,23 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [optionalOpen, setOptionalOpen] = useState(false);
+  // Avoids two simultaneously-visible "Donate" CTAs on first paint (the
+  // Campaign Summary Card's own button, and this sticky bar). Hidden while
+  // that button is still on-screen; appears once the user scrolls past it.
+  // Defaults to visible (true) so the sticky bar still works if the hero
+  // button is ever absent for some reason — it only hides once an observer
+  // actually confirms the hero button is on-screen.
+  const [heroButtonOutOfView, setHeroButtonOutOfView] = useState(true);
+
+  useEffect(() => {
+    const heroButton = document.getElementById("hero-donate-button");
+    if (!heroButton) return;
+    const observer = new IntersectionObserver(([entry]) => setHeroButtonOutOfView(!entry.isIntersecting), {
+      rootMargin: "0px 0px -10% 0px",
+    });
+    observer.observe(heroButton);
+    return () => observer.disconnect();
+  }, []);
 
   const validation = useMemo(
     () =>
@@ -170,7 +187,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
     <div id="donate" className="mx-auto max-w-lg space-y-5 rounded-2xl bg-white p-6 border border-[#E9E4DD] sm:p-8">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
-      <h2 className="text-center font-heading text-2xl text-[#2B2B2B]">Complete Your Donation</h2>
+      <h2 className="text-center font-heading text-2xl text-[#2B2B2B]">Support This Campaign</h2>
 
       <div className="space-y-2">
         <Label className="text-[#2B2B2B]">Choose an amount</Label>
@@ -195,7 +212,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
       <LabeledInput
         id="donation-amount"
-        label="Custom amount (INR)"
+        label="Other amount (INR)"
         type="number"
         min="1"
         inputSize="lg"
@@ -287,8 +304,13 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         {donateButtonLabel}
       </Button>
 
-      {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx */}
-      <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#E9E4DD] backdrop-blur md:hidden">
+      {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx. Hidden until the Summary Card's own Donate button scrolls out of view (see heroButtonOutOfView above), so only one Donate CTA is ever on-screen at once. */}
+      <div
+        className={cn(
+          "fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#E9E4DD] backdrop-blur transition-all duration-300 md:hidden",
+          heroButtonOutOfView ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0",
+        )}
+      >
         {Number(amount) > 0 && (
           <p className="px-2 pb-1 text-center text-xs font-medium text-[#2B2B2B]/60">{formatInr(Number(amount))} selected</p>
         )}

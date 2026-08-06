@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/empty-state";
 import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
 import { DonateHero } from "@/features/payments/donate/donate-hero";
 import { DonateStory } from "@/features/payments/donate/donate-story";
-import { DonateImpact } from "@/features/payments/donate/donate-impact";
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
 import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
@@ -91,8 +90,6 @@ export default async function DonatePage({ params }: PageParams) {
       <div className="px-5 md:px-6">
         <DonationCheckoutForm tenantSlug={tenantSlug} campaignSlug={campaignSlug} token={token} templeName={tenant.name} />
       </div>
-
-      <DonateImpact />
 
       <DonateTrust providerKey={account.providerKey} />
 
