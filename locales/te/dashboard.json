@@ -1207,7 +1207,31 @@
     "anonymousDonor": "అనామక దాత",
     "manualDonorBadge": "నమోదు కాలేదు",
     "nonCashBadge": "నగదేతరం",
-    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay" },
+    "paymentMethods": { "cash": "నగదు", "upi": "UPI", "bank_transfer": "బ్యాంక్ బదిలీ", "cheque": "చెక్కు", "other": "ఇతర", "razorpay": "Razorpay", "phonepe": "PhonePe", "upi_manual": "UPI" },
+    "pending": {
+      "pageHeader": { "title": "పెండింగ్ విరాళాలు", "subtitle": "మాన్యువల్ ధృవీకరణ కోసం ఎదురుచూస్తున్న UPI విరాళాలు" },
+      "backLink": "విరాళాలకు తిరిగి వెళ్ళండి",
+      "columns": {
+        "donor": "దాత",
+        "phone": "ఫోన్",
+        "campaign": "క్యాంపెయిన్",
+        "amount": "మొత్తం",
+        "reference": "UPI రిఫరెన్స్",
+        "screenshot": "స్క్రీన్‌షాట్",
+        "submitted": "సమర్పించిన తేదీ",
+        "actions": "చర్యలు"
+      },
+      "noReference": "—",
+      "viewScreenshot": "చూడండి",
+      "approveButton": "ఆమోదించు",
+      "rejectButton": "తిరస్కరించు",
+      "approveConfirm": "ఈ విరాళాన్ని ఆమోదించాలా? ఇది నిర్ధారించబడినట్లు నమోదు చేయబడుతుంది.",
+      "rejectConfirm": "ఈ విరాళాన్ని తిరస్కరించాలా? విరాళ రికార్డు సృష్టించబడదు.",
+      "approveSuccess": "విరాళం ఆమోదించి నమోదు చేయబడింది.",
+      "rejectSuccess": "విరాళం తిరస్కరించబడింది.",
+      "actionError": "ఏదో తప్పు జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+      "emptyState": { "title": "పెండింగ్ విరాళాలు లేవు", "description": "ధృవీకరణ కోసం ఎదురుచూస్తున్న UPI విరాళాలు ఇక్కడ కనిపిస్తాయి." }
+    },
     "purposePresets": {
       "generalDonation": "సాధారణ విరాళం",
       "annadanam": "అన్నదానం (భోజన సేవ)",
@@ -1667,7 +1691,35 @@
       "title": "చెల్లింపు ప్రొవైడర్",
       "description": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం ఏ చెల్లింపు గేట్‌వేను ఉపయోగిస్తుందో ఎంచుకోండి.",
       "razorpay": "Razorpay",
-      "phonepe": "PhonePe"
+      "phonepe": "PhonePe",
+      "upi_manual": "UPI"
+    },
+    "upi": {
+      "cardTitle": "UPI",
+      "cardDescription": "పేమెంట్ గేట్‌వే అవసరం లేకుండా భక్తులు నేరుగా PhonePe, Google Pay, Paytm, BHIM లేదా ఏ UPI యాప్ ద్వారానైనా విరాళం ఇవ్వడానికి మీ దేవాలయం UPI ID జోడించండి.",
+      "statusConnected": "కనెక్ట్ చేయబడింది",
+      "statusNotConnected": "కనెక్ట్ చేయబడలేదు",
+      "fields": {
+        "upiVpa": "UPI ID (VPA)",
+        "upiVpaPlaceholder": "temple@upi",
+        "payeeName": "పేయీ పేరు",
+        "payeeNamePlaceholder": "శ్రీ శివ దేవాలయం",
+        "qrCode": "QR కోడ్ (ఐచ్ఛికం)",
+        "bankLabel": "బ్యాంక్ / ఖాతా లేబుల్ (ఐచ్ఛికం)",
+        "bankLabelPlaceholder": "దేవాలయం SBI ఖాతా",
+        "defaultNote": "డిఫాల్ట్ విరాళ గమనిక (ఐచ్ఛికం)",
+        "defaultNotePlaceholder": "అన్నదానం విరాళం"
+      },
+      "invalidVpa": "చెల్లుబాటు అయ్యే UPI ID నమోదు చేయండి, ఉదా. temple@upi",
+      "payeeNameRequired": "పేయీ పేరు అవసరం",
+      "saveButton": "UPI వివరాలను సేవ్ చేయండి",
+      "saving": "సేవ్ చేస్తోంది...",
+      "saveSuccess": "UPI వివరాలు సేవ్ చేయబడ్డాయి.",
+      "saveError": "UPI వివరాలను సేవ్ చేయలేకపోయాము. దయచేసి మళ్లీ ప్రయత్నించండి.",
+      "qrUploadLabel": "QR చిత్రాన్ని అప్‌లోడ్ చేయండి",
+      "qrUploading": "అప్‌లోడ్ అవుతోంది...",
+      "qrUploadError": "QR చిత్రాన్ని అప్‌లోడ్ చేయలేకపోయాము.",
+      "qrRemove": "తీసివేయండి"
     },
     "phonepe": {
       "cardTitle": "PhonePe",

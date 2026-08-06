@@ -210,7 +210,7 @@ export interface WhatsAppAccount {
   updatedAt: string;
 }
 
-export type PaymentProviderKey = "razorpay" | "stripe" | "cashfree" | "phonepe" | "payu";
+export type PaymentProviderKey = "razorpay" | "stripe" | "cashfree" | "phonepe" | "payu" | "upi_manual";
 export type PaymentProviderStatus = "active" | "coming_soon";
 
 export interface PaymentProvider {
@@ -240,6 +240,16 @@ export interface TenantPaymentAccount {
   providerMerchantId: string | null;
   /** PhonePe manual mode only — selects the sandbox vs production API host. */
   environment: "sandbox" | "production";
+  /** upi_manual only — the temple's own UPI VPA (e.g. "temple@upi"), never a secret. */
+  upiVpa: string | null;
+  /** upi_manual only — the payee name shown to the UPI app (e.g. "Sri Shiva Temple"). */
+  payeeName: string | null;
+  /** upi_manual only — the temple's own uploaded static QR image, shown as-is (never a dynamically generated QR). */
+  qrCodeUrl: string | null;
+  /** upi_manual only — an optional human-readable label like "Temple SBI Account". */
+  bankLabel: string | null;
+  /** upi_manual only — the default `tn` note used when a donor doesn't supply their own message. */
+  defaultDonationNote: string | null;
   status: PaymentAccountStatus;
   isActive: boolean;
   lastValidatedAt: string | null;
@@ -248,7 +258,7 @@ export interface TenantPaymentAccount {
   updatedAt: string;
 }
 
-export type PaymentTransactionStatus = "created" | "authorized" | "captured" | "failed" | "refunded";
+export type PaymentTransactionStatus = "created" | "authorized" | "captured" | "failed" | "refunded" | "pending_verification";
 
 export interface PaymentTransaction {
   id: string;
@@ -270,6 +280,10 @@ export interface PaymentTransaction {
   isAnonymous: boolean;
   receiptNumber: string | null;
   receiptUrl: string | null;
+  /** upi_manual only — the UPI transaction reference the donor self-reported. */
+  upiReference: string | null;
+  /** upi_manual only — the donor's uploaded proof-of-payment screenshot. */
+  paymentScreenshotUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -821,7 +835,7 @@ export interface WhatsAppInteraction {
   createdAt: string;
 }
 
-export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other" | "razorpay" | "phonepe";
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other" | "razorpay" | "phonepe" | "upi_manual";
 
 export interface Donation {
   id: string;

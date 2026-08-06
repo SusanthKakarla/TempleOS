@@ -40,6 +40,21 @@ export const manualConnectPhonepeSchema = z.object({
 
 export type ManualConnectPhonepePayload = z.infer<typeof manualConnectPhonepeSchema>;
 
+/**
+ * V0 manual UPI connect — no live credential check exists (there's no API
+ * to call; a UPI VPA isn't a secret and can't be "validated" the way a
+ * gateway key can be). The regex matches NPCI's VPA shape (handle@bank).
+ */
+export const manualConnectUpiSchema = z.object({
+  upiVpa: z.string().trim().regex(/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/, "Enter a valid UPI ID, e.g. temple@upi"),
+  payeeName: z.string().trim().min(1, "Payee name is required").max(200),
+  qrCodeUrl: z.string().trim().url().nullable().optional(),
+  bankLabel: z.string().trim().max(200).nullable().optional(),
+  defaultDonationNote: z.string().trim().max(200).nullable().optional(),
+});
+
+export type ManualConnectUpiPayload = z.infer<typeof manualConnectUpiSchema>;
+
 export const donationCheckoutSchema = z.object({
   amount: z.number().positive("Amount must be greater than zero").max(1_000_000, "Amount is too large"),
   donorName: z.string().trim().min(1, "Name is required").max(200),

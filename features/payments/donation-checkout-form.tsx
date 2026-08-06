@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Script from "next/script";
-import { ArrowRight, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowRight, CheckCircle2, ChevronDown, Copy, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -36,9 +37,11 @@ interface DonationCheckoutFormProps {
   campaignSlug: string;
   token: string;
   templeName: string;
+  /** Set only when the tenant's active provider is `upi_manual` (V0's gateway-free flow) — null for Razorpay/PhonePe tenants. */
+  upi: { vpa: string; payeeName: string; qrCodeUrl: string | null } | null;
 }
 
-type Status = "idle" | "processing" | "success" | "cancelled" | "error";
+type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
 
 const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 
@@ -46,7 +49,7 @@ const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 const FILLED_INPUT_CLASS =
   "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#F97316] focus-visible:bg-white focus-visible:ring-[#F97316]/20";
 
-export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName }: DonationCheckoutFormProps) {
+export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName, upi }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
@@ -66,6 +69,18 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   // button is ever absent for some reason — it only hides once an observer
   // actually confirms the hero button is on-screen.
   const [heroButtonOutOfView, setHeroButtonOutOfView] = useState(true);
+
+  // upi_manual only — populated once the order route returns a pending
+  // transaction + upi:// link; used by the "awaiting confirmation" screen
+  // below (the fallback UPI ID/QR/link, and the optional proof submission).
+  const [upiTransactionId, setUpiTransactionId] = useState<string | null>(null);
+  const [upiUri, setUpiUri] = useState<string | null>(null);
+  const [upiAmount, setUpiAmount] = useState<number | null>(null);
+  const [upiReference, setUpiReference] = useState("");
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+  const [confirmSubmitted, setConfirmSubmitted] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   useEffect(() => {
     const heroButton = document.getElementById("hero-donate-button");
@@ -94,6 +109,43 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const fieldError = (field: string) => (touched[field] ? fieldErrors[field as keyof typeof fieldErrors]?.[0] : undefined);
   const markTouched = (field: string) => setTouched((current) => ({ ...current, [field]: true }));
 
+  async function handleCopy(value: string, successMessage: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error("Could not copy. Please try again.");
+    }
+  }
+
+  async function handleSubmitProof() {
+    if (!upiTransactionId) return;
+    if (!upiReference.trim() && !screenshotFile) {
+      setConfirmError("Add a UPI reference or a screenshot before submitting.");
+      return;
+    }
+    setConfirmError(null);
+    setConfirmSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("transactionId", upiTransactionId);
+      if (upiReference.trim()) formData.append("upiReference", upiReference.trim());
+      if (screenshotFile) formData.append("screenshot", screenshotFile);
+
+      const response = await fetch(`/api/public/donate/${tenantSlug}/${campaignSlug}/${token}/confirm`, {
+        method: "POST",
+        body: formData,
+      });
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(body.error ?? "Something went wrong. Please try again.");
+      setConfirmSubmitted(true);
+    } catch (err) {
+      setConfirmError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setConfirmSubmitting(false);
+    }
+  }
+
   async function handleDonate() {
     setError(null);
     setTouched({ amount: true, donorName: true, donorPhone: true, donorEmail: true, donorPan: true });
@@ -116,10 +168,24 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         transactionId?: string;
         providerKey?: string;
         redirectUrl?: string | null;
+        upiUri?: string | null;
         error?: string;
       };
       if (!orderRes.ok || !order.orderId || !order.transactionId) {
         throw new Error(order.error ?? "This donation link isn't available right now.");
+      }
+
+      // upi_manual: no gateway, no client SDK — just open the devotee's own
+      // UPI app via the standard upi://pay link and show the "awaiting
+      // confirmation" screen underneath (the browser tab stays open behind
+      // the UPI app on Android; there is no callback to wait for).
+      if (order.upiUri) {
+        setUpiTransactionId(order.transactionId);
+        setUpiUri(order.upiUri);
+        setUpiAmount(validation.data.amount);
+        setStatus("awaiting_confirmation");
+        window.location.href = order.upiUri;
+        return;
       }
 
       // Redirect-based providers (PhonePe) never touch a client-side JS SDK —
@@ -180,6 +246,109 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         <CheckCircle2 className="size-10 text-emerald-600" />
         <p className="font-heading text-lg text-[#2B2118]">Thank you for your donation!</p>
         <p className="text-sm text-[#6B5B4F]">A confirmation and receipt will be sent to you shortly.</p>
+      </div>
+    );
+  }
+
+  if (status === "awaiting_confirmation") {
+    return (
+      <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <CheckCircle2 className="size-10 text-emerald-600" />
+          <p className="font-heading text-lg text-[#2B2118]">Thank you for your donation.</p>
+          <p className="text-sm text-[#6B5B4F]">
+            Once the temple confirms your payment, your donation will be recorded.
+          </p>
+        </div>
+
+        {upi && (
+          <div className="space-y-4 rounded-[14px] bg-[#FFF6ED] p-4">
+            <p className="text-sm font-medium text-[#2B2118]">Didn&apos;t open automatically?</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              {upi.qrCodeUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
+                <img src={upi.qrCodeUrl} alt="" className="hidden size-32 shrink-0 rounded-lg border border-[#F3E7DA] object-cover md:block" />
+              )}
+              <div className="min-w-0 flex-1 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#6B5B4F]">UPI ID</span>
+                  <span className="font-medium text-[#2B2118]">{upi.vpa}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#6B5B4F]">Payee Name</span>
+                  <span className="font-medium text-[#2B2118]">{upi.payeeName}</span>
+                </div>
+                {upiAmount !== null && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[#6B5B4F]">Amount</span>
+                    <span className="font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => handleCopy(upi.vpa, "UPI ID copied to clipboard.")}>
+                    <Copy className="size-3.5" />
+                    Copy UPI ID
+                  </Button>
+                  {upiUri && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => handleCopy(upiUri, "UPI link copied to clipboard.")}
+                    >
+                      <Copy className="size-3.5" />
+                      Copy UPI Link
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {confirmSubmitted ? (
+          <p className="rounded-[14px] bg-[#FFF6ED] p-4 text-center text-sm text-[#6B5B4F]">
+            Thanks — we&apos;ve recorded your submission for the temple to verify.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <Label className="text-[#2B2118]">Add proof of payment (optional)</Label>
+            <LabeledInput
+              id="upi-reference"
+              label="UPI reference number"
+              placeholder="e.g. 123456789012"
+              inputSize="lg"
+              className={FILLED_INPUT_CLASS}
+              value={upiReference}
+              onChange={(event) => setUpiReference(event.target.value)}
+            />
+            <label
+              htmlFor="upi-screenshot"
+              className="flex h-[52px] cursor-pointer items-center justify-between rounded-[14px] border border-transparent bg-[#FFF6ED] px-4 text-sm text-[#6B5B4F]"
+            >
+              <span className="truncate">{screenshotFile ? screenshotFile.name : "Upload payment screenshot"}</span>
+              <Upload className="size-4 shrink-0" />
+              <input
+                id="upi-screenshot"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(event) => setScreenshotFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            {confirmError && <p className="text-sm text-destructive">{confirmError}</p>}
+            <Button
+              type="button"
+              disabled={confirmSubmitting}
+              className="w-full rounded-full bg-[#F97316] text-white hover:bg-[#EA580C]"
+              onClick={handleSubmitProof}
+            >
+              {confirmSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+              Submit
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

@@ -31,6 +31,7 @@ describe("POST /api/public/donate/[tenantSlug]/[campaignSlug]/[token]", () => {
       keyId: "rzp_test_abc",
       currency: "INR",
       redirectUrl: null,
+      upiUri: null,
     });
 
     const res = await POST(request(validBody) as never, context());
@@ -45,6 +46,7 @@ describe("POST /api/public/donate/[tenantSlug]/[campaignSlug]/[token]", () => {
       transactionId: "txn-1",
       providerKey: "razorpay",
       redirectUrl: null,
+      upiUri: null,
     });
   });
 

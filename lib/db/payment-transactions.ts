@@ -22,6 +22,8 @@ interface PaymentTransactionRow {
   is_anonymous: boolean;
   receipt_number: string | null;
   receipt_url: string | null;
+  upi_reference: string | null;
+  payment_screenshot_url: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -47,6 +49,8 @@ function mapTransaction(row: PaymentTransactionRow): PaymentTransaction {
     isAnonymous: row.is_anonymous,
     receiptNumber: row.receipt_number,
     receiptUrl: row.receipt_url,
+    upiReference: row.upi_reference,
+    paymentScreenshotUrl: row.payment_screenshot_url,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -94,6 +98,84 @@ export async function createPaymentTransaction(input: CreatePaymentTransactionIn
   return mapTransaction(rows[0]);
 }
 
+export interface CreatePendingUpiTransactionInput {
+  tenantId: string;
+  paymentAccountId: string;
+  campaignId: string | null;
+  providerOrderId: string;
+  amount: number;
+  currency: string;
+  donorName: string;
+  donorPhone: string | null;
+  donorEmail: string | null;
+  donorPan: string | null;
+  donorMessage: string | null;
+  isAnonymous: boolean;
+}
+
+/**
+ * upi_manual has no real gateway order to create, so this inserts directly
+ * with `status: 'pending_verification'` instead of the DB-default 'created'
+ * — there is no "authorized"/"captured" webhook lifecycle to move through,
+ * only a human admin decision (approve → 'captured', reject → 'failed').
+ */
+export async function createPendingUpiTransaction(input: CreatePendingUpiTransactionInput): Promise<PaymentTransaction> {
+  const { rows } = await getPool().query<PaymentTransactionRow>(
+    `INSERT INTO payment_transactions
+       (tenant_id, payment_account_id, campaign_id, provider_key, provider_order_id, amount, currency,
+        donor_name, donor_phone, donor_email, donor_pan, donor_message, is_anonymous, status)
+     VALUES ($1, $2, $3, 'upi_manual', $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending_verification')
+     RETURNING *`,
+    [
+      input.tenantId,
+      input.paymentAccountId,
+      input.campaignId,
+      input.providerOrderId,
+      input.amount,
+      input.currency,
+      input.donorName,
+      input.donorPhone,
+      input.donorEmail,
+      input.donorPan,
+      input.donorMessage,
+      input.isAnonymous,
+    ],
+  );
+  return mapTransaction(rows[0]);
+}
+
+/** Devotee's optional post-payment self-report (UPI reference / screenshot) — status stays `pending_verification`, only these two fields change. */
+export async function attachUpiConfirmationProof(
+  id: string,
+  input: { upiReference: string | null; paymentScreenshotUrl: string | null },
+): Promise<PaymentTransaction | null> {
+  const { rows } = await getPool().query<PaymentTransactionRow>(
+    `UPDATE payment_transactions
+     SET upi_reference = COALESCE($2, upi_reference), payment_screenshot_url = COALESCE($3, payment_screenshot_url), updated_at = now()
+     WHERE id = $1 AND provider_key = 'upi_manual' AND status = 'pending_verification'
+     RETURNING *`,
+    [id, input.upiReference, input.paymentScreenshotUrl],
+  );
+  return rows[0] ? mapTransaction(rows[0]) : null;
+}
+
+export interface PendingUpiDonation extends PaymentTransaction {
+  campaignTitle: string | null;
+}
+
+/** The Pending Donations admin queue — every upi_manual transaction still awaiting a human decision, newest first. */
+export async function listPendingUpiDonations(tenantId: string): Promise<PendingUpiDonation[]> {
+  const { rows } = await getPool().query<PaymentTransactionRow & { campaign_title: string | null }>(
+    `SELECT t.*, c.title AS campaign_title
+     FROM payment_transactions t
+     LEFT JOIN campaigns c ON c.id = t.campaign_id
+     WHERE t.tenant_id = $1 AND t.provider_key = 'upi_manual' AND t.status = 'pending_verification'
+     ORDER BY t.created_at DESC`,
+    [tenantId],
+  );
+  return rows.map((row) => ({ ...mapTransaction(row), campaignTitle: row.campaign_title }));
+}
+
 export async function getTransactionByProviderOrderId(
   paymentAccountId: string,
   providerOrderId: string,
@@ -129,7 +211,7 @@ export async function listStaleNonTerminalTransactions(
 ): Promise<PaymentTransaction[]> {
   const { rows } = await getPool().query<PaymentTransactionRow>(
     `SELECT * FROM payment_transactions
-     WHERE tenant_id = $1 AND status IN ('created', 'authorized')
+     WHERE tenant_id = $1 AND status IN ('created', 'authorized') AND provider_key <> 'upi_manual'
        AND created_at < now() - ($2 || ' minutes')::interval
      ORDER BY created_at ASC`,
     [tenantId, olderThanMinutes],
@@ -201,7 +283,8 @@ export async function markTransactionCapturedIfNotAlready(
 
 export async function attachDonationAndReceipt(
   id: string,
-  input: { donationId: string; receiptNumber: string; receiptUrl: string },
+  /** `receiptNumber`/`receiptUrl` are null for the upi_manual admin-approval path, which deliberately skips automatic receipt generation for V0 — every other caller still passes real values. */
+  input: { donationId: string; receiptNumber: string | null; receiptUrl: string | null },
   client: QueryClient = getPool(),
 ): Promise<void> {
   await client.query(

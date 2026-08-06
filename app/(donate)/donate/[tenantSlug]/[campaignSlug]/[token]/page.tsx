@@ -92,7 +92,17 @@ export default async function DonatePage({ params }: PageParams) {
       )}
 
       <div className="mt-8 px-5 md:px-6">
-        <DonationCheckoutForm tenantSlug={tenantSlug} campaignSlug={campaignSlug} token={token} templeName={tenant.name} />
+        <DonationCheckoutForm
+          tenantSlug={tenantSlug}
+          campaignSlug={campaignSlug}
+          token={token}
+          templeName={tenant.name}
+          upi={
+            account.providerKey === "upi_manual" && account.upiVpa && account.payeeName
+              ? { vpa: account.upiVpa, payeeName: account.payeeName, qrCodeUrl: account.qrCodeUrl }
+              : null
+          }
+        />
       </div>
 
       <div className="mt-6">

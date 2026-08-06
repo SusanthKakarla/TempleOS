@@ -4,7 +4,8 @@ import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary, type CampaignDonationSummary } from "@/lib/db/campaign-analytics";
 import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
-import { createPaymentTransaction } from "@/lib/db/payment-transactions";
+import { createPaymentTransaction, createPendingUpiTransaction } from "@/lib/db/payment-transactions";
+import { isProviderActive } from "@/lib/db/payment-providers";
 import { constantTimeEqual } from "./crypto";
 import { createOrderForTenant } from "./payment-provider-service";
 import type { Campaign, PaymentTransaction, Tenant, TenantPaymentAccount } from "@/types/db";
@@ -104,6 +105,16 @@ export async function resolveDonationCheckoutAvailability(
     logUnavailable("payment_not_configured", `tenant ${tenant.id} has no active payment account`);
     return { ok: false, reason: "payment_not_configured" };
   }
+  // V0 product decision: TempleOS does not process payments directly.
+  // Razorpay/PhonePe are toggled to `coming_soon` platform-wide
+  // (migrations/039) — treating that exactly like "no account" here is what
+  // makes the toggle actually block checkout for already-connected tenants,
+  // not just hide the Settings UI. Flipping the catalog row back to
+  // `active` re-enables every one of them with zero code changes.
+  if (!(await isProviderActive(account.providerKey))) {
+    logUnavailable("payment_not_configured", `tenant ${tenant.id}'s provider "${account.providerKey}" is not platform-active`);
+    return { ok: false, reason: "payment_not_configured" };
+  }
 
   const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
   return { ok: true, context: { tenant, campaign, account, summary } };
@@ -136,6 +147,27 @@ function generateReceiptRef(): string {
 }
 
 /**
+ * Standard UPI deep link (RBI/NPCI `upi://pay` spec) — app-agnostic on
+ * purpose, never a `phonepe://`-style vendor-specific link. Params are
+ * encoded with `encodeURIComponent` rather than `URLSearchParams` (which
+ * encodes spaces as `+`) — several UPI apps parse the query string literally
+ * and don't decode `+` back to a space, so a `+` would show up verbatim in
+ * the payee name/note.
+ */
+function buildUpiUri(input: { vpa: string; payeeName: string; amount: number; note: string }): string {
+  const params = [
+    ["pa", input.vpa],
+    ["pn", input.payeeName],
+    ["am", input.amount.toFixed(2)],
+    ["cu", "INR"],
+    ["tn", input.note],
+  ]
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join("&");
+  return `upi://pay?${params}`;
+}
+
+/**
  * Where a redirect-based provider (PhonePe) sends the browser back after
  * checkout — the donation page's own /return route, which resolves the
  * outcome via the authoritative Order Status API, not a trusted query
@@ -155,10 +187,50 @@ export async function createCheckoutOrder(
   campaignSlug: string,
   token: string,
   input: CreateCheckoutOrderInput,
-): Promise<{ transaction: PaymentTransaction; providerOrderId: string; keyId: string; currency: string; redirectUrl: string | null } | null> {
+): Promise<{
+  transaction: PaymentTransaction;
+  providerOrderId: string;
+  keyId: string;
+  currency: string;
+  redirectUrl: string | null;
+  /** upi_manual only — the standard `upi://pay` deep link the client navigates to. Absent for gateway providers. */
+  upiUri: string | null;
+} | null> {
   const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
   if (!context) return null;
   if (!(input.amount > 0)) return null;
+
+  // upi_manual has no real gateway order to create — it never reaches the
+  // adapter dispatch below (`createOrderForTenant`), which would throw
+  // (no adapter is ever registered for this key; see payment-provider-service.ts).
+  // The transaction is created directly as `pending_verification`, and the
+  // "order id" is just the same receiptRef every provider already generates.
+  if (context.account.providerKey === "upi_manual") {
+    if (!context.account.upiVpa || !context.account.payeeName) return null;
+    const receiptRef = generateReceiptRef();
+    const note = input.donationMessage || context.account.defaultDonationNote || context.campaign.title;
+    const upiUri = buildUpiUri({
+      vpa: context.account.upiVpa,
+      payeeName: context.account.payeeName,
+      amount: input.amount,
+      note,
+    });
+    const transaction = await createPendingUpiTransaction({
+      tenantId: context.tenant.id,
+      paymentAccountId: context.account.id,
+      campaignId: context.campaign.id,
+      providerOrderId: receiptRef,
+      amount: input.amount,
+      currency: "INR",
+      donorName: input.donorName,
+      donorPhone: input.donorPhone,
+      donorEmail: input.donorEmail,
+      donorPan: input.donorPan,
+      donorMessage: input.donationMessage,
+      isAnonymous: input.isAnonymous,
+    });
+    return { transaction, providerOrderId: receiptRef, keyId: "", currency: "INR", redirectUrl: null, upiUri };
+  }
 
   // The order is created with the provider FIRST — payment_transactions.provider_order_id
   // is NOT NULL + unique, so there's no placeholder value to insert and then
@@ -195,5 +267,6 @@ export async function createCheckoutOrder(
     keyId: order.keyId,
     currency: "INR",
     redirectUrl: order.redirectUrl,
+    upiUri: null,
   };
 }

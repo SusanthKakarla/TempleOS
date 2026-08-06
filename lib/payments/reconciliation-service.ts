@@ -129,6 +129,13 @@ export async function reconcileAllTenants(): Promise<ReconcileAllResult> {
   let totalAutoResolved = 0;
 
   for (const account of accounts) {
+    // upi_manual has no adapter (see payment-provider-service.ts's ADAPTERS
+    // registry) and nothing to reconcile against — there's no gateway order
+    // to poll, only a human admin decision. listStaleNonTerminalTransactions
+    // already excludes upi_manual rows, so this is defense in depth, not
+    // load-bearing: skip before anything here could ever try to resolve an
+    // adapter for it.
+    if (account.providerKey === "upi_manual") continue;
     await refreshOAuthTokenIfNeeded(account);
     const log = await reconcileTenant(account.tenantId);
     totalMismatches += log.mismatchesFound;

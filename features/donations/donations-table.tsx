@@ -391,6 +391,13 @@ export function DonationsTable({ donations, devotees, page, pageSize, totalCount
         actions={
           <>
             <Link
+              href="/dashboard/donations/pending"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              <HandCoins className="size-4" />
+              {t("pending.pageHeader.title")}
+            </Link>
+            <Link
               href="/dashboard/donations/import"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium hover:bg-muted"
             >

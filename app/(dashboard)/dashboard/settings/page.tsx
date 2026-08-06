@@ -3,6 +3,7 @@ import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { isFeatureEnabled } from "@/lib/db/tenant-features";
 import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import { listPaymentProviders } from "@/lib/db/payment-providers";
 import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { PageHeader } from "@/components/page-header";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
@@ -22,9 +23,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     isFeatureEnabled(session.tenantId, "whatsapp_chatbot"),
   ]);
 
-  const [whatsappAccount, paymentAccount] = await Promise.all([
+  const [whatsappAccount, paymentAccount, paymentProviders] = await Promise.all([
     whatsappEnabled ? getWhatsAppAccountByTenant(session.tenantId) : Promise.resolve(null),
     paymentsEnabled ? getActivePaymentAccountForTenant(session.tenantId) : Promise.resolve(null),
+    paymentsEnabled ? listPaymentProviders() : Promise.resolve([]),
   ]);
 
   const decodedResult = params.whatsapp_connect_token ? verifyResultToken(params.whatsapp_connect_token) : null;
@@ -57,7 +59,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {paymentsEnabled && (
         <section className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">{t("paymentsSection")}</h2>
-          <PaymentSettingsSection account={paymentAccount} />
+          <PaymentSettingsSection account={paymentAccount} providers={paymentProviders} />
         </section>
       )}
     </div>

@@ -1201,7 +1201,31 @@
     "anonymousDonor": "Anonymous donor",
     "manualDonorBadge": "Not registered",
     "nonCashBadge": "Non-cash",
-    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay" },
+    "paymentMethods": { "cash": "Cash", "upi": "UPI", "bank_transfer": "Bank Transfer", "cheque": "Cheque", "other": "Other", "razorpay": "Razorpay", "phonepe": "PhonePe", "upi_manual": "UPI" },
+    "pending": {
+      "pageHeader": { "title": "Pending Donations", "subtitle": "UPI donations awaiting manual verification" },
+      "backLink": "Back to Donations",
+      "columns": {
+        "donor": "Donor",
+        "phone": "Phone",
+        "campaign": "Campaign",
+        "amount": "Amount",
+        "reference": "UPI Reference",
+        "screenshot": "Screenshot",
+        "submitted": "Submitted",
+        "actions": "Actions"
+      },
+      "noReference": "—",
+      "viewScreenshot": "View",
+      "approveButton": "Approve",
+      "rejectButton": "Reject",
+      "approveConfirm": "Approve this donation? It will be recorded as confirmed.",
+      "rejectConfirm": "Reject this donation? No donation record will be created.",
+      "approveSuccess": "Donation approved and recorded.",
+      "rejectSuccess": "Donation rejected.",
+      "actionError": "Something went wrong. Please try again.",
+      "emptyState": { "title": "No pending donations", "description": "UPI donations awaiting verification will appear here." }
+    },
     "purposePresets": {
       "generalDonation": "General Donation",
       "annadanam": "Annadanam (Food Offering)",
@@ -1658,7 +1682,35 @@
       "title": "Payment Provider",
       "description": "Choose which payment gateway your temple uses to accept online donations.",
       "razorpay": "Razorpay",
-      "phonepe": "PhonePe"
+      "phonepe": "PhonePe",
+      "upi_manual": "UPI"
+    },
+    "upi": {
+      "cardTitle": "UPI",
+      "cardDescription": "Add your temple's UPI ID so devotees can donate directly through PhonePe, Google Pay, Paytm, BHIM, or any UPI app — no payment gateway required.",
+      "statusConnected": "Connected",
+      "statusNotConnected": "Not connected",
+      "fields": {
+        "upiVpa": "UPI ID (VPA)",
+        "upiVpaPlaceholder": "temple@upi",
+        "payeeName": "Payee Name",
+        "payeeNamePlaceholder": "Sri Shiva Temple",
+        "qrCode": "QR Code (optional)",
+        "bankLabel": "Bank / Account Label (optional)",
+        "bankLabelPlaceholder": "Temple SBI Account",
+        "defaultNote": "Default Donation Note (optional)",
+        "defaultNotePlaceholder": "Annadanam Donation"
+      },
+      "invalidVpa": "Enter a valid UPI ID, e.g. temple@upi",
+      "payeeNameRequired": "Payee name is required",
+      "saveButton": "Save UPI details",
+      "saving": "Saving...",
+      "saveSuccess": "UPI details saved.",
+      "saveError": "Could not save UPI details. Please try again.",
+      "qrUploadLabel": "Upload QR image",
+      "qrUploading": "Uploading...",
+      "qrUploadError": "Could not upload the QR image.",
+      "qrRemove": "Remove"
     },
     "phonepe": {
       "cardTitle": "PhonePe",

@@ -132,6 +132,11 @@ interface SuperAdminPaymentAccountRow {
   razorpay_account_id: string | null;
   provider_merchant_id: string | null;
   environment: "sandbox" | "production";
+  upi_vpa: string | null;
+  payee_name: string | null;
+  qr_code_url: string | null;
+  bank_label: string | null;
+  default_donation_note: string | null;
   status: PaymentAccountStatus;
   is_active: boolean;
   last_validated_at: Date | null;
@@ -216,6 +221,11 @@ function mapPaymentAccount(row: SuperAdminPaymentAccountRow): TenantPaymentAccou
     razorpayAccountId: row.razorpay_account_id,
     providerMerchantId: row.provider_merchant_id,
     environment: row.environment,
+    upiVpa: row.upi_vpa,
+    payeeName: row.payee_name,
+    qrCodeUrl: row.qr_code_url,
+    bankLabel: row.bank_label,
+    defaultDonationNote: row.default_donation_note,
     status: row.status,
     isActive: row.is_active,
     lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,

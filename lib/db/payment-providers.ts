@@ -27,6 +27,23 @@ export async function listPaymentProviders(): Promise<PaymentProvider[]> {
   return rows.map(mapProvider);
 }
 
+/**
+ * Whether checkout may actually use this provider right now — the single
+ * enforcement point behind the V0 "TempleOS does not process payments
+ * directly" decision. `resolveDonationCheckoutAvailability` calls this after
+ * finding a tenant's active account so that flipping Razorpay/PhonePe to
+ * `coming_soon` (see migrations/039) immediately blocks checkout for every
+ * already-connected tenant, platform-wide, with no per-tenant changes.
+ * Reverting is the same one-row UPDATE in the other direction.
+ */
+export async function isProviderActive(key: PaymentProviderKey): Promise<boolean> {
+  const { rows } = await getPool().query<{ status: PaymentProviderStatus }>(
+    "SELECT status FROM payment_providers WHERE key = $1",
+    [key],
+  );
+  return rows[0]?.status === "active";
+}
+
 export interface UpdatePaymentProviderSettingsInput {
   status?: PaymentProviderStatus;
   manualEnabled?: boolean;

@@ -12,6 +12,11 @@ interface PaymentAccountRow {
   razorpay_account_id: string | null;
   provider_merchant_id: string | null;
   environment: "sandbox" | "production";
+  upi_vpa: string | null;
+  payee_name: string | null;
+  qr_code_url: string | null;
+  bank_label: string | null;
+  default_donation_note: string | null;
   status: "connected" | "disabled";
   is_active: boolean;
   last_validated_at: Date | null;
@@ -29,6 +34,11 @@ function mapAccount(row: PaymentAccountRow): TenantPaymentAccount {
     razorpayAccountId: row.razorpay_account_id,
     providerMerchantId: row.provider_merchant_id,
     environment: row.environment,
+    upiVpa: row.upi_vpa,
+    payeeName: row.payee_name,
+    qrCodeUrl: row.qr_code_url,
+    bankLabel: row.bank_label,
+    defaultDonationNote: row.default_donation_note,
     status: row.status,
     isActive: row.is_active,
     lastValidatedAt: row.last_validated_at ? row.last_validated_at.toISOString() : null,
@@ -129,6 +139,71 @@ export async function connectPaymentAccountForSuperAdmin(
       [tenantId],
     );
     const account = await linkPaymentAccountForProvisioning(tenantId, input, client);
+    await client.query("COMMIT");
+    return account;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export interface UpiManualAccountInput {
+  upiVpa: string;
+  payeeName: string;
+  qrCodeUrl?: string | null;
+  bankLabel?: string | null;
+  defaultDonationNote?: string | null;
+}
+
+/**
+ * upi_manual equivalent of `connectPaymentAccountForSuperAdmin` — same
+ * "deactivate any prior active account, then upsert" shape, but there is no
+ * `tenant_payment_credentials` row at all: a UPI VPA/payee name isn't a
+ * secret and doesn't belong behind the encryption path built for real API
+ * keys. Called from the tenant admin's own Settings > Payments form (not
+ * Super Admin only, unlike the gateway connect paths above), since there's
+ * no credential worth gatekeeping behind a platform-side review.
+ */
+export async function linkUpiManualAccountForTenant(
+  tenantId: string,
+  input: UpiManualAccountInput,
+): Promise<TenantPaymentAccount> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "UPDATE tenant_payment_accounts SET is_active = false, updated_at = now() WHERE tenant_id = $1 AND is_active = true",
+      [tenantId],
+    );
+    const { rows } = await client.query<PaymentAccountRow>(
+      `INSERT INTO tenant_payment_accounts
+         (tenant_id, provider_key, connection_method, upi_vpa, payee_name, qr_code_url, bank_label, default_donation_note, status, is_active)
+       VALUES ($1, 'upi_manual', 'manual', $2, $3, $4, $5, $6, 'connected', true)
+       ON CONFLICT (tenant_id, provider_key) DO UPDATE SET
+         connection_method = 'manual',
+         upi_vpa = EXCLUDED.upi_vpa,
+         payee_name = EXCLUDED.payee_name,
+         qr_code_url = EXCLUDED.qr_code_url,
+         bank_label = EXCLUDED.bank_label,
+         default_donation_note = EXCLUDED.default_donation_note,
+         status = 'connected',
+         is_active = true,
+         last_validated_at = now(),
+         last_validation_error = NULL,
+         updated_at = now()
+       RETURNING *`,
+      [
+        tenantId,
+        input.upiVpa,
+        input.payeeName,
+        input.qrCodeUrl ?? null,
+        input.bankLabel ?? null,
+        input.defaultDonationNote ?? null,
+      ],
+    );
+    const account = mapAccount(rows[0]);
     await client.query("COMMIT");
     return account;
   } catch (err) {

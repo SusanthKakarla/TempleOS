@@ -1,4 +1,12 @@
-export type PaymentProviderKey = "razorpay" | "stripe" | "cashfree" | "phonepe" | "payu";
+// Re-exported from the single source of truth (types/db.ts) rather than
+// redeclared here — this used to be its own independent union, which is how
+// upi_manual (a provider that deliberately never gets a PaymentProviderAdapter
+// implementation, see payment-provider-service.ts's ADAPTERS registry) could
+// silently drift out of sync with the DB-level type. `getAdapter()` still
+// throws for any key without a registered adapter (upi_manual included) —
+// this only fixes the type, not the runtime "no fake adapter" invariant.
+import type { PaymentProviderKey } from "@/types/db";
+export type { PaymentProviderKey } from "@/types/db";
 
 /**
  * A tenant connects Razorpay one of two ways: pasting their own Key ID/Key

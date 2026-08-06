@@ -3,6 +3,7 @@ import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary } from "@/lib/db/campaign-analytics";
 import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import { isProviderActive } from "@/lib/db/payment-providers";
 import { loadDonationCheckoutContext, resolveDonationCheckoutAvailability } from "./donation-checkout-service";
 import type { Campaign, Tenant, TenantPaymentAccount } from "@/types/db";
 
@@ -10,7 +11,8 @@ vi.mock("@/lib/db/tenants", () => ({ getTenantBySlug: vi.fn() }));
 vi.mock("@/lib/db/campaigns", () => ({ getCampaignBySlugForTenant: vi.fn() }));
 vi.mock("@/lib/db/campaign-analytics", () => ({ getCampaignDonationSummary: vi.fn() }));
 vi.mock("@/lib/db/tenant-payment-accounts", () => ({ getActivePaymentAccountForTenant: vi.fn() }));
-vi.mock("@/lib/db/payment-transactions", () => ({ createPaymentTransaction: vi.fn() }));
+vi.mock("@/lib/db/payment-transactions", () => ({ createPaymentTransaction: vi.fn(), createPendingUpiTransaction: vi.fn() }));
+vi.mock("@/lib/db/payment-providers", () => ({ isProviderActive: vi.fn() }));
 vi.mock("./payment-provider-service", () => ({ createOrderForTenant: vi.fn() }));
 
 const tenant: Tenant = {
@@ -80,6 +82,11 @@ const account: TenantPaymentAccount = {
   razorpayAccountId: null,
   providerMerchantId: null,
   environment: "production" as const,
+  upiVpa: null,
+  payeeName: null,
+  qrCodeUrl: null,
+  bankLabel: null,
+  defaultDonationNote: null,
   status: "connected",
   isActive: true,
   lastValidatedAt: null,
@@ -96,6 +103,7 @@ describe("resolveDonationCheckoutAvailability", () => {
       .mockReset()
       .mockResolvedValue({ totalAmount: 0, donationCount: 0, donorCount: 0 });
     vi.mocked(getActivePaymentAccountForTenant).mockReset().mockResolvedValue(account);
+    vi.mocked(isProviderActive).mockReset().mockResolvedValue(true);
   });
 
   it("returns not_found for an unknown tenant", async () => {
@@ -164,6 +172,14 @@ describe("resolveDonationCheckoutAvailability", () => {
     expect(result).toEqual({ ok: false, reason: "payment_not_configured" });
   });
 
+  it("returns payment_not_configured when the connected provider is platform-disabled (V0 gateway toggle)", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
+    vi.mocked(isProviderActive).mockResolvedValue(false);
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result).toEqual({ ok: false, reason: "payment_not_configured" });
+  });
+
   it("returns not_started once the token is correct but the campaign start date is in the future", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
@@ -211,6 +227,7 @@ describe("loadDonationCheckoutContext", () => {
       .mockReset()
       .mockResolvedValue({ totalAmount: 0, donationCount: 0, donorCount: 0 });
     vi.mocked(getActivePaymentAccountForTenant).mockReset().mockResolvedValue(account);
+    vi.mocked(isProviderActive).mockReset().mockResolvedValue(true);
   });
 
   it("collapses any unavailable reason to null for callers that only need a boolean gate", async () => {

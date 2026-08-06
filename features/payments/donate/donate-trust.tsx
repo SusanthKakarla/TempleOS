@@ -7,6 +7,7 @@ const PROVIDER_LABEL: Record<PaymentProviderKey, string> = {
   stripe: "Stripe",
   cashfree: "Cashfree",
   payu: "PayU",
+  upi_manual: "UPI",
 };
 
 interface DonateTrustProps {
@@ -15,12 +16,23 @@ interface DonateTrustProps {
 
 /** "Is this safe" — placed right after the ask, the standard high-conversion position for trust signals. */
 export function DonateTrust({ providerKey }: DonateTrustProps) {
-  const items = [
-    `Secure ${PROVIDER_LABEL[providerKey] ?? "Payments"}`,
-    "Verified Temple",
-    "Instant Receipt",
-    "Money goes directly to Temple",
-  ];
+  const items =
+    providerKey === "upi_manual"
+      ? [
+          // V0: no gateway sits between the donor and the temple, and there's
+          // no automatic receipt (that's a manual admin step) — "Instant
+          // Receipt" would be a false claim here, unlike the gateway path.
+          `Secure ${PROVIDER_LABEL[providerKey]}`,
+          "Verified Temple",
+          "Manually Verified by Temple",
+          "Money goes directly to Temple",
+        ]
+      : [
+          `Secure ${PROVIDER_LABEL[providerKey] ?? "Payments"}`,
+          "Verified Temple",
+          "Instant Receipt",
+          "Money goes directly to Temple",
+        ];
 
   return (
     <section className="animate-in fade-in duration-500 mx-auto max-w-[760px] px-5 md:px-6">
