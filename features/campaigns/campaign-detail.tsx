@@ -18,7 +18,7 @@ import { formatDate, formatDateTime } from "@/lib/date";
 import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
-import { DonationLinkField } from "./donation-link-field";
+import { CampaignActions } from "./campaign-actions";
 
 interface CampaignAnalytics {
   delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
@@ -227,11 +227,7 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {donationLink && (
-        <div className="glass-card rounded-2xl p-4">
-          <DonationLinkField donationLink={donationLink} />
-        </div>
-      )}
+      {donationLink && <CampaignActions donationLink={donationLink} />}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />

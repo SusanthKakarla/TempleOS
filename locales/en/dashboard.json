@@ -789,6 +789,12 @@
         "copyButton": "Copy Link",
         "copiedToast": "Donation link copied to clipboard.",
         "copyErrorToast": "Could not copy the link."
+      },
+      "campaignActions": {
+        "openButton": "Open Campaign",
+        "copyButton": "Copy Link",
+        "copiedToast": "Campaign link copied to clipboard.",
+        "copyErrorToast": "Could not copy the link."
       }
     }
   },
