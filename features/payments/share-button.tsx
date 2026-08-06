@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ShareButton({ title, url }: { title: string; url: string }) {
+interface ShareButtonProps {
+  title: string;
+  url: string;
+  /** Defaults match every existing caller's look exactly — only pass to visually match a custom surrounding layout (e.g. sitting next to a larger CTA in DonateHero). */
+  size?: "default" | "xl";
+  className?: string;
+}
+
+export function ShareButton({ title, url, size = "default", className }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
@@ -26,7 +35,7 @@ export function ShareButton({ title, url }: { title: string; url: string }) {
   }
 
   return (
-    <Button variant="outline" onClick={handleShare} className="gap-1.5">
+    <Button variant="outline" size={size} onClick={handleShare} className={cn("gap-1.5", className)}>
       <Share2 className="size-4" />
       {copied ? "Link copied!" : "Share"}
     </Button>

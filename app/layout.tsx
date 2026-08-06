@@ -127,7 +127,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${notoSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${notoSansTelugu.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${notoSansTelugu.variable} h-full scroll-smooth antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

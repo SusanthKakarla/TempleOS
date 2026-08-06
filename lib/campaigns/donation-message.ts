@@ -4,7 +4,7 @@ import type { Campaign, SupportedLanguage, Tenant } from "@/types/db";
 
 export const DEFAULT_DONATION_LINK_BASE_URL = "https://demo.trytempleos.com/donate";
 
-const DEFAULT_DESCRIPTION: Record<SupportedLanguage, string> = {
+export const DEFAULT_DESCRIPTION: Record<SupportedLanguage, string> = {
   en: "Join us in supporting this sacred cause.",
   te: "ఈ పవిత్ర కార్యక్రమంలో మాతో చేరండి.",
 };

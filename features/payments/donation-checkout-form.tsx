@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Script from "next/script";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +54,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
+  const [optionalOpen, setOptionalOpen] = useState(false);
 
   const validation = useMemo(
     () =>
@@ -153,10 +155,10 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
   if (status === "success") {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border bg-background p-8 text-center">
+      <div id="donate" className="mx-auto flex max-w-lg flex-col items-center gap-3 rounded-2xl bg-white p-8 text-center ring-1 ring-[#2D2D2D]/8">
         <CheckCircle2 className="size-10 text-emerald-600" />
-        <p className="text-lg font-semibold">Thank you for your donation!</p>
-        <p className="text-sm text-muted-foreground">A confirmation and receipt will be sent to you shortly.</p>
+        <p className="font-heading text-lg text-[#2D2D2D]">Thank you for your donation!</p>
+        <p className="text-sm text-[#2D2D2D]/70">A confirmation and receipt will be sent to you shortly.</p>
       </div>
     );
   }
@@ -165,11 +167,13 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const donateButtonLabel = status === "processing" ? "Processing..." : "Donate Now";
 
   return (
-    <div className="space-y-4 rounded-2xl border bg-background p-6">
+    <div id="donate" className="mx-auto max-w-lg space-y-5 rounded-2xl bg-white p-6 ring-1 ring-[#2D2D2D]/8 sm:p-8">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
+      <h2 className="text-center font-heading text-2xl text-[#2D2D2D]">Complete Your Donation</h2>
+
       <div className="space-y-2">
-        <Label>Choose an amount</Label>
+        <Label className="text-[#2D2D2D]">Choose an amount</Label>
         <div className="flex flex-wrap gap-2">
           {PRESET_AMOUNTS.map((preset) => (
             <button
@@ -177,10 +181,10 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               type="button"
               onClick={() => setAmount(String(preset))}
               className={cn(
-                "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
                 Number(amount) === preset
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-input bg-background text-foreground hover:bg-muted",
+                  ? "border-[#8B1E1E] bg-[#8B1E1E] text-white"
+                  : "border-[#2D2D2D]/15 bg-white text-[#2D2D2D] hover:border-[#D4AF37] hover:bg-[#FFF9F3]",
               )}
             >
               {formatInr(preset)}
@@ -191,9 +195,10 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
       <LabeledInput
         id="donation-amount"
-        label="Amount (INR)"
+        label="Custom amount (INR)"
         type="number"
         min="1"
+        inputSize="lg"
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
         onBlur={() => markTouched("amount")}
@@ -203,73 +208,98 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       <LabeledInput
         id="donor-name"
         label="Full name"
+        inputSize="lg"
         value={donorName}
         onChange={(event) => setDonorName(event.target.value)}
         onBlur={() => markTouched("donorName")}
         error={fieldError("donorName")}
         required
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <LabeledInput
-          id="donor-phone"
-          label="Mobile number"
-          value={donorPhone}
-          onChange={(event) => setDonorPhone(event.target.value)}
-          onBlur={() => markTouched("donorPhone")}
-          error={fieldError("donorPhone")}
-          required
-        />
-        <LabeledInput
-          id="donor-email"
-          label="Email (optional)"
-          type="email"
-          value={donorEmail}
-          onChange={(event) => setDonorEmail(event.target.value)}
-          onBlur={() => markTouched("donorEmail")}
-          error={fieldError("donorEmail")}
-        />
-      </div>
       <LabeledInput
-        id="donor-pan"
-        label="PAN (optional)"
-        placeholder="AAAAA9999A"
-        value={donorPan}
-        onChange={(event) => setDonorPan(event.target.value.toUpperCase())}
-        onBlur={() => markTouched("donorPan")}
-        error={fieldError("donorPan")}
-        maxLength={10}
+        id="donor-phone"
+        label="Mobile number"
+        inputSize="lg"
+        value={donorPhone}
+        onChange={(event) => setDonorPhone(event.target.value)}
+        onBlur={() => markTouched("donorPhone")}
+        error={fieldError("donorPhone")}
+        required
       />
-      <div className="space-y-1.5">
-        <Label htmlFor="donation-message">Donation message (optional)</Label>
-        <Textarea
-          id="donation-message"
-          placeholder="Add a message with your donation..."
-          value={donationMessage}
-          onChange={(event) => setDonationMessage(event.target.value)}
-          maxLength={500}
-        />
-      </div>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex items-center gap-2 text-sm text-[#2D2D2D]">
         <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
         Donate anonymously
       </label>
 
-      {status === "cancelled" && <p className="text-sm text-muted-foreground">Payment cancelled — you can try again.</p>}
+      <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#8B1E1E]">
+          Add optional details (email, PAN, message)
+          <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-4 pt-4">
+            <LabeledInput
+              id="donor-email"
+              label="Email (optional)"
+              type="email"
+              inputSize="lg"
+              value={donorEmail}
+              onChange={(event) => setDonorEmail(event.target.value)}
+              onBlur={() => markTouched("donorEmail")}
+              error={fieldError("donorEmail")}
+            />
+            <LabeledInput
+              id="donor-pan"
+              label="PAN (optional)"
+              placeholder="AAAAA9999A"
+              inputSize="lg"
+              value={donorPan}
+              onChange={(event) => setDonorPan(event.target.value.toUpperCase())}
+              onBlur={() => markTouched("donorPan")}
+              error={fieldError("donorPan")}
+              maxLength={10}
+            />
+            <div className="space-y-1.5">
+              <Label htmlFor="donation-message" className="text-[#2D2D2D]">
+                Donation message (optional)
+              </Label>
+              <Textarea
+                id="donation-message"
+                placeholder="Add a message with your donation..."
+                value={donationMessage}
+                onChange={(event) => setDonationMessage(event.target.value)}
+                maxLength={500}
+              />
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {status === "cancelled" && <p className="text-sm text-[#2D2D2D]/60">Payment cancelled — you can try again.</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button onClick={handleDonate} disabled={!canSubmit} className="hidden w-full md:flex">
+      <Button
+        onClick={handleDonate}
+        disabled={!canSubmit}
+        size="xl"
+        className="hidden w-full bg-[#8B1E1E] text-white hover:bg-[#7a1a1a] md:flex"
+      >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
       </Button>
 
       {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx */}
-      <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl border bg-background/95 p-2 shadow-lg backdrop-blur md:hidden">
-        <Button onClick={handleDonate} disabled={!canSubmit} className="w-full">
+      <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg ring-1 ring-[#2D2D2D]/8 backdrop-blur md:hidden">
+        <Button
+          onClick={handleDonate}
+          disabled={!canSubmit}
+          size="xl"
+          className="w-full bg-[#8B1E1E] text-white hover:bg-[#7a1a1a]"
+        >
           {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
           {donateButtonLabel}
         </Button>
       </div>
-      <div className="h-16 md:hidden" aria-hidden />
+      <div className="h-20 md:hidden" aria-hidden />
     </div>
   );
 }

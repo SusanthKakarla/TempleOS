@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { CalendarClock, CalendarX2, PauseCircle, SearchX } from "lucide-react";
 import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
-import { buildDonationLink, computeRaisedPercentage } from "@/lib/campaigns/donation-message";
-import { formatInr } from "@/lib/currency";
-import { Progress } from "@/components/ui/progress";
+import { buildDonationLink, DEFAULT_DESCRIPTION } from "@/lib/campaigns/donation-message";
 import { EmptyState } from "@/components/empty-state";
 import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
-import { ShareButton } from "@/features/payments/share-button";
+import { DonateHero } from "@/features/payments/donate/donate-hero";
+import { DonateStory } from "@/features/payments/donate/donate-story";
+import { DonateImpact } from "@/features/payments/donate/donate-impact";
+import { DonateTrust } from "@/features/payments/donate/donate-trust";
+import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
 interface PageParams {
   params: Promise<{ tenantSlug: string; campaignSlug: string; token: string }>;
@@ -43,14 +45,7 @@ const UNAVAILABLE_COPY = {
   },
 } as const;
 
-function TempleMonogram({ name }: { name: string }) {
-  const initial = name.trim().charAt(0).toUpperCase() || "T";
-  return (
-    <div className="gradient-blue-purple flex size-12 items-center justify-center rounded-2xl text-lg font-semibold text-white shadow-sm">
-      {initial}
-    </div>
-  );
-}
+const SUBTITLE_MAX_LENGTH = 120;
 
 export default async function DonatePage({ params }: PageParams) {
   const { tenantSlug, campaignSlug, token } = await params;
@@ -65,47 +60,39 @@ export default async function DonatePage({ params }: PageParams) {
     );
   }
 
-  const { tenant, campaign, summary } = availability.context;
+  const { tenant, campaign, account, summary } = availability.context;
   const banner = campaign.bannerMediaId ? await getNotificationMediaById(tenant.id, campaign.bannerMediaId) : null;
   const goal = Number(campaign.goalAmount ?? 0);
-  const rawPercentage = computeRaisedPercentage(summary.totalAmount, goal);
-  const displayPercentage = Math.min(100, Math.round(rawPercentage));
+  const description = campaign.description?.trim() || null;
+  const subtitle = !description
+    ? DEFAULT_DESCRIPTION.en
+    : description.length <= SUBTITLE_MAX_LENGTH
+      ? description
+      : `${description.slice(0, SUBTITLE_MAX_LENGTH - 1).trimEnd()}…`;
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
-      <div className="mb-6 flex flex-col items-center gap-2 text-center">
-        <TempleMonogram name={tenant.name} />
-        <p className="text-sm font-medium text-muted-foreground">{tenant.name}</p>
-      </div>
+    <div>
+      <DonateHero
+        templeName={tenant.name}
+        campaignTitle={campaign.title}
+        subtitle={subtitle}
+        bannerUrl={banner?.imageUrl ?? null}
+        raisedAmount={summary.totalAmount}
+        goalAmount={goal}
+        shareUrl={buildDonationLink(tenant, campaign)}
+      />
 
-      <div className="overflow-hidden rounded-2xl border bg-background shadow-sm">
-        {banner && (
-          // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
-          <img src={banner.imageUrl} alt="" className="h-48 w-full object-cover" />
-        )}
-        <div className="space-y-4 p-6">
-          <div>
-            <h1 className="text-xl font-semibold">{campaign.title}</h1>
-            {campaign.description && <p className="mt-1 text-sm text-muted-foreground">{campaign.description}</p>}
-          </div>
+      {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
 
-          {goal > 0 && (
-            <div className="space-y-2">
-              <Progress value={displayPercentage} />
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{formatInr(summary.totalAmount)} raised</span>
-                <span className="text-muted-foreground">of {formatInr(goal)} goal</span>
-              </div>
-            </div>
-          )}
+      <DonateImpact />
 
-          <ShareButton title={campaign.title} url={buildDonationLink(tenant, campaign)} />
-        </div>
-      </div>
-
-      <div className="mt-6">
+      <div className="px-5 md:px-6">
         <DonationCheckoutForm tenantSlug={tenantSlug} campaignSlug={campaignSlug} token={token} templeName={tenant.name} />
       </div>
+
+      <DonateTrust providerKey={account.providerKey} />
+
+      <DonateFooter templeName={tenant.name} />
     </div>
   );
 }
