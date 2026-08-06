@@ -2,12 +2,18 @@ import type { Metadata } from "next";
 import { CalendarClock, CalendarX2, PauseCircle, SearchX } from "lucide-react";
 import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
+import { listSocialLinks } from "@/lib/db/temple-social-links";
 import { buildDonationLink, computeDaysLeft, DEFAULT_DESCRIPTION } from "@/lib/campaigns/donation-message";
 import { EmptyState } from "@/components/empty-state";
 import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
 import { DonateHero } from "@/features/payments/donate/donate-hero";
 import { DonateStory } from "@/features/payments/donate/donate-story";
+import { DonateWhyMatters } from "@/features/payments/donate/donate-why-matters";
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
+import { DonateContributionSupports } from "@/features/payments/donate/donate-contribution-supports";
+import { DonateTrustCards } from "@/features/payments/donate/donate-trust-cards";
+import { DonateStats } from "@/features/payments/donate/donate-stats";
+import { DonateCta } from "@/features/payments/donate/donate-cta";
 import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
 interface PageParams {
@@ -60,7 +66,10 @@ export default async function DonatePage({ params }: PageParams) {
   }
 
   const { tenant, campaign, account, summary } = availability.context;
-  const banner = campaign.bannerMediaId ? await getNotificationMediaById(tenant.id, campaign.bannerMediaId) : null;
+  const [banner, socialLinks] = await Promise.all([
+    campaign.bannerMediaId ? getNotificationMediaById(tenant.id, campaign.bannerMediaId) : Promise.resolve(null),
+    listSocialLinks(tenant.id),
+  ]);
   const goal = Number(campaign.goalAmount ?? 0);
   const description = campaign.description?.trim() || null;
   const subtitle = !description
@@ -91,6 +100,8 @@ export default async function DonatePage({ params }: PageParams) {
         </div>
       )}
 
+      <DonateWhyMatters />
+
       <div className="mt-8 px-5 md:px-6">
         <DonationCheckoutForm
           tenantSlug={tenantSlug}
@@ -109,7 +120,21 @@ export default async function DonatePage({ params }: PageParams) {
         <DonateTrust providerKey={account.providerKey} />
       </div>
 
-      <DonateFooter templeName={tenant.name} />
+      <DonateContributionSupports />
+
+      <DonateTrustCards />
+
+      <DonateStats />
+
+      <DonateCta campaignTitle={campaign.title} shareUrl={buildDonationLink(tenant, campaign)} />
+
+      <DonateFooter
+        templeName={tenant.name}
+        contactEmail={tenant.contactEmail}
+        contactPhone={tenant.defaultContactPhone}
+        address={tenant.address}
+        socialLinks={socialLinks}
+      />
     </div>
   );
 }

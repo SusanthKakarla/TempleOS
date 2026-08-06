@@ -39,7 +39,7 @@ export function DonateTrust({ providerKey }: DonateTrustProps) {
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t border-[#F3E7DA] pt-8">
         {items.map((item) => (
           <div key={item} className="flex items-center gap-1.5 text-xs text-[#6B5B4F]">
-            <CheckCircle2 className="size-3.5 shrink-0 text-[#F97316]" />
+            <CheckCircle2 className="size-3.5 shrink-0 text-[#D4AF37]" />
             {item}
           </div>
         ))}

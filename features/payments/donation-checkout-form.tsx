@@ -47,7 +47,7 @@ const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 
 /** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
 const FILLED_INPUT_CLASS =
-  "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#F97316] focus-visible:bg-white focus-visible:ring-[#F97316]/20";
+  "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#D4AF37] focus-visible:bg-white focus-visible:ring-[#D4AF37]/20";
 
 export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName, upi }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
@@ -341,7 +341,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
             <Button
               type="button"
               disabled={confirmSubmitting}
-              className="w-full rounded-full bg-[#F97316] text-white hover:bg-[#EA580C]"
+              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
               onClick={handleSubmitProof}
             >
               {confirmSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -374,8 +374,8 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
                 className={cn(
                   "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
                   Number(amount) === preset
-                    ? "scale-[1.05] border-[#F97316] bg-[#F97316] text-white shadow-sm"
-                    : "border-[#F3E7DA] bg-[#FFF6ED] text-[#2B2118] hover:border-[#F97316] hover:bg-white",
+                    ? "scale-[1.05] border-[#D4AF37] bg-[#D4AF37] text-white shadow-sm"
+                    : "border-[#F3E7DA] bg-[#FFF6ED] text-[#2B2118] hover:border-[#D4AF37] hover:bg-white",
                 )}
               >
                 {formatInr(preset)}
@@ -429,7 +429,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       </div>
 
       <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen} className="my-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#F97316]">
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#D4AF37]">
           Add optional details (email, PAN, message)
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
@@ -482,7 +482,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         onClick={handleDonate}
         disabled={!canSubmit}
         size="xl"
-        className="hidden w-full rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] md:flex"
+        className="hidden w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E] md:flex"
       >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
@@ -502,7 +502,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
           onClick={handleDonate}
           disabled={!canSubmit}
           size="xl"
-          className="w-full gap-1.5 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C]"
+          className="w-full gap-1.5 rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
         >
           {status === "processing" ? (
             <Loader2 className="size-4 animate-spin" />
