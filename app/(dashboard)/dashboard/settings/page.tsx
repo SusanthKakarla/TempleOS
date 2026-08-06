@@ -57,7 +57,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {paymentsEnabled && (
         <section className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">{t("paymentsSection")}</h2>
-          <PaymentSettingsSection account={paymentAccount} tenantId={session.tenantId} />
+          <PaymentSettingsSection account={paymentAccount} />
         </section>
       )}
     </div>

@@ -9,7 +9,6 @@ import { PhonePeConnectionCard } from "./phonepe-connection-card";
 
 interface PaymentSettingsSectionProps {
   account: TenantPaymentAccount | null;
-  tenantId: string;
 }
 
 type ProviderChoice = "razorpay" | "phonepe";
@@ -23,7 +22,7 @@ type ProviderChoice = "razorpay" | "phonepe";
  * the radio selection (mirrors the single-active-account model:
  * tenant_payment_accounts allows only one `is_active` row per tenant).
  */
-export function PaymentSettingsSection({ account, tenantId }: PaymentSettingsSectionProps) {
+export function PaymentSettingsSection({ account }: PaymentSettingsSectionProps) {
   const t = useTranslations("paymentSettings.providerSelector");
   const isConnected = account !== null && account.status === "connected";
   const [choice, setChoice] = useState<ProviderChoice>(isConnected ? (account.providerKey as ProviderChoice) : "razorpay");
@@ -59,7 +58,7 @@ export function PaymentSettingsSection({ account, tenantId }: PaymentSettingsSec
       {activeChoice === "razorpay" ? (
         <RazorpayConnectionCard account={account} />
       ) : (
-        <PhonePeConnectionCard account={account} tenantId={tenantId} />
+        <PhonePeConnectionCard account={account} />
       )}
     </div>
   );

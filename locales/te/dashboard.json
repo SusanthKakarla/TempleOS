@@ -1657,21 +1657,27 @@
     },
     "phonepe": {
       "cardTitle": "PhonePe",
-      "cardDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం స్వంత PhonePe బిజినెస్ ఖాతాను కనెక్ట్ చేయండి.",
+      "cardDescription": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం స్వంత PhonePe ఖాతాను కనెక్ట్ చేయండి.",
       "statusConnected": "కనెక్ట్ చేయబడింది",
       "statusNotConnected": "కనెక్ట్ చేయలేదు",
+      "statusFailed": "కనెక్షన్ విఫలమైంది",
       "validated": "ధృవీకరించబడింది",
       "validationPending": "ధృవీకరణ పెండింగ్‌లో ఉంది",
       "fields": {
         "merchantId": "మర్చంట్ ID",
         "environment": "ఎన్విరాన్‌మెంట్",
+        "connectedAt": "కనెక్ట్ చేసిన తేదీ",
         "validationStatus": "ధృవీకరణ స్థితి"
       },
-      "methodTabs": {
-        "manual": "మాన్యువల్ కాన్ఫిగరేషన్",
-        "guided": "గైడెడ్ సెటప్"
-      },
-      "manual": {
+      "connect": {
+        "description": "ఆన్‌లైన్ విరాళాలను స్వీకరించడానికి మీ దేవాలయం PhonePe ఖాతాను కనెక్ట్ చేయండి.",
+        "connectButton": "PhonePe కనెక్ట్ చేయండి",
+        "reconnectButton": "మళ్లీ కనెక్ట్ చేయండి",
+        "connecting": "కనెక్ట్ చేస్తోంది...",
+        "connectSuccess": "PhonePe విజయవంతంగా కనెక్ట్ అయింది.",
+        "connectError": "PhonePe కనెక్ట్ చేయడం సాధ్యం కాలేదు.",
+        "dialogTitle": "PhonePe కనెక్ట్ చేయండి",
+        "dialogDescription": "మీ PhonePe బిజినెస్ ఖాతా వివరాలను నమోదు చేయండి. ఇవి ఎన్‌క్రిప్ట్ చేయబడతాయి మరియు సేవ్ చేసిన తర్వాత మళ్లీ చూపబడవు.",
         "merchantId": "మర్చంట్ ID",
         "clientId": "క్లయింట్ ID",
         "clientSecret": "క్లయింట్ సీక్రెట్",
@@ -1680,24 +1686,8 @@
         "environmentProduction": "ప్రొడక్షన్ (లైవ్)",
         "webhookSecret": "వెబ్‌హుక్ సీక్రెట్ (ఐచ్ఛికం)",
         "webhookSecretHelp": "PhonePe బిజినెస్ డాష్‌బోర్డ్ → డెవలపర్ సెట్టింగ్స్ → వెబ్‌హుక్ నుండి, username:password ఆకృతిలో నమోదు చేయండి.",
-        "connectButton": "PhonePe కనెక్ట్ చేయండి",
-        "connecting": "కనెక్ట్ చేస్తోంది...",
-        "connectSuccess": "PhonePe విజయవంతంగా కనెక్ట్ అయింది.",
-        "connectError": "PhonePe కనెక్ట్ చేయడం సాధ్యం కాలేదు."
-      },
-      "guided": {
-        "intro": "PhonePe ఇంకా వన్-క్లిక్ ఖాతా లింకింగ్ అందించడం లేదు — మీరు మీ PhonePe బిజినెస్ డాష్‌బోర్డ్ నుండి కొన్ని విలువలను కాపీ చేయాలి. ఇది సుమారు 5 నిమిషాలు పడుతుంది.",
-        "step1Title": "1. PhonePe బిజినెస్ డాష్‌బోర్డ్‌లోకి లాగిన్ అవ్వండి",
-        "step1Body": "business.phonepe.com కు వెళ్లి మీ మర్చంట్ ఖాతాతో సైన్ ఇన్ చేయండి.",
-        "step2Title": "2. మీ API క్రెడెన్షియల్స్‌ను కాపీ చేయండి",
-        "step2Body": "డెవలపర్ సెట్టింగ్స్ → API కీలు — మీ మర్చంట్ ID, క్లయింట్ ID, మరియు క్లయింట్ సీక్రెట్‌ను కాపీ చేయండి.",
-        "step3Title": "3. వెబ్‌హుక్‌ను సృష్టించండి",
-        "step3Body": "డెవలపర్ సెట్టింగ్స్ → వెబ్‌హుక్ → Create Webhook. కింద ఉన్న URLను నమోదు చేయండి, \"SHA (Username & Password)\" ప్రామాణీకరణను ఎంచుకోండి, మీరు సెట్ చేసిన username/passwordను గుర్తుంచుకోండి.",
-        "webhookUrlLabel": "PhonePeలో నమోదు చేయవలసిన వెబ్‌హుక్ URL",
-        "copy": "కాపీ చేయండి",
-        "copied": "కాపీ చేయబడింది",
-        "step4Title": "4. మీ వివరాలను కింద నమోదు చేయండి",
-        "continueButton": "నేను ఇది చేసాను — కొనసాగించండి"
+        "cancelButton": "రద్దు చేయండి",
+        "saveButton": "కనెక్ట్ చేయండి"
       },
       "disconnectButton": "డిస్‌కనెక్ట్ చేయండి",
       "disconnecting": "డిస్‌కనెక్ట్ చేస్తోంది...",
