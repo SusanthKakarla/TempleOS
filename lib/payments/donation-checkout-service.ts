@@ -95,8 +95,12 @@ export async function resolveDonationCheckoutAvailability(
     logUnavailable("expired", `campaign ${campaign.id} ended ${campaign.campaignEndDate}, now is ${now.toISOString()}`);
     return { ok: false, reason: "expired" };
   }
-  if (campaign.status !== "running") {
-    logUnavailable("disabled", `campaign ${campaign.id} status is "${campaign.status}", not "running"`);
+  // Donation page availability is decoupled from WhatsApp send status — a
+  // Draft (or Scheduled/Paused/Completed) campaign's public URL must work
+  // for preview/manual sharing immediately after creation, never waiting on
+  // a "Send Now" click. Only a genuinely terminal status blocks it.
+  if (campaign.status === "archived" || campaign.status === "cancelled") {
+    logUnavailable("disabled", `campaign ${campaign.id} status is "${campaign.status}"`);
     return { ok: false, reason: "disabled" };
   }
 

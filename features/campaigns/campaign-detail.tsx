@@ -229,12 +229,16 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
 
       {donationLink && <CampaignActions donationLink={donationLink} />}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
-        <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
-        <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
-        <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
-      </div>
+      {campaign.lastRunAt ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
+          <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
+          <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
+          <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
+        </div>
+      ) : (
+        <EmptyState icon={<Send className="size-6" />} title={tDetail("noMessagesSent")} />
+      )}
 
       <Tabs defaultValue="overview" className="gap-4">
         <TabsList variant="line">
@@ -307,14 +311,18 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
         )}
 
         <TabsContent value="analytics">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
-            <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
-            <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
-            <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
-          </div>
-          {campaign.lastRunAt && (
-            <p className="mt-4 text-sm text-muted-foreground">{formatDate(campaign.lastRunAt, locale)}</p>
+          {campaign.lastRunAt ? (
+            <>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
+                <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
+                <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
+                <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">{formatDate(campaign.lastRunAt, locale)}</p>
+            </>
+          ) : (
+            <EmptyState icon={<Send className="size-6" />} title={tDetail("noMessagesSent")} />
           )}
         </TabsContent>
       </Tabs>

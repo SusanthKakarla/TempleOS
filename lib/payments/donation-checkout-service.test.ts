@@ -157,9 +157,19 @@ describe("resolveDonationCheckoutAvailability", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("returns disabled once the token is correct but the campaign isn't running", async () => {
+  it.each(["draft", "scheduled", "running", "paused", "completed"] as const)(
+    "allows the donation page for a %s campaign — availability is decoupled from WhatsApp send status, only archived/cancelled block it",
+    async (status) => {
+      vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+      vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status }));
+      const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+      expect(result.ok).toBe(true);
+    },
+  );
+
+  it.each(["archived", "cancelled"] as const)("returns disabled once the token is correct but the campaign is %s", async (status) => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
-    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status: "paused" }));
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status }));
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
     expect(result).toEqual({ ok: false, reason: "disabled" });
   });

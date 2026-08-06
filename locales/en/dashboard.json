@@ -773,6 +773,7 @@
       "aboutTitle": "About this campaign",
       "noDescription": "No description added.",
       "donationsEmpty": "No donations recorded for this campaign yet.",
+      "noMessagesSent": "No messages have been sent for this campaign yet.",
       "notLinkedToDonations": "This campaign isn't linked to a donation purpose.",
       "donationColumns": {
         "donor": "Donor",
