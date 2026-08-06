@@ -44,7 +44,7 @@ const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 
 /** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
 const FILLED_INPUT_CLASS =
-  "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#E85D04] focus-visible:bg-white focus-visible:ring-[#E85D04]/20";
+  "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#F97316] focus-visible:bg-white focus-visible:ring-[#F97316]/20";
 
 export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
@@ -176,9 +176,9 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
   if (status === "success") {
     return (
-      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[20px] border border-[#F1E3D3] bg-white p-8 text-center">
+      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[24px] border border-[#F3E7DA] bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
         <CheckCircle2 className="size-10 text-emerald-600" />
-        <p className="font-heading text-lg text-[#2D1B12]">Thank you for your donation!</p>
+        <p className="font-heading text-lg text-[#2B2118]">Thank you for your donation!</p>
         <p className="text-sm text-[#6B5B4F]">A confirmation and receipt will be sent to you shortly.</p>
       </div>
     );
@@ -188,14 +188,14 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const donateButtonLabel = status === "processing" ? "Processing..." : "Donate Now";
 
   return (
-    <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[20px] border border-[#F1E3D3] bg-white p-6">
+    <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
-      <h2 className="text-center font-heading text-2xl text-[#2D1B12]">Support This Campaign</h2>
+      <h2 className="text-center font-heading text-2xl text-[#2B2118]">Support This Campaign</h2>
 
       <div className="space-y-5">
         <div className="space-y-2">
-          <Label className="text-[#2D1B12]">Choose an amount</Label>
+          <Label className="text-[#2B2118]">Choose an amount</Label>
           <div className="flex flex-wrap gap-3">
             {PRESET_AMOUNTS.map((preset) => (
               <button
@@ -205,8 +205,8 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
                 className={cn(
                   "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
                   Number(amount) === preset
-                    ? "scale-[1.05] border-[#E85D04] bg-[#E85D04] text-white shadow-sm"
-                    : "border-[#F1E3D3] bg-[#FFF6ED] text-[#2D1B12] hover:border-[#E85D04] hover:bg-white",
+                    ? "scale-[1.05] border-[#F97316] bg-[#F97316] text-white shadow-sm"
+                    : "border-[#F3E7DA] bg-[#FFF6ED] text-[#2B2118] hover:border-[#F97316] hover:bg-white",
                 )}
               >
                 {formatInr(preset)}
@@ -253,14 +253,14 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
           error={fieldError("donorPhone")}
           required
         />
-        <label className="flex items-center gap-2 text-sm text-[#2D1B12]">
+        <label className="flex items-center gap-2 text-sm text-[#2B2118]">
           <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
           Donate anonymously
         </label>
       </div>
 
       <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen} className="my-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#E85D04]">
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#F97316]">
           Add optional details (email, PAN, message)
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
@@ -290,7 +290,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               maxLength={10}
             />
             <div className="space-y-2">
-              <Label htmlFor="donation-message" className="text-[#2D1B12]">
+              <Label htmlFor="donation-message" className="text-[#2B2118]">
                 Donation message (optional)
               </Label>
               <Textarea
@@ -313,7 +313,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         onClick={handleDonate}
         disabled={!canSubmit}
         size="xl"
-        className="hidden w-full bg-[#E85D04] text-white hover:bg-[#D9480F] md:flex"
+        className="hidden w-full rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] md:flex"
       >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
@@ -322,7 +322,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx. Hidden until the Summary Card's own Donate button scrolls out of view (see heroButtonOutOfView above), so only one Donate CTA is ever on-screen at once. */}
       <div
         className={cn(
-          "fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#F1E3D3] backdrop-blur transition-all duration-300 md:hidden",
+          "fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#F3E7DA] backdrop-blur transition-all duration-300 md:hidden",
           heroButtonOutOfView ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0",
         )}
       >
@@ -333,7 +333,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
           onClick={handleDonate}
           disabled={!canSubmit}
           size="xl"
-          className="w-full gap-1.5 bg-[#E85D04] text-white hover:bg-[#D9480F]"
+          className="w-full gap-1.5 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C]"
         >
           {status === "processing" ? (
             <Loader2 className="size-4 animate-spin" />

@@ -20,7 +20,7 @@ interface DonateHeroProps {
 function TempleMonogram({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || "T";
   return (
-    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#E85D04]/10 text-lg font-semibold text-[#E85D04]">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#F97316]/10 text-lg font-semibold text-[#F97316]">
       {initial}
     </div>
   );
@@ -64,17 +64,17 @@ export function DonateHero({
           />
         )}
         {/* Blends the banner's saffron/orange into the page's warm cream background instead of ending on a hard color break. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#FFF8F1] to-transparent" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#FFF8F2] to-transparent" aria-hidden="true" />
       </div>
 
       <div className="relative z-10 mx-auto -mt-10 max-w-[760px] px-5 md:px-6">
-        <div className="animate-in fade-in slide-in-from-bottom-2 rounded-[20px] border border-[#F1E3D3] bg-white p-6 shadow-sm duration-500">
+        <div className="animate-in fade-in slide-in-from-bottom-2 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)] duration-500">
           <div className="flex items-center gap-3">
             <TempleMonogram name={templeName} />
             <p className="text-xs font-medium tracking-[0.1em] text-[#8C7B6D] uppercase">{templeName}</p>
           </div>
 
-          <h1 className="mt-4 font-heading text-2xl leading-[1.25] text-[#2D1B12] sm:text-3xl">{campaignTitle}</h1>
+          <h1 className="mt-4 font-heading text-2xl leading-[1.25] text-[#2B2118] sm:text-3xl">{campaignTitle}</h1>
 
           <p className="mt-3 text-sm text-[#6B5B4F]">{subtitle}</p>
 
@@ -82,7 +82,7 @@ export function DonateHero({
             <div className="mt-4 space-y-3">
               <DonateProgress value={displayPercentage} />
               <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-[#2D1B12]">{formatInr(raisedAmount)} raised</span>
+                <span className="font-semibold text-[#2B2118]">{formatInr(raisedAmount)} raised</span>
                 <span className="text-[#8C7B6D]">
                   {displayPercentage}% of {formatInr(goalAmount)}
                 </span>
@@ -98,13 +98,13 @@ export function DonateHero({
             <Button
               id="hero-donate-button"
               size="xl"
-              className="flex-1 bg-[#E85D04] text-white hover:bg-[#D9480F]"
+              className="flex-1 bg-[#F97316] text-white hover:bg-[#EA580C]"
               render={<a href="#donate" />}
             >
               <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
               Donate Now
             </Button>
-            <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-[#F1E3D3] text-[#2D1B12] hover:bg-[#FFF6ED]" />
+            <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]" />
           </div>
         </div>
       </div>

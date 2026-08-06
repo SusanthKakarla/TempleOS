@@ -7,7 +7,7 @@ export default function DonatePageLoading() {
       {/* Banner */}
       <Skeleton className="h-[200px] w-full rounded-none sm:h-[300px]" />
       <div className="mx-auto -mt-10 max-w-[760px] px-5 md:px-6">
-        <div className="space-y-4 rounded-[20px] border border-[#F1E3D3] bg-white p-6 shadow-sm">
+        <div className="space-y-4 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-8 w-4/5" />
           <Skeleton className="h-4 w-3/5" />

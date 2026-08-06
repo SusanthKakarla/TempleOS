@@ -14,8 +14,8 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
 
   return (
     <section className="animate-in fade-in duration-500 mx-auto max-w-[760px] px-5 md:px-6">
-      <div className="rounded-[20px] border border-[#F1E3D3] bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-heading text-xl text-[#2D1B12]">The Story</h2>
+      <div className="rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+        <h2 className="mb-4 font-heading text-xl text-[#2B2118]">The Story</h2>
 
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
@@ -28,7 +28,7 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="mt-2 text-sm font-semibold text-[#E85D04] underline-offset-4 hover:underline"
+            className="mt-2 text-sm font-semibold text-[#F97316] underline-offset-4 hover:underline"
           >
             Read more
           </button>
