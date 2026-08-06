@@ -1,6 +1,8 @@
 import { requireDashboardAdmin } from "../require-dashboard-admin";
 import { requireTenantFeature } from "@/lib/auth/features";
 import { listCampaigns, countCampaignsFiltered, type ListCampaignsFilter } from "@/lib/db/campaigns";
+import { getTenantById } from "@/lib/db/tenants";
+import { buildDonationLink } from "@/lib/campaigns/donation-message";
 import { CampaignsTable } from "@/features/campaigns/campaigns-table";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { CampaignStatus, CampaignType } from "@/types/db";
@@ -34,5 +36,24 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   ]);
   const campaigns = await translateFields(campaignsRaw, locale, ["title", "description"]);
 
-  return <CampaignsTable campaigns={campaigns} page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={totalCount} />;
+  // Same buildDonationLink() every WhatsApp broadcast already uses — never a
+  // second URL scheme. One tenant lookup, reused for every linked campaign
+  // on the page.
+  const tenant = campaigns.some((c) => c.linkedDonationPurpose) ? await getTenantById(session.tenantId) : null;
+  const donationLinks: Record<string, string> = {};
+  if (tenant) {
+    for (const campaign of campaigns) {
+      if (campaign.linkedDonationPurpose) donationLinks[campaign.id] = buildDonationLink(tenant, campaign);
+    }
+  }
+
+  return (
+    <CampaignsTable
+      campaigns={campaigns}
+      page={page}
+      pageSize={DEFAULT_PAGE_SIZE}
+      totalCount={totalCount}
+      donationLinks={donationLinks}
+    />
+  );
 }

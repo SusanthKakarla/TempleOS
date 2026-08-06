@@ -688,7 +688,8 @@
       "delete": "Delete",
       "sendNow": "Send now",
       "schedule": "Schedule",
-      "preview": "Preview"
+      "preview": "Preview",
+      "openCampaign": "Open donation page"
     },
     "confirm": {
       "cancel": "Cancel this campaign? Already-sent messages aren't affected.",
@@ -781,7 +782,14 @@
       "goalProgress": "{raised} raised of {goal} goal",
       "goalReached": "Goal reached! 🎉",
       "previewTitle": "Message preview",
-      "previewNotReady": "Preview isn't available yet."
+      "previewNotReady": "Preview isn't available yet.",
+      "donationLink": {
+        "title": "Donation Link",
+        "openButton": "Open Campaign",
+        "copyButton": "Copy Link",
+        "copiedToast": "Donation link copied to clipboard.",
+        "copyErrorToast": "Could not copy the link."
+      }
     }
   },
   "devotees": {

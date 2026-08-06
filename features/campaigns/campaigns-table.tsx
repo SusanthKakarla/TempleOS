@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { Copy, Eye, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
+import { Copy, ExternalLink, Eye, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
 import type { Campaign, CampaignStatus } from "@/types/db";
 import { CAMPAIGN_TYPES } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -61,9 +61,11 @@ interface CampaignsTableProps {
   page: number;
   pageSize: number;
   totalCount: number;
+  /** Keyed by campaign id — only present for campaigns linked to a donation purpose (same buildDonationLink() output every WhatsApp broadcast already uses). */
+  donationLinks: Record<string, string>;
 }
 
-export function CampaignsTable({ campaigns, page, pageSize, totalCount }: CampaignsTableProps) {
+export function CampaignsTable({ campaigns, page, pageSize, totalCount, donationLinks }: CampaignsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale() as "en" | "te";
@@ -383,7 +385,27 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
                             : "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <OverflowActionMenu items={campaignActionItems(campaign)} />
+                        <div className="flex items-center justify-end gap-1">
+                          {donationLinks[campaign.id] && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              render={
+                                <a
+                                  href={donationLinks[campaign.id]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={t("actionItems.openCampaign")}
+                                  title={t("actionItems.openCampaign")}
+                                />
+                              }
+                            >
+                              <ExternalLink className="size-4" />
+                            </Button>
+                          )}
+                          <OverflowActionMenu items={campaignActionItems(campaign)} />
+                        </div>
                       </TableCell>
                     </MotionTableRow>
                   ))}
@@ -402,7 +424,31 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount }: Campai
                   title={campaign.title}
                   subtitle={tTypes(campaign.campaignType)}
                   badge={<Badge variant={STATUS_BADGE_VARIANT[campaign.status]}>{tStatus(campaign.status)}</Badge>}
-                  trailing={<OverflowActionMenu items={campaignActionItems(campaign)} />}
+                  trailing={
+                    <div className="flex items-center gap-1">
+                      {donationLinks[campaign.id] && (
+                        // A real <a> here would be invalid HTML — MobileListRow
+                        // wraps this entire row (including `trailing`) in its
+                        // own <Link>, so a nested anchor would break browser
+                        // click handling. window.open keeps this a <button>.
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label={t("actionItems.openCampaign")}
+                          title={t("actionItems.openCampaign")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            window.open(donationLinks[campaign.id], "_blank", "noopener,noreferrer");
+                          }}
+                        >
+                          <ExternalLink className="size-4" />
+                        </Button>
+                      )}
+                      <OverflowActionMenu items={campaignActionItems(campaign)} />
+                    </div>
+                  }
                 />
               ))}
             </MobileListView>

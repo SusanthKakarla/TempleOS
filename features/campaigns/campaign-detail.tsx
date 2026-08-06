@@ -18,6 +18,7 @@ import { formatDate, formatDateTime } from "@/lib/date";
 import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
+import { DonationLinkField } from "./donation-link-field";
 
 interface CampaignAnalytics {
   delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
@@ -35,7 +36,7 @@ const STATUS_BADGE_VARIANT: Record<Campaign["status"], "default" | "secondary" |
   cancelled: "destructive",
 };
 
-export function CampaignDetail({ campaign }: { campaign: Campaign }) {
+export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign; donationLink: string | null }) {
   const router = useRouter();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("campaigns");
@@ -169,6 +170,7 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
               <CampaignFormDialog
                 mode="edit"
                 campaign={campaign}
+                donationLink={donationLink}
                 trigger={<Button variant="outline">{tCommon("edit")}</Button>}
                 onSaved={refresh}
               />
@@ -224,6 +226,12 @@ export function CampaignDetail({ campaign }: { campaign: Campaign }) {
       />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {donationLink && (
+        <div className="glass-card rounded-2xl p-4">
+          <DonationLinkField donationLink={donationLink} />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />

@@ -24,6 +24,7 @@ import { DateTimeField } from "@/features/events/date-time-field";
 import { cn } from "@/lib/utils";
 import { RECURRENCE_RULES, type RecurrenceRule } from "@/lib/campaigns/recurrence";
 import type { Campaign, CampaignAudienceFilter, NotificationMedia, SupportedLanguage } from "@/types/db";
+import { DonationLinkField } from "./donation-link-field";
 
 /** TempleOS only ever runs donation campaigns today (confirmed before this simplification) — the campaign-type selector was removed from the UI, not the data model. Every campaign is still created with this literal value. */
 const CAMPAIGN_TYPE = "donation" as const;
@@ -54,11 +55,13 @@ function DateOnlyField({
 interface CampaignFormDialogProps {
   mode: "create" | "edit";
   campaign?: Campaign;
+  /** Edit mode only — null until the campaign is both saved and linked to a donation purpose. Hidden entirely in create mode (no slug/token exists to link to yet). */
+  donationLink?: string | null;
   trigger: ReactElement;
   onSaved: () => void;
 }
 
-export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: CampaignFormDialogProps) {
+export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSaved }: CampaignFormDialogProps) {
   const t = useTranslations("campaigns.form");
   const tAudience = useTranslations("campaigns.audienceOptions");
   const tRecurrence = useTranslations("campaigns.form.recurrenceOptions");
@@ -197,6 +200,12 @@ export function CampaignFormDialog({ mode, campaign, trigger, onSaved }: Campaig
         </DialogHeader>
 
         <div className="space-y-4">
+          {donationLink && (
+            <div className="rounded-2xl border bg-muted/40 p-4">
+              <DonationLinkField donationLink={donationLink} />
+            </div>
+          )}
+
           <LabeledInput
             id="campaign-title"
             label={t("titleLabel")}
