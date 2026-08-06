@@ -14,21 +14,21 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
 
   return (
     <section className="animate-in fade-in duration-500 mx-auto max-w-[760px] px-5 md:px-6">
-      <div className="rounded-[20px] border border-[#E9E4DD] bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-heading text-xl text-[#2B2B2B]">The Story</h2>
+      <div className="rounded-[20px] border border-[#F1E3D3] bg-white p-6 shadow-sm">
+        <h2 className="mb-4 font-heading text-xl text-[#2D1B12]">The Story</h2>
 
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
           <img src={imageUrl} alt="" className="mb-4 h-40 w-full rounded-xl object-cover" />
         )}
 
-        <p className={cn("text-sm leading-relaxed text-[#2B2B2B]/80", !expanded && "line-clamp-4")}>{description}</p>
+        <p className={cn("text-sm leading-relaxed text-[#6B5B4F]", !expanded && "line-clamp-4")}>{description}</p>
 
         {!expanded && description.length > 180 && (
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="mt-2 text-sm font-semibold text-[#EA580C] underline-offset-4 hover:underline"
+            className="mt-2 text-sm font-semibold text-[#E85D04] underline-offset-4 hover:underline"
           >
             Read more
           </button>
