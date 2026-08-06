@@ -23,11 +23,11 @@ export function DonateTrust({ providerKey }: DonateTrustProps) {
   ];
 
   return (
-    <section className="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-lg px-5 py-10 duration-700 md:px-6">
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+    <section className="animate-in fade-in duration-500 mx-auto max-w-lg px-5 py-8 md:px-6">
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 border-t border-[#E9E4DD] pt-6">
         {items.map((item) => (
-          <div key={item} className="flex items-center gap-1.5 text-sm text-[#2D2D2D]/75">
-            <CheckCircle2 className="size-4 shrink-0 text-[#8B1E1E]" />
+          <div key={item} className="flex items-center gap-1.5 text-xs text-[#2B2B2B]/70">
+            <CheckCircle2 className="size-3.5 shrink-0 text-[#8B4513]" />
             {item}
           </div>
         ))}

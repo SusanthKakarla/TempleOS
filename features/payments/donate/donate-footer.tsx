@@ -1,13 +1,24 @@
+import Link from "next/link";
+
 interface DonateFooterProps {
   templeName: string;
 }
 
-/** Deliberately one line — no nav, no links, no TempleOS marketing chrome (this page must only carry the temple's own branding, see (donate)/layout.tsx's doc comment). */
+/** Minimal — temple name + the two real legal pages this app already has (not stubs) + a TempleOS credit line. No nav, no marketing chrome (this page must only carry the temple's own branding, see (donate)/layout.tsx's doc comment). */
 export function DonateFooter({ templeName }: DonateFooterProps) {
   return (
-    <footer className="border-t border-[#2D2D2D]/8 px-5 py-8 text-center text-xs text-[#2D2D2D]/50">
-      <p>{templeName}</p>
-      <p className="mt-1">Powered by TempleOS</p>
+    <footer className="border-t border-[#E9E4DD] px-5 py-8 text-center text-xs text-[#2B2B2B]/50">
+      <p className="text-[#2B2B2B]/70">{templeName}</p>
+      <div className="mt-2 flex items-center justify-center gap-3">
+        <Link href="/privacy-policy" className="hover:text-[#8B4513] hover:underline">
+          Privacy
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/terms-of-service" className="hover:text-[#8B4513] hover:underline">
+          Terms
+        </Link>
+      </div>
+      <p className="mt-2">Powered by TempleOS</p>
     </footer>
   );
 }

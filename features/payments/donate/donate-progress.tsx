@@ -13,7 +13,7 @@ export function DonateProgress({ value }: { value: number }) {
   }, [value]);
 
   return (
-    <div className="[&_[data-slot=progress-track]]:bg-white/20 [&_[data-slot=progress-indicator]]:bg-[#D4AF37] [&_[data-slot=progress-indicator]]:duration-1000 [&_[data-slot=progress-indicator]]:ease-out">
+    <div className="[&_[data-slot=progress-track]]:bg-[#E9E4DD] [&_[data-slot=progress-indicator]]:bg-[#C6922F] [&_[data-slot=progress-indicator]]:duration-1000 [&_[data-slot=progress-indicator]]:ease-out">
       <Progress value={displayValue} />
     </div>
   );

@@ -155,10 +155,10 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
   if (status === "success") {
     return (
-      <div id="donate" className="mx-auto flex max-w-lg flex-col items-center gap-3 rounded-2xl bg-white p-8 text-center ring-1 ring-[#2D2D2D]/8">
+      <div id="donate" className="mx-auto flex max-w-lg flex-col items-center gap-3 rounded-2xl bg-white p-8 text-center border border-[#E9E4DD]">
         <CheckCircle2 className="size-10 text-emerald-600" />
-        <p className="font-heading text-lg text-[#2D2D2D]">Thank you for your donation!</p>
-        <p className="text-sm text-[#2D2D2D]/70">A confirmation and receipt will be sent to you shortly.</p>
+        <p className="font-heading text-lg text-[#2B2B2B]">Thank you for your donation!</p>
+        <p className="text-sm text-[#2B2B2B]/70">A confirmation and receipt will be sent to you shortly.</p>
       </div>
     );
   }
@@ -167,13 +167,13 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
   const donateButtonLabel = status === "processing" ? "Processing..." : "Donate Now";
 
   return (
-    <div id="donate" className="mx-auto max-w-lg space-y-5 rounded-2xl bg-white p-6 ring-1 ring-[#2D2D2D]/8 sm:p-8">
+    <div id="donate" className="mx-auto max-w-lg space-y-5 rounded-2xl bg-white p-6 border border-[#E9E4DD] sm:p-8">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
-      <h2 className="text-center font-heading text-2xl text-[#2D2D2D]">Complete Your Donation</h2>
+      <h2 className="text-center font-heading text-2xl text-[#2B2B2B]">Complete Your Donation</h2>
 
       <div className="space-y-2">
-        <Label className="text-[#2D2D2D]">Choose an amount</Label>
+        <Label className="text-[#2B2B2B]">Choose an amount</Label>
         <div className="flex flex-wrap gap-2">
           {PRESET_AMOUNTS.map((preset) => (
             <button
@@ -183,8 +183,8 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               className={cn(
                 "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
                 Number(amount) === preset
-                  ? "border-[#8B1E1E] bg-[#8B1E1E] text-white"
-                  : "border-[#2D2D2D]/15 bg-white text-[#2D2D2D] hover:border-[#D4AF37] hover:bg-[#FFF9F3]",
+                  ? "border-[#8B4513] bg-[#8B4513] text-white"
+                  : "border-[#E9E4DD] bg-white text-[#2B2B2B] hover:border-[#C6922F] hover:bg-[#FAF8F5]",
               )}
             >
               {formatInr(preset)}
@@ -225,13 +225,13 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         error={fieldError("donorPhone")}
         required
       />
-      <label className="flex items-center gap-2 text-sm text-[#2D2D2D]">
+      <label className="flex items-center gap-2 text-sm text-[#2B2B2B]">
         <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
         Donate anonymously
       </label>
 
       <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#8B1E1E]">
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#8B4513]">
           Add optional details (email, PAN, message)
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
@@ -259,7 +259,7 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
               maxLength={10}
             />
             <div className="space-y-1.5">
-              <Label htmlFor="donation-message" className="text-[#2D2D2D]">
+              <Label htmlFor="donation-message" className="text-[#2B2B2B]">
                 Donation message (optional)
               </Label>
               <Textarea
@@ -274,29 +274,29 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         </CollapsibleContent>
       </Collapsible>
 
-      {status === "cancelled" && <p className="text-sm text-[#2D2D2D]/60">Payment cancelled — you can try again.</p>}
+      {status === "cancelled" && <p className="text-sm text-[#2B2B2B]/60">Payment cancelled — you can try again.</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Button
         onClick={handleDonate}
         disabled={!canSubmit}
         size="xl"
-        className="hidden w-full bg-[#8B1E1E] text-white hover:bg-[#7a1a1a] md:flex"
+        className="hidden w-full bg-[#8B4513] text-white hover:bg-[#6e3610] md:flex"
       >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
       </Button>
 
       {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx */}
-      <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg ring-1 ring-[#2D2D2D]/8 backdrop-blur md:hidden">
+      <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#E9E4DD] backdrop-blur md:hidden">
         {Number(amount) > 0 && (
-          <p className="px-2 pb-1 text-center text-xs font-medium text-[#2D2D2D]/60">{formatInr(Number(amount))} selected</p>
+          <p className="px-2 pb-1 text-center text-xs font-medium text-[#2B2B2B]/60">{formatInr(Number(amount))} selected</p>
         )}
         <Button
           onClick={handleDonate}
           disabled={!canSubmit}
           size="xl"
-          className="w-full gap-1.5 bg-[#8B1E1E] text-white hover:bg-[#7a1a1a]"
+          className="w-full gap-1.5 bg-[#8B4513] text-white hover:bg-[#6e3610]"
         >
           {status === "processing" ? (
             <Loader2 className="size-4 animate-spin" />

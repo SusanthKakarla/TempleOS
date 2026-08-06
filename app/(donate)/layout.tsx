@@ -10,5 +10,5 @@
  * `/return` completion page without that page needing its own styling.
  */
 export default function DonateLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#FFF9F3] text-[#2D2D2D]">{children}</div>;
+  return <div className="min-h-screen bg-[#FAF8F5] text-[#2B2B2B]">{children}</div>;
 }

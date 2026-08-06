@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CalendarClock, CalendarX2, PauseCircle, SearchX } from "lucide-react";
 import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
-import { buildDonationLink, DEFAULT_DESCRIPTION } from "@/lib/campaigns/donation-message";
+import { buildDonationLink, computeDaysLeft, DEFAULT_DESCRIPTION } from "@/lib/campaigns/donation-message";
 import { EmptyState } from "@/components/empty-state";
 import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
 import { DonateHero } from "@/features/payments/donate/donate-hero";
@@ -70,6 +70,8 @@ export default async function DonatePage({ params }: PageParams) {
       ? description
       : `${description.slice(0, SUBTITLE_MAX_LENGTH - 1).trimEnd()}…`;
 
+  const daysLeft = computeDaysLeft(campaign.campaignEndDate);
+
   return (
     <div>
       <DonateHero
@@ -80,16 +82,17 @@ export default async function DonatePage({ params }: PageParams) {
         raisedAmount={summary.totalAmount}
         goalAmount={goal}
         donorCount={summary.donorCount}
+        daysLeft={daysLeft}
         shareUrl={buildDonationLink(tenant, campaign)}
       />
 
       {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
 
-      <DonateImpact />
-
       <div className="px-5 md:px-6">
         <DonationCheckoutForm tenantSlug={tenantSlug} campaignSlug={campaignSlug} token={token} templeName={tenant.name} />
       </div>
+
+      <DonateImpact />
 
       <DonateTrust providerKey={account.providerKey} />
 

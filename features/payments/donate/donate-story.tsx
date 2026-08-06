@@ -13,25 +13,27 @@ export function DonateStory({ imageUrl, description }: DonateStoryProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <section className="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-lg px-5 py-14 duration-700 md:px-6">
-      <h2 className="mb-5 text-center font-heading text-2xl text-[#2D2D2D]">The Story</h2>
+    <section className="animate-in fade-in duration-500 mx-auto max-w-lg px-5 py-8 md:px-6">
+      <div className="rounded-2xl border border-[#E9E4DD] bg-white p-5 shadow-sm">
+        <h2 className="mb-3 font-heading text-xl text-[#2B2B2B]">The Story</h2>
 
-      {imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
-        <img src={imageUrl} alt="" className="mb-5 h-56 w-full rounded-2xl object-cover" />
-      )}
+        {imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
+          <img src={imageUrl} alt="" className="mb-4 h-40 w-full rounded-xl object-cover" />
+        )}
 
-      <p className={cn("text-base leading-relaxed text-[#2D2D2D]/85", !expanded && "line-clamp-5")}>{description}</p>
+        <p className={cn("text-sm leading-relaxed text-[#2B2B2B]/80", !expanded && "line-clamp-4")}>{description}</p>
 
-      {!expanded && description.length > 220 && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="mt-2 text-sm font-semibold text-[#8B1E1E] underline-offset-4 hover:underline"
-        >
-          Read more
-        </button>
-      )}
+        {!expanded && description.length > 180 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="mt-2 text-sm font-semibold text-[#8B4513] underline-offset-4 hover:underline"
+          >
+            Read more
+          </button>
+        )}
+      </div>
     </section>
   );
 }
