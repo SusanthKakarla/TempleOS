@@ -79,6 +79,7 @@ export default async function DonatePage({ params }: PageParams) {
         bannerUrl={banner?.imageUrl ?? null}
         raisedAmount={summary.totalAmount}
         goalAmount={goal}
+        donorCount={summary.donorCount}
         shareUrl={buildDonationLink(tenant, campaign)}
       />
 

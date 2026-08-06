@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Script from "next/script";
-import { CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -289,17 +289,26 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
 
       {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx */}
       <div className="fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg ring-1 ring-[#2D2D2D]/8 backdrop-blur md:hidden">
+        {Number(amount) > 0 && (
+          <p className="px-2 pb-1 text-center text-xs font-medium text-[#2D2D2D]/60">{formatInr(Number(amount))} selected</p>
+        )}
         <Button
           onClick={handleDonate}
           disabled={!canSubmit}
           size="xl"
-          className="w-full bg-[#8B1E1E] text-white hover:bg-[#7a1a1a]"
+          className="w-full gap-1.5 bg-[#8B1E1E] text-white hover:bg-[#7a1a1a]"
         >
-          {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
-          {donateButtonLabel}
+          {status === "processing" ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <>
+              {Number(amount) > 0 ? "Donate Securely" : donateButtonLabel}
+              <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
+            </>
+          )}
         </Button>
       </div>
-      <div className="h-20 md:hidden" aria-hidden />
+      <div className="h-24 md:hidden" aria-hidden />
     </div>
   );
 }
