@@ -245,43 +245,49 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
           <DialogDescription>{t("dialogDescription")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {donationLink && (
             <div className="rounded-2xl border bg-muted/40 p-4">
               <DonationLinkField donationLink={donationLink} />
             </div>
           )}
 
-          <LabeledInput
-            id="campaign-title"
-            label={t("titleLabel")}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            inputSize="lg"
-            required
-            requiredLabel={tCommon("required")}
-          />
+          <div className="space-y-4">
+            <p className="font-heading text-sm font-semibold">{t("detailsHeading")}</p>
 
-          <MediaUpload
-            category="campaign_banner"
-            title={title || undefined}
-            value={banner}
-            onChange={setBanner}
-            label={t("bannerLabel")}
-            hint={t("bannerHint")}
-          />
-
-          <div className="space-y-1.5">
-            <Label htmlFor="campaign-description">{t("descriptionLabel")}</Label>
-            <Textarea
-              id="campaign-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("descriptionLabel")}
+            <LabeledInput
+              id="campaign-title"
+              label={t("titleLabel")}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              inputSize="lg"
+              required
+              requiredLabel={tCommon("required")}
             />
+
+            <MediaUpload
+              category="campaign_banner"
+              title={title || undefined}
+              value={banner}
+              onChange={setBanner}
+              label={t("bannerLabel")}
+              hint={t("bannerHint")}
+            />
+
+            <div className="space-y-1.5">
+              <Label htmlFor="campaign-description">{t("descriptionLabel")}</Label>
+              <Textarea
+                id="campaign-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t("descriptionLabel")}
+              />
+            </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border p-4">
+          <div className="space-y-4">
+            <p className="font-heading text-sm font-semibold">{t("goalScheduleHeading")}</p>
+
             <LabeledInput
               id="campaign-goal-amount"
               label={t("goalAmountLabel")}
@@ -300,7 +306,9 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border p-4">
+          <div className="space-y-4">
+            <p className="font-heading text-sm font-semibold">{t("audienceDeliveryHeading")}</p>
+
             <div className="space-y-1.5">
               <Label>{t("audienceLabel")}</Label>
               <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
@@ -371,7 +379,7 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <DialogFooter className={cn("gap-2", canSendNow ? "grid grid-cols-2" : "")}>
+        <DialogFooter className={cn("gap-2 border-t-0", canSendNow ? "grid grid-cols-2" : "")}>
           <Button
             variant={canSendNow ? "outline" : "default"}
             size="xl"
