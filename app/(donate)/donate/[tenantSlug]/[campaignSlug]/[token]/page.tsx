@@ -66,6 +66,25 @@ const PREVIEW_NOTICE: Record<keyof typeof UNAVAILABLE_COPY, string> = {
 
 const SUBTITLE_MAX_LENGTH = 120;
 
+/**
+ * The gallery is optional decoration; the donation form is the point of the
+ * page. A failure to read it (most plausibly this deployment running ahead of
+ * migrations/040) must never take down a page devotees reach from a WhatsApp
+ * link and are trying to give money through — so it degrades to "no gallery"
+ * and shouts in the server log rather than throwing.
+ */
+async function loadGallerySafely(tenantId: string, campaignId: string) {
+  try {
+    return await listCampaignGallery(tenantId, campaignId);
+  } catch (err) {
+    console.error("[donate-page] campaign gallery unavailable, rendering without it", {
+      campaignId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return [];
+  }
+}
+
 function buildSubtitle(description: string | null): string {
   if (!description) return DEFAULT_DESCRIPTION.en;
   return description.length <= SUBTITLE_MAX_LENGTH
@@ -80,7 +99,15 @@ function buildSubtitle(description: string | null): string {
  */
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { tenantSlug, campaignSlug, token } = await params;
-  const availability = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token);
+  // Resolved in preview mode purely to describe the campaign, never to grant
+  // anything: whoever is unfurling this link already holds the unguessable
+  // donation token, which is itself proof the campaign is real. The identity
+  // checks (tenant, campaign, token) still apply, so a wrong link falls
+  // through to the generic title below. Without this, a campaign that is
+  // merely paused, not yet started, or waiting on payment setup would unfurl
+  // in WhatsApp as the generic TempleOS dashboard card instead of the
+  // temple's own campaign — which is the whole point of these tags.
+  const availability = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token, { preview: true });
   const robots = { index: false, follow: false };
 
   if (!availability.ok) return { title: "Donate", robots };
@@ -128,7 +155,7 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
   const { tenant, campaign, account, summary, previewBlockedReason } = availability.context;
   const [banner, gallery, socialLinks] = await Promise.all([
     campaign.bannerMediaId ? getNotificationMediaById(tenant.id, campaign.bannerMediaId) : Promise.resolve(null),
-    listCampaignGallery(tenant.id, campaign.id),
+    loadGallerySafely(tenant.id, campaign.id),
     listSocialLinks(tenant.id),
   ]);
 
