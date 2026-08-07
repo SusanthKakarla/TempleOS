@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Archive, ArrowLeft, CalendarClock, Eye, HandCoins, Pause, Play, Send, XCircle } from "lucide-react";
-import type { Campaign, SupportedLanguage } from "@/types/db";
+import type { Campaign, NotificationMedia, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,7 +44,19 @@ const STATUS_BADGE_VARIANT: Record<Campaign["status"], "default" | "secondary" |
   cancelled: "destructive",
 };
 
-export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign; donationLink: string | null }) {
+export function CampaignDetail({
+  campaign,
+  donationLink,
+  previewLink,
+  gallery,
+}: {
+  campaign: Campaign;
+  donationLink: string | null;
+  /** Same donation URL carrying a short-lived admin-preview grant — opened by "Open Campaign" so an admin can always see their own campaign. */
+  previewLink?: string | null;
+  /** Already-saved public-page gallery, handed to the edit dialog so reopening it doesn't drop the images. */
+  gallery?: NotificationMedia[];
+}) {
   const router = useRouter();
   const locale = useLocale() as SupportedLanguage;
   const t = useTranslations("campaigns");
@@ -194,6 +206,7 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
                 mode="edit"
                 campaign={campaign}
                 donationLink={donationLink}
+                initialGallery={gallery}
                 trigger={<Button variant="outline">{tCommon("edit")}</Button>}
                 onSaved={refresh}
               />
@@ -246,7 +259,7 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {donationLink && <CampaignActions donationLink={donationLink} />}
+      {donationLink && <CampaignActions donationLink={donationLink} previewLink={previewLink} />}
 
       {campaign.linkedDonationPurpose && (
         <div className="space-y-4">

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DEFAULT_DONATION_LINK_BASE_URL } from "@/lib/campaigns/donation-message";
+import { evaluateCampaignWindow } from "@/lib/campaigns/campaign-visibility";
 import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary, type CampaignDonationSummary } from "@/lib/db/campaign-analytics";
@@ -60,7 +61,14 @@ export async function resolveDonationCheckoutAvailability(
   tenantSlug: string,
   campaignSlug: string,
   token: string,
+  options: { preview?: boolean } = {},
 ): Promise<DonationCheckoutAvailability> {
+  // Admin preview (proven by the caller — a dashboard session for this tenant
+  // or a short-lived signed token, never anything in the URL alone) relaxes
+  // exactly one gate: a draft that has no donation purpose picked yet. Every
+  // identity check still applies, and `canDonate`/`blockedReason` are
+  // unchanged, so previewing can never create an order.
+  const preview = options.preview === true;
   const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant || tenant.status !== "active") {
     logUnavailable("not_found", `tenant "${tenantSlug}" missing or not active (status=${tenant?.status ?? "n/a"})`);
@@ -76,7 +84,7 @@ export async function resolveDonationCheckoutAvailability(
     logUnavailable("not_found", `token mismatch for campaign ${campaign.id}`);
     return { ok: false, reason: "not_found" };
   }
-  if (campaign.campaignType !== "donation" || !campaign.linkedDonationPurpose) {
+  if (campaign.campaignType !== "donation" || (!campaign.linkedDonationPurpose && !preview)) {
     logUnavailable(
       "not_found",
       `campaign ${campaign.id} is not a configured donation campaign (campaignType=${campaign.campaignType}, linkedDonationPurpose=${campaign.linkedDonationPurpose})`,
@@ -93,18 +101,15 @@ export async function resolveDonationCheckoutAvailability(
   // applies (e.g. an archived campaign whose dates have also lapsed still
   // reports "expired" first, matching the date-window checks' historical
   // priority over status).
-  let blockedReason: DonationBlockedReason | null = null;
-  if (campaign.campaignStartDate && new Date(campaign.campaignStartDate) > now) {
-    blockedReason = "not_started";
-  } else if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < now) {
-    blockedReason = "expired";
-  } else if (campaign.status === "archived" || campaign.status === "cancelled" || campaign.status === "paused") {
-    // "disabled" now covers manually-paused campaigns too, not just
-    // archived/cancelled — a temple admin pausing a campaign is exactly the
-    // "manually disabled" case that must block payment while the page
-    // itself (per product requirement) still stays viewable.
-    blockedReason = "disabled";
-  }
+  //
+  // The date window is evaluated as INCLUSIVE CALENDAR DAYS IN THE TEMPLE'S
+  // OWN TIMEZONE (see evaluateCampaignWindow). Comparing these DATE columns
+  // as instants — `new Date("2026-08-31") < now` — resolves to midnight UTC,
+  // i.e. 05:30 on the 31st in India, which reported a still-running campaign
+  // as "expired" from that morning onward and killed a same-day campaign
+  // outright. "disabled" continues to cover manually-paused campaigns as
+  // well as archived/cancelled ones.
+  let blockedReason: DonationBlockedReason | null = evaluateCampaignWindow(campaign, tenant.timezone, now);
 
   const account = await getActivePaymentAccountForTenant(tenant.id);
   // V0 product decision: TempleOS does not process payments directly.
@@ -131,7 +136,11 @@ export async function resolveDonationCheckoutAvailability(
   // funds-reservation ledger would be needed to fully prevent that, which is
   // out of scope. What this guarantees is that no *new* order can ever be
   // created once the goal is already met, checked fresh on every attempt.
-  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
+  // A purpose-less draft only reaches here in admin preview; it has nothing
+  // to aggregate, so the totals stay at zero rather than querying for "".
+  const summary = campaign.linkedDonationPurpose
+    ? await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose)
+    : { totalAmount: 0, donationCount: 0, donorCount: 0, lastDonationAt: null };
   if (blockedReason === null && campaign.goalAmount && summary.totalAmount >= Number(campaign.goalAmount)) {
     blockedReason = "goal_reached";
   }

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { MediaUpload } from "@/features/media/media-upload";
+import { CampaignGalleryUpload } from "./campaign-gallery-upload";
 import { DateTimeField } from "@/features/events/date-time-field";
 import { cn } from "@/lib/utils";
 import { RECURRENCE_RULES, type RecurrenceRule } from "@/lib/campaigns/recurrence";
@@ -57,11 +58,20 @@ interface CampaignFormDialogProps {
   campaign?: Campaign;
   /** Edit mode only — null until the campaign is both saved and linked to a donation purpose. Hidden entirely in create mode (no slug/token exists to link to yet). */
   donationLink?: string | null;
+  /** Edit mode only — the campaign's already-saved gallery images, so reopening the dialog doesn't drop them. */
+  initialGallery?: NotificationMedia[];
   trigger: ReactElement;
   onSaved: () => void;
 }
 
-export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSaved }: CampaignFormDialogProps) {
+export function CampaignFormDialog({
+  mode,
+  campaign,
+  donationLink,
+  initialGallery,
+  trigger,
+  onSaved,
+}: CampaignFormDialogProps) {
   const t = useTranslations("campaigns.form");
   const tAudience = useTranslations("campaigns.audienceOptions");
   const tRecurrence = useTranslations("campaigns.form.recurrenceOptions");
@@ -79,6 +89,7 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
     campaign?.audienceFilter.type === "language" ? campaign.audienceFilter.language : "en",
   );
   const [banner, setBanner] = useState<NotificationMedia | null>(null);
+  const [gallery, setGallery] = useState<NotificationMedia[]>(initialGallery ?? []);
   const [goalAmount, setGoalAmount] = useState(campaign?.goalAmount ?? "");
   const [campaignStartDate, setCampaignStartDate] = useState<string | null>(campaign?.campaignStartDate ?? null);
   const [campaignEndDate, setCampaignEndDate] = useState<string | null>(campaign?.campaignEndDate ?? null);
@@ -175,6 +186,7 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
         templateKey: null,
         audienceFilter,
         bannerMediaId: banner?.id ?? campaign?.bannerMediaId ?? null,
+        galleryMediaIds: gallery.map((image) => image.id),
         goalAmount,
         campaignStartDate,
         campaignEndDate,
@@ -272,6 +284,14 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
               onChange={setBanner}
               label={t("bannerLabel")}
               hint={t("bannerHint")}
+            />
+
+            <CampaignGalleryUpload
+              value={gallery}
+              onChange={setGallery}
+              label={t("galleryLabel")}
+              hint={t("galleryHint")}
+              addLabel={t("galleryAddLabel")}
             />
 
             <div className="space-y-1.5">

@@ -48,6 +48,8 @@ export interface CampaignDonationSummary {
   totalAmount: number;
   donationCount: number;
   donorCount: number;
+  /** When the most recent donation landed, for the public page's "last donation received ..." line. Null when nobody has donated yet. */
+  lastDonationAt: string | null;
 }
 
 /**
@@ -70,9 +72,10 @@ export interface CampaignDonationSummary {
  * for those.
  */
 export async function getCampaignDonationSummary(tenantId: string, purpose: string): Promise<CampaignDonationSummary> {
-  const { rows } = await getPool().query<{ total: string; count: string; donors: string }>(
+  const { rows } = await getPool().query<{ total: string; count: string; donors: string; last_donation_at: Date | null }>(
     `SELECT COALESCE(SUM(d.amount), 0) AS total, count(*) AS count,
-            count(DISTINCT COALESCE(d.devotee_id::text, d.id::text)) AS donors
+            count(DISTINCT COALESCE(d.devotee_id::text, d.id::text)) AS donors,
+            max(d.donated_at) AS last_donation_at
      FROM donations d
      LEFT JOIN payment_transactions pt ON pt.donation_id = d.id
      WHERE d.tenant_id = $1 AND d.purpose = $2 AND (pt.status IS NULL OR pt.status != 'refunded')`,
@@ -82,6 +85,7 @@ export async function getCampaignDonationSummary(tenantId: string, purpose: stri
     totalAmount: Number(rows[0]?.total ?? 0),
     donationCount: Number(rows[0]?.count ?? 0),
     donorCount: Number(rows[0]?.donors ?? 0),
+    lastDonationAt: rows[0]?.last_donation_at?.toISOString() ?? null,
   };
 }
 

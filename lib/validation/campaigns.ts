@@ -63,6 +63,13 @@ export const createCampaignSchema = z.object({
   goalAmount: requiredPositiveAmountString,
   campaignStartDate: nullableDateOnlyString,
   campaignEndDate: nullableDateOnlyString,
+  /**
+   * Optional public-page gallery, as an ordered list of already-uploaded
+   * notification_media ids (array order = display order). Capped so a
+   * runaway client can't attach an unbounded gallery; tenant ownership of
+   * each id is enforced in replaceCampaignGallery, not here.
+   */
+  galleryMediaIds: z.array(z.string().uuid()).max(12).optional(),
   /** One per dialog-open on the client — lets POST /api/campaigns collapse a duplicate submission into the original row instead of creating a second campaign. See migrations/040 and lib/db/campaigns.ts's getCampaignByClientRequestId. */
   clientRequestId: z.string().uuid().nullable().optional(),
 });

@@ -32,6 +32,38 @@ export function parseISODate(value: string | null | undefined): Date | undefined
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+/**
+ * The "yyyy-MM-dd" calendar part of a date-only string ("2026-08-01") or a
+ * timestamp ("2026-08-01T00:00:00.000Z"), without ever constructing a `Date`.
+ *
+ * Calendar dates (Postgres `DATE` columns — campaign start/end, date of
+ * birth) describe a *day*, not an instant, so they must never be compared as
+ * instants: `new Date("2026-08-01")` is midnight **UTC**, which is already
+ * 05:30 on the 1st in India, so an instant comparison silently treats most of
+ * that day as belonging to the previous one. Compare the strings this returns
+ * against {@link todayInTimeZone} instead — ISO dates sort lexicographically,
+ * so `<` / `>` on them is exact calendar-day comparison with no timezone maths.
+ */
+export function toCalendarDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const match = ISO_DATE_PATTERN.exec(value);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
+}
+
+/**
+ * Today's calendar date in `timeZone` (an IANA name such as "Asia/Kolkata"),
+ * as "yyyy-MM-dd". "en-CA" is the locale whose short date format *is* ISO.
+ * Falls back to UTC for an unrecognized zone rather than throwing — a bad
+ * tenant timezone must not take the public donation page down.
+ */
+export function todayInTimeZone(timeZone: string, now: Date = new Date()): string {
+  try {
+    return now.toLocaleDateString("en-CA", { timeZone });
+  } catch {
+    return now.toISOString().slice(0, 10);
+  }
+}
+
 /** Serializes a Date to "yyyy-MM-dd" using its local calendar fields — the counterpart to {@link parseISODate}; avoid `date.toISOString().slice(0, 10)`, which converts to UTC first and can shift the date by a day. */
 export function toISODateString(date: Date): string {
   const year = date.getFullYear();

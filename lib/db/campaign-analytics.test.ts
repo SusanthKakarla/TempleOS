@@ -25,11 +25,22 @@ describe("getCampaignDonationSummary", () => {
   });
 
   it("returns zero gracefully when there are no matching donations", async () => {
-    query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0", donors: "0" }] });
+    query.mockResolvedValueOnce({ rows: [{ total: "0", count: "0", donors: "0", last_donation_at: null }] });
 
     const summary = await getCampaignDonationSummary("tenant-1", "Nonexistent Purpose");
 
-    expect(summary).toEqual({ totalAmount: 0, donationCount: 0, donorCount: 0 });
+    expect(summary).toEqual({ totalAmount: 0, donationCount: 0, donorCount: 0, lastDonationAt: null });
+  });
+
+  it("surfaces the most recent donation time for the public page's 'last donation received' line", async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ total: "5000", count: "3", donors: "3", last_donation_at: new Date("2026-08-06T10:30:00.000Z") }],
+    });
+
+    const summary = await getCampaignDonationSummary("tenant-1", "Temple Renovation");
+
+    expect(summary.lastDonationAt).toBe("2026-08-06T10:30:00.000Z");
+    expect(String(query.mock.calls[0][0])).toContain("max(d.donated_at)");
   });
 
   it("excludes refunded donations via the payment_transactions.donation_id back-link, without dropping manual/cash donations that have no linked transaction at all", async () => {

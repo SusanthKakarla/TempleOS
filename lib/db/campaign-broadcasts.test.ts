@@ -118,7 +118,12 @@ describe("enqueueCampaignBroadcast — notification_type storage regression guar
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 5000, donationCount: 2, donorCount: 2 });
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({
+      totalAmount: 5000,
+      donationCount: 2,
+      donorCount: 2,
+      lastDonationAt: "2026-01-02T00:00:00.000Z",
+    });
 
     const donationCampaign = makeCampaign({
       campaignType: "donation",

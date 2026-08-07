@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 interface CampaignActionsProps {
   donationLink: string;
+  /** Same URL carrying a short-lived admin-preview grant; opened instead of the bare link so an admin can always see their own campaign. Never copied or shared. */
+  previewLink?: string | null;
   className?: string;
 }
 
@@ -19,8 +21,12 @@ interface CampaignActionsProps {
  * page component, passed in as a plain string). Used on the Campaign Details
  * page only — the Create/Edit dialog still shows the full read-only URL via
  * `DonationLinkField`.
+ *
+ * Open and Copy intentionally carry different URLs: Open adds the preview
+ * grant so an admin is never locked out of their own draft/ended campaign,
+ * while Copy stays the clean public link that goes out to devotees.
  */
-export function CampaignActions({ donationLink, className }: CampaignActionsProps) {
+export function CampaignActions({ donationLink, previewLink, className }: CampaignActionsProps) {
   const t = useTranslations("campaigns.detail.campaignActions");
 
   async function handleCopy() {
@@ -38,7 +44,7 @@ export function CampaignActions({ donationLink, className }: CampaignActionsProp
         type="button"
         variant="outline"
         className="gap-1.5"
-        render={<a href={donationLink} target="_blank" rel="noopener noreferrer" />}
+        render={<a href={previewLink || donationLink} target="_blank" rel="noopener noreferrer" />}
       >
         <ExternalLink className="size-4" />
         {t("openButton")}

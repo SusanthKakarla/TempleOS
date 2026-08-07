@@ -11,6 +11,7 @@ import {
 import { getTenantById } from "@/lib/db/tenants";
 import { buildDonationLink } from "@/lib/campaigns/donation-message";
 import { createCampaignSchema } from "@/lib/validation/campaigns";
+import { replaceCampaignGallery } from "@/lib/db/campaign-media";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { isUniqueViolation, getConstraintName } from "@/lib/db/unique-violation";
 import type { Campaign, CampaignStatus, NotificationType } from "@/types/db";
@@ -91,6 +92,14 @@ export async function POST(req: NextRequest) {
     } else {
       throw err;
     }
+  }
+
+  // Gallery images live in their own join table, so they're attached after
+  // the campaign row exists. Skipped entirely on the idempotent-retry path
+  // above only if the caller sent no list; a retry that resends the same list
+  // just rewrites it to the same state.
+  if (parsed.data.galleryMediaIds) {
+    await replaceCampaignGallery(session.tenantId, campaign.id, parsed.data.galleryMediaIds);
   }
 
   // The donation URL is available the instant the campaign exists (slug +
