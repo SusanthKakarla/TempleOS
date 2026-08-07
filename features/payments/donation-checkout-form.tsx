@@ -14,6 +14,7 @@ import { donationCheckoutSchema } from "@/lib/validation/payments";
 import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { ShareButton } from "@/features/payments/share-button";
 
 declare global {
   interface Window {
@@ -43,6 +44,9 @@ interface DonationCheckoutFormProps {
   /** False when the campaign page renders but isn't currently accepting payments (not started / ended / paused / archived / payment not configured) — see donation-checkout-service.ts's page-viewable-vs-payment-allowed split. */
   canDonate: boolean;
   blockedReason: DonationBlockedReason | null;
+  /** For the Share button in the sticky mobile CTA bar below — same permanent donation link the Hero's own ShareButton uses. */
+  campaignTitle: string;
+  shareUrl: string;
 }
 
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
@@ -81,7 +85,17 @@ const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: stri
   },
 };
 
-export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName, upi, canDonate, blockedReason }: DonationCheckoutFormProps) {
+export function DonationCheckoutForm({
+  tenantSlug,
+  campaignSlug,
+  token,
+  templeName,
+  upi,
+  canDonate,
+  blockedReason,
+  campaignTitle,
+  shareUrl,
+}: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
@@ -541,21 +555,29 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
         {Number(amount) > 0 && (
           <p className="px-2 pb-1 text-center text-xs font-medium text-[#8C7B6D]">{formatInr(Number(amount))} selected</p>
         )}
-        <Button
-          onClick={handleDonate}
-          disabled={!canSubmit}
-          size="xl"
-          className="w-full gap-1.5 rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
-        >
-          {status === "processing" ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <>
-              {Number(amount) > 0 ? "Donate Securely" : donateButtonLabel}
-              <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleDonate}
+            disabled={!canSubmit}
+            size="xl"
+            className="flex-1 gap-1.5 rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
+          >
+            {status === "processing" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                {Number(amount) > 0 ? "Donate Securely" : donateButtonLabel}
+                <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
+              </>
+            )}
+          </Button>
+          <ShareButton
+            title={campaignTitle}
+            url={shareUrl}
+            size="xl"
+            className="shrink-0 rounded-full border-[#F3E7DA] px-4 text-[#2B2118]"
+          />
+        </div>
       </div>
       <div className="h-24 md:hidden" aria-hidden />
     </div>

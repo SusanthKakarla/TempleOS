@@ -2,16 +2,7 @@ import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion-reveal";
 
-const ITEMS = [
-  "Daily Pooja",
-  "Abhishekam",
-  "Archana",
-  "Deepa Aradhana",
-  "Temple Festivals",
-  "Annadanam",
-  "Cow Protection",
-  "Priest Services",
-];
+const ITEMS = ["Temple Festivals", "Annadanam", "Cow Protection", "Priest Services"];
 
 /** New, purely presentational section — no data fetching, static copy per the redesign brief. */
 export function DonateContributionSupports() {

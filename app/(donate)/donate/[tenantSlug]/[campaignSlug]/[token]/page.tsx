@@ -82,6 +82,8 @@ export default async function DonatePage({ params }: PageParams) {
           }
           canDonate={canDonate}
           blockedReason={blockedReason}
+          campaignTitle={campaign.title}
+          shareUrl={buildDonationLink(tenant, campaign)}
         />
       </div>
 

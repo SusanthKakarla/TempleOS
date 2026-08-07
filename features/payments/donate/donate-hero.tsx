@@ -121,7 +121,7 @@ export function DonateHero({
           transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="rounded-[24px] border border-white/60 bg-white/90 p-6 shadow-[0_20px_60px_rgba(62,39,35,0.18)] backdrop-blur-xl"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3 sm:justify-start">
             <TempleMonogram name={templeName} />
             <p className="text-xs font-medium tracking-[0.1em] text-[#8C7B6D] uppercase">{templeName}</p>
           </div>
