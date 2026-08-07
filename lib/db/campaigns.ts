@@ -50,6 +50,7 @@ interface CampaignRow {
   target_reached_announced_at: Date | null;
   slug: string;
   donation_token: string;
+  client_request_id: string | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
@@ -186,6 +187,22 @@ export async function getCampaignBySlugForTenant(tenantId: string, slug: string)
   return rows[0] ? mapCampaign(rows[0]) : null;
 }
 
+/**
+ * The idempotent-replay lookup for POST /api/campaigns — called only after
+ * `createCampaign` fails with a unique-violation on
+ * `campaigns_tenant_client_request_id_key` (migrations/040), i.e. a
+ * duplicate submission (double-click, retried request) lost the race to
+ * create the row. Returns the winning campaign so the loser's response can
+ * still be a normal success instead of an error.
+ */
+export async function getCampaignByClientRequestId(tenantId: string, clientRequestId: string): Promise<Campaign | null> {
+  const { rows } = await getPool().query<CampaignRow>(
+    "SELECT * FROM campaigns WHERE tenant_id = $1 AND client_request_id = $2",
+    [tenantId, clientRequestId],
+  );
+  return rows[0] ? mapCampaign(rows[0]) : null;
+}
+
 export interface CreateCampaignInput {
   title: string;
   description: string | null;
@@ -201,6 +218,8 @@ export interface CreateCampaignInput {
   goalAmount: string | null;
   campaignStartDate: string | null;
   campaignEndDate: string | null;
+  /** Client-generated UUID, one per dialog-open — see the unique index in migrations/040 and getCampaignByClientRequestId above. Null for callers that don't supply one (e.g. duplicate/route.ts). */
+  clientRequestId: string | null;
   createdBy: string;
 }
 
@@ -229,8 +248,8 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
        audience_filter, banner_media_id, linked_event_id, linked_donation_purpose,
        schedule_type, scheduled_at, recurrence_rule,
        goal_amount, campaign_start_date, campaign_end_date, created_by,
-       slug, donation_token
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+       slug, donation_token, client_request_id
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      RETURNING *`,
     [
       tenantId,
@@ -253,6 +272,7 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
       input.createdBy,
       generateCampaignSlug(input.title),
       generateDonationToken(),
+      input.clientRequestId,
     ],
   );
   return mapCampaign(rows[0]);
@@ -406,7 +426,14 @@ export async function listCampaignsNeedingClosingReminder(limit = 50): Promise<C
   return rows.map(mapCampaign);
 }
 
-/** Running donation campaigns whose live-aggregated raised amount has met or passed their goal, not yet announced — fires once per campaign, gated by target_reached_announced_at. */
+/**
+ * Running donation campaigns whose live-aggregated raised amount has met or
+ * passed their goal, not yet announced — fires once per campaign, gated by
+ * target_reached_announced_at. Excludes refunded donations the same way
+ * getCampaignDonationSummary (campaign-analytics.ts) does — via the
+ * payment_transactions.donation_id back-link — so a campaign that only
+ * "reached" its goal through a since-refunded payment doesn't get announced.
+ */
 export async function listCampaignsReachingGoal(limit = 50): Promise<Campaign[]> {
   const { rows } = await getPool().query<CampaignRow>(
     `SELECT c.* FROM campaigns c
@@ -417,7 +444,9 @@ export async function listCampaignsReachingGoal(limit = 50): Promise<Campaign[]>
        AND c.target_reached_announced_at IS NULL
        AND COALESCE((
          SELECT SUM(d.amount) FROM donations d
+         LEFT JOIN payment_transactions pt ON pt.donation_id = d.id
          WHERE d.tenant_id = c.tenant_id AND d.purpose = c.linked_donation_purpose
+           AND (pt.status IS NULL OR pt.status != 'refunded')
        ), 0) >= c.goal_amount
      ORDER BY c.created_at ASC
      LIMIT $1`,

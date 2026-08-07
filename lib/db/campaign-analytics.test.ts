@@ -21,7 +21,7 @@ describe("getCampaignDonationSummary", () => {
     await getCampaignDonationSummary("tenant-1", "Temple Renovation");
 
     const [sql] = query.mock.calls[0];
-    expect(String(sql)).toContain("COALESCE(devotee_id::text, id::text)");
+    expect(String(sql)).toContain("COALESCE(d.devotee_id::text, d.id::text)");
   });
 
   it("returns zero gracefully when there are no matching donations", async () => {
@@ -30,6 +30,16 @@ describe("getCampaignDonationSummary", () => {
     const summary = await getCampaignDonationSummary("tenant-1", "Nonexistent Purpose");
 
     expect(summary).toEqual({ totalAmount: 0, donationCount: 0, donorCount: 0 });
+  });
+
+  it("excludes refunded donations via the payment_transactions.donation_id back-link, without dropping manual/cash donations that have no linked transaction at all", async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: "3000", count: "2", donors: "2" }] });
+
+    await getCampaignDonationSummary("tenant-1", "Temple Renovation");
+
+    const [sql] = query.mock.calls[0];
+    expect(String(sql)).toContain("LEFT JOIN payment_transactions pt ON pt.donation_id = d.id");
+    expect(String(sql)).toContain("pt.status IS NULL OR pt.status != 'refunded'");
   });
 });
 

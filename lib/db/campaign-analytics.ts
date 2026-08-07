@@ -58,13 +58,24 @@ export interface CampaignDonationSummary {
  * donor via COALESCE onto the donation's own id, since count(DISTINCT
  * devotee_id) alone silently excludes every NULL and would undercount (or
  * zero out) campaigns funded primarily through the public donation link.
+ *
+ * Excludes refunded donations: `payment_transactions.donation_id` already
+ * links back to the `donations` row it created on capture
+ * (attachDonationAndReceipt, set in campaign-payment-service.ts's
+ * runCaptureSideEffects) — a LEFT JOIN (manual/cash donations have no
+ * payment_transactions row at all, hence LEFT not INNER) lets this exclude
+ * `status = 'refunded'` without a schema change. Failed/pending/cancelled
+ * payments already never reach this table in the first place (a `donations`
+ * row is only ever created on capture), so no separate exclusion is needed
+ * for those.
  */
 export async function getCampaignDonationSummary(tenantId: string, purpose: string): Promise<CampaignDonationSummary> {
   const { rows } = await getPool().query<{ total: string; count: string; donors: string }>(
-    `SELECT COALESCE(SUM(amount), 0) AS total, count(*) AS count,
-            count(DISTINCT COALESCE(devotee_id::text, id::text)) AS donors
-     FROM donations
-     WHERE tenant_id = $1 AND purpose = $2`,
+    `SELECT COALESCE(SUM(d.amount), 0) AS total, count(*) AS count,
+            count(DISTINCT COALESCE(d.devotee_id::text, d.id::text)) AS donors
+     FROM donations d
+     LEFT JOIN payment_transactions pt ON pt.donation_id = d.id
+     WHERE d.tenant_id = $1 AND d.purpose = $2 AND (pt.status IS NULL OR pt.status != 'refunded')`,
     [tenantId, purpose],
   );
   return {

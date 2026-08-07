@@ -70,6 +70,8 @@ export default async function DonatePage({ params }: PageParams) {
         donorCount={summary.donorCount}
         daysLeft={daysLeft}
         shareUrl={buildDonationLink(tenant, campaign)}
+        canDonate={canDonate}
+        blockedReason={blockedReason}
       />
 
       {description && (
@@ -106,7 +108,12 @@ export default async function DonatePage({ params }: PageParams) {
 
       <DonateStats />
 
-      <DonateCta campaignTitle={campaign.title} shareUrl={buildDonationLink(tenant, campaign)} />
+      <DonateCta
+        campaignTitle={campaign.title}
+        shareUrl={buildDonationLink(tenant, campaign)}
+        canDonate={canDonate}
+        blockedReason={blockedReason}
+      />
 
       <DonateFooter
         templeName={tenant.name}

@@ -7,7 +7,10 @@ import { ChevronDown, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatInr } from "@/lib/currency";
 import { ShareButton } from "@/features/payments/share-button";
+import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
+import { cn } from "@/lib/utils";
 import { DonateProgress } from "./donate-progress";
+import { DONATE_BUTTON_LABEL } from "./donate-button-copy";
 
 interface DonateHeroProps {
   templeName: string;
@@ -19,6 +22,8 @@ interface DonateHeroProps {
   donorCount: number;
   daysLeft: number | null;
   shareUrl: string;
+  canDonate: boolean;
+  blockedReason: DonationBlockedReason | null;
 }
 
 function TempleMonogram({ name }: { name: string }) {
@@ -51,6 +56,8 @@ export function DonateHero({
   donorCount,
   daysLeft,
   shareUrl,
+  canDonate,
+  blockedReason,
 }: DonateHeroProps) {
   const rawPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   const displayPercentage = Math.min(100, Math.round(rawPercentage));
@@ -143,11 +150,14 @@ export function DonateHero({
             <Button
               id="hero-donate-button"
               size="xl"
-              className="flex-1 bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
+              className={cn(
+                "flex-1",
+                canDonate ? "bg-[#D4AF37] text-white hover:bg-[#C19A2E]" : "bg-[#8C7B6D] text-white hover:bg-[#7A6B5E]",
+              )}
               render={<a href="#donate" />}
             >
               <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
-              Donate Now
+              {canDonate ? "Donate Now" : DONATE_BUTTON_LABEL[blockedReason!]}
             </Button>
             <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]" />
           </div>

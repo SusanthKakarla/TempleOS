@@ -4,7 +4,7 @@ import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary } from "@/lib/db/campaign-analytics";
 import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
 import { isProviderActive } from "@/lib/db/payment-providers";
-import { loadDonationCheckoutContext, resolveDonationCheckoutAvailability } from "./donation-checkout-service";
+import { createCheckoutOrder, loadDonationCheckoutContext, resolveDonationCheckoutAvailability } from "./donation-checkout-service";
 import type { Campaign, Tenant, TenantPaymentAccount } from "@/types/db";
 
 vi.mock("@/lib/db/tenants", () => ({ getTenantBySlug: vi.fn() }));
@@ -248,6 +248,49 @@ describe("resolveDonationCheckoutAvailability", () => {
     if (result.ok) expect(result.blockedReason).toBe("not_started");
   });
 
+  it("blocks payment with goal_reached once the live total meets the goal exactly", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 1000, donationCount: 3, donorCount: 3 });
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(false);
+      expect(result.blockedReason).toBe("goal_reached");
+    }
+  });
+
+  it("blocks payment with goal_reached once the live total exceeds the goal", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 1500, donationCount: 4, donorCount: 4 });
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.blockedReason).toBe("goal_reached");
+  });
+
+  it("does not block when the live total is still under the goal", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 999, donationCount: 2, donorCount: 2 });
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(true);
+      expect(result.blockedReason).toBeNull();
+    }
+  });
+
+  it("checks payment_not_configured before goal_reached (matches the task's specified check order)", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 1500, donationCount: 4, donorCount: 4 });
+    vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue(null);
+    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.blockedReason).toBe("payment_not_configured");
+  });
+
   it("returns ok with the full context for a valid, running campaign", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
@@ -292,5 +335,39 @@ describe("loadDonationCheckoutContext", () => {
     expect(loaded?.context.campaign.id).toBe("campaign-1");
     expect(loaded?.canDonate).toBe(false);
     expect(loaded?.blockedReason).toBe("disabled");
+  });
+});
+
+describe("createCheckoutOrder — goal-reached blocking", () => {
+  const checkoutInput = {
+    amount: 100,
+    donorName: "Test Donor",
+    donorPhone: "9999999999",
+    donorEmail: null,
+    donorPan: null,
+    donationMessage: null,
+    isAnonymous: false,
+  };
+
+  beforeEach(() => {
+    vi.mocked(getTenantBySlug).mockReset().mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockReset();
+    vi.mocked(getCampaignDonationSummary).mockReset();
+    vi.mocked(getActivePaymentAccountForTenant).mockReset().mockResolvedValue(account);
+    vi.mocked(isProviderActive).mockReset().mockResolvedValue(true);
+  });
+
+  it("refuses to create an order once the goal has already been reached — the authoritative, fresh-checked block, not just a UI hint", async () => {
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 1000, donationCount: 1, donorCount: 1 });
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput);
+    expect(order).toBeNull();
+  });
+
+  it("still refuses once the goal has been exceeded (e.g. two near-simultaneous donations both captured)", async () => {
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ goalAmount: "1000" }));
+    vi.mocked(getCampaignDonationSummary).mockResolvedValue({ totalAmount: 1200, donationCount: 2, donorCount: 2 });
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput);
+    expect(order).toBeNull();
   });
 });

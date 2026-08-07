@@ -14,16 +14,20 @@ const nullableDateOnlyString = z
   .nullable()
   .optional();
 
-/** Accepts a plain number or numeric string, always stored/validated as a decimal string (matches how NUMERIC columns round-trip through pg). */
-const nullablePositiveAmountString = z
+/**
+ * Goal amount is mandatory for every campaign (every campaign is a donation
+ * campaign — see CAMPAIGN_TYPE in campaign-form-dialog.tsx). Empty/missing is
+ * a validation error, not a silent transform to null. `updateCampaignSchema`'s
+ * `.partial()` still lets a PATCH omit this field entirely (leaves the
+ * existing value untouched) — it only rejects the field when the caller
+ * actually sends it and it's empty/zero/negative/non-numeric.
+ */
+const requiredPositiveAmountString = z
   .union([z.string(), z.number()])
   .transform((value) => String(value).trim())
-  .refine((value) => value.length === 0 || (!Number.isNaN(Number(value)) && Number(value) > 0), {
-    message: "Must be a positive amount",
-  })
-  .transform((value) => (value.length === 0 ? null : value))
-  .nullable()
-  .optional();
+  .refine((value) => value.length > 0, { message: "Goal amount is required." })
+  .refine((value) => Number.isNaN(Number(value)) === false, { message: "Goal amount must be a valid number." })
+  .refine((value) => Number(value) > 0, { message: "Goal amount must be greater than ₹0." });
 
 export const campaignTypeSchema = z.enum(CAMPAIGN_TYPES);
 export const campaignChannelSchema = z.enum(["in_app", "whatsapp"]);
@@ -56,9 +60,11 @@ export const createCampaignSchema = z.object({
     .nullable()
     .optional(),
   recurrenceRule: nullableTrimmedString,
-  goalAmount: nullablePositiveAmountString,
+  goalAmount: requiredPositiveAmountString,
   campaignStartDate: nullableDateOnlyString,
   campaignEndDate: nullableDateOnlyString,
+  /** One per dialog-open on the client — lets POST /api/campaigns collapse a duplicate submission into the original row instead of creating a second campaign. See migrations/040 and lib/db/campaigns.ts's getCampaignByClientRequestId. */
+  clientRequestId: z.string().uuid().nullable().optional(),
 });
 
 export const updateCampaignSchema = createCampaignSchema.partial();

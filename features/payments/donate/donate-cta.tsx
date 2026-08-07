@@ -3,14 +3,19 @@ import { Heart } from "lucide-react";
 import { MotionReveal } from "@/components/motion-reveal";
 import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/features/payments/share-button";
+import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
+import { cn } from "@/lib/utils";
+import { DONATE_BUTTON_LABEL } from "./donate-button-copy";
 
 interface DonateCtaProps {
   campaignTitle: string;
   shareUrl: string;
+  canDonate: boolean;
+  blockedReason: DonationBlockedReason | null;
 }
 
 /** New, full-width closing call-to-action — reuses the same #donate anchor and ShareButton the hero already uses, no duplicated share logic. */
-export function DonateCta({ campaignTitle, shareUrl }: DonateCtaProps) {
+export function DonateCta({ campaignTitle, shareUrl, canDonate, blockedReason }: DonateCtaProps) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[#D4AF37] to-[#FF9933] px-5 py-16 text-center md:px-6">
       <Image
@@ -28,9 +33,13 @@ export function DonateCta({ campaignTitle, shareUrl }: DonateCtaProps) {
           Every contribution, big or small, keeps our traditions alive for generations to come.
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <Button size="xl" className="bg-white text-[#2B2118] hover:bg-white/90" render={<a href="#donate" />}>
+          <Button
+            size="xl"
+            className={cn("text-[#2B2118]", canDonate ? "bg-white hover:bg-white/90" : "bg-white/70 hover:bg-white/80")}
+            render={<a href="#donate" />}
+          >
             <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
-            Donate Now
+            {canDonate ? "Donate Now" : DONATE_BUTTON_LABEL[blockedReason!]}
           </Button>
           <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-white/60 bg-transparent text-white hover:bg-white/10" />
         </div>

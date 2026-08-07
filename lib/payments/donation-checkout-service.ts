@@ -22,7 +22,7 @@ export interface DonationCheckoutContext {
 export type DonationCheckoutUnavailableReason = "not_found";
 
 /** A campaign/tenant/token are all valid and the page renders, but the campaign isn't currently accepting payments. */
-export type DonationBlockedReason = "not_started" | "expired" | "disabled" | "payment_not_configured";
+export type DonationBlockedReason = "not_started" | "expired" | "disabled" | "payment_not_configured" | "goal_reached";
 
 export type DonationCheckoutAvailability =
   | { ok: true; context: DonationCheckoutContext; canDonate: boolean; blockedReason: DonationBlockedReason | null }
@@ -52,9 +52,9 @@ function logUnavailable(reason: DonationCheckoutUnavailableReason | DonationBloc
  *    viewable, but payments must be blocked"). Whether the donor can
  *    actually complete a payment right now is a separate `canDonate`
  *    flag + `blockedReason` (not_started / expired / disabled — archived,
- *    cancelled, or manually paused / payment_not_configured), which the
- *    page uses to swap the interactive form for a friendly inline message
- *    instead of hiding the whole page.
+ *    cancelled, or manually paused / payment_not_configured / goal_reached),
+ *    which the page uses to swap the interactive form for a friendly inline
+ *    message instead of hiding the whole page.
  */
 export async function resolveDonationCheckoutAvailability(
   tenantSlug: string,
@@ -117,11 +117,29 @@ export async function resolveDonationCheckoutAvailability(
   if (blockedReason === null && !providerUsable) {
     blockedReason = "payment_not_configured";
   }
+
+  // Fetched unconditionally (also needed for display even when not blocked)
+  // and — moved ahead of this being purely presentational — checked against
+  // the goal last, after every other lifecycle/config reason, matching the
+  // task's own specified check order: active? → within dates? → not
+  // disabled? → payment configured? → target reached? This is a live,
+  // uncached SUM query (getCampaignDonationSummary), so every call here sees
+  // the true current total — there's no stale-read window a lock would need
+  // to close. The only unavoidable edge case is two donors starting checkout
+  // in the same instant while the goal isn't yet reached; both may complete
+  // payment and the total can overshoot slightly once both capture — a
+  // funds-reservation ledger would be needed to fully prevent that, which is
+  // out of scope. What this guarantees is that no *new* order can ever be
+  // created once the goal is already met, checked fresh on every attempt.
+  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
+  if (blockedReason === null && campaign.goalAmount && summary.totalAmount >= Number(campaign.goalAmount)) {
+    blockedReason = "goal_reached";
+  }
+
   if (blockedReason) {
     logUnavailable(blockedReason, `campaign ${campaign.id}: ${blockedReason}`);
   }
 
-  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
   return {
     ok: true,
     context: { tenant, campaign, account: providerUsable ? account : null, summary },

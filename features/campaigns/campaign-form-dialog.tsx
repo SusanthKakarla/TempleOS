@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronDown, Copy } from "lucide-react";
@@ -95,6 +95,27 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<false | "draft" | "send">(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Synchronous re-entrancy guard for handleSubmit — `submitting` above is a
+  // React state update (batched, not applied until the next render), so a
+  // fast double-click or a duplicate synchronous call can still slip through
+  // before the button visually disables. This ref is checked/set immediately,
+  // closing that window. Reset in handleSubmit's `finally`.
+  const submittingRef = useRef(false);
+  // One fresh id per dialog-open (create mode only) — sent as clientRequestId
+  // so a duplicate POST (the ref guard above failing, or a retried network
+  // request) collapses into the original campaign server-side instead of
+  // creating a second row. Stable across retries within the same open
+  // session: a failed submit followed by a retry reuses the same id, which
+  // correctly dedupes if the first attempt actually landed. A ref, not
+  // state, since it's only read at submit time and never needs to trigger a
+  // render — regenerated directly in handleOpenChange below rather than in
+  // an effect (setState-in-effect would cause an extra render for no
+  // observable benefit here).
+  const requestIdRef = useRef(crypto.randomUUID());
+  function handleOpenChange(next: boolean) {
+    if (next) requestIdRef.current = crypto.randomUUID();
+    setOpen(next);
+  }
 
   const audienceFilter: CampaignAudienceFilter =
     audienceType === "language" ? { type: "language", language: audienceLanguage } : { type: audienceType };
@@ -135,11 +156,17 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
   }, [open, audienceType, audienceLanguage]);
 
   async function handleSubmit(andSend: boolean) {
+    if (submittingRef.current) return;
     setError(null);
     if (!title.trim()) {
       setError(t("titleLabel") + " is required");
       return;
     }
+    if (!goalAmount || Number(goalAmount) <= 0) {
+      setError(t("goalAmountRequiredError"));
+      return;
+    }
+    submittingRef.current = true;
     setSubmitting(andSend ? "send" : "draft");
     try {
       const payload = {
@@ -150,12 +177,13 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
         templateKey: null,
         audienceFilter,
         bannerMediaId: banner?.id ?? campaign?.bannerMediaId ?? null,
-        goalAmount: goalAmount || null,
+        goalAmount,
         campaignStartDate,
         campaignEndDate,
         scheduleType: scheduleChoice === "recurring" ? ("recurring" as const) : ("one_time" as const),
         scheduledAt: scheduleChoice === "later" && scheduledAt ? scheduledAt : null,
         recurrenceRule: scheduleChoice === "recurring" ? recurrenceRule : null,
+        ...(mode === "create" ? { clientRequestId: requestIdRef.current } : {}),
       };
       const url = mode === "create" ? "/api/campaigns" : `/api/campaigns/${campaign?.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
@@ -205,12 +233,13 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
     } catch (err) {
       setError(err instanceof Error ? err.message : t("createError"));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger} />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-175">
         <DialogHeader>
@@ -259,11 +288,13 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
               id="campaign-goal-amount"
               label={t("goalAmountLabel")}
               type="number"
-              min="0"
+              min="1"
               step="1"
               value={goalAmount}
               onChange={(e) => setGoalAmount(e.target.value)}
               inputSize="lg"
+              required
+              requiredLabel={tCommon("required")}
             />
             <div className="grid grid-cols-2 gap-3">
               <DateOnlyField id="campaign-start-date" label={t("startDateLabel")} value={campaignStartDate} onChange={setCampaignStartDate} />

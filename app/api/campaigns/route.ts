@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
-import { createCampaign, listCampaigns, countCampaignsFiltered, type ListCampaignsFilter } from "@/lib/db/campaigns";
+import {
+  createCampaign,
+  getCampaignByClientRequestId,
+  listCampaigns,
+  countCampaignsFiltered,
+  type ListCampaignsFilter,
+} from "@/lib/db/campaigns";
 import { getTenantById } from "@/lib/db/tenants";
 import { buildDonationLink } from "@/lib/campaigns/donation-message";
 import { createCampaignSchema } from "@/lib/validation/campaigns";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-import type { CampaignStatus, NotificationType } from "@/types/db";
+import { isUniqueViolation, getConstraintName } from "@/lib/db/unique-violation";
+import type { Campaign, CampaignStatus, NotificationType } from "@/types/db";
 
 const SORT_VALUES: ListCampaignsFilter["sort"][] = ["created", "title", "status"];
 const STATUS_VALUES: CampaignStatus[] = ["draft", "scheduled", "running", "paused", "completed", "archived", "cancelled"];
@@ -46,26 +53,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const campaign = await createCampaign(session.tenantId, {
-    title: parsed.data.title,
-    description: parsed.data.description ?? null,
-    campaignType: parsed.data.campaignType,
-    channel: parsed.data.channel,
-    // Validated by zod only as a non-empty string, not against the full
-    // NotificationType union — campaign template keys may reference
-    // future/custom types not yet added to that union.
-    templateKey: (parsed.data.templateKey as NotificationType | undefined) ?? null,
-    audienceFilter: parsed.data.audienceFilter,
-    bannerMediaId: parsed.data.bannerMediaId ?? null,
-    linkedEventId: parsed.data.linkedEventId ?? null,
-    scheduleType: parsed.data.scheduleType,
-    scheduledAt: parsed.data.scheduledAt ?? null,
-    recurrenceRule: parsed.data.recurrenceRule ?? null,
-    goalAmount: parsed.data.goalAmount ?? null,
-    campaignStartDate: parsed.data.campaignStartDate ?? null,
-    campaignEndDate: parsed.data.campaignEndDate ?? null,
-    createdBy: session.membershipId,
-  });
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+  let campaign: Campaign;
+  try {
+    campaign = await createCampaign(session.tenantId, {
+      title: parsed.data.title,
+      description: parsed.data.description ?? null,
+      campaignType: parsed.data.campaignType,
+      channel: parsed.data.channel,
+      // Validated by zod only as a non-empty string, not against the full
+      // NotificationType union — campaign template keys may reference
+      // future/custom types not yet added to that union.
+      templateKey: (parsed.data.templateKey as NotificationType | undefined) ?? null,
+      audienceFilter: parsed.data.audienceFilter,
+      bannerMediaId: parsed.data.bannerMediaId ?? null,
+      linkedEventId: parsed.data.linkedEventId ?? null,
+      scheduleType: parsed.data.scheduleType,
+      scheduledAt: parsed.data.scheduledAt ?? null,
+      recurrenceRule: parsed.data.recurrenceRule ?? null,
+      goalAmount: parsed.data.goalAmount,
+      campaignStartDate: parsed.data.campaignStartDate ?? null,
+      campaignEndDate: parsed.data.campaignEndDate ?? null,
+      clientRequestId,
+      createdBy: session.membershipId,
+    });
+  } catch (err) {
+    // A fast double-click or a retried request can both reach this insert —
+    // the unique index on (tenant_id, client_request_id) (migrations/040) is
+    // what actually prevents the duplicate row, not this check. The losing
+    // request just re-fetches the winner's row and returns it as a normal
+    // success rather than erroring, so a double-submit never surfaces as a
+    // visible failure to the admin who only clicked once (network-perceived).
+    if (isUniqueViolation(err) && getConstraintName(err) === "campaigns_tenant_client_request_id_key" && clientRequestId) {
+      const existing = await getCampaignByClientRequestId(session.tenantId, clientRequestId);
+      if (!existing) throw err;
+      campaign = existing;
+    } else {
+      throw err;
+    }
+  }
 
   // The donation URL is available the instant the campaign exists (slug +
   // donationToken are generated unconditionally in createCampaign) — surfaced

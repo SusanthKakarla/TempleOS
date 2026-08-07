@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
-import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Loader2, PauseCircle, Upload } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Loader2, PartyPopper, PauseCircle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -73,6 +73,11 @@ const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: stri
     icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
     title: "This campaign isn't accepting donations right now",
     description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly.",
+  },
+  goal_reached: {
+    icon: <PartyPopper className="size-10 text-[#D4AF37]" />,
+    title: "This campaign has reached its donation goal.",
+    description: "Thank you for your support.",
   },
 };
 

@@ -90,6 +90,11 @@ export function DonateFooter({ templeName, contactEmail, contactPhone, address, 
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link href="/donation-refund-policy" className="hover:text-[#D4AF37] hover:underline">
+                  Donation & Refund Policy
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

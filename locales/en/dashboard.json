@@ -753,6 +753,7 @@
       "linkedDonationPurposeLabel": "Track donations for (optional)",
       "linkedDonationPurposeHint": "Must match the \"Purpose\" used when recording donations for this cause, so raised amount and donor count stay accurate.",
       "goalAmountLabel": "Goal amount (₹)",
+      "goalAmountRequiredError": "Goal amount is required and must be greater than ₹0.",
       "startDateLabel": "Campaign start date",
       "endDateLabel": "Campaign end date",
       "scheduleTypeLabel": "Send",
