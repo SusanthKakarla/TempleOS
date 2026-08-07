@@ -4,15 +4,16 @@ import { requireDashboardAdmin } from "./require-dashboard-admin";
 import { getTenantById } from "@/lib/db/tenants";
 import { countEventsFiltered } from "@/lib/db/events";
 import { countDevoteesFiltered } from "@/lib/db/devotees";
-import { getDashboardDonationStats, getDonationsPerDay } from "@/lib/db/donations";
+import { getDashboardDonationStats } from "@/lib/db/donations";
+import { getUpcomingOccasions } from "@/lib/dashboard-upcoming-occasions";
 import { MetricCard } from "@/features/dashboard/metric-card";
 import { PageHeader } from "@/components/page-header";
-import { zeroFillDays } from "@/lib/dashboard-timeseries";
-import { DonationsChart } from "@/features/dashboard/donations-chart";
+import { UpcomingOccasionsWidget } from "@/features/dashboard/upcoming-occasions-widget";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { translateOne } from "@/lib/i18n/translate";
 
-const CHART_DAYS = 30;
+const UPCOMING_OCCASIONS_DAYS = 30;
+const DEFAULT_TIMEZONE = "Asia/Kolkata";
 
 function greetingKey(): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
   const hour = new Date().getHours();
@@ -25,21 +26,16 @@ export default async function DashboardHomePage() {
   const session = await requireDashboardAdmin();
   const t = await getTranslations("dashboardHome");
 
-  const [tenant, totalEvents, totalDevotees, donationStats, donationsPerDayRaw, locale] = await Promise.all([
-    getTenantById(session.tenantId),
+  const tenant = await getTenantById(session.tenantId);
+
+  const [totalEvents, totalDevotees, donationStats, upcomingOccasions, locale] = await Promise.all([
     countEventsFiltered(session.tenantId, {}),
     countDevoteesFiltered(session.tenantId, {}),
     getDashboardDonationStats(session.tenantId, {}),
-    getDonationsPerDay(session.tenantId, CHART_DAYS),
+    getUpcomingOccasions(session.tenantId, tenant?.timezone ?? DEFAULT_TIMEZONE, UPCOMING_OCCASIONS_DAYS),
     getLocaleCookie(),
   ]);
   const tenantName = tenant ? (locale === "te" ? await translateOne(tenant.name) : tenant.name) : null;
-
-  const donationsPerDay = zeroFillDays(
-    donationsPerDayRaw.map((row) => ({ date: row.date, total: Number(row.total) })),
-    CHART_DAYS,
-    { total: 0 },
-  );
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -79,7 +75,7 @@ export default async function DashboardHomePage() {
         />
       </div>
 
-      <DonationsChart data={donationsPerDay} />
+      <UpcomingOccasionsWidget occasions={upcomingOccasions} />
     </div>
   );
 }

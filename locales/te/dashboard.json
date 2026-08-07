@@ -74,6 +74,35 @@
     },
     "charts": {
       "donationsTrend": "విరాళాలు (గత 30 రోజులు)"
+    },
+    "upcomingOccasions": {
+      "title": "రాబోయే పుట్టినరోజులు & వార్షికోత్సవాలు",
+      "filters": {
+        "all": "అన్నీ",
+        "birthdays": "పుట్టినరోజులు",
+        "anniversaries": "వార్షికోత్సవాలు",
+        "today": "ఈరోజు",
+        "next7Days": "తదుపరి 7 రోజులు",
+        "next30Days": "తదుపరి 30 రోజులు"
+      },
+      "groups": {
+        "today": "ఈరోజు",
+        "tomorrow": "రేపు",
+        "thisWeek": "ఈ వారం",
+        "later": "తదుపరి 30 రోజులు"
+      },
+      "badgeBirthday": "పుట్టినరోజు",
+      "badgeAnniversary": "వార్షికోత్సవం",
+      "ageLabel": "వయస్సు: {age}",
+      "yearsLabel": "{years} సంవత్సరాలు",
+      "wishBirthday": "🎂 జన్మదిన శుభాకాంక్షలు, {name}!",
+      "wishAnniversary": "💍 వివాహ వార్షికోత్సవ శుభాకాంక్షలు, {name}!",
+      "actions": {
+        "call": "కాల్ చేయండి",
+        "whatsapp": "వాట్సాప్",
+        "view": "భక్తుడిని చూడండి"
+      },
+      "emptyState": "రాబోయే పుట్టినరోజులు లేదా వార్షికోత్సవాలు లేవు."
     }
   },
   "export": {

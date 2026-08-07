@@ -74,6 +74,35 @@
     },
     "charts": {
       "donationsTrend": "Donations (Last 30 Days)"
+    },
+    "upcomingOccasions": {
+      "title": "Upcoming Birthdays & Anniversaries",
+      "filters": {
+        "all": "All",
+        "birthdays": "Birthdays",
+        "anniversaries": "Anniversaries",
+        "today": "Today",
+        "next7Days": "Next 7 Days",
+        "next30Days": "Next 30 Days"
+      },
+      "groups": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "thisWeek": "This Week",
+        "later": "Next 30 Days"
+      },
+      "badgeBirthday": "Birthday",
+      "badgeAnniversary": "Anniversary",
+      "ageLabel": "Age: {age}",
+      "yearsLabel": "{years} Years",
+      "wishBirthday": "🎂 Wishing you a very Happy Birthday, {name}!",
+      "wishAnniversary": "💍 Happy Wedding Anniversary, {name}!",
+      "actions": {
+        "call": "Call",
+        "whatsapp": "WhatsApp",
+        "view": "View Devotee"
+      },
+      "emptyState": "No upcoming birthdays or anniversaries."
     }
   },
   "export": {

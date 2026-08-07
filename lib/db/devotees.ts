@@ -101,6 +101,67 @@ function occasionThisWeekCondition(column: string, tzParamIndex: number): string
   )`;
 }
 
+/**
+ * `column`'s month/day landing in the given year, e.g. `withinDays: '$3'`.
+ * Deliberately NOT the day-offset-from-Jan-1 technique
+ * occasionTodayCondition/occasionThisWeekCondition use — that trick breaks
+ * whenever the source date's year is a leap year but the target year isn't
+ * (or vice versa): day 239 from Jan 1 lands on a different calendar date
+ * depending on whether Feb had 28 or 29 days that year, so every post-Feb
+ * date silently shifts by a day for roughly 3 out of 4 devotees born in a
+ * leap year (verified empirically — a Aug-27-2000 date_of_birth computed a
+ * next-occurrence of Aug 28, not Aug 27). Directly reconstructing
+ * month/day in the target year sidesteps that entirely; only the genuine
+ * Feb-29-in-a-non-leap-target-year case needs a manual Mar-1 rollover.
+ */
+function occurrenceInYearExpr(column: string, yearExpr: string): string {
+  const month = `EXTRACT(MONTH FROM ${column})::int`;
+  const day = `EXTRACT(DAY FROM ${column})::int`;
+  const isLeapYear = `((${yearExpr}) % 4 = 0 AND ((${yearExpr}) % 100 <> 0 OR (${yearExpr}) % 400 = 0))`;
+  return `(CASE
+    WHEN ${month} = 2 AND ${day} = 29 AND NOT ${isLeapYear}
+    THEN make_date((${yearExpr}), 3, 1)
+    ELSE make_date((${yearExpr}), ${month}, ${day})
+  END)`;
+}
+
+/**
+ * Generalized sibling of occasionThisWeekCondition — same "is this
+ * occasion's month/day within the next N days" intent, but the window
+ * length is a bind parameter instead of a hardcoded 6, so it can serve any
+ * "next N days" range (the dashboard widget's 30-day default). See
+ * occurrenceInYearExpr's doc comment for why this uses direct month/day
+ * reconstruction rather than occasionThisWeekCondition's day-offset trick.
+ */
+function occasionWithinDaysCondition(column: string, tzParamIndex: number, daysParamIndex: number): string {
+  const todayDate = `date_trunc('day', now() AT TIME ZONE $${tzParamIndex})::date`;
+  const thisYear = `EXTRACT(YEAR FROM (now() AT TIME ZONE $${tzParamIndex}))::int`;
+  const thisYearOccurrence = occurrenceInYearExpr(column, thisYear);
+  const nextYearOccurrence = occurrenceInYearExpr(column, `${thisYear} + 1`);
+  return `(
+    ${thisYearOccurrence} BETWEEN ${todayDate} AND ${todayDate} + $${daysParamIndex}::int
+    OR ${nextYearOccurrence} BETWEEN ${todayDate} AND ${todayDate} + $${daysParamIndex}::int
+  )`;
+}
+
+/**
+ * This cycle's actual occurrence date of `column`'s month/day: this year's
+ * if it hasn't passed yet, otherwise next year's. Selected as a column (not
+ * just used in a WHERE) so callers can ORDER BY it and compute "days until"
+ * in JS without re-deriving the same date logic a second time.
+ */
+function nextOccurrenceDateExpr(column: string, tzParamIndex: number): string {
+  const todayDate = `date_trunc('day', now() AT TIME ZONE $${tzParamIndex})::date`;
+  const thisYear = `EXTRACT(YEAR FROM (now() AT TIME ZONE $${tzParamIndex}))::int`;
+  const thisYearOccurrence = occurrenceInYearExpr(column, thisYear);
+  const nextYearOccurrence = occurrenceInYearExpr(column, `${thisYear} + 1`);
+  return `(CASE
+    WHEN ${thisYearOccurrence} >= ${todayDate}
+    THEN ${thisYearOccurrence}
+    ELSE ${nextYearOccurrence}
+  END)`;
+}
+
 export interface ListDevoteesOptions {
   search?: string;
   page?: number;
@@ -299,6 +360,57 @@ export async function listDevoteesWithAnniversaryToday(tenantId: string, timezon
     [tenantId, timezone],
   );
   return rows.map(mapDevotee);
+}
+
+interface UpcomingOccasionRow {
+  id: string;
+  display_name: string;
+  whatsapp_phone: string | null;
+  family_name: string | null;
+  occasion_date: string;
+  next_occurrence: string;
+}
+
+/**
+ * Every devotee with a birthday landing within the next `days` days
+ * (tenant-local), soonest first. Powers the dashboard's Upcoming
+ * Birthdays & Anniversaries widget (lib/dashboard/upcoming-occasions.ts) —
+ * unlike listDevoteesWithBirthdayToday, this isn't opt-in/dedup gated since
+ * it's a read-only summary for staff, not a notification trigger.
+ */
+export async function listUpcomingBirthdays(tenantId: string, timezone: string, days: number): Promise<UpcomingOccasionRow[]> {
+  const { rows } = await getPool().query<UpcomingOccasionRow>(
+    `SELECT d.id, d.display_name, d.whatsapp_phone, df.family_name,
+            d.date_of_birth AS occasion_date,
+            ${nextOccurrenceDateExpr("d.date_of_birth", 2)} AS next_occurrence
+     FROM devotees d
+     LEFT JOIN devotee_families df ON df.id = d.family_id
+     WHERE d.tenant_id = $1
+       AND d.is_active = true
+       AND d.date_of_birth IS NOT NULL
+       AND ${occasionWithinDaysCondition("d.date_of_birth", 2, 3)}
+     ORDER BY next_occurrence ASC`,
+    [tenantId, timezone, days],
+  );
+  return rows;
+}
+
+/** Anniversary counterpart of listUpcomingBirthdays — identical shape, on wedding_anniversary. */
+export async function listUpcomingAnniversaries(tenantId: string, timezone: string, days: number): Promise<UpcomingOccasionRow[]> {
+  const { rows } = await getPool().query<UpcomingOccasionRow>(
+    `SELECT d.id, d.display_name, d.whatsapp_phone, df.family_name,
+            d.wedding_anniversary AS occasion_date,
+            ${nextOccurrenceDateExpr("d.wedding_anniversary", 2)} AS next_occurrence
+     FROM devotees d
+     LEFT JOIN devotee_families df ON df.id = d.family_id
+     WHERE d.tenant_id = $1
+       AND d.is_active = true
+       AND d.wedding_anniversary IS NOT NULL
+       AND ${occasionWithinDaysCondition("d.wedding_anniversary", 2, 3)}
+     ORDER BY next_occurrence ASC`,
+    [tenantId, timezone, days],
+  );
+  return rows;
 }
 
 export interface FamilyOccasionReminder {
