@@ -192,11 +192,9 @@ export interface CreateCampaignInput {
   campaignType: CampaignType;
   channel: NotificationChannel;
   templateKey: NotificationType | null;
-  customMessage: string | null;
   audienceFilter: CampaignAudienceFilter;
   bannerMediaId: string | null;
   linkedEventId: string | null;
-  linkedDonationPurpose: string | null;
   scheduleType: "one_time" | "recurring";
   scheduledAt: string | null;
   recurrenceRule: string | null;
@@ -206,7 +204,24 @@ export interface CreateCampaignInput {
   createdBy: string;
 }
 
-/** Always created as `draft` — scheduling/running is a separate, explicit status transition (see updateCampaignStatus). */
+/**
+ * Always created as `draft` — scheduling/running is a separate, explicit
+ * status transition (see updateCampaignStatus). `customMessage` is no
+ * longer a user-settable field (the "Message" field was removed from the
+ * create form) — always `null`; `donation-message.ts`'s WhatsApp template
+ * builder already has a safe fallback blessing message for that case.
+ * `linkedDonationPurpose` is likewise no longer typed by the admin (the
+ * "Track donations for" field was removed) — it's set once, here, to the
+ * campaign's own title. That value becomes the `donations.purpose` every
+ * payment against this campaign gets grouped under
+ * (campaign-payment-service.ts) and is what the donation-checkout
+ * availability gate and the DB's donation-campaign-content CHECK
+ * constraint (migrations/023) both require to be non-null — set at
+ * creation time so it's already satisfied before the campaign ever
+ * leaves draft, not just at send time. Never overwritten by a later
+ * title edit, so an existing campaign's donation aggregation key never
+ * silently changes underneath already-recorded donations.
+ */
 export async function createCampaign(tenantId: string, input: CreateCampaignInput): Promise<Campaign> {
   const { rows } = await getPool().query<CampaignRow>(
     `INSERT INTO campaigns (
@@ -224,11 +239,11 @@ export async function createCampaign(tenantId: string, input: CreateCampaignInpu
       input.campaignType,
       input.channel,
       input.templateKey,
-      input.customMessage,
+      null,
       JSON.stringify(input.audienceFilter),
       input.bannerMediaId,
       input.linkedEventId,
-      input.linkedDonationPurpose,
+      input.title,
       input.scheduleType,
       input.scheduledAt,
       input.recurrenceRule,

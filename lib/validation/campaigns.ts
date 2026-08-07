@@ -45,11 +45,9 @@ export const createCampaignSchema = z.object({
   campaignType: campaignTypeSchema,
   channel: campaignChannelSchema.default("whatsapp"),
   templateKey: z.enum(NOTIFICATION_TYPES).nullable().optional(),
-  customMessage: nullableTrimmedString,
   audienceFilter: campaignAudienceFilterSchema.default({ type: "all" }),
   bannerMediaId: z.string().uuid().nullable().optional(),
   linkedEventId: z.string().uuid().nullable().optional(),
-  linkedDonationPurpose: nullableTrimmedString,
   scheduleType: campaignScheduleTypeSchema.default("one_time"),
   scheduledAt: z
     .string()

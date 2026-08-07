@@ -11,7 +11,7 @@ const PROVIDER_LABEL: Record<PaymentProviderKey, string> = {
 };
 
 interface DonateTrustProps {
-  providerKey: PaymentProviderKey;
+  providerKey: PaymentProviderKey | null;
 }
 
 /** "Is this safe" — placed right after the ask, the standard high-conversion position for trust signals. */
@@ -28,7 +28,7 @@ export function DonateTrust({ providerKey }: DonateTrustProps) {
           "Money goes directly to Temple",
         ]
       : [
-          `Secure ${PROVIDER_LABEL[providerKey] ?? "Payments"}`,
+          `Secure ${providerKey ? (PROVIDER_LABEL[providerKey] ?? "Payments") : "Payments"}`,
           "Verified Temple",
           "Instant Receipt",
           "Money goes directly to Temple",

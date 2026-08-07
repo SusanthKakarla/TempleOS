@@ -718,7 +718,8 @@
       "sendNow": "Send now",
       "schedule": "Schedule",
       "preview": "Preview",
-      "openCampaign": "Open donation page"
+      "openCampaign": "Open donation page",
+      "copyLink": "Copy donation link"
     },
     "confirm": {
       "cancel": "Cancel this campaign? Already-sent messages aren't affected.",
@@ -773,7 +774,11 @@
       "sending": "Sending...",
       "sendError": "Failed to send campaign",
       "createError": "Failed to create campaign",
-      "updateError": "Failed to update campaign"
+      "updateError": "Failed to update campaign",
+      "savedToast": "Campaign saved",
+      "savedToastDescription": "Your donation link is ready to share.",
+      "copyLinkAction": "Copy Link",
+      "linkCopiedToast": "Donation link copied to clipboard."
     },
     "audienceOptions": {
       "all": "All devotees",

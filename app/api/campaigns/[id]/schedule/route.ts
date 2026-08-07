@@ -5,6 +5,7 @@ import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getCampaignById, updateCampaign, updateCampaignStatus } from "@/lib/db/campaigns";
 import { canTransitionCampaignStatus } from "@/lib/campaigns/lifecycle";
 import { computeNextRunAt } from "@/lib/campaigns/recurrence";
+import { isDonationCampaignReady } from "@/lib/campaigns/donation-message";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -33,7 +34,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   if (!canTransitionCampaignStatus(existing.status, "scheduled")) {
     return NextResponse.json({ error: `Cannot schedule a campaign from "${existing.status}"` }, { status: 409 });
   }
-  if (!existing.templateKey && !existing.customMessage) {
+  // Matches run-campaign.ts's content gate exactly — a donation-ready
+  // campaign (goal/dates/purpose all set, the only path left now that the
+  // "Message" field is gone) needs no separate template/custom message,
+  // since it always sends the rich donation_campaign_broadcast template.
+  if (!existing.templateKey && !existing.customMessage && !isDonationCampaignReady(existing)) {
     return NextResponse.json({ error: "Add a message or template before scheduling" }, { status: 422 });
   }
 

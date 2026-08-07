@@ -13,22 +13,22 @@ import type { Campaign, PaymentTransaction, Tenant, TenantPaymentAccount } from 
 export interface DonationCheckoutContext {
   tenant: Tenant;
   campaign: Campaign;
-  account: TenantPaymentAccount;
+  /** Null exactly when `blockedReason === "payment_not_configured"` — the page still renders (banner/progress/etc.), just without a working Donate form. */
+  account: TenantPaymentAccount | null;
   summary: CampaignDonationSummary;
 }
 
-export type DonationCheckoutUnavailableReason =
-  | "not_found"
-  | "not_started"
-  | "expired"
-  | "disabled"
-  | "payment_not_configured";
+/** The one reason that still hard-blocks the entire page — anti-enumeration only (see the function doc comment below). */
+export type DonationCheckoutUnavailableReason = "not_found";
+
+/** A campaign/tenant/token are all valid and the page renders, but the campaign isn't currently accepting payments. */
+export type DonationBlockedReason = "not_started" | "expired" | "disabled" | "payment_not_configured";
 
 export type DonationCheckoutAvailability =
-  | { ok: true; context: DonationCheckoutContext }
+  | { ok: true; context: DonationCheckoutContext; canDonate: boolean; blockedReason: DonationBlockedReason | null }
   | { ok: false; reason: DonationCheckoutUnavailableReason };
 
-function logUnavailable(reason: DonationCheckoutUnavailableReason, detail: string): void {
+function logUnavailable(reason: DonationCheckoutUnavailableReason | DonationBlockedReason, detail: string): void {
   console.log(`[donation-checkout] unavailable (${reason}): ${detail}`);
 }
 
@@ -36,23 +36,25 @@ function logUnavailable(reason: DonationCheckoutUnavailableReason, detail: strin
  * The one load/validate chain for the public donation page.
  *
  * Checks are deliberately split into two tiers to balance UX against the
- * anti-enumeration posture this page has always had:
+ * anti-enumeration posture this page has always had, AND to keep "can this
+ * page render at all" separate from "can a payment be made right now":
  *  - Unknown tenant, unknown campaign, wrong campaign type/purpose, or a
- *    *wrong token* all collapse into the same generic "not_found" — telling
- *    someone "invalid token" (as opposed to "not found") would let them
- *    confirm a guessed tenant+campaign slug pair is real and just probe for
- *    the right token, which is exactly the enumeration this page must never
- *    allow.
- *  - Only once the token itself is proven correct (i.e. this exact campaign
- *    is confirmed real) is it safe to say *why* it can't accept donations
- *    right now — that reveals nothing an attacker didn't already prove by
- *    holding a valid token. "disabled" (campaign status) and
- *    "payment_not_configured" (no active payment account) are kept as
- *    distinct reasons rather than collapsed together — they are different
- *    root causes with different fixes, and conflating them previously meant
- *    a temple with a genuinely running campaign but no connected Razorpay
- *    account would be told "the temple has paused or closed this campaign",
- *    which is simply false.
+ *    *wrong token* all collapse into the same generic `ok: false,
+ *    reason: "not_found"` — telling someone "invalid token" (as opposed to
+ *    "not found") would let them confirm a guessed tenant+campaign slug
+ *    pair is real and just probe for the right token, which is exactly the
+ *    enumeration this page must never allow. This is the ONLY case that
+ *    blocks the whole page.
+ *  - Once the token itself is proven correct (i.e. this exact campaign is
+ *    confirmed real), the result is always `ok: true` — the campaign's
+ *    banner/title/description/progress render exactly like a live campaign
+ *    (per product requirement: "the campaign page should still remain
+ *    viewable, but payments must be blocked"). Whether the donor can
+ *    actually complete a payment right now is a separate `canDonate`
+ *    flag + `blockedReason` (not_started / expired / disabled — archived,
+ *    cancelled, or manually paused / payment_not_configured), which the
+ *    page uses to swap the interactive form for a friendly inline message
+ *    instead of hiding the whole page.
  */
 export async function resolveDonationCheckoutAvailability(
   tenantSlug: string,
@@ -87,51 +89,63 @@ export async function resolveDonationCheckoutAvailability(
     `[donation-checkout] campaign ${campaign.id} snapshot: status=${campaign.status} campaignStartDate=${campaign.campaignStartDate} campaignEndDate=${campaign.campaignEndDate} now=${now.toISOString()}`,
   );
 
+  // Precedence: the most specific/actionable reason wins when more than one
+  // applies (e.g. an archived campaign whose dates have also lapsed still
+  // reports "expired" first, matching the date-window checks' historical
+  // priority over status).
+  let blockedReason: DonationBlockedReason | null = null;
   if (campaign.campaignStartDate && new Date(campaign.campaignStartDate) > now) {
-    logUnavailable("not_started", `campaign ${campaign.id} starts ${campaign.campaignStartDate}, now is ${now.toISOString()}`);
-    return { ok: false, reason: "not_started" };
-  }
-  if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < now) {
-    logUnavailable("expired", `campaign ${campaign.id} ended ${campaign.campaignEndDate}, now is ${now.toISOString()}`);
-    return { ok: false, reason: "expired" };
-  }
-  // Donation page availability is decoupled from WhatsApp send status — a
-  // Draft (or Scheduled/Paused/Completed) campaign's public URL must work
-  // for preview/manual sharing immediately after creation, never waiting on
-  // a "Send Now" click. Only a genuinely terminal status blocks it.
-  if (campaign.status === "archived" || campaign.status === "cancelled") {
-    logUnavailable("disabled", `campaign ${campaign.id} status is "${campaign.status}"`);
-    return { ok: false, reason: "disabled" };
+    blockedReason = "not_started";
+  } else if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < now) {
+    blockedReason = "expired";
+  } else if (campaign.status === "archived" || campaign.status === "cancelled" || campaign.status === "paused") {
+    // "disabled" now covers manually-paused campaigns too, not just
+    // archived/cancelled — a temple admin pausing a campaign is exactly the
+    // "manually disabled" case that must block payment while the page
+    // itself (per product requirement) still stays viewable.
+    blockedReason = "disabled";
   }
 
   const account = await getActivePaymentAccountForTenant(tenant.id);
-  if (!account) {
-    logUnavailable("payment_not_configured", `tenant ${tenant.id} has no active payment account`);
-    return { ok: false, reason: "payment_not_configured" };
-  }
   // V0 product decision: TempleOS does not process payments directly.
   // Razorpay/PhonePe are toggled to `coming_soon` platform-wide
   // (migrations/039) — treating that exactly like "no account" here is what
   // makes the toggle actually block checkout for already-connected tenants,
   // not just hide the Settings UI. Flipping the catalog row back to
   // `active` re-enables every one of them with zero code changes.
-  if (!(await isProviderActive(account.providerKey))) {
-    logUnavailable("payment_not_configured", `tenant ${tenant.id}'s provider "${account.providerKey}" is not platform-active`);
-    return { ok: false, reason: "payment_not_configured" };
+  const providerUsable = account ? await isProviderActive(account.providerKey) : false;
+  if (blockedReason === null && !providerUsable) {
+    blockedReason = "payment_not_configured";
+  }
+  if (blockedReason) {
+    logUnavailable(blockedReason, `campaign ${campaign.id}: ${blockedReason}`);
   }
 
   const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
-  return { ok: true, context: { tenant, campaign, account, summary } };
+  return {
+    ok: true,
+    context: { tenant, campaign, account: providerUsable ? account : null, summary },
+    canDonate: blockedReason === null,
+    blockedReason,
+  };
 }
 
-/** Thin boolean-gate wrapper over `resolveDonationCheckoutAvailability` for callers (order creation) that only need go/no-go, not the reason. */
+/**
+ * Thin wrapper over `resolveDonationCheckoutAvailability` for callers
+ * (order creation, UPI proof confirmation) that need the context whenever
+ * the campaign/token are valid, plus the `canDonate` gate — `null` only
+ * for the true `not_found` case; a valid-but-currently-blocked campaign
+ * still returns its context (so the page can render), but callers that are
+ * about to actually create a payment must check `canDonate` themselves.
+ */
 export async function loadDonationCheckoutContext(
   tenantSlug: string,
   campaignSlug: string,
   token: string,
-): Promise<DonationCheckoutContext | null> {
+): Promise<{ context: DonationCheckoutContext; canDonate: boolean; blockedReason: DonationBlockedReason | null } | null> {
   const result = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token);
-  return result.ok ? result.context : null;
+  if (!result.ok) return null;
+  return { context: result.context, canDonate: result.canDonate, blockedReason: result.blockedReason };
 }
 
 export interface CreateCheckoutOrderInput {
@@ -200,8 +214,16 @@ export async function createCheckoutOrder(
   /** upi_manual only — the standard `upi://pay` deep link the client navigates to. Absent for gateway providers. */
   upiUri: string | null;
 } | null> {
-  const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
-  if (!context) return null;
+  const loaded = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
+  if (!loaded) return null;
+  // Hard server-side block regardless of what the page currently shows —
+  // "Only if all validations pass should the system create" an order. The
+  // page already hides the interactive form when `canDonate` is false, but
+  // this is the authoritative check: a stale page load or a direct POST
+  // must never be able to create an order for a campaign that has since
+  // ended, been paused/archived, or lost its payment configuration.
+  if (!loaded.canDonate || !loaded.context.account) return null;
+  const context = { ...loaded.context, account: loaded.context.account };
   if (!(input.amount > 0)) return null;
 
   // upi_manual has no real gateway order to create — it never reaches the

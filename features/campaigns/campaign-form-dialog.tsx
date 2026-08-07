@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronDown, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,7 +71,6 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
 
   const [title, setTitle] = useState(campaign?.title ?? "");
   const [description, setDescription] = useState(campaign?.description ?? "");
-  const [customMessage, setCustomMessage] = useState(campaign?.customMessage ?? "");
   const [audienceType, setAudienceType] = useState<AudienceOptionType>(
     campaign && campaign.audienceFilter.type !== "family" && campaign.audienceFilter.type !== "event_attendees"
       ? campaign.audienceFilter.type
@@ -79,7 +79,6 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
   const [audienceLanguage, setAudienceLanguage] = useState<SupportedLanguage>(
     campaign?.audienceFilter.type === "language" ? campaign.audienceFilter.language : "en",
   );
-  const [linkedDonationPurpose, setLinkedDonationPurpose] = useState(campaign?.linkedDonationPurpose ?? "");
   const [banner, setBanner] = useState<NotificationMedia | null>(null);
   const [goalAmount, setGoalAmount] = useState(campaign?.goalAmount ?? "");
   const [campaignStartDate, setCampaignStartDate] = useState<string | null>(campaign?.campaignStartDate ?? null);
@@ -148,11 +147,9 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
         description: description || null,
         campaignType: CAMPAIGN_TYPE,
         channel: "whatsapp" as const,
-        customMessage: customMessage || null,
         templateKey: null,
         audienceFilter,
         bannerMediaId: banner?.id ?? campaign?.bannerMediaId ?? null,
-        linkedDonationPurpose: linkedDonationPurpose || null,
         goalAmount: goalAmount || null,
         campaignStartDate,
         campaignEndDate,
@@ -172,13 +169,35 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
         throw new Error(body.error ?? (mode === "create" ? t("createError") : t("updateError")));
       }
 
+      // POST already returns the campaign's donation link (slug/donationToken
+      // are generated unconditionally at creation) — read it once here for
+      // both the send-now branch below and the success-confirmation toast,
+      // rather than re-fetching.
+      const responseBody =
+        mode === "create" ? ((await response.json()) as { campaign: Campaign; donationLink: string | null }) : null;
+
       if (andSend) {
-        const savedId = mode === "create" ? ((await response.json()) as { campaign: Campaign }).campaign.id : campaign!.id;
+        const savedId = mode === "create" ? responseBody!.campaign.id : campaign!.id;
         const sendResponse = await fetch(`/api/campaigns/${savedId}/send`, { method: "POST" });
         if (!sendResponse.ok) {
           const body = (await sendResponse.json().catch(() => ({}))) as { error?: string };
           throw new Error(body.error ?? t("sendError"));
         }
+      }
+
+      const newDonationLink = mode === "create" ? responseBody!.donationLink : donationLink;
+      if (newDonationLink) {
+        toast.success(t("savedToast"), {
+          description: t("savedToastDescription"),
+          action: {
+            label: t("copyLinkAction"),
+            onClick: () => {
+              void navigator.clipboard.writeText(newDonationLink);
+              toast.success(t("linkCopiedToast"));
+            },
+          },
+          icon: <Copy className="size-4" />,
+        });
       }
 
       setOpen(false);
@@ -236,16 +255,6 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
           </div>
 
           <div className="space-y-4 rounded-2xl border p-4">
-            <div className="space-y-1.5">
-              <LabeledInput
-                id="campaign-donation-purpose"
-                label={t("linkedDonationPurposeLabel")}
-                value={linkedDonationPurpose}
-                onChange={(e) => setLinkedDonationPurpose(e.target.value)}
-                inputSize="lg"
-              />
-              <p className="text-xs text-muted-foreground">{t("linkedDonationPurposeHint")}</p>
-            </div>
             <LabeledInput
               id="campaign-goal-amount"
               label={t("goalAmountLabel")}
@@ -268,17 +277,6 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
               <ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="campaign-message">{t("customMessageLabel")}</Label>
-                <Textarea
-                  id="campaign-message"
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder={t("customMessageLabel")}
-                  className="min-h-24"
-                />
-              </div>
-
               <div className="space-y-1.5">
                 <Label>{t("audienceLabel")}</Label>
                 <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>

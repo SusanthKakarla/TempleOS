@@ -139,13 +139,17 @@ describe("resolveDonationCheckoutAvailability", () => {
     expect(result).toEqual({ ok: false, reason: "not_found" });
   });
 
-  it("returns expired once the token is correct but the campaign end date has passed", async () => {
+  it("blocks payment with expired once the token is correct but the campaign end date has passed — page still renders", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
       makeCampaign({ campaignEndDate: "2020-01-01T00:00:00.000Z" }),
     );
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "expired" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(false);
+      expect(result.blockedReason).toBe("expired");
+    }
   });
 
   it("does not expire a campaign whose end date is in the future", async () => {
@@ -155,48 +159,73 @@ describe("resolveDonationCheckoutAvailability", () => {
     );
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.canDonate).toBe(true);
   });
 
-  it.each(["draft", "scheduled", "running", "paused", "completed"] as const)(
-    "allows the donation page for a %s campaign — availability is decoupled from WhatsApp send status, only archived/cancelled block it",
+  it.each(["draft", "scheduled", "running", "completed"] as const)(
+    "allows the donation page and payment for a %s campaign — availability is decoupled from WhatsApp send status",
     async (status) => {
       vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
       vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status }));
       const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
       expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.canDonate).toBe(true);
+        expect(result.blockedReason).toBeNull();
+      }
     },
   );
 
-  it.each(["archived", "cancelled"] as const)("returns disabled once the token is correct but the campaign is %s", async (status) => {
-    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
-    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status }));
-    const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "disabled" });
-  });
+  it.each(["archived", "cancelled", "paused"] as const)(
+    "renders the page but blocks payment with 'disabled' once the token is correct but the campaign is %s (manually disabled)",
+    async (status) => {
+      vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+      vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status }));
+      const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.canDonate).toBe(false);
+        expect(result.blockedReason).toBe("disabled");
+      }
+    },
+  );
 
-  it("returns payment_not_configured (not 'disabled') when no active payment account is connected — a running campaign should never be blamed as 'paused or closed' for a payment-setup gap", async () => {
+  it("blocks payment with payment_not_configured (not 'disabled') when no active payment account is connected — a running campaign should never be blamed as 'paused or closed' for a payment-setup gap", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
     vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue(null);
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "payment_not_configured" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(false);
+      expect(result.blockedReason).toBe("payment_not_configured");
+      expect(result.context.account).toBeNull();
+    }
   });
 
-  it("returns payment_not_configured when the connected provider is platform-disabled (V0 gateway toggle)", async () => {
+  it("blocks payment with payment_not_configured when the connected provider is platform-disabled (V0 gateway toggle)", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
     vi.mocked(isProviderActive).mockResolvedValue(false);
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "payment_not_configured" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(false);
+      expect(result.blockedReason).toBe("payment_not_configured");
+    }
   });
 
-  it("returns not_started once the token is correct but the campaign start date is in the future", async () => {
+  it("blocks payment with not_started once the token is correct but the campaign start date is in the future — page still renders", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(
       makeCampaign({ campaignStartDate: "2099-01-01T00:00:00.000Z" }),
     );
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "not_started" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.canDonate).toBe(false);
+      expect(result.blockedReason).toBe("not_started");
+    }
   });
 
   it("does not block a campaign whose start date is in the past", async () => {
@@ -206,6 +235,7 @@ describe("resolveDonationCheckoutAvailability", () => {
     );
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.canDonate).toBe(true);
   });
 
   it("checks not_started before expired/disabled/payment checks (most specific boundary first)", async () => {
@@ -214,7 +244,8 @@ describe("resolveDonationCheckoutAvailability", () => {
       makeCampaign({ campaignStartDate: "2099-01-01T00:00:00.000Z", status: "paused" }),
     );
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
-    expect(result).toEqual({ ok: false, reason: "not_started" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.blockedReason).toBe("not_started");
   });
 
   it("returns ok with the full context for a valid, running campaign", async () => {
@@ -223,6 +254,7 @@ describe("resolveDonationCheckoutAvailability", () => {
     const result = await resolveDonationCheckoutAvailability("sri-temple", "annadanam-fund", "correct-token");
     expect(result.ok).toBe(true);
     if (result.ok) {
+      expect(result.canDonate).toBe(true);
       expect(result.context.tenant).toEqual(tenant);
       expect(result.context.account).toEqual(account);
     }
@@ -248,7 +280,17 @@ describe("loadDonationCheckoutContext", () => {
   it("returns the context when available", async () => {
     vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
     vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign());
-    const context = await loadDonationCheckoutContext("sri-temple", "annadanam-fund", "correct-token");
-    expect(context?.campaign.id).toBe("campaign-1");
+    const loaded = await loadDonationCheckoutContext("sri-temple", "annadanam-fund", "correct-token");
+    expect(loaded?.context.campaign.id).toBe("campaign-1");
+    expect(loaded?.canDonate).toBe(true);
+  });
+
+  it("still returns the context (with canDonate: false) for a campaign the page can render but payment is blocked on", async () => {
+    vi.mocked(getTenantBySlug).mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockResolvedValue(makeCampaign({ status: "paused" }));
+    const loaded = await loadDonationCheckoutContext("sri-temple", "annadanam-fund", "correct-token");
+    expect(loaded?.context.campaign.id).toBe("campaign-1");
+    expect(loaded?.canDonate).toBe(false);
+    expect(loaded?.blockedReason).toBe("disabled");
   });
 });

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, ChevronDown, Copy, Loader2, Upload } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Loader2, PauseCircle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -11,6 +11,7 @@ import { LabeledInput } from "@/components/ui/labeled-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { donationCheckoutSchema } from "@/lib/validation/payments";
+import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,9 @@ interface DonationCheckoutFormProps {
   templeName: string;
   /** Set only when the tenant's active provider is `upi_manual` (V0's gateway-free flow) — null for Razorpay/PhonePe tenants. */
   upi: { vpa: string; payeeName: string; qrCodeUrl: string | null } | null;
+  /** False when the campaign page renders but isn't currently accepting payments (not started / ended / paused / archived / payment not configured) — see donation-checkout-service.ts's page-viewable-vs-payment-allowed split. */
+  canDonate: boolean;
+  blockedReason: DonationBlockedReason | null;
 }
 
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
@@ -49,7 +53,30 @@ const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
 const FILLED_INPUT_CLASS =
   "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#D4AF37] focus-visible:bg-white focus-visible:ring-[#D4AF37]/20";
 
-export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName, upi }: DonationCheckoutFormProps) {
+const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: string; description: string }> = {
+  not_started: {
+    icon: <CalendarClock className="size-10 text-[#D4AF37]" />,
+    title: "This campaign hasn't started yet",
+    description: "Donations will open once the campaign begins. Please check back later.",
+  },
+  expired: {
+    icon: <CalendarX2 className="size-10 text-[#D4AF37]" />,
+    title: "This campaign is no longer accepting donations.",
+    description: "Thank you for your support.",
+  },
+  disabled: {
+    icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
+    title: "This campaign is no longer accepting donations.",
+    description: "Thank you for your support.",
+  },
+  payment_not_configured: {
+    icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
+    title: "This campaign isn't accepting donations right now",
+    description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly.",
+  },
+};
+
+export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeName, upi, canDonate, blockedReason }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
@@ -238,6 +265,17 @@ export function DonationCheckoutForm({ tenantSlug, campaignSlug, token, templeNa
       setStatus("error");
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     }
+  }
+
+  if (!canDonate && blockedReason) {
+    const copy = BLOCKED_COPY[blockedReason];
+    return (
+      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[24px] border border-[#F3E7DA] bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+        {copy.icon}
+        <p className="font-heading text-lg text-[#2B2118]">{copy.title}</p>
+        <p className="text-sm text-[#6B5B4F]">{copy.description}</p>
+      </div>
+    );
   }
 
   if (status === "success") {

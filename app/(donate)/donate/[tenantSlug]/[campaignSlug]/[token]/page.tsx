@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CalendarClock, CalendarX2, PauseCircle, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { resolveDonationCheckoutAvailability } from "@/lib/payments/donation-checkout-service";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { listSocialLinks } from "@/lib/db/temple-social-links";
@@ -22,33 +22,11 @@ interface PageParams {
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const UNAVAILABLE_COPY = {
-  not_found: {
-    icon: <SearchX className="size-6" />,
-    title: "This donation link isn't available",
-    description: "It may be incorrect, or the campaign may no longer exist. Please contact the temple directly.",
-  },
-  not_started: {
-    icon: <CalendarClock className="size-6" />,
-    title: "This campaign hasn't started yet",
-    description: "Donations will open once the campaign begins. Please check back later.",
-  },
-  disabled: {
-    icon: <PauseCircle className="size-6" />,
-    title: "This campaign isn't accepting donations right now",
-    description: "The temple has paused or closed this campaign. Please check back later or contact the temple directly.",
-  },
-  expired: {
-    icon: <CalendarX2 className="size-6" />,
-    title: "This campaign has ended",
-    description: "The donation window for this campaign has closed. Please contact the temple directly for other ways to give.",
-  },
-  payment_not_configured: {
-    icon: <PauseCircle className="size-6" />,
-    title: "This campaign isn't accepting donations right now",
-    description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly.",
-  },
-} as const;
+const NOT_FOUND_COPY = {
+  icon: <SearchX className="size-6" />,
+  title: "This donation link isn't available",
+  description: "It may be incorrect, or the campaign may no longer exist. Please contact the temple directly.",
+};
 
 const SUBTITLE_MAX_LENGTH = 120;
 
@@ -57,14 +35,14 @@ export default async function DonatePage({ params }: PageParams) {
   const availability = await resolveDonationCheckoutAvailability(tenantSlug, campaignSlug, token);
 
   if (!availability.ok) {
-    const copy = UNAVAILABLE_COPY[availability.reason];
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4">
-        <EmptyState icon={copy.icon} title={copy.title} description={copy.description} />
+        <EmptyState icon={NOT_FOUND_COPY.icon} title={NOT_FOUND_COPY.title} description={NOT_FOUND_COPY.description} />
       </div>
     );
   }
 
+  const { canDonate, blockedReason } = availability;
   const { tenant, campaign, account, summary } = availability.context;
   const [banner, socialLinks] = await Promise.all([
     campaign.bannerMediaId ? getNotificationMediaById(tenant.id, campaign.bannerMediaId) : Promise.resolve(null),
@@ -109,15 +87,17 @@ export default async function DonatePage({ params }: PageParams) {
           token={token}
           templeName={tenant.name}
           upi={
-            account.providerKey === "upi_manual" && account.upiVpa && account.payeeName
+            account && account.providerKey === "upi_manual" && account.upiVpa && account.payeeName
               ? { vpa: account.upiVpa, payeeName: account.payeeName, qrCodeUrl: account.qrCodeUrl }
               : null
           }
+          canDonate={canDonate}
+          blockedReason={blockedReason}
         />
       </div>
 
       <div className="mt-6">
-        <DonateTrust providerKey={account.providerKey} />
+        <DonateTrust providerKey={account?.providerKey ?? null} />
       </div>
 
       <DonateContributionSupports />

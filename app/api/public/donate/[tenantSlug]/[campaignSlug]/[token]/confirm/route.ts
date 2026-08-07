@@ -26,10 +26,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const { tenantSlug, campaignSlug, token } = await params;
-  const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
-  if (!context) {
+  const loaded = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
+  // Defense in depth: by the time a devotee reaches this confirmation step
+  // they already had a real pending_verification transaction created while
+  // `canDonate` was true, but the campaign could in principle have been
+  // paused/archived/expired in the meantime — refuse the same as "not
+  // available" rather than accepting proof for a campaign no longer taking
+  // donations.
+  if (!loaded || !loaded.canDonate) {
     return NextResponse.json({ error: "This donation link isn't available." }, { status: 404 });
   }
+  const { context } = loaded;
 
   const formData = await req.formData().catch(() => null);
   if (!formData) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createCampaign, listCampaigns, countCampaignsFiltered, type ListCampaignsFilter } from "@/lib/db/campaigns";
+import { getTenantById } from "@/lib/db/tenants";
+import { buildDonationLink } from "@/lib/campaigns/donation-message";
 import { createCampaignSchema } from "@/lib/validation/campaigns";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { CampaignStatus, NotificationType } from "@/types/db";
@@ -53,11 +55,9 @@ export async function POST(req: NextRequest) {
     // NotificationType union — campaign template keys may reference
     // future/custom types not yet added to that union.
     templateKey: (parsed.data.templateKey as NotificationType | undefined) ?? null,
-    customMessage: parsed.data.customMessage ?? null,
     audienceFilter: parsed.data.audienceFilter,
     bannerMediaId: parsed.data.bannerMediaId ?? null,
     linkedEventId: parsed.data.linkedEventId ?? null,
-    linkedDonationPurpose: parsed.data.linkedDonationPurpose ?? null,
     scheduleType: parsed.data.scheduleType,
     scheduledAt: parsed.data.scheduledAt ?? null,
     recurrenceRule: parsed.data.recurrenceRule ?? null,
@@ -67,5 +67,13 @@ export async function POST(req: NextRequest) {
     createdBy: session.membershipId,
   });
 
-  return NextResponse.json({ campaign }, { status: 201 });
+  // The donation URL is available the instant the campaign exists (slug +
+  // donationToken are generated unconditionally in createCampaign) — surfaced
+  // here so the create dialog can show a "Copy Link" success confirmation
+  // without a second round trip. Same buildDonationLink() every WhatsApp
+  // broadcast and the Campaign Details page already use.
+  const tenant = await getTenantById(session.tenantId);
+  const donationLink = tenant ? buildDonationLink(tenant, campaign) : null;
+
+  return NextResponse.json({ campaign, donationLink }, { status: 201 });
 }
