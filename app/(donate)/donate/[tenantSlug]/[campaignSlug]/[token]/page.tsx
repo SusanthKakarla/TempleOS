@@ -10,7 +10,6 @@ import { DonateWhyMatters } from "@/features/payments/donate/donate-why-matters"
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
 import { DonateContributionSupports } from "@/features/payments/donate/donate-contribution-supports";
 import { DonateTrustCards } from "@/features/payments/donate/donate-trust-cards";
-import { DonateStats } from "@/features/payments/donate/donate-stats";
 import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
 interface PageParams {
@@ -93,8 +92,6 @@ export default async function DonatePage({ params }: PageParams) {
       <DonateContributionSupports />
 
       <DonateTrustCards />
-
-      <DonateStats />
 
       <DonateFooter templeName={tenant.name} contactPhone={tenant.defaultContactPhone} />
     </div>
