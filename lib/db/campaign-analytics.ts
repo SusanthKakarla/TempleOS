@@ -48,6 +48,8 @@ export interface CampaignDonationSummary {
   totalAmount: number;
   donationCount: number;
   donorCount: number;
+  /** When the most recent donation landed, for the public page's "last donation received ..." line. Null when nobody has donated yet. */
+  lastDonationAt: string | null;
 }
 
 /**
@@ -60,9 +62,10 @@ export interface CampaignDonationSummary {
  * zero out) campaigns funded primarily through the public donation link.
  */
 export async function getCampaignDonationSummary(tenantId: string, purpose: string): Promise<CampaignDonationSummary> {
-  const { rows } = await getPool().query<{ total: string; count: string; donors: string }>(
+  const { rows } = await getPool().query<{ total: string; count: string; donors: string; last_donation_at: Date | null }>(
     `SELECT COALESCE(SUM(amount), 0) AS total, count(*) AS count,
-            count(DISTINCT COALESCE(devotee_id::text, id::text)) AS donors
+            count(DISTINCT COALESCE(devotee_id::text, id::text)) AS donors,
+            max(donated_at) AS last_donation_at
      FROM donations
      WHERE tenant_id = $1 AND purpose = $2`,
     [tenantId, purpose],
@@ -71,6 +74,7 @@ export async function getCampaignDonationSummary(tenantId: string, purpose: stri
     totalAmount: Number(rows[0]?.total ?? 0),
     donationCount: Number(rows[0]?.count ?? 0),
     donorCount: Number(rows[0]?.donors ?? 0),
+    lastDonationAt: rows[0]?.last_donation_at?.toISOString() ?? null,
   };
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { getCampaignById, updateCampaign, deleteCampaign } from "@/lib/db/campaigns";
+import { listCampaignGallery, replaceCampaignGallery } from "@/lib/db/campaign-media";
 import { updateCampaignSchema } from "@/lib/validation/campaigns";
 import type { NotificationType } from "@/types/db";
 
@@ -19,7 +20,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const campaign = await getCampaignById(session.tenantId, id);
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
-  return NextResponse.json({ campaign });
+  // Returned alongside the campaign so the edit dialog can show the existing
+  // gallery without a second round trip.
+  const gallery = await listCampaignGallery(session.tenantId, id);
+  return NextResponse.json({ campaign, gallery });
 }
 
 /** Draft-only edit surface — a campaign that has left draft can only move through status transitions (see /status route), not have its content rewritten mid-flight. */
@@ -43,10 +47,19 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
+  // The gallery lives in its own join table (campaign_media), so it is
+  // deliberately kept out of the campaigns-row update below.
+  const { galleryMediaIds, ...campaignFields } = parsed.data;
+
   const campaign = await updateCampaign(session.tenantId, id, {
-    ...parsed.data,
+    ...campaignFields,
     templateKey: (parsed.data.templateKey as NotificationType | null | undefined) ?? undefined,
   });
+
+  if (campaign && galleryMediaIds) {
+    await replaceCampaignGallery(session.tenantId, id, galleryMediaIds);
+  }
+
   return NextResponse.json({ campaign });
 }
 

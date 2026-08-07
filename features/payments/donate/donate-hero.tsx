@@ -6,14 +6,21 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatInr } from "@/lib/currency";
+import type { CampaignTheme } from "@/lib/campaigns/campaign-theme";
 import { ShareButton } from "@/features/payments/share-button";
+import { CopyLinkButton } from "@/features/payments/donate/copy-link-button";
+import { CampaignThemeIconGlyph } from "./campaign-theme-icon";
 import { DonateProgress } from "./donate-progress";
 
 interface DonateHeroProps {
   templeName: string;
   campaignTitle: string;
   subtitle: string;
-  bannerUrl: string | null;
+  /** Already resolved through resolveCampaignHeroImage — the temple's banner, else the category image. Never empty. */
+  heroImageUrl: string;
+  /** True when heroImageUrl is the temple's own upload (an external ImageKit URL) rather than a bundled local asset. */
+  heroImageIsUploaded: boolean;
+  theme: CampaignTheme;
   raisedAmount: number;
   goalAmount: number;
   donorCount: number;
@@ -31,21 +38,24 @@ function TempleMonogram({ name }: { name: string }) {
 }
 
 /**
- * Hero — the temple's own uploaded campaign banner takes priority when set
- * (rendered as a plain `<img>`, external ImageKit URL); otherwise a large
- * immersive background built from the temple photo asset
- * (public/donate-hero-temple.png) with a subtle scroll parallax, dark
- * gradient overlay for text legibility, and a low-opacity Om medallion
- * watermark. The floating Campaign Card below carries all the real data
- * (progress/raised/goal/donate) exactly as before — same `id`s, same anchor
- * — only its visual chrome changed to a glassmorphism card overlapping the
- * hero's bottom edge.
+ * Hero — the temple's own uploaded campaign banner takes priority when set,
+ * otherwise the campaign category's own artwork (resolved upstream so the
+ * WhatsApp/OG preview uses the identical image). A category badge, accent
+ * colour, and gradient scrim come from the campaign theme registry, so a
+ * Renovation page and an Annadanam page are visibly different pages rather
+ * than the same template with different words.
+ *
+ * The floating Campaign Card carries the real fundraising numbers — raised,
+ * goal, percentage, supporters, days left — all live values, never a
+ * marketing figure.
  */
 export function DonateHero({
   templeName,
   campaignTitle,
   subtitle,
-  bannerUrl,
+  heroImageUrl,
+  heroImageIsUploaded,
+  theme,
   raisedAmount,
   goalAmount,
   donorCount,
@@ -54,6 +64,7 @@ export function DonateHero({
 }: DonateHeroProps) {
   const rawPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   const displayPercentage = Math.min(100, Math.round(rawPercentage));
+  const remaining = Math.max(0, goalAmount - raisedAmount);
 
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
@@ -61,20 +72,20 @@ export function DonateHero({
 
   return (
     <section>
-      <div ref={heroRef} className="relative z-0 h-[70vh] min-h-[480px] max-h-[720px] w-full overflow-hidden rounded-b-[32px] shadow-lg">
+      <div ref={heroRef} className="relative z-0 h-[70vh] max-h-[720px] min-h-[480px] w-full overflow-hidden rounded-b-[32px] shadow-lg">
         <motion.div style={{ y: parallaxY }} className="absolute inset-0 h-[120%]">
-          {bannerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset next/image isn't configured for
-            <img src={bannerUrl} alt="" className="size-full object-cover" />
+          {heroImageIsUploaded ? (
+            // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset next/image is configured for
+            <img src={heroImageUrl} alt="" className="size-full object-cover" />
           ) : (
-            <Image src="/donate-hero-temple.png" alt="" fill priority className="object-cover" />
+            <Image src={heroImageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
           )}
         </motion.div>
 
-        {/* Dark gradient overlay for text legibility, deepening toward the bottom where the floating card overlaps. */}
+        {/* Category-tinted scrim over a neutral darkening base — keeps text legible on any uploaded banner while still reading as this campaign's colour. */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#3E2723]/60 via-[#3E2723]/35 to-[#3E2723]/85" aria-hidden="true" />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${theme.gradient} opacity-25 mix-blend-multiply`} aria-hidden="true" />
 
-        {/* Om medallion watermark — decorative only, kept subtle. */}
         <Image
           src="/donate-om-medallion.png"
           alt=""
@@ -90,7 +101,11 @@ export function DonateHero({
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative flex h-full flex-col items-center justify-center px-5 text-center"
         >
-          <p className="text-xs font-medium tracking-[0.25em] text-[#FFF8E7]/80 uppercase">{templeName}</p>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium text-white ring-1 ring-white/25 backdrop-blur-sm">
+            <CampaignThemeIconGlyph icon={theme.icon} className="size-3.5" />
+            {theme.label}
+          </span>
+          <p className="mt-4 text-xs font-medium tracking-[0.25em] text-[#FFF8E7]/80 uppercase">{templeName}</p>
           <h1 className="mt-3 max-w-2xl font-heading text-3xl leading-[1.15] text-white sm:text-4xl md:text-5xl">
             {campaignTitle}
           </h1>
@@ -125,31 +140,41 @@ export function DonateHero({
 
           {goalAmount > 0 && (
             <div className="mt-4 space-y-3">
-              <DonateProgress value={displayPercentage} />
-              <div className="flex items-center justify-between text-sm">
+              <DonateProgress value={displayPercentage} accent={theme.accent} />
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
                 <span className="font-semibold text-[#2B2118]">{formatInr(raisedAmount)} raised</span>
                 <span className="text-[#8C7B6D]">
                   {displayPercentage}% of {formatInr(goalAmount)}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-[#8C7B6D]">
-                {donorCount > 0 && <span>{donorCount === 1 ? "1 donor" : `${donorCount} donors`}</span>}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8C7B6D]">
+                {donorCount > 0 && <span>{donorCount === 1 ? "1 supporter" : `${donorCount} supporters`}</span>}
+                {remaining > 0 && <span>{formatInr(remaining)} to go</span>}
                 {daysLeft !== null && <span>{daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}</span>}
               </div>
             </div>
           )}
 
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:gap-4">
             <Button
               id="hero-donate-button"
               size="xl"
-              className="flex-1 bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
+              style={{ backgroundColor: theme.accent }}
+              className="flex-1 text-white hover:opacity-90"
               render={<a href="#donate" />}
             >
               <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
               Donate Now
             </Button>
-            <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]" />
+            <div className="flex gap-3">
+              <ShareButton
+                title={campaignTitle}
+                url={shareUrl}
+                size="xl"
+                className="flex-1 border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]"
+              />
+              <CopyLinkButton url={shareUrl} size="xl" className="flex-1 border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]" />
+            </div>
           </div>
         </motion.div>
       </div>

@@ -4,6 +4,8 @@ import { requireTenantFeature } from "@/lib/auth/features";
 import { getCampaignById } from "@/lib/db/campaigns";
 import { getTenantById } from "@/lib/db/tenants";
 import { buildDonationLink } from "@/lib/campaigns/donation-message";
+import { CAMPAIGN_PREVIEW_PARAM, createCampaignPreviewToken } from "@/lib/campaigns/campaign-preview-token";
+import { listCampaignGallery } from "@/lib/db/campaign-media";
 import { CampaignDetail } from "@/features/campaigns/campaign-detail";
 import { getLocaleCookie } from "@/lib/i18n/locale";
 import { translateFields } from "@/lib/i18n/translate-rows";
@@ -30,5 +32,19 @@ export default async function CampaignDetailPage({ params }: CampaignDetailPageP
   const tenant = campaign.linkedDonationPurpose ? await getTenantById(session.tenantId) : null;
   const donationLink = tenant ? buildDonationLink(tenant, campaign) : null;
 
-  return <CampaignDetail campaign={campaign} donationLink={donationLink} />;
+  // Same URL plus a short-lived signed preview grant, so "Open Campaign"
+  // works for this admin even before the campaign is public (draft, not yet
+  // started, payments not connected) and across the public donation host,
+  // where their dashboard cookie isn't sent. Only the plain donationLink is
+  // ever copied/shared — see CampaignActions.
+  const previewLink =
+    tenant && donationLink
+      ? `${donationLink}?${CAMPAIGN_PREVIEW_PARAM}=${encodeURIComponent(createCampaignPreviewToken(tenant.slug, campaign.slug))}`
+      : null;
+
+  const gallery = await listCampaignGallery(session.tenantId, campaign.id);
+
+  return (
+    <CampaignDetail campaign={campaign} donationLink={donationLink} previewLink={previewLink} gallery={gallery} />
+  );
 }

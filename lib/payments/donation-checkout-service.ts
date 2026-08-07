@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DEFAULT_DONATION_LINK_BASE_URL } from "@/lib/campaigns/donation-message";
+import { evaluateCampaignWindow } from "@/lib/campaigns/campaign-visibility";
 import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary, type CampaignDonationSummary } from "@/lib/db/campaign-analytics";
@@ -13,8 +14,18 @@ import type { Campaign, PaymentTransaction, Tenant, TenantPaymentAccount } from 
 export interface DonationCheckoutContext {
   tenant: Tenant;
   campaign: Campaign;
-  account: TenantPaymentAccount;
+  /**
+   * Null only in admin preview (see `previewBlockedReason`) — a public
+   * visitor never reaches an `ok` result without a usable payment account.
+   */
+  account: TenantPaymentAccount | null;
   summary: CampaignDonationSummary;
+  /**
+   * Null for every public visit. In admin preview it carries the reason a
+   * public visitor would have been turned away, so the page can render the
+   * campaign *and* tell the admin exactly what the public currently sees.
+   */
+  previewBlockedReason: DonationCheckoutUnavailableReason | null;
 }
 
 export type DonationCheckoutUnavailableReason =
@@ -53,12 +64,23 @@ function logUnavailable(reason: DonationCheckoutUnavailableReason, detail: strin
  *    a temple with a genuinely running campaign but no connected Razorpay
  *    account would be told "the temple has paused or closed this campaign",
  *    which is simply false.
+ *
+ * `preview: true` (an authenticated admin of THIS tenant — proven by the
+ * caller, never by anything in the URL alone) keeps every identity check
+ * above intact and downgrades only the *state* checks below them from
+ * blocking to advisory, surfaced as `context.previewBlockedReason`. That is
+ * the whole difference between the two modes: a preview can never conjure a
+ * campaign that doesn't exist or whose token is wrong, it can only look at a
+ * real one that the public can't see yet. Order creation never passes this
+ * flag (see `loadDonationCheckoutContext`), so previewing can't move money.
  */
 export async function resolveDonationCheckoutAvailability(
   tenantSlug: string,
   campaignSlug: string,
   token: string,
+  options: { preview?: boolean } = {},
 ): Promise<DonationCheckoutAvailability> {
+  const preview = options.preview === true;
   const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant || tenant.status !== "active") {
     logUnavailable("not_found", `tenant "${tenantSlug}" missing or not active (status=${tenant?.status ?? "n/a"})`);
@@ -74,57 +96,88 @@ export async function resolveDonationCheckoutAvailability(
     logUnavailable("not_found", `token mismatch for campaign ${campaign.id}`);
     return { ok: false, reason: "not_found" };
   }
-  if (campaign.campaignType !== "donation" || !campaign.linkedDonationPurpose) {
-    logUnavailable(
-      "not_found",
-      `campaign ${campaign.id} is not a configured donation campaign (campaignType=${campaign.campaignType}, linkedDonationPurpose=${campaign.linkedDonationPurpose})`,
-    );
+  if (campaign.campaignType !== "donation") {
+    logUnavailable("not_found", `campaign ${campaign.id} is not a donation campaign (campaignType=${campaign.campaignType})`);
+    return { ok: false, reason: "not_found" };
+  }
+  // A donation campaign with no linked purpose has nothing to aggregate, so
+  // "raised" would always read zero — misleading to a donor, which is why
+  // the public sees not_found. An admin previewing their own half-finished
+  // draft is exactly who needs to see it anyway, with the totals at zero.
+  if (!campaign.linkedDonationPurpose && !preview) {
+    logUnavailable("not_found", `campaign ${campaign.id} has no linkedDonationPurpose`);
     return { ok: false, reason: "not_found" };
   }
 
   const now = new Date();
   console.log(
-    `[donation-checkout] campaign ${campaign.id} snapshot: status=${campaign.status} campaignStartDate=${campaign.campaignStartDate} campaignEndDate=${campaign.campaignEndDate} now=${now.toISOString()}`,
+    `[donation-checkout] campaign ${campaign.id} snapshot: status=${campaign.status} campaignStartDate=${campaign.campaignStartDate} campaignEndDate=${campaign.campaignEndDate} timezone=${tenant.timezone} now=${now.toISOString()} preview=${preview}`,
   );
 
-  if (campaign.campaignStartDate && new Date(campaign.campaignStartDate) > now) {
-    logUnavailable("not_started", `campaign ${campaign.id} starts ${campaign.campaignStartDate}, now is ${now.toISOString()}`);
-    return { ok: false, reason: "not_started" };
-  }
-  if (campaign.campaignEndDate && new Date(campaign.campaignEndDate) < now) {
-    logUnavailable("expired", `campaign ${campaign.id} ended ${campaign.campaignEndDate}, now is ${now.toISOString()}`);
-    return { ok: false, reason: "expired" };
-  }
-  // Donation page availability is decoupled from WhatsApp send status — a
-  // Draft (or Scheduled/Paused/Completed) campaign's public URL must work
-  // for preview/manual sharing immediately after creation, never waiting on
-  // a "Send Now" click. Only a genuinely terminal status blocks it.
-  if (campaign.status === "archived" || campaign.status === "cancelled") {
-    logUnavailable("disabled", `campaign ${campaign.id} status is "${campaign.status}"`);
-    return { ok: false, reason: "disabled" };
+  // Inclusive calendar-day window in the temple's own timezone — see
+  // evaluateCampaignWindow for why this is never an instant comparison.
+  const windowBlock = evaluateCampaignWindow(campaign, tenant.timezone, now);
+  if (windowBlock && !preview) {
+    logUnavailable(
+      windowBlock,
+      `campaign ${campaign.id} status=${campaign.status} window ${campaign.campaignStartDate ?? "—"}..${campaign.campaignEndDate ?? "—"} (${tenant.timezone})`,
+    );
+    return { ok: false, reason: windowBlock };
   }
 
-  const account = await getActivePaymentAccountForTenant(tenant.id);
-  if (!account) {
-    logUnavailable("payment_not_configured", `tenant ${tenant.id} has no active payment account`);
-    return { ok: false, reason: "payment_not_configured" };
-  }
-  // V0 product decision: TempleOS does not process payments directly.
-  // Razorpay/PhonePe are toggled to `coming_soon` platform-wide
-  // (migrations/039) — treating that exactly like "no account" here is what
-  // makes the toggle actually block checkout for already-connected tenants,
-  // not just hide the Settings UI. Flipping the catalog row back to
-  // `active` re-enables every one of them with zero code changes.
-  if (!(await isProviderActive(account.providerKey))) {
-    logUnavailable("payment_not_configured", `tenant ${tenant.id}'s provider "${account.providerKey}" is not platform-active`);
+  const account = await resolveUsablePaymentAccount(tenant.id);
+  if (!account && !preview) {
+    logUnavailable("payment_not_configured", `tenant ${tenant.id} has no usable payment account`);
     return { ok: false, reason: "payment_not_configured" };
   }
 
-  const summary = await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose);
-  return { ok: true, context: { tenant, campaign, account, summary } };
+  const summary = campaign.linkedDonationPurpose
+    ? await getCampaignDonationSummary(tenant.id, campaign.linkedDonationPurpose)
+    : EMPTY_DONATION_SUMMARY;
+
+  return {
+    ok: true,
+    context: {
+      tenant,
+      campaign,
+      account,
+      summary,
+      // Public precedence order, preserved: the window verdict is what a
+      // visitor would have hit first, so it's what the admin is told about.
+      previewBlockedReason: preview ? (windowBlock ?? (account ? null : "payment_not_configured")) : null,
+    },
+  };
 }
 
-/** Thin boolean-gate wrapper over `resolveDonationCheckoutAvailability` for callers (order creation) that only need go/no-go, not the reason. */
+const EMPTY_DONATION_SUMMARY: CampaignDonationSummary = { totalAmount: 0, donationCount: 0, donorCount: 0, lastDonationAt: null };
+
+/**
+ * The tenant's payment account, but only if it can actually take money right
+ * now — null otherwise, which every caller treats as "payments not set up".
+ *
+ * V0 product decision: TempleOS does not process payments directly.
+ * Razorpay/PhonePe are toggled to `coming_soon` platform-wide
+ * (migrations/039) — treating that exactly like "no account" is what makes
+ * the toggle actually block checkout for already-connected tenants, not just
+ * hide the Settings UI. Flipping the catalog row back to `active` re-enables
+ * every one of them with zero code changes.
+ */
+async function resolveUsablePaymentAccount(tenantId: string): Promise<TenantPaymentAccount | null> {
+  const account = await getActivePaymentAccountForTenant(tenantId);
+  if (!account) return null;
+  if (!(await isProviderActive(account.providerKey))) {
+    logUnavailable("payment_not_configured", `tenant ${tenantId}'s provider "${account.providerKey}" is not platform-active`);
+    return null;
+  }
+  return account;
+}
+
+/**
+ * Thin boolean-gate wrapper over `resolveDonationCheckoutAvailability` for
+ * callers (order creation) that only need go/no-go, not the reason.
+ * Deliberately has no preview option — money movement is always judged by
+ * the public rules, however the donor got to the page.
+ */
 export async function loadDonationCheckoutContext(
   tenantSlug: string,
   campaignSlug: string,
@@ -202,6 +255,10 @@ export async function createCheckoutOrder(
 } | null> {
   const context = await loadDonationCheckoutContext(tenantSlug, campaignSlug, token);
   if (!context) return null;
+  // Unreachable through the public gate (which never returns ok without a
+  // usable account) — kept so the nullable-in-preview account can never be
+  // dereferenced into a live order by a future caller.
+  if (!context.account) return null;
   if (!(input.amount > 0)) return null;
 
   // upi_manual has no real gateway order to create — it never reaches the

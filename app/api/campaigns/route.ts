@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireTenantAdminSession, tenantAdminAuthResponse } from "@/lib/auth/tenant-admin";
 import { requireTenantFeatureApi } from "@/lib/auth/features";
 import { createCampaign, listCampaigns, countCampaignsFiltered, type ListCampaignsFilter } from "@/lib/db/campaigns";
+import { replaceCampaignGallery } from "@/lib/db/campaign-media";
 import { createCampaignSchema } from "@/lib/validation/campaigns";
 import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { CampaignStatus, NotificationType } from "@/types/db";
@@ -66,6 +67,10 @@ export async function POST(req: NextRequest) {
     campaignEndDate: parsed.data.campaignEndDate ?? null,
     createdBy: session.membershipId,
   });
+
+  if (parsed.data.galleryMediaIds) {
+    await replaceCampaignGallery(session.tenantId, campaign.id, parsed.data.galleryMediaIds);
+  }
 
   return NextResponse.json({ campaign }, { status: 201 });
 }

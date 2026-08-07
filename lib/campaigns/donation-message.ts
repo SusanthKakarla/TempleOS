@@ -48,14 +48,6 @@ export function computeRaisedPercentage(raisedAmount: number, goalAmount: number
   return (raisedAmount / goalAmount) * 100;
 }
 
-/** Whole days remaining until `endDate` (rounded up — "1 day left" through the entire final day). Returns null when there's no end date or it's already passed (the donation page independently hides expired campaigns via resolveDonationCheckoutAvailability, so a past date reaching this is a defensive edge case, not the normal path). */
-export function computeDaysLeft(endDate: string | null): number | null {
-  if (!endDate) return null;
-  const diffMs = new Date(endDate).getTime() - Date.now();
-  if (diffMs <= 0) return null;
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-}
-
 /**
  * True only when every donation-campaign field the rich template needs is
  * actually present — deliberately does NOT fall back to an empty string for

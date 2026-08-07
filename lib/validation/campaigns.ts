@@ -61,6 +61,13 @@ export const createCampaignSchema = z.object({
   goalAmount: nullablePositiveAmountString,
   campaignStartDate: nullableDateOnlyString,
   campaignEndDate: nullableDateOnlyString,
+  /**
+   * Optional public-page gallery, as an ordered list of already-uploaded
+   * notification_media ids (array order = display order). Capped so a
+   * runaway client can't attach an unbounded gallery; the tenant ownership
+   * of each id is enforced in replaceCampaignGallery, not here.
+   */
+  galleryMediaIds: z.array(z.string().uuid()).max(12).optional(),
 });
 
 export const updateCampaignSchema = createCampaignSchema.partial();
