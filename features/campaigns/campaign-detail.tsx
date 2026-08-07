@@ -10,7 +10,6 @@ import type { Campaign, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -18,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
-import { formatDate, formatDateTime } from "@/lib/date";
+import { formatDateTime } from "@/lib/date";
 import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
@@ -31,7 +30,6 @@ function startOfToday(): Date {
 }
 
 interface CampaignAnalytics {
-  delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
   donation: { totalAmount: number; donationCount: number; donorCount: number } | null;
   donations: { id: string; donorName: string; amount: string | null; paymentMethod: string | null; itemDescription: string | null; donatedAt: string }[];
 }
@@ -171,8 +169,6 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
     }
   }
 
-  const delivery = analytics?.delivery;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -252,103 +248,60 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
 
       {donationLink && <CampaignActions donationLink={donationLink} />}
 
-      {campaign.lastRunAt ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
-          <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
-          <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
-          <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
-        </div>
-      ) : (
-        <EmptyState icon={<Send className="size-6" />} title={tDetail("noMessagesSent")} />
-      )}
-
-      <Tabs defaultValue="overview" className="gap-4">
-        <TabsList variant="line">
-          <TabsTrigger value="overview">{tDetail("tabs.overview")}</TabsTrigger>
-          {campaign.linkedDonationPurpose && <TabsTrigger value="donations">{tDetail("tabs.donations")}</TabsTrigger>}
-          <TabsTrigger value="analytics">{tDetail("tabs.analytics")}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-3">
-          <p className="font-heading text-sm font-semibold">{tDetail("aboutTitle")}</p>
-          <p className="text-sm text-muted-foreground">{campaign.description || tDetail("noDescription")}</p>
-          {campaign.customMessage && (
-            <div className="rounded-xl border bg-muted/40 p-4 text-sm whitespace-pre-wrap">{campaign.customMessage}</div>
-          )}
-        </TabsContent>
-
-        {campaign.linkedDonationPurpose && (
-          <TabsContent value="donations" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <StatCard label={tDetail("stats.raised")} value={formatInr(Number(analytics?.donation?.totalAmount ?? 0))} />
-              <StatCard label={tDetail("stats.donors")} value={analytics?.donation?.donorCount ?? 0} />
-              <StatCard label={tDetail("tabs.donations")} value={analytics?.donation?.donationCount ?? 0} />
+      {campaign.linkedDonationPurpose && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <StatCard label={tDetail("stats.raised")} value={formatInr(Number(analytics?.donation?.totalAmount ?? 0))} />
+            <StatCard label={tDetail("stats.donors")} value={analytics?.donation?.donorCount ?? 0} />
+            <StatCard label={tDetail("tabs.donations")} value={analytics?.donation?.donationCount ?? 0} />
+          </div>
+          {campaign.goalAmount && (
+            <div className="space-y-2 rounded-xl border bg-muted/40 p-3">
+              {(() => {
+                const goal = Number(campaign.goalAmount);
+                const raised = Number(analytics?.donation?.totalAmount ?? 0);
+                const rawPercentage = computeRaisedPercentage(raised, goal);
+                const displayPercentage = Math.min(100, Math.round(rawPercentage));
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {tDetail("goalProgress", { raised: formatInr(raised), goal: formatInr(goal) })}
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {rawPercentage >= 100 ? tDetail("goalReached") : `${displayPercentage}%`}
+                      </span>
+                    </div>
+                    <Progress value={displayPercentage} />
+                  </>
+                );
+              })()}
             </div>
-            {campaign.goalAmount && (
-              <div className="space-y-2 rounded-xl border bg-muted/40 p-3">
-                {(() => {
-                  const goal = Number(campaign.goalAmount);
-                  const raised = Number(analytics?.donation?.totalAmount ?? 0);
-                  const rawPercentage = computeRaisedPercentage(raised, goal);
-                  const displayPercentage = Math.min(100, Math.round(rawPercentage));
-                  return (
-                    <>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {tDetail("goalProgress", { raised: formatInr(raised), goal: formatInr(goal) })}
-                        </span>
-                        <span className="font-medium tabular-nums">
-                          {rawPercentage >= 100 ? tDetail("goalReached") : `${displayPercentage}%`}
-                        </span>
-                      </div>
-                      <Progress value={displayPercentage} />
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-            {!analytics || analytics.donations.length === 0 ? (
-              <EmptyState icon={<HandCoins className="size-6" />} title={tDetail("donationsEmpty")} />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tDetail("donationColumns.donor")}</TableHead>
-                    <TableHead>{tDetail("donationColumns.amount")}</TableHead>
-                    <TableHead>{tDetail("donationColumns.date")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {analytics.donations.map((donation) => (
-                    <TableRow key={donation.id}>
-                      <TableCell className="font-medium">{donation.donorName}</TableCell>
-                      <TableCell className="tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDateTime(donation.donatedAt, locale)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-        )}
-
-        <TabsContent value="analytics">
-          {campaign.lastRunAt ? (
-            <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <StatCard label={tDetail("stats.recipients")} value={delivery?.recipients ?? 0} />
-                <StatCard label={tDetail("stats.sent")} value={delivery?.sent ?? 0} />
-                <StatCard label={tDetail("stats.delivered")} value={delivery?.delivered ?? 0} />
-                <StatCard label={tDetail("stats.failed")} value={delivery?.failed ?? 0} />
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground">{formatDate(campaign.lastRunAt, locale)}</p>
-            </>
-          ) : (
-            <EmptyState icon={<Send className="size-6" />} title={tDetail("noMessagesSent")} />
           )}
-        </TabsContent>
-      </Tabs>
+          {!analytics || analytics.donations.length === 0 ? (
+            <EmptyState icon={<HandCoins className="size-6" />} title={tDetail("donationsEmpty")} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tDetail("donationColumns.donor")}</TableHead>
+                  <TableHead>{tDetail("donationColumns.amount")}</TableHead>
+                  <TableHead>{tDetail("donationColumns.date")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {analytics.donations.map((donation) => (
+                  <TableRow key={donation.id}>
+                    <TableCell className="font-medium">{donation.donorName}</TableCell>
+                    <TableCell className="tabular-nums">{donation.itemDescription ?? formatDonationAmount(donation.amount)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDateTime(donation.donatedAt, locale)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      )}
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

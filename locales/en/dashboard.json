@@ -791,22 +791,13 @@
     "detail": {
       "backLink": "All campaigns",
       "tabs": {
-        "overview": "Overview",
-        "donations": "Donations",
-        "analytics": "Analytics"
+        "donations": "Donations"
       },
       "stats": {
-        "recipients": "Recipients",
-        "sent": "Sent",
-        "delivered": "Delivered",
-        "failed": "Failed",
         "raised": "Raised",
         "donors": "Donors"
       },
-      "aboutTitle": "About this campaign",
-      "noDescription": "No description added.",
       "donationsEmpty": "No donations recorded for this campaign yet.",
-      "noMessagesSent": "No messages have been sent for this campaign yet.",
       "notLinkedToDonations": "This campaign isn't linked to a donation purpose.",
       "donationColumns": {
         "donor": "Donor",

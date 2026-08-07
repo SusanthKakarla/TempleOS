@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Building2, Flame, HandHeart, PartyPopper, ShieldCheck } from "lucide-react";
+import { Building2, Flame, HandHeart, PartyPopper } from "lucide-react";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion-reveal";
 
 const REASONS = [
@@ -7,7 +7,6 @@ const REASONS = [
   { icon: Flame, title: "Daily Maintenance", description: "Upkeep of the sanctum, lighting, and daily rituals that never pause." },
   { icon: HandHeart, title: "Annadanam", description: "Free meals served to devotees and the needy as an act of selfless service." },
   { icon: PartyPopper, title: "Festival Celebrations", description: "Vibrant festivals and processions that bring the community together." },
-  { icon: ShieldCheck, title: "Temple Preservation", description: "Protecting sacred art, architecture, and traditions for the future." },
 ];
 
 /** New, purely presentational section — no data fetching, static copy per the redesign brief. */

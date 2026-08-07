@@ -794,22 +794,13 @@
     "detail": {
       "backLink": "అన్ని ప్రచారాలు",
       "tabs": {
-        "overview": "అవలోకనం",
-        "donations": "విరాళాలు",
-        "analytics": "విశ్లేషణలు"
+        "donations": "విరాళాలు"
       },
       "stats": {
-        "recipients": "గ్రహీతలు",
-        "sent": "పంపబడింది",
-        "delivered": "డెలివరీ అయింది",
-        "failed": "విఫలమైంది",
         "raised": "సేకరించింది",
         "donors": "దాతలు"
       },
-      "aboutTitle": "ఈ ప్రచారం గురించి",
-      "noDescription": "వివరణ జోడించలేదు.",
       "donationsEmpty": "ఈ ప్రచారం కోసం ఇంకా విరాళాలు నమోదు కాలేదు.",
-      "noMessagesSent": "ఈ ప్రచారం కోసం ఇంకా సందేశాలు పంపబడలేదు.",
       "notLinkedToDonations": "ఈ ప్రచారం ఏ విరాళ ప్రయోజనానికి లింక్ చేయబడలేదు.",
       "donationColumns": {
         "donor": "దాత",
