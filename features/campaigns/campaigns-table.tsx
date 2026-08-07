@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Copy, ExternalLink, Eye, Link2, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
+import { ExternalLink, Eye, Link2, Megaphone, Pause, Play, Plus, Send, Trash2, XCircle } from "lucide-react";
 import type { Campaign, CampaignStatus } from "@/types/db";
 import { CAMPAIGN_TYPES } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -150,16 +150,6 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount, donation
     }
   }
 
-  async function handleDuplicate(campaign: Campaign) {
-    setPendingId(campaign.id);
-    try {
-      const response = await fetch(`/api/campaigns/${campaign.id}/duplicate`, { method: "POST" });
-      if (response.ok) refresh();
-    } finally {
-      setPendingId(null);
-    }
-  }
-
   async function handleDelete(campaign: Campaign) {
     if (!window.confirm(t("confirm.delete"))) return;
     setError(null);
@@ -221,11 +211,6 @@ export function CampaignsTable({ campaigns, page, pageSize, totalCount, donation
         onClick: () => handleStatusAction(campaign, "archive"),
       });
     }
-    items.push({
-      label: t("actionItems.duplicate"),
-      icon: <Copy className="size-4" />,
-      onClick: () => handleDuplicate(campaign),
-    });
     if (campaign.status === "draft") {
       items.push({
         label: tCommon("delete"),

@@ -709,7 +709,6 @@
     },
     "actionItems": {
       "viewDetails": "View details",
-      "duplicate": "Duplicate",
       "pause": "Pause",
       "resume": "Resume",
       "cancel": "Cancel",
@@ -729,7 +728,6 @@
     "deleteError": "Failed to delete campaign",
     "statusChangeError": "Failed to update campaign",
     "sendError": "Failed to send campaign",
-    "scheduleError": "Failed to schedule campaign",
     "form": {
       "createTitle": "Create Campaign",
       "editTitle": "Edit Campaign",
@@ -757,7 +755,7 @@
       "startDateLabel": "Campaign start date",
       "endDateLabel": "Campaign end date",
       "scheduleTypeLabel": "Send",
-      "scheduleTypeNow": "Send immediately",
+      "scheduleTypeNow": "Now",
       "scheduleTypeLater": "Schedule for later",
       "scheduleTypeOneTime": "One-time",
       "scheduleTypeRecurring": "Recurring",
@@ -782,7 +780,7 @@
       "linkCopiedToast": "Donation link copied to clipboard."
     },
     "audienceOptions": {
-      "all": "All devotees",
+      "all": "All",
       "active": "Active devotees",
       "donors": "Donors",
       "opted_in": "WhatsApp opted-in",
@@ -819,6 +817,18 @@
       "goalReached": "Goal reached! 🎉",
       "previewTitle": "Message preview",
       "previewNotReady": "Preview isn't available yet.",
+      "scheduleModal": {
+        "title": "Schedule Campaign",
+        "dateLabel": "Date",
+        "timeLabel": "Time",
+        "selectedPreview": "Scheduled for {value}",
+        "confirm": "Schedule Campaign",
+        "scheduling": "Scheduling...",
+        "successToast": "Campaign scheduled",
+        "pastError": "Please select a future date and time.",
+        "notFoundError": "Unable to schedule this campaign. Please refresh and try again.",
+        "failedError": "Campaign scheduling failed. Please try again."
+      },
       "donationLink": {
         "title": "Donation Link",
         "openButton": "Open Campaign",

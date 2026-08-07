@@ -6,6 +6,7 @@ import { getCampaignById, updateCampaign, updateCampaignStatus } from "@/lib/db/
 import { canTransitionCampaignStatus } from "@/lib/campaigns/lifecycle";
 import { computeNextRunAt } from "@/lib/campaigns/recurrence";
 import { isDonationCampaignReady } from "@/lib/campaigns/donation-message";
+import { getWhatsAppAccountByTenant } from "@/lib/db/whatsapp-accounts";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -14,8 +15,8 @@ interface RouteParams {
 const scheduleSchema = z.object({
   scheduledAt: z
     .string()
-    .refine((value) => !Number.isNaN(Date.parse(value)), "Must be a valid date/time")
-    .refine((value) => Date.parse(value) > Date.now(), "Scheduled time must be in the future")
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Please select a future date and time.")
+    .refine((value) => Date.parse(value) > Date.now(), "Please select a future date and time.")
     .optional(),
   recurrenceRule: z.enum(["daily", "weekly", "monthly"]).optional(),
 });
@@ -34,6 +35,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   if (!canTransitionCampaignStatus(existing.status, "scheduled")) {
     return NextResponse.json({ error: `Cannot schedule a campaign from "${existing.status}"` }, { status: 409 });
   }
+  // Matches send/route.ts's exact WhatsApp-connection check — a campaign
+  // can't be scheduled to broadcast over a channel that isn't actually
+  // connected yet.
+  if (existing.channel === "whatsapp") {
+    const account = await getWhatsAppAccountByTenant(session.tenantId);
+    if (!account || account.status !== "connected") {
+      return NextResponse.json(
+        { error: "WhatsApp is not connected. Please connect WhatsApp before scheduling this campaign." },
+        { status: 422 },
+      );
+    }
+  }
   // Matches run-campaign.ts's content gate exactly — a donation-ready
   // campaign (goal/dates/purpose all set, the only path left now that the
   // "Message" field is gone) needs no separate template/custom message,
@@ -42,7 +55,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Add a message or template before scheduling" }, { status: 422 });
   }
 
-  const json = await req.json().catch(() => null);
+  // An empty object (not null) is the safe fallback for an unparseable/empty
+  // body — scheduleSchema's fields are all optional, so `{}` still validates
+  // cleanly and falls through to the existing "Pick a send time" 422 below,
+  // instead of Zod's raw, confusing "expected object, received null" (the
+  // original bug: the frontend used to POST with no body at all).
+  const json = await req.json().catch(() => ({}));
   const parsed = scheduleSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });

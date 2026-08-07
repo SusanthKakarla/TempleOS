@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ChevronDown, Copy } from "lucide-react";
+import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +93,6 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
   const [audienceLoading, setAudienceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<false | "draft" | "send">(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   // Synchronous re-entrancy guard for handleSubmit — `submitting` above is a
   // React state update (batched, not applied until the next render), so a
   // fast double-click or a duplicate synchronous call can still slip through
@@ -302,80 +300,74 @@ export function CampaignFormDialog({ mode, campaign, donationLink, trigger, onSa
             </div>
           </div>
 
-          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-            <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground">
-              {t("advancedOptions")}
-              <ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="space-y-1.5">
-                <Label>{t("audienceLabel")}</Label>
-                <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
-                  <SelectTrigger size="lg" className="w-full">
+          <div className="space-y-4 rounded-2xl border p-4">
+            <div className="space-y-1.5">
+              <Label>{t("audienceLabel")}</Label>
+              <Select value={audienceType} onValueChange={(v) => setAudienceType((v as AudienceOptionType) ?? "all")}>
+                <SelectTrigger size="lg" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["all", "active", "donors", "opted_in", "language"] as const).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {tAudience(option)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {audienceType === "language" && (
+                <Select value={audienceLanguage} onValueChange={(v) => setAudienceLanguage((v as SupportedLanguage) ?? "en")}>
+                  <SelectTrigger size="lg" className="mt-2 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(["all", "active", "donors", "opted_in", "language"] as const).map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {tAudience(option)}
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="te">తెలుగు</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {audienceLoading
+                  ? t("audienceCountLoading")
+                  : audienceCount === null
+                    ? t("audienceUnsupported")
+                    : t("audienceCount", { count: audienceCount })}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>{t("scheduleTypeLabel")}</Label>
+              <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
+                <SelectTrigger size="lg" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="now">{t("scheduleTypeNow")}</SelectItem>
+                  <SelectItem value="later">{t("scheduleTypeLater")}</SelectItem>
+                  <SelectItem value="recurring">{t("scheduleTypeRecurring")}</SelectItem>
+                </SelectContent>
+              </Select>
+              {scheduleChoice === "later" && (
+                <div className="mt-2">
+                  <DateTimeField id="campaign-scheduled-at" label={t("scheduledAtLabel")} value={scheduledAt} onChange={setScheduledAt} />
+                </div>
+              )}
+              {scheduleChoice === "recurring" && (
+                <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
+                  <SelectTrigger size="lg" className="mt-2 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECURRENCE_RULES.map((rule) => (
+                      <SelectItem key={rule} value={rule}>
+                        {tRecurrence(rule)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {audienceType === "language" && (
-                  <Select value={audienceLanguage} onValueChange={(v) => setAudienceLanguage((v as SupportedLanguage) ?? "en")}>
-                    <SelectTrigger size="lg" className="mt-2 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="te">తెలుగు</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  {audienceLoading
-                    ? t("audienceCountLoading")
-                    : audienceCount === null
-                      ? t("audienceUnsupported")
-                      : t("audienceCount", { count: audienceCount })}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>{t("scheduleTypeLabel")}</Label>
-                <Select value={scheduleChoice} onValueChange={(v) => setScheduleChoice((v as ScheduleChoice) ?? "now")}>
-                  <SelectTrigger size="lg" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="now">{t("scheduleTypeNow")}</SelectItem>
-                    <SelectItem value="later">{t("scheduleTypeLater")}</SelectItem>
-                    <SelectItem value="recurring">{t("scheduleTypeRecurring")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {scheduleChoice === "later" && (
-                  <div className="mt-2">
-                    <DateTimeField id="campaign-scheduled-at" label={t("scheduledAtLabel")} value={scheduledAt} onChange={setScheduledAt} />
-                  </div>
-                )}
-                {scheduleChoice === "recurring" && (
-                  <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule((v as RecurrenceRule) ?? "weekly")}>
-                    <SelectTrigger size="lg" className="mt-2 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RECURRENCE_RULES.map((rule) => (
-                        <SelectItem key={rule} value={rule}>
-                          {tRecurrence(rule)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+              )}
+            </div>
+          </div>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}

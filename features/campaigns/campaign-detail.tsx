@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Archive, ArrowLeft, CalendarClock, Copy, Eye, HandCoins, Pause, Play, Send, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { Archive, ArrowLeft, CalendarClock, Eye, HandCoins, Pause, Play, Send, XCircle } from "lucide-react";
 import type { Campaign, SupportedLanguage } from "@/types/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { formatDate, formatDateTime } from "@/lib/date";
@@ -19,6 +23,12 @@ import { formatDonationAmount, formatInr } from "@/lib/currency";
 import { computeRaisedPercentage } from "@/lib/campaigns/donation-message";
 import { CampaignFormDialog } from "./campaign-form-dialog";
 import { CampaignActions } from "./campaign-actions";
+
+function startOfToday(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
 
 interface CampaignAnalytics {
   delivery: { recipients: number; queued: number; sent: number; delivered: number; failed: number; retrying: number };
@@ -52,6 +62,10 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
     null,
   );
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
 
   useEffect(() => {
     fetch(`/api/campaigns/${campaign.id}/analytics`)
@@ -104,31 +118,44 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
     }
   }
 
-  async function handleDuplicate() {
-    setPending(true);
-    try {
-      const response = await fetch(`/api/campaigns/${campaign.id}/duplicate`, { method: "POST" });
-      const body = (await response.json().catch(() => ({}))) as { campaign?: Campaign };
-      if (response.ok && body.campaign) router.push(`/dashboard/campaigns/${body.campaign.id}`);
-    } finally {
-      setPending(false);
-    }
+  /** Opens the picker only — never touches the network or mutates the campaign, so simply opening the scheduler can't have any side effect. */
+  function handleSchedule() {
+    setScheduleDate("");
+    setScheduleTime("");
+    setScheduleOpen(true);
   }
 
-  async function handleSchedule() {
-    setError(null);
-    setPending(true);
+  async function handleConfirmSchedule() {
+    if (!scheduleDate || !scheduleTime) {
+      toast.error(tDetail("scheduleModal.pastError"));
+      return;
+    }
+    const timestamp = new Date(`${scheduleDate}T${scheduleTime}`);
+    if (Number.isNaN(timestamp.getTime()) || timestamp.getTime() <= Date.now()) {
+      toast.error(tDetail("scheduleModal.pastError"));
+      return;
+    }
+    setScheduling(true);
     try {
-      const response = await fetch(`/api/campaigns/${campaign.id}/schedule`, { method: "POST" });
+      const response = await fetch(`/api/campaigns/${campaign.id}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledAt: timestamp.toISOString() }),
+      });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? t("scheduleError"));
+        const message =
+          response.status === 404 ? tDetail("scheduleModal.notFoundError") : (body.error ?? tDetail("scheduleModal.failedError"));
+        toast.error(message);
+        return;
       }
+      toast.success(tDetail("scheduleModal.successToast"));
+      setScheduleOpen(false);
       refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("scheduleError"));
+    } catch {
+      toast.error(tDetail("scheduleModal.failedError"));
     } finally {
-      setPending(false);
+      setScheduling(false);
     }
   }
 
@@ -217,10 +244,6 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
                 {t("actionItems.archive")}
               </Button>
             )}
-            <Button variant="ghost" className="gap-1.5" disabled={pending} onClick={handleDuplicate}>
-              <Copy className="size-4" />
-              {t("actionItems.duplicate")}
-            </Button>
           </>
         }
       />
@@ -350,6 +373,44 @@ export function CampaignDetail({ campaign, donationLink }: { campaign: Campaign;
               ))}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{tDetail("scheduleModal.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="schedule-date">{tDetail("scheduleModal.dateLabel")}</Label>
+              <DatePicker id="schedule-date" size="lg" value={scheduleDate} onChange={setScheduleDate} minDate={startOfToday()} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="schedule-time">{tDetail("scheduleModal.timeLabel")}</Label>
+              <Input
+                id="schedule-time"
+                type="time"
+                value={scheduleTime}
+                onChange={(event) => setScheduleTime(event.target.value)}
+              />
+            </div>
+            {scheduleDate && scheduleTime && !Number.isNaN(new Date(`${scheduleDate}T${scheduleTime}`).getTime()) && (
+              <p className="text-sm text-muted-foreground">
+                {tDetail("scheduleModal.selectedPreview", {
+                  value: formatDateTime(new Date(`${scheduleDate}T${scheduleTime}`).toISOString(), locale),
+                })}
+              </p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setScheduleOpen(false)} disabled={scheduling}>
+              {tCommon("cancel")}
+            </Button>
+            <Button onClick={handleConfirmSchedule} disabled={scheduling || !scheduleDate || !scheduleTime}>
+              {scheduling ? tDetail("scheduleModal.scheduling") : tDetail("scheduleModal.confirm")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
