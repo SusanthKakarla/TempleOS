@@ -15,7 +15,6 @@ import { DonateStory } from "@/features/payments/donate/donate-story";
 import { DonateImpact } from "@/features/payments/donate/donate-impact";
 import { DonateGallery } from "@/features/payments/donate/donate-gallery";
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
-import { DonateCta } from "@/features/payments/donate/donate-cta";
 import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
 interface PageParams {
@@ -227,10 +226,6 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
             </p>
           </div>
         )}
-      </div>
-
-      <div className="mt-12 lg:mt-16">
-        <DonateCta campaignTitle={campaign.title} shareUrl={shareUrl} />
       </div>
 
       <DonateFooter templeName={tenant.name} contactPhone={tenant.defaultContactPhone} />

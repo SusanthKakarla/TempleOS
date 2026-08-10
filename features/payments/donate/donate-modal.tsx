@@ -80,17 +80,6 @@ export function DonateModalProvider({
     return () => observer.disconnect();
   }, []);
 
-  // A devotee arriving on an old link with #donate in it (or from a WhatsApp
-  // message that carried one) still lands on the form, now as the dialog.
-  useEffect(() => {
-    function openFromHash() {
-      if (window.location.hash === "#donate") setIsOpen(true);
-    }
-    openFromHash();
-    window.addEventListener("hashchange", openFromHash);
-    return () => window.removeEventListener("hashchange", openFromHash);
-  }, []);
-
   return (
     <DonateModalContext.Provider value={{ open, canDonate, blockedReason }}>
       {children}
@@ -150,17 +139,5 @@ export function DonateModalProvider({
         </DialogContent>
       </Dialog>
     </DonateModalContext.Provider>
-  );
-}
-
-/** The hero/CTA donate buttons render this so their label and disabled-ness track the campaign state from one place. */
-export function DonateModalTrigger({ className, size = "xl" }: { className?: string; size?: "default" | "lg" | "xl" }) {
-  const { open, canDonate, blockedReason } = useDonateModal();
-
-  return (
-    <Button size={size} onClick={open} className={className}>
-      <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
-      {canDonate ? "Donate Now" : DONATE_BUTTON_LABEL[blockedReason!]}
-    </Button>
   );
 }
