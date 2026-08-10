@@ -15,7 +15,7 @@ import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-ser
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/image-lightbox";
-import { supportsUpiDeepLink } from "@/lib/upi-deep-link";
+import { buildUpiAppLinks, detectUpiPlatformFromBrowser } from "@/lib/upi-deep-link";
 
 declare global {
   interface Window {
@@ -122,10 +122,10 @@ export function DonationCheckoutForm({
   // (no deep link — QR and copy only) and the client swaps in the real one on
   // hydration. useSyncExternalStore rather than an effect so those two never
   // disagree mid-render.
-  const canOpenUpiApp = useSyncExternalStore(
+  const upiPlatform = useSyncExternalStore(
     subscribeToNothing,
-    () => supportsUpiDeepLink(navigator.userAgent),
-    () => false,
+    () => detectUpiPlatformFromBrowser(navigator),
+    () => "none" as const,
   );
 
 
@@ -314,16 +314,12 @@ export function DonationCheckoutForm({
           </p>
         </div>
 
-        {upiUri && canOpenUpiApp && (
+        {/*
+          Android already has an OS-level chooser, so one generic upi:// link
+          is enough and covers every installed UPI app.
+        */}
+        {upiUri && upiPlatform === "android" && (
           <>
-            {/*
-              Android only. The tap is the whole point: it is attributable to
-              a user gesture (Safari drops scheme navigations that aren't),
-              and it doubles as the retry when someone backs out of the app
-              chooser. On Apple platforms this button is not rendered at all —
-              WhatsApp registers upi:// there and would be offered instead of
-              a payment app.
-            */}
             <Button
               size="xl"
               className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
@@ -338,7 +334,38 @@ export function DonationCheckoutForm({
           </>
         )}
 
-        {upiUri && !canOpenUpiApp && (
+        {/*
+          iOS has no chooser of its own — it hands a scheme to whichever app
+          claims it, and WhatsApp claims upi:// — so the chooser is built here
+          instead, one button per app's own scheme. Each is handed the exact
+          same payment query. An app that isn't installed simply does nothing
+          when tapped, which is why the QR and copyable UPI ID stay below.
+        */}
+        {upiUri && upiPlatform === "ios" && (
+          <div className="space-y-3">
+            <p className="text-center text-sm font-medium text-[#2B2118]">
+              {upiAmount !== null ? `Pay ${formatInr(upiAmount)} with` : "Pay with"}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {buildUpiAppLinks(upiUri).map((app) => (
+                <Button
+                  key={app.name}
+                  size="lg"
+                  variant="outline"
+                  className="w-full justify-center rounded-full border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]"
+                  render={<a href={app.href} />}
+                >
+                  {app.name}
+                </Button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-[#8C7B6D]">
+              Nothing happened? That app may not be installed — scan the QR code below with any UPI app instead.
+            </p>
+          </div>
+        )}
+
+        {upiUri && upiPlatform === "none" && (
           <p className="rounded-[14px] bg-[#FFF6ED] p-3 text-center text-sm text-[#6B5B4F]">
             {upi?.qrCodeUrl
               ? "Scan the QR code below with any UPI app, or copy the UPI ID and pay from your phone."
@@ -417,7 +444,7 @@ export function DonationCheckoutForm({
                   <Copy className="size-3.5" />
                   Copy UPI ID
                 </Button>
-                {upiUri && canOpenUpiApp && (
+                {upiUri && upiPlatform === "android" && (
                   <Button
                     type="button"
                     variant="outline"
