@@ -5,7 +5,6 @@ import Script from "next/script";
 import { toast } from "sonner";
 import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Download, Loader2, Lock, Maximize2, PartyPopper, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { LabeledInput } from "@/components/ui/labeled-input";
 import { Label } from "@/components/ui/label";
@@ -106,14 +105,6 @@ export function DonationCheckoutForm({
   const [donorEmail, setDonorEmail] = useState("");
   const [donorPan, setDonorPan] = useState("");
   const [donationMessage, setDonationMessage] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  // Separate from `isAnonymous` — that controls whether the donor's name is
-  // shown publicly; this confirms who is actually paying. Purely a
-  // client-side gate: the checkout schema has no matching field, so it's
-  // never sent to the API and never has to be — it just blocks submission
-  // until checked.
-  const [isSelfPayment, setIsSelfPayment] = useState(false);
-  const [selfPaymentTouched, setSelfPaymentTouched] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -147,9 +138,8 @@ export function DonationCheckoutForm({
         donorEmail: donorEmail.trim() || null,
         donorPan: donorPan.trim() || null,
         donationMessage: donationMessage.trim() || null,
-        isAnonymous,
       }),
-    [amount, donorName, donorPhone, donorEmail, donorPan, donationMessage, isAnonymous],
+    [amount, donorName, donorPhone, donorEmail, donorPan, donationMessage],
   );
   const fieldErrors = validation.success ? {} : validation.error.flatten().fieldErrors;
   const fieldError = (field: string) => (touched[field] ? fieldErrors[field as keyof typeof fieldErrors]?.[0] : undefined);
@@ -190,13 +180,8 @@ export function DonationCheckoutForm({
   async function handleDonate() {
     setError(null);
     setTouched({ amount: true, donorName: true, donorPhone: true, donorEmail: true, donorPan: true });
-    setSelfPaymentTouched(true);
     if (!validation.success) {
       setError(validation.error.issues[0]?.message ?? "Please check the form for errors.");
-      return;
-    }
-    if (!isSelfPayment) {
-      setError("Please confirm you are making this donation using your own payment method.");
       return;
     }
     setStatus("processing");
@@ -482,7 +467,7 @@ export function DonationCheckoutForm({
     );
   }
 
-  const canSubmit = validation.success && status !== "processing" && isSelfPayment;
+  const canSubmit = validation.success && status !== "processing";
   const amountNum = Number(amount);
   const donateButtonLabel =
     status === "processing" ? "Processing..." : amountNum > 0 ? `Donate ${formatInr(amountNum)}` : "Donate Now";
@@ -573,51 +558,6 @@ export function DonationCheckoutForm({
           required
           requiredLabel="Required"
         />
-        <div>
-          <label className="flex items-center gap-2 text-sm text-[#2F211B]">
-            <Checkbox
-              checked={isAnonymous}
-              onCheckedChange={(checked) => setIsAnonymous(checked === true)}
-              className="border-[#E3D8CC] bg-white data-checked:border-[#D7B53A] data-checked:bg-[#D7B53A] data-checked:text-white"
-            />
-            Donate anonymously
-          </label>
-          <p className="mt-1 pl-6 text-xs text-[#756A61]">Your name will not be displayed publicly.</p>
-        </div>
-
-        {/*
-          Deliberately separate from `isAnonymous` above: that one only
-          controls whether the donor's name is shown publicly. This is a
-          payment-ownership confirmation and gates submission on its own —
-          see the `isSelfPayment` check in handleDonate.
-        */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-[#2F211B]">
-            <Checkbox
-              checked={isSelfPayment}
-              onCheckedChange={(checked) => {
-                setIsSelfPayment(checked === true);
-                if (checked === true) setSelfPaymentTouched(false);
-              }}
-              required
-              aria-required="true"
-              aria-invalid={!isSelfPayment && (selfPaymentTouched || validation.success)}
-              className="border-[#E3D8CC] bg-white data-checked:border-[#D7B53A] data-checked:bg-[#D7B53A] data-checked:text-white"
-            />
-            I am making this donation myself
-          </label>
-          <p className="mt-1 pl-6 text-xs text-[#756A61]">I confirm that I am making this payment using my own payment method.</p>
-          {/*
-            The Donate button is disabled until this is checked, so a click
-            can never reach handleDonate's own check while everything else
-            is still incomplete — shown as soon as this becomes the only
-            remaining blocker (rest of the form valid), not just after a
-            blocked submit attempt, so the reminder is actually reachable.
-          */}
-          {!isSelfPayment && (selfPaymentTouched || validation.success) && (
-            <p className="mt-1 pl-6 text-xs text-[#B3261E]">Please confirm this before continuing.</p>
-          )}
-        </div>
       </div>
 
       <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
