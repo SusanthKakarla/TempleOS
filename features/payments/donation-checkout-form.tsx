@@ -525,7 +525,7 @@ export function DonationCheckoutForm({
           icon={<span className="text-base font-medium text-[#756A61]">₹</span>}
           placeholder="Enter amount"
           inputSize="lg"
-          className={FILLED_INPUT_CLASS}
+          className={cn(FILLED_INPUT_CLASS, "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none")}
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           onBlur={() => markTouched("amount")}

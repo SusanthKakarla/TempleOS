@@ -1,4 +1,5 @@
 import { Poppins, Inter } from "next/font/google";
+import { ForceLightTheme } from "./force-light-theme";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function DonateLayout({ children }: { children: React.ReactNode }
     <div
       className={`${poppins.variable} ${inter.variable} donate-theme-light min-h-screen bg-[#FFF8E8] text-[#2F211B] [--font-heading:var(--font-donate-heading)] [--font-sans:var(--font-donate-sans)]`}
     >
+      <ForceLightTheme />
       {children}
     </div>
   );
