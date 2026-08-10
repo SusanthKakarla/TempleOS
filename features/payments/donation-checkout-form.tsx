@@ -48,7 +48,7 @@ interface DonationCheckoutFormProps {
 
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
 
-const PRESET_AMOUNTS_ROW_1 = [101, 251, 501];
+const PRESET_AMOUNTS_ROW_1 = [116, 251, 501];
 const PRESET_AMOUNTS_ROW_2 = [1001, 5001];
 
 /** The platform never changes mid-session, so the store has nothing to subscribe to. */
