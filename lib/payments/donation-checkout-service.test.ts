@@ -3,6 +3,7 @@ import { getTenantBySlug } from "@/lib/db/tenants";
 import { getCampaignBySlugForTenant } from "@/lib/db/campaigns";
 import { getCampaignDonationSummary } from "@/lib/db/campaign-analytics";
 import { getActivePaymentAccountForTenant } from "@/lib/db/tenant-payment-accounts";
+import { createPendingUpiTransaction } from "@/lib/db/payment-transactions";
 import { isProviderActive } from "@/lib/db/payment-providers";
 import { createCheckoutOrder, loadDonationCheckoutContext, resolveDonationCheckoutAvailability } from "./donation-checkout-service";
 import type { Campaign, Tenant, TenantPaymentAccount } from "@/types/db";
@@ -478,6 +479,101 @@ describe("loadDonationCheckoutContext", () => {
     expect(loaded?.context.campaign.id).toBe("campaign-1");
     expect(loaded?.canDonate).toBe(false);
     expect(loaded?.blockedReason).toBe("disabled");
+  });
+});
+
+describe("createCheckoutOrder — the upi_manual payment link", () => {
+  const upiAccount: TenantPaymentAccount = {
+    ...account,
+    providerKey: "upi_manual",
+    upiVpa: "temple@upi",
+    payeeName: "Sri Shiva Temple",
+    defaultDonationNote: null,
+  };
+
+  const checkoutInput = {
+    amount: 501,
+    donorName: "Test Donor",
+    donorPhone: "9999999999",
+    donorEmail: null,
+    donorPan: null,
+    donationMessage: null,
+    isAnonymous: false,
+  };
+
+  beforeEach(() => {
+    vi.mocked(getTenantBySlug).mockReset().mockResolvedValue(tenant);
+    vi.mocked(getCampaignBySlugForTenant).mockReset().mockResolvedValue(makeCampaign({ title: "Renovation Donation" }));
+    vi.mocked(getCampaignDonationSummary)
+      .mockReset()
+      .mockResolvedValue({ totalAmount: 0, donationCount: 0, donorCount: 0, lastDonationAt: null });
+    vi.mocked(getActivePaymentAccountForTenant).mockReset().mockResolvedValue(upiAccount);
+    vi.mocked(isProviderActive).mockReset().mockResolvedValue(true);
+    vi.mocked(createPendingUpiTransaction)
+      .mockReset()
+      .mockImplementation(async (input) => ({ id: "txn-1", ...input }) as never);
+  });
+
+  it("builds a standard, app-agnostic upi://pay link from the temple's own configuration", async () => {
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput);
+    const uri = order?.upiUri ?? "";
+
+    expect(uri.startsWith("upi://pay?")).toBe(true);
+    const params = new URLSearchParams(uri.slice("upi://pay?".length));
+    expect(params.get("pa")).toBe("temple@upi");
+    expect(params.get("pn")).toBe("Sri Shiva Temple");
+    expect(params.get("am")).toBe("501.00");
+    expect(params.get("cu")).toBe("INR");
+    expect(params.get("tn")).toBe("Renovation Donation");
+  });
+
+  it("never emits a vendor-specific or unrelated scheme — the OS chooser decides which UPI app opens", async () => {
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput);
+    const uri = order?.upiUri ?? "";
+
+    for (const scheme of ["phonepe://", "whatsapp://", "wa.me", "gpay://", "paytmmp://", "tez://"]) {
+      expect(uri).not.toContain(scheme);
+    }
+    expect(order?.redirectUrl).toBeNull();
+  });
+
+  it("URL-encodes payee name and note so spaces and symbols can't break the link", async () => {
+    vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue({
+      ...upiAccount,
+      payeeName: "Sri Uma & Ramalingeswara Temple",
+      defaultDonationNote: "Annadanam / Seva",
+    });
+
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput);
+    const uri = order?.upiUri ?? "";
+
+    // Encoded on the wire (never a raw space or &, which would truncate the query)...
+    expect(uri).toContain("pn=Sri%20Uma%20%26%20Ramalingeswara%20Temple");
+    expect(uri).toContain("tn=Annadanam%20%2F%20Seva");
+    // ...and still decodes back to exactly what the admin configured.
+    const params = new URLSearchParams(uri.slice("upi://pay?".length));
+    expect(params.get("pn")).toBe("Sri Uma & Ramalingeswara Temple");
+    expect(params.get("tn")).toBe("Annadanam / Seva");
+  });
+
+  it("puts the campaign purpose in the note, not the donor's private message", async () => {
+    const order = await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", {
+      ...checkoutInput,
+      donationMessage: "for my mother's health",
+    });
+    const params = new URLSearchParams((order?.upiUri ?? "").slice("upi://pay?".length));
+
+    expect(params.get("tn")).toBe("Renovation Donation");
+    // The message is still captured against the transaction for the temple.
+    expect(vi.mocked(createPendingUpiTransaction).mock.calls[0][0].donorMessage).toBe("for my mother's health");
+  });
+
+  it("refuses to build a link when the temple has no VPA or payee name saved", async () => {
+    vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue({ ...upiAccount, upiVpa: null });
+    expect(await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput)).toBeNull();
+
+    vi.mocked(getActivePaymentAccountForTenant).mockResolvedValue({ ...upiAccount, payeeName: null });
+    expect(await createCheckoutOrder("sri-temple", "annadanam-fund", "correct-token", checkoutInput)).toBeNull();
   });
 });
 

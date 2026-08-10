@@ -261,7 +261,14 @@ export async function createCheckoutOrder(
   if (context.account.providerKey === "upi_manual") {
     if (!context.account.upiVpa || !context.account.payeeName) return null;
     const receiptRef = generateReceiptRef();
-    const note = input.donationMessage || context.account.defaultDonationNote || context.campaign.title;
+    // `tn` identifies WHAT the money is for, so it reads usefully in the
+    // temple's own bank/UPI statement: the admin's configured note, else the
+    // campaign itself. Deliberately not the donor's free-text message — that
+    // put "for my mother's health" in the temple's transaction narration
+    // instead of the campaign, and made reconciliation harder rather than
+    // easier. The message is still captured on the transaction (donorMessage)
+    // and shown to the temple with the donation.
+    const note = context.account.defaultDonationNote || context.campaign.title;
     const upiUri = buildUpiUri({
       vpa: context.account.upiVpa,
       payeeName: context.account.payeeName,

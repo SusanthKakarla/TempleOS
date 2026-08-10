@@ -5,6 +5,7 @@ import { getPool } from "./pool";
 import { encryptSecret } from "@/lib/payments/crypto";
 import {
   connectPaymentAccountForSuperAdmin,
+  getActivePaymentAccountForTenant,
   getDecryptedCredentialsForAccount,
   linkPartnerPaymentAccountForTenant,
   markPaymentAccountVerified,
@@ -13,6 +14,66 @@ import {
 vi.mock("./pool", () => ({
   getPool: vi.fn(),
 }));
+
+describe("getActivePaymentAccountForTenant", () => {
+  const query = vi.fn();
+
+  beforeEach(() => {
+    query.mockReset();
+    (getPool as unknown as Mock).mockReturnValue({ query });
+  });
+
+  it("regression: picks deterministically when a tenant has several active accounts — an unordered SELECT returned whichever row Postgres felt like, so a temple that had connected Razorpay (platform-disabled) before adding UPI kept being told 'payments not configured' on its live donation page", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await getActivePaymentAccountForTenant("tenant-1");
+
+    const [sql, params] = query.mock.calls[0];
+    const text = String(sql);
+    // Prefer a provider the platform has actually switched on, then the most
+    // recent connection, and never rely on an implicit row order.
+    expect(text).toContain("LEFT JOIN payment_providers");
+    expect(text).toContain("ORDER BY (p.status = 'active') DESC NULLS LAST, a.updated_at DESC");
+    expect(text).toContain("LIMIT 1");
+    expect(params).toEqual(["tenant-1"]);
+  });
+
+  it("returns null when the tenant has no active account at all", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await getActivePaymentAccountForTenant("tenant-1")).toBeNull();
+  });
+
+  it("maps the chosen row, so a UPI account surfaces its VPA and payee name", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "acct-upi",
+          tenant_id: "tenant-1",
+          provider_key: "upi_manual",
+          connection_method: "manual",
+          razorpay_account_id: null,
+          provider_merchant_id: null,
+          environment: "production",
+          upi_vpa: "temple@ybl",
+          payee_name: "Sri Temple",
+          qr_code_url: null,
+          bank_label: null,
+          default_donation_note: null,
+          status: "connected",
+          is_active: true,
+          last_validated_at: null,
+          last_validation_error: null,
+          created_at: new Date("2026-01-01T00:00:00.000Z"),
+          updated_at: new Date("2026-01-02T00:00:00.000Z"),
+        },
+      ],
+    });
+
+    const account = await getActivePaymentAccountForTenant("tenant-1");
+
+    expect(account).toMatchObject({ providerKey: "upi_manual", upiVpa: "temple@ybl", payeeName: "Sri Temple" });
+  });
+});
 
 describe("getDecryptedCredentialsForAccount", () => {
   const ORIGINAL_KEY = process.env.PAYMENT_ENCRYPTION_KEY;

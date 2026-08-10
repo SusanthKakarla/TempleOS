@@ -219,8 +219,6 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
                 }
                 canDonate={canDonate}
                 blockedReason={blockedReason}
-                campaignTitle={campaign.title}
-                shareUrl={shareUrl}
               />
               <div className="mt-6">
                 <DonateTrust providerKey={account?.providerKey ?? null} />

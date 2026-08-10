@@ -14,7 +14,6 @@ import { donationCheckoutSchema } from "@/lib/validation/payments";
 import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import { ShareButton } from "@/features/payments/share-button";
 
 declare global {
   interface Window {
@@ -44,9 +43,6 @@ interface DonationCheckoutFormProps {
   /** False when the campaign page renders but isn't currently accepting payments (not started / ended / paused / archived / payment not configured) — see donation-checkout-service.ts's page-viewable-vs-payment-allowed split. */
   canDonate: boolean;
   blockedReason: DonationBlockedReason | null;
-  /** For the Share button in the sticky mobile CTA bar below — same permanent donation link the Hero's own ShareButton uses. */
-  campaignTitle: string;
-  shareUrl: string;
 }
 
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
@@ -73,10 +69,14 @@ const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: stri
     title: "This campaign is no longer accepting donations.",
     description: "Thank you for your support.",
   },
+  // Deliberately worded as a payment-setup problem, never as "this campaign
+  // has ended" — the campaign is running fine, the temple just hasn't
+  // connected a UPI ID yet, and conflating the two sends devotees away from
+  // a live campaign.
   payment_not_configured: {
     icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
-    title: "This campaign isn't accepting donations right now",
-    description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly.",
+    title: "Online donations are temporarily unavailable for this temple",
+    description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly to donate.",
   },
   goal_reached: {
     icon: <PartyPopper className="size-10 text-[#D4AF37]" />,
@@ -93,8 +93,6 @@ export function DonationCheckoutForm({
   upi,
   canDonate,
   blockedReason,
-  campaignTitle,
-  shareUrl,
 }: DonationCheckoutFormProps) {
   const [amount, setAmount] = useState("");
   const [donorName, setDonorName] = useState("");
@@ -137,6 +135,30 @@ export function DonationCheckoutForm({
     observer.observe(heroButton);
     return () => observer.disconnect();
   }, []);
+
+  // "Donate Now" in the hero is a plain <a href="#donate">, so it works with
+  // JS off and costs no cross-component wiring. On its own though it only
+  // scrolls — on desktop the form already sits in view, so the click looked
+  // like it did nothing at all. Landing on #donate now also puts the cursor
+  // in the amount field, which is the actual next thing the devotee has to
+  // do. Scrolling is left to the browser/CSS; this only moves focus.
+  useEffect(() => {
+    if (!canDonate) return;
+
+    function focusAmount() {
+      if (window.location.hash !== "#donate") return;
+      const amountInput = document.getElementById("donation-amount");
+      if (amountInput instanceof HTMLInputElement) {
+        // preventScroll: the browser's own fragment scroll already framed the
+        // card; focusing would otherwise yank the input to the viewport edge.
+        amountInput.focus({ preventScroll: true });
+      }
+    }
+
+    focusAmount();
+    window.addEventListener("hashchange", focusAmount);
+    return () => window.removeEventListener("hashchange", focusAmount);
+  }, [canDonate]);
 
   const validation = useMemo(
     () =>
@@ -310,13 +332,43 @@ export function DonationCheckoutForm({
   if (status === "awaiting_confirmation") {
     return (
       <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+        {/*
+          Deliberately NOT "thank you, payment received": upi_manual gives
+          TempleOS no confirmation that money actually moved, so claiming
+          success here would be a lie the temple then has to walk back.
+        */}
         <div className="flex flex-col items-center gap-3 text-center">
           <CheckCircle2 className="size-10 text-emerald-600" />
-          <p className="font-heading text-lg text-[#2B2118]">Thank you for your donation.</p>
+          <p className="font-heading text-lg text-[#2B2118]">Payment initiated</p>
           <p className="text-sm text-[#6B5B4F]">
-            Once the temple confirms your payment, your donation will be recorded.
+            Complete the payment in your UPI app. Once the temple confirms it, your donation will be recorded.
           </p>
         </div>
+
+        {upiUri && (
+          <>
+            {/*
+              The real, gesture-driven way into the UPI app. handleDonate also
+              assigns window.location straight after the order call, but that
+              navigation happens after an await — iOS Safari in particular can
+              drop a custom-scheme navigation that isn't attributable to a tap.
+              This button always is, and doubles as the retry when the devotee
+              cancels the chooser or comes back to try a different app.
+            */}
+            <Button
+              size="xl"
+              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E] md:hidden"
+              render={<a href={upiUri} />}
+            >
+              {upiAmount !== null ? `Pay ${formatInr(upiAmount)} via UPI` : "Pay via UPI"}
+              <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
+            </Button>
+            <p className="hidden text-center text-sm text-[#6B5B4F] md:block">
+              Open this donation page on your mobile device to pay with UPI
+              {upi?.qrCodeUrl ? ", or scan the QR code below." : "."}
+            </p>
+          </>
+        )}
 
         {upi && (
           <div className="space-y-4 rounded-[14px] bg-[#FFF6ED] p-4">
@@ -326,19 +378,26 @@ export function DonationCheckoutForm({
                 // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
                 <img src={upi.qrCodeUrl} alt="" className="hidden size-32 shrink-0 rounded-lg border border-[#F3E7DA] object-cover md:block" />
               )}
+              {/*
+                A VPA is one long unbreakable token. With `justify-between`
+                and no shrink rules, the label collapsed to its narrowest
+                wrap ("UPI" / "ID" on two lines) while the value still
+                couldn't shrink below min-content and overflowed the card.
+                Labels hold their width; values wrap within what's left.
+              */}
               <div className="min-w-0 flex-1 space-y-2 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#6B5B4F]">UPI ID</span>
-                  <span className="font-medium text-[#2B2118]">{upi.vpa}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-[#6B5B4F]">UPI ID</span>
+                  <span className="min-w-0 text-right font-medium break-all text-[#2B2118]">{upi.vpa}</span>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#6B5B4F]">Payee Name</span>
-                  <span className="font-medium text-[#2B2118]">{upi.payeeName}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-[#6B5B4F]">Payee Name</span>
+                  <span className="min-w-0 text-right font-medium break-words text-[#2B2118]">{upi.payeeName}</span>
                 </div>
                 {upiAmount !== null && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[#6B5B4F]">Amount</span>
-                    <span className="font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="shrink-0 text-[#6B5B4F]">Amount</span>
+                    <span className="shrink-0 font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -369,8 +428,24 @@ export function DonationCheckoutForm({
             Thanks — we&apos;ve recorded your submission for the temple to verify.
           </p>
         ) : (
-          <div className="space-y-3">
-            <Label className="text-[#2B2118]">Add proof of payment (optional)</Label>
+          /*
+            Nothing here is required of the donor: the donation row already
+            exists as `pending_verification` (created before the redirect to
+            their UPI app), and the temple confirms it against its own bank
+            record. A reference number cannot be captured automatically on
+            this flow — a `upi://pay` handoff sends no callback back to the
+            web page — so rather than demand that the donor copy a UTR across
+            from another app to "finish", the whole proof step is collapsed
+            out of the way. It stays available because a reference does make
+            the temple's reconciliation easier when a donor happens to have
+            it to hand.
+          */
+          <Collapsible>
+            <CollapsibleTrigger className="flex w-full items-center justify-center gap-1.5 text-sm text-[#8C7B6D] underline-offset-4 hover:underline">
+              <ChevronDown className="size-4" aria-hidden="true" />
+              Have a UPI reference number? (optional)
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-3">
             <LabeledInput
               id="upi-reference"
               label="UPI reference number"
@@ -404,7 +479,8 @@ export function DonationCheckoutForm({
               {confirmSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
               Submit
             </Button>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
     );
@@ -571,13 +647,15 @@ export function DonationCheckoutForm({
               </>
             )}
           </Button>
-          <ShareButton
-            title={campaignTitle}
-            url={shareUrl}
-            size="xl"
-            className="shrink-0 rounded-full border-[#F3E7DA] px-4 text-[#2B2118]"
-          />
         </div>
+        {/*
+          No Share button in the payment bar. It used to sit directly beside
+          Donate in this cramped two-button row, and on a phone
+          navigator.share() opens the OS sheet with WhatsApp as its first
+          target — so a mistapped Share read as "the donate button opened
+          WhatsApp". Sharing is still offered where it belongs (the hero card
+          and the closing CTA), away from the payment action.
+        */}
       </div>
       <div className="h-24 md:hidden" aria-hidden />
     </div>

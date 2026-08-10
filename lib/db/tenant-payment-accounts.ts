@@ -56,9 +56,30 @@ export async function listActiveConnectedPaymentAccounts(): Promise<TenantPaymen
   return rows.map(mapAccount);
 }
 
+/**
+ * The one payment account a tenant actually transacts on.
+ *
+ * A tenant can legitimately hold more than one `is_active` row — connecting
+ * UPI does not disconnect a previously-connected Razorpay account — and this
+ * used to be a bare `SELECT ... WHERE is_active = true` whose `rows[0]` was
+ * whatever Postgres happened to return first. A temple that had connected
+ * Razorpay earlier and then set up UPI could keep getting the Razorpay row
+ * back; since Razorpay is `coming_soon` platform-wide, the public donation
+ * page then reported "payments not configured" even though UPI was connected
+ * and working.
+ *
+ * So the choice is now explicit and deterministic: prefer an account whose
+ * provider the platform has actually switched on, then the most recently
+ * updated one (the temple's latest intent).
+ */
 export async function getActivePaymentAccountForTenant(tenantId: string): Promise<TenantPaymentAccount | null> {
   const { rows } = await getPool().query<PaymentAccountRow>(
-    "SELECT * FROM tenant_payment_accounts WHERE tenant_id = $1 AND is_active = true",
+    `SELECT a.*
+     FROM tenant_payment_accounts a
+     LEFT JOIN payment_providers p ON p.key = a.provider_key
+     WHERE a.tenant_id = $1 AND a.is_active = true
+     ORDER BY (p.status = 'active') DESC NULLS LAST, a.updated_at DESC
+     LIMIT 1`,
     [tenantId],
   );
   return rows[0] ? mapAccount(rows[0]) : null;
