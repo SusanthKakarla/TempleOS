@@ -9,14 +9,12 @@ import { resolveCampaignHeroImage, resolveCampaignTheme } from "@/lib/campaigns/
 import { canPreviewCampaignAsAdmin } from "@/lib/campaigns/campaign-preview-access";
 import { CAMPAIGN_PREVIEW_PARAM } from "@/lib/campaigns/campaign-preview-token";
 import { EmptyState } from "@/components/empty-state";
-import { DonationCheckoutForm } from "@/features/payments/donation-checkout-form";
+import { DonateModalProvider } from "@/features/payments/donate/donate-modal";
 import { DonateHero } from "@/features/payments/donate/donate-hero";
 import { DonateStory } from "@/features/payments/donate/donate-story";
 import { DonateImpact } from "@/features/payments/donate/donate-impact";
 import { DonateGallery } from "@/features/payments/donate/donate-gallery";
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
-import { DonateTrustCards } from "@/features/payments/donate/donate-trust-cards";
-import { DonateStats } from "@/features/payments/donate/donate-stats";
 import { DonateCta } from "@/features/payments/donate/donate-cta";
 import { DonateFooter } from "@/features/payments/donate/donate-footer";
 
@@ -151,7 +149,22 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
   const shareUrl = buildDonationLink(tenant, campaign);
 
   return (
-    <div>
+    <DonateModalProvider
+      tenantSlug={tenantSlug}
+      campaignSlug={campaignSlug}
+      token={token}
+      templeName={tenant.name}
+      campaignTitle={campaign.title}
+      upi={
+        account?.providerKey === "upi_manual" && account.upiVpa && account.payeeName
+          ? { vpa: account.upiVpa, payeeName: account.payeeName, qrCodeUrl: account.qrCodeUrl }
+          : null
+      }
+      canDonate={canDonate}
+      blockedReason={blockedReason}
+      raisedAmount={summary.totalAmount}
+      goalAmount={goal}
+    >
       {preview && (
         <div className="flex items-start gap-2.5 bg-foreground px-5 py-3 text-background md:px-6">
           <Eye className="mt-0.5 size-4 shrink-0" />
@@ -181,80 +194,46 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
       />
 
       {/*
-        Story first, ask second — on mobile the single column runs
-        story → impact → gallery → donation form, so a devotee arriving from
-        WhatsApp understands the campaign before being asked for money. From
-        `lg` up the ask moves into a sticky sidebar that stays with them as
-        they read, which is the desktop equivalent of the mobile sticky bar.
+        The ask is a dialog now (DonateModalProvider), so the page itself is
+        pure storytelling in one column at every width — no sidebar to keep in
+        sync, and the form gets the full screen on a phone instead of being
+        the tail of a long scroll.
       */}
-      <div className="mx-auto mt-10 max-w-[1180px] px-5 md:px-6 lg:mt-14 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-10">
-        <div className="min-w-0 space-y-4">
-          {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
-          <DonateImpact theme={theme} />
-          {gallery.length > 0 && (
-            <DonateGallery
-              images={gallery.map((image) => ({
-                id: image.id,
-                imageUrl: image.imageUrl,
-                title: image.title,
-                width: image.width,
-                height: image.height,
-              }))}
-            />
-          )}
+      <div className="mx-auto mt-10 max-w-[760px] space-y-4 px-5 md:px-6 lg:mt-14">
+        {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
+        <DonateImpact theme={theme} />
+        {gallery.length > 0 && (
+          <DonateGallery
+            images={gallery.map((image) => ({
+              id: image.id,
+              imageUrl: image.imageUrl,
+              title: image.title,
+              width: image.width,
+              height: image.height,
+            }))}
+          />
+        )}
+        <div className="pt-2">
+          <DonateTrust providerKey={account?.providerKey ?? null} />
         </div>
-
-        <aside className="mt-8 lg:sticky lg:top-6 lg:mt-0">
-          {account ? (
-            <>
-              <DonationCheckoutForm
-                tenantSlug={tenantSlug}
-                campaignSlug={campaignSlug}
-                token={token}
-                templeName={tenant.name}
-                upi={
-                  account.providerKey === "upi_manual" && account.upiVpa && account.payeeName
-                    ? { vpa: account.upiVpa, payeeName: account.payeeName, qrCodeUrl: account.qrCodeUrl }
-                    : null
-                }
-                canDonate={canDonate}
-                blockedReason={blockedReason}
-              />
-              <div className="mt-6">
-                <DonateTrust providerKey={account?.providerKey ?? null} />
-              </div>
-            </>
-          ) : (
-            // account is null only in admin preview — a visitor never reaches
-            // an available page without a usable payment account.
-            <div id="donate" className="rounded-[24px] border border-dashed p-5 text-center">
-              <p className="font-medium">Donation form hidden in preview</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Connect a payment method in Settings → Payments to let visitors donate. Everything else on this page is
-                exactly what they will see.
-              </p>
-            </div>
-          )}
-        </aside>
+        {!account && (
+          // Admin preview only — a visitor never reaches an available page
+          // without a usable payment account.
+          <div className="rounded-[24px] border border-dashed p-5 text-center">
+            <p className="font-medium">Donations disabled in preview</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Connect a payment method in Settings → Payments to let visitors donate. Everything else on this page is
+              exactly what they will see.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-12 lg:mt-16">
-        <DonateStats
-          raisedAmount={summary.totalAmount}
-          goalAmount={goal}
-          donorCount={summary.donorCount}
-          daysLeft={daysLeft}
-          lastDonationAt={summary.lastDonationAt}
-          accent={theme.accent}
-        />
+        <DonateCta campaignTitle={campaign.title} shareUrl={shareUrl} />
       </div>
 
-      <DonateTrustCards providerKey={account?.providerKey ?? "upi_manual"} />
-
-      <DonateCta campaignTitle={campaign.title} shareUrl={shareUrl} />
-
       <DonateFooter templeName={tenant.name} contactPhone={tenant.defaultContactPhone} />
-
-    </div>
+    </DonateModalProvider>
   );
 }

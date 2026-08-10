@@ -1,8 +1,7 @@
 import Image from "next/image";
-import { Heart } from "lucide-react";
 import { MotionReveal } from "@/components/motion-reveal";
-import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/features/payments/share-button";
+import { DonateModalTrigger } from "./donate-modal";
 
 interface DonateCtaProps {
   campaignTitle: string;
@@ -28,10 +27,7 @@ export function DonateCta({ campaignTitle, shareUrl }: DonateCtaProps) {
           Every contribution, big or small, keeps our traditions alive for generations to come.
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <Button size="xl" className="bg-white text-[#2B2118] hover:bg-white/90" render={<a href="#donate" />}>
-            <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
-            Donate Now
-          </Button>
+          <DonateModalTrigger className="bg-white text-[#2B2118] hover:bg-white/90" />
           <ShareButton title={campaignTitle} url={shareUrl} size="xl" className="border-white/60 bg-transparent text-white hover:bg-white/10" />
         </div>
       </MotionReveal>

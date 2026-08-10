@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
 import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Loader2, PartyPopper, PauseCircle, Upload } from "lucide-react";
@@ -106,13 +106,6 @@ export function DonationCheckoutForm({
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [optionalOpen, setOptionalOpen] = useState(false);
-  // Avoids two simultaneously-visible "Donate" CTAs on first paint (the
-  // Campaign Summary Card's own button, and this sticky bar). Hidden while
-  // that button is still on-screen; appears once the user scrolls past it.
-  // Defaults to visible (true) so the sticky bar still works if the hero
-  // button is ever absent for some reason — it only hides once an observer
-  // actually confirms the hero button is on-screen.
-  const [heroButtonOutOfView, setHeroButtonOutOfView] = useState(true);
 
   // upi_manual only — populated once the order route returns a pending
   // transaction + upi:// link; used by the "awaiting confirmation" screen
@@ -126,39 +119,7 @@ export function DonationCheckoutForm({
   const [confirmSubmitted, setConfirmSubmitted] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const heroButton = document.getElementById("hero-donate-button");
-    if (!heroButton) return;
-    const observer = new IntersectionObserver(([entry]) => setHeroButtonOutOfView(!entry.isIntersecting), {
-      rootMargin: "0px 0px -10% 0px",
-    });
-    observer.observe(heroButton);
-    return () => observer.disconnect();
-  }, []);
 
-  // "Donate Now" in the hero is a plain <a href="#donate">, so it works with
-  // JS off and costs no cross-component wiring. On its own though it only
-  // scrolls — on desktop the form already sits in view, so the click looked
-  // like it did nothing at all. Landing on #donate now also puts the cursor
-  // in the amount field, which is the actual next thing the devotee has to
-  // do. Scrolling is left to the browser/CSS; this only moves focus.
-  useEffect(() => {
-    if (!canDonate) return;
-
-    function focusAmount() {
-      if (window.location.hash !== "#donate") return;
-      const amountInput = document.getElementById("donation-amount");
-      if (amountInput instanceof HTMLInputElement) {
-        // preventScroll: the browser's own fragment scroll already framed the
-        // card; focusing would otherwise yank the input to the viewport edge.
-        amountInput.focus({ preventScroll: true });
-      }
-    }
-
-    focusAmount();
-    window.addEventListener("hashchange", focusAmount);
-    return () => window.removeEventListener("hashchange", focusAmount);
-  }, [canDonate]);
 
   const validation = useMemo(
     () =>
@@ -357,15 +318,23 @@ export function DonationCheckoutForm({
             */}
             <Button
               size="xl"
-              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E] md:hidden"
+              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
               render={<a href={upiUri} />}
             >
               {upiAmount !== null ? `Pay ${formatInr(upiAmount)} via UPI` : "Pay via UPI"}
               <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
             </Button>
-            <p className="hidden text-center text-sm text-[#6B5B4F] md:block">
-              Open this donation page on your mobile device to pay with UPI
-              {upi?.qrCodeUrl ? ", or scan the QR code below." : "."}
+            {/*
+              Platform reality, without sniffing the user agent: on Android
+              the button hands off to the OS chooser (PhonePe / GPay / Paytm /
+              BHIM). On iOS it opens whichever UPI app claims the scheme, and
+              if none does nothing happens — so the QR and the copyable UPI ID
+              below are always present as the universal path. On desktop and
+              macOS no app can claim it at all, which is what this line says.
+            */}
+            <p className="text-center text-xs text-[#8C7B6D]">
+              Not on your phone? {upi?.qrCodeUrl ? "Scan the QR code below" : "Copy the UPI ID below"} and pay from any
+              UPI app.
             </p>
           </>
         )}
@@ -376,7 +345,11 @@ export function DonationCheckoutForm({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               {upi.qrCodeUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
-                <img src={upi.qrCodeUrl} alt="" className="hidden size-32 shrink-0 rounded-lg border border-[#F3E7DA] object-cover md:block" />
+                <img
+                  src={upi.qrCodeUrl}
+                  alt="UPI QR code for this temple"
+                  className="mx-auto size-32 shrink-0 rounded-lg border border-[#F3E7DA] object-cover sm:mx-0"
+                />
               )}
               {/*
                 A VPA is one long unbreakable token. With `justify-between`
@@ -615,49 +588,12 @@ export function DonationCheckoutForm({
         onClick={handleDonate}
         disabled={!canSubmit}
         size="xl"
-        className="hidden w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E] md:flex"
+        className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
       >
         {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
         {donateButtonLabel}
       </Button>
 
-      {/* Sticky mobile CTA — same fixed-bar technique as features/dashboard/bottom-nav-bar.tsx. Hidden until the Summary Card's own Donate button scrolls out of view (see heroButtonOutOfView above), so only one Donate CTA is ever on-screen at once. */}
-      <div
-        className={cn(
-          "fixed inset-x-3 bottom-3 z-20 rounded-2xl bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg border border-[#F3E7DA] backdrop-blur transition-all duration-300 md:hidden",
-          heroButtonOutOfView ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0",
-        )}
-      >
-        {Number(amount) > 0 && (
-          <p className="px-2 pb-1 text-center text-xs font-medium text-[#8C7B6D]">{formatInr(Number(amount))} selected</p>
-        )}
-        <div className="flex gap-2">
-          <Button
-            onClick={handleDonate}
-            disabled={!canSubmit}
-            size="xl"
-            className="flex-1 gap-1.5 rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
-          >
-            {status === "processing" ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <>
-                {Number(amount) > 0 ? "Donate Securely" : donateButtonLabel}
-                <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
-              </>
-            )}
-          </Button>
-        </div>
-        {/*
-          No Share button in the payment bar. It used to sit directly beside
-          Donate in this cramped two-button row, and on a phone
-          navigator.share() opens the OS sheet with WhatsApp as its first
-          target — so a mistapped Share read as "the donate button opened
-          WhatsApp". Sharing is still offered where it belongs (the hero card
-          and the closing CTA), away from the payment action.
-        */}
-      </div>
-      <div className="h-24 md:hidden" aria-hidden />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { ShareButton } from "@/features/payments/share-button";
 import { CopyLinkButton } from "@/features/payments/donate/copy-link-button";
 import { CampaignThemeIconGlyph } from "./campaign-theme-icon";
 import { DonateProgress } from "./donate-progress";
+import { useDonateModal } from "./donate-modal";
 
 interface DonateHeroProps {
   templeName: string;
@@ -29,7 +30,7 @@ interface DonateHeroProps {
   donorCount: number;
   daysLeft: number | null;
   shareUrl: string;
-  /** False when the page renders but payment is currently blocked — the CTA keeps anchoring to #donate, it just stops claiming to be a live "Donate Now". */
+  /** False when the page renders but payment is currently blocked — the CTA still opens the donation dialog (which explains why), it just stops claiming to be a live "Donate Now". */
   canDonate: boolean;
   blockedReason: DonationBlockedReason | null;
 }
@@ -70,6 +71,7 @@ export function DonateHero({
   canDonate,
   blockedReason,
 }: DonateHeroProps) {
+  const { open: openDonate } = useDonateModal();
   const rawPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   const displayPercentage = Math.min(100, Math.round(rawPercentage));
   const remaining = Math.max(0, goalAmount - raisedAmount);
@@ -167,9 +169,9 @@ export function DonateHero({
             <Button
               id="hero-donate-button"
               size="xl"
+              onClick={openDonate}
               style={canDonate ? { backgroundColor: theme.accent } : undefined}
               className={cn("flex-1 text-white hover:opacity-90", !canDonate && "bg-[#8C7B6D] hover:bg-[#7A6B5E]")}
-              render={<a href="#donate" />}
             >
               <Heart className="size-4" data-icon="inline-start" aria-hidden="true" />
               {canDonate ? "Donate Now" : DONATE_BUTTON_LABEL[blockedReason!]}
