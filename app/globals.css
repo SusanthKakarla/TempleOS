@@ -230,6 +230,29 @@ html[lang="te"] {
 }
 
 @layer utilities {
+  /*
+     Hides the scrollbar chrome while leaving the element fully scrollable by
+     wheel, touch, and keyboard.
+
+     This class was already being applied by components/ui/tabs.tsx and
+     components/ui/sidebar.tsx but had never actually been defined, so it did
+     nothing — which is why scrollable panels across the app (dialogs, menus,
+     scrollable tab strips) all showed the chunky native bar. Defined here
+     once so every one of those call sites starts working, rather than each
+     re-declaring the vendor rules.
+
+     Only ever put this on an inner panel whose scrollability is obvious from
+     its clipped content — never on the page/body, where the scrollbar is the
+     only cue that there is more to read.
+  */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* legacy Edge */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+
   /* Marigold accent — the single CTA background. One per screen. */
   .gradient-marigold {
     background: var(--accent);
