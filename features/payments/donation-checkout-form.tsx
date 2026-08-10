@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
-import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Download, Loader2, Maximize2, PartyPopper, PauseCircle } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Download, Loader2, Lock, Maximize2, PartyPopper, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -49,28 +49,29 @@ interface DonationCheckoutFormProps {
 
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
 
-const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
+const PRESET_AMOUNTS_ROW_1 = [101, 251, 501];
+const PRESET_AMOUNTS_ROW_2 = [1001, 5001];
 
 /** The platform never changes mid-session, so the store has nothing to subscribe to. */
 const subscribeToNothing = () => () => {};
 
-/** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
+/** Every text input in this form: visible border, white background, dark readable text — never a pale fill that makes placeholders hard to read. */
 const FILLED_INPUT_CLASS =
-  "h-[52px] rounded-[14px] border-transparent bg-[#FFF6ED] focus-visible:border-[#D4AF37] focus-visible:bg-white focus-visible:ring-[#D4AF37]/20";
+  "h-[52px] rounded-[14px] border border-[#E9DED0] bg-white text-base text-[#2F211B] focus-visible:border-[#D98200] focus-visible:ring-[#D98200]/20";
 
 const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: string; description: string }> = {
   not_started: {
-    icon: <CalendarClock className="size-10 text-[#D4AF37]" />,
+    icon: <CalendarClock className="size-10 text-[#D98200]" />,
     title: "This campaign hasn't started yet",
     description: "Donations will open once the campaign begins. Please check back later.",
   },
   expired: {
-    icon: <CalendarX2 className="size-10 text-[#D4AF37]" />,
+    icon: <CalendarX2 className="size-10 text-[#D98200]" />,
     title: "This campaign is no longer accepting donations.",
     description: "Thank you for your support.",
   },
   disabled: {
-    icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
+    icon: <PauseCircle className="size-10 text-[#D98200]" />,
     title: "This campaign is no longer accepting donations.",
     description: "Thank you for your support.",
   },
@@ -79,12 +80,12 @@ const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: stri
   // connected a UPI ID yet, and conflating the two sends devotees away from
   // a live campaign.
   payment_not_configured: {
-    icon: <PauseCircle className="size-10 text-[#D4AF37]" />,
+    icon: <PauseCircle className="size-10 text-[#D98200]" />,
     title: "Online donations are temporarily unavailable for this temple",
     description: "The temple hasn't finished setting up online payments yet. Please check back later or contact the temple directly to donate.",
   },
   goal_reached: {
-    icon: <PartyPopper className="size-10 text-[#D4AF37]" />,
+    icon: <PartyPopper className="size-10 text-[#D98200]" />,
     title: "This campaign has reached its donation goal.",
     description: "Thank you for your support.",
   },
@@ -280,27 +281,27 @@ export function DonationCheckoutForm({
   if (!canDonate && blockedReason) {
     const copy = BLOCKED_COPY[blockedReason];
     return (
-      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[24px] border border-[#F3E7DA] bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <div className="flex flex-col items-center gap-3 p-6 pb-8 text-center">
         {copy.icon}
-        <p className="font-heading text-lg text-[#2B2118]">{copy.title}</p>
-        <p className="text-sm text-[#6B5B4F]">{copy.description}</p>
+        <p className="font-heading text-lg text-[#2F211B]">{copy.title}</p>
+        <p className="text-sm text-[#756A61]">{copy.description}</p>
       </div>
     );
   }
 
   if (status === "success") {
     return (
-      <div id="donate" className="mx-auto flex max-w-[760px] flex-col items-center gap-3 rounded-[24px] border border-[#F3E7DA] bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <div className="flex flex-col items-center gap-3 p-6 pb-8 text-center">
         <CheckCircle2 className="size-10 text-emerald-600" />
-        <p className="font-heading text-lg text-[#2B2118]">Thank you for your donation!</p>
-        <p className="text-sm text-[#6B5B4F]">A confirmation and receipt will be sent to you shortly.</p>
+        <p className="font-heading text-lg text-[#2F211B]">Thank you for your donation!</p>
+        <p className="text-sm text-[#756A61]">A confirmation and receipt will be sent to you shortly.</p>
       </div>
     );
   }
 
   if (status === "awaiting_confirmation") {
     return (
-      <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <div className="space-y-6 p-1 pb-6">
         {/*
           Deliberately NOT "thank you, payment received": upi_manual gives
           TempleOS no confirmation that money actually moved, so claiming
@@ -308,8 +309,8 @@ export function DonationCheckoutForm({
         */}
         <div className="flex flex-col items-center gap-3 text-center">
           <CheckCircle2 className="size-10 text-emerald-600" />
-          <p className="font-heading text-lg text-[#2B2118]">Payment initiated</p>
-          <p className="text-sm text-[#6B5B4F]">
+          <p className="font-heading text-lg text-[#2F211B]">Payment initiated</p>
+          <p className="text-sm text-[#756A61]">
             Complete the payment in your UPI app. Once the temple confirms it, your donation will be recorded.
           </p>
         </div>
@@ -322,13 +323,13 @@ export function DonationCheckoutForm({
           <>
             <Button
               size="xl"
-              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
+              className="w-full rounded-full bg-[#D98200] text-white hover:bg-[#E28700]"
               render={<a href={upiUri} />}
             >
               {upiAmount !== null ? `Pay ${formatInr(upiAmount)} via UPI` : "Pay via UPI"}
               <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
             </Button>
-            <p className="text-center text-xs text-[#8C7B6D]">
+            <p className="text-center text-xs text-[#756A61]">
               Choose PhonePe, Google Pay, Paytm, BHIM, or any UPI app.
             </p>
           </>
@@ -343,7 +344,7 @@ export function DonationCheckoutForm({
         */}
         {upiUri && upiPlatform === "ios" && (
           <div className="space-y-3">
-            <p className="text-center text-sm font-medium text-[#2B2118]">
+            <p className="text-center text-sm font-medium text-[#2F211B]">
               {upiAmount !== null ? `Pay ${formatInr(upiAmount)} with` : "Pay with"}
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -352,21 +353,21 @@ export function DonationCheckoutForm({
                   key={app.name}
                   size="lg"
                   variant="outline"
-                  className="w-full justify-center rounded-full border-[#F3E7DA] text-[#2B2118] hover:bg-[#FFF6ED]"
+                  className="w-full justify-center rounded-full border-[#E9DED0] text-[#2F211B] hover:bg-[#FFF8E8]"
                   render={<a href={app.href} />}
                 >
                   {app.name}
                 </Button>
               ))}
             </div>
-            <p className="text-center text-xs text-[#8C7B6D]">
+            <p className="text-center text-xs text-[#756A61]">
               Nothing happened? That app may not be installed — scan the QR code below with any UPI app instead.
             </p>
           </div>
         )}
 
         {upiUri && upiPlatform === "none" && (
-          <p className="rounded-[14px] bg-[#FFF6ED] p-3 text-center text-sm text-[#6B5B4F]">
+          <p className="rounded-[14px] bg-[#FFF8E8] p-3 text-center text-sm text-[#756A61]">
             {upi?.qrCodeUrl
               ? "Scan the QR code below with any UPI app, or copy the UPI ID and pay from your phone."
               : "Copy the UPI ID below and pay from any UPI app on your phone."}
@@ -374,7 +375,7 @@ export function DonationCheckoutForm({
         )}
 
         {upi && (
-          <div className="space-y-4 rounded-[14px] bg-[#FFF6ED] p-4">
+          <div className="space-y-4 rounded-[14px] bg-[#FFF8E8] p-4">
             {/*
               QR first and large: on a laptop it is the only way to pay (no
               app can claim upi:// there), and on a phone it is what someone
@@ -387,7 +388,7 @@ export function DonationCheckoutForm({
                 <button
                   type="button"
                   onClick={() => setQrZoomed(true)}
-                  className="rounded-2xl border border-[#F3E7DA] bg-white p-2 transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:outline-none"
+                  className="rounded-2xl border border-[#E9DED0] bg-white p-2 transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#D98200] focus-visible:outline-none"
                   aria-label="Enlarge the UPI QR code"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset */}
@@ -416,7 +417,7 @@ export function DonationCheckoutForm({
               </div>
             )}
 
-            <p className="text-sm font-medium text-[#2B2118]">Didn&apos;t open automatically?</p>
+            <p className="text-sm font-medium text-[#2F211B]">Didn&apos;t open automatically?</p>
             {/*
               A VPA is one long unbreakable token. With `justify-between` and
               no shrink rules, the label collapsed to its narrowest wrap
@@ -426,17 +427,17 @@ export function DonationCheckoutForm({
             */}
             <div className="min-w-0 space-y-2 text-sm">
               <div className="flex items-start justify-between gap-3">
-                <span className="shrink-0 text-[#6B5B4F]">UPI ID</span>
-                <span className="min-w-0 text-right font-medium break-all text-[#2B2118]">{upi.vpa}</span>
+                <span className="shrink-0 text-[#756A61]">UPI ID</span>
+                <span className="min-w-0 text-right font-medium break-all text-[#2F211B]">{upi.vpa}</span>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <span className="shrink-0 text-[#6B5B4F]">Payee Name</span>
-                <span className="min-w-0 text-right font-medium break-words text-[#2B2118]">{upi.payeeName}</span>
+                <span className="shrink-0 text-[#756A61]">Payee Name</span>
+                <span className="min-w-0 text-right font-medium break-words text-[#2F211B]">{upi.payeeName}</span>
               </div>
               {upiAmount !== null && (
                 <div className="flex items-start justify-between gap-3">
-                  <span className="shrink-0 text-[#6B5B4F]">Amount</span>
-                  <span className="shrink-0 font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
+                  <span className="shrink-0 text-[#756A61]">Amount</span>
+                  <span className="shrink-0 font-medium text-[#2F211B]">{formatInr(upiAmount)}</span>
                 </div>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
@@ -470,41 +471,59 @@ export function DonationCheckoutForm({
   }
 
   const canSubmit = validation.success && status !== "processing";
-  const donateButtonLabel = status === "processing" ? "Processing..." : "Donate Now";
+  const amountNum = Number(amount);
+  const donateButtonLabel =
+    status === "processing" ? "Processing..." : amountNum > 0 ? `Donate ${formatInr(amountNum)}` : "Donate Now";
 
   return (
-    <div id="donate" className="mx-auto max-w-[760px] space-y-7 rounded-[24px] border border-[#F3E7DA] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+    <div className="space-y-6">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" onReady={() => setScriptReady(true)} />
 
-      <h2 className="text-center font-heading text-2xl text-[#2B2118]">Support This Campaign</h2>
-
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Label className="text-[#2B2118]">Choose an amount</Label>
-          <div className="flex flex-wrap gap-3">
-            {PRESET_AMOUNTS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setAmount(String(preset))}
-                className={cn(
-                  "min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
-                  Number(amount) === preset
-                    ? "scale-[1.05] border-[#D4AF37] bg-[#D4AF37] text-white shadow-sm"
-                    : "border-[#F3E7DA] bg-[#FFF6ED] text-[#2B2118] hover:border-[#D4AF37] hover:bg-white",
-                )}
-              >
-                {formatInr(preset)}
-              </button>
-            ))}
-          </div>
+      <div className="space-y-3">
+        <Label className="text-sm font-medium text-[#2F211B]">Choose an amount</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {PRESET_AMOUNTS_ROW_1.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setAmount(String(preset))}
+              className={cn(
+                "min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition-all duration-200",
+                Number(amount) === preset
+                  ? "border-[#D98200] bg-[#D98200] text-white"
+                  : "border-[#E9DED0] bg-white text-[#2F211B] hover:border-[#D98200]",
+              )}
+            >
+              {formatInr(preset)}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {PRESET_AMOUNTS_ROW_2.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setAmount(String(preset))}
+              className={cn(
+                "min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition-all duration-200",
+                Number(amount) === preset
+                  ? "border-[#D98200] bg-[#D98200] text-white"
+                  : "border-[#E9DED0] bg-white text-[#2F211B] hover:border-[#D98200]",
+              )}
+            >
+              {formatInr(preset)}
+            </button>
+          ))}
         </div>
 
         <LabeledInput
           id="donation-amount"
-          label="Other amount (INR)"
+          label="Other amount"
           type="number"
+          inputMode="numeric"
           min="1"
+          icon={<span className="text-base font-medium text-[#756A61]">₹</span>}
+          placeholder="Enter amount"
           inputSize="lg"
           className={FILLED_INPUT_CLASS}
           value={amount}
@@ -515,7 +534,8 @@ export function DonationCheckoutForm({
         />
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
+        <p className="font-heading text-sm font-semibold text-[#2F211B]">Your details</p>
         <LabeledInput
           id="donor-name"
           label="Full name"
@@ -526,10 +546,12 @@ export function DonationCheckoutForm({
           onBlur={() => markTouched("donorName")}
           error={fieldError("donorName")}
           required
+          requiredLabel="Required"
         />
         <LabeledInput
           id="donor-phone"
           label="Mobile number"
+          placeholder="+91 98765 43210"
           inputSize="lg"
           className={FILLED_INPUT_CLASS}
           value={donorPhone}
@@ -537,20 +559,24 @@ export function DonationCheckoutForm({
           onBlur={() => markTouched("donorPhone")}
           error={fieldError("donorPhone")}
           required
+          requiredLabel="Required"
         />
-        <label className="flex items-center gap-2 text-sm text-[#2B2118]">
-          <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
-          Donate anonymously
-        </label>
+        <div>
+          <label className="flex items-center gap-2 text-sm text-[#2F211B]">
+            <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
+            Donate anonymously
+          </label>
+          <p className="mt-1 pl-6 text-xs text-[#756A61]">Your name will not be displayed publicly.</p>
+        </div>
       </div>
 
-      <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen} className="my-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-[#D4AF37]">
-          Add optional details (email, PAN, message)
+      <Collapsible open={optionalOpen} onOpenChange={setOptionalOpen}>
+        <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium text-[#D98200]">
+          <span>{optionalOpen ? "−" : "+"} Add optional details</span>
           <ChevronDown className={cn("size-4 transition-transform", optionalOpen && "rotate-180")} />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="space-y-5 pt-4">
+          <div className="space-y-4 pt-4">
             <LabeledInput
               id="donor-email"
               label="Email (optional)"
@@ -575,7 +601,7 @@ export function DonationCheckoutForm({
               maxLength={10}
             />
             <div className="space-y-2">
-              <Label htmlFor="donation-message" className="text-[#2B2118]">
+              <Label htmlFor="donation-message" className="text-[#2F211B]">
                 Donation message (optional)
               </Label>
               <Textarea
@@ -591,19 +617,24 @@ export function DonationCheckoutForm({
         </CollapsibleContent>
       </Collapsible>
 
-      {status === "cancelled" && <p className="text-sm text-[#8C7B6D]">Payment cancelled — you can try again.</p>}
+      {status === "cancelled" && <p className="text-sm text-[#756A61]">Payment cancelled — you can try again.</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button
-        onClick={handleDonate}
-        disabled={!canSubmit}
-        size="xl"
-        className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
-      >
-        {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
-        {donateButtonLabel}
-      </Button>
-
+      <div className="sticky bottom-0 -mx-5 space-y-2 bg-white px-5 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <p className="flex items-center justify-center gap-1.5 text-xs text-[#756A61]">
+          <Lock className="size-3.5" aria-hidden="true" />
+          Secure payment
+        </p>
+        <Button
+          onClick={handleDonate}
+          disabled={!canSubmit}
+          size="xl"
+          className="h-[52px] w-full rounded-full bg-[#D98200] text-base font-semibold text-white hover:bg-[#E28700]"
+        >
+          {status === "processing" ? <Loader2 className="size-4 animate-spin" /> : null}
+          {donateButtonLabel}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -11,7 +11,8 @@ import { CAMPAIGN_PREVIEW_PARAM } from "@/lib/campaigns/campaign-preview-token";
 import { EmptyState } from "@/components/empty-state";
 import { DonateModalProvider } from "@/features/payments/donate/donate-modal";
 import { DonateHero } from "@/features/payments/donate/donate-hero";
-import { DonateStory } from "@/features/payments/donate/donate-story";
+import { DonateTrustIndicators } from "@/features/payments/donate/donate-trust-indicators";
+import { DonateAbout } from "@/features/payments/donate/donate-about";
 import { DonateImpact } from "@/features/payments/donate/donate-impact";
 import { DonateGallery } from "@/features/payments/donate/donate-gallery";
 import { DonateTrust } from "@/features/payments/donate/donate-trust";
@@ -153,7 +154,6 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
       campaignSlug={campaignSlug}
       token={token}
       templeName={tenant.name}
-      campaignTitle={campaign.title}
       upi={
         account?.providerKey === "upi_manual" && account.upiVpa && account.payeeName
           ? { vpa: account.upiVpa, payeeName: account.payeeName, qrCodeUrl: account.qrCodeUrl }
@@ -192,41 +192,39 @@ export default async function DonatePage({ params, searchParams }: PageParams) {
         blockedReason={blockedReason}
       />
 
-      {/*
-        The ask is a dialog now (DonateModalProvider), so the page itself is
-        pure storytelling in one column at every width — no sidebar to keep in
-        sync, and the form gets the full screen on a phone instead of being
-        the tail of a long scroll.
-      */}
-      <div className="mx-auto mt-10 max-w-[760px] space-y-4 px-5 md:px-6 lg:mt-14">
-        {description && <DonateStory imageUrl={banner?.imageUrl ?? null} description={description} />}
-        <DonateImpact theme={theme} />
-        {gallery.length > 0 && (
-          <DonateGallery
-            images={gallery.map((image) => ({
-              id: image.id,
-              imageUrl: image.imageUrl,
-              title: image.title,
-              width: image.width,
-              height: image.height,
-            }))}
-          />
-        )}
-        <div className="pt-2">
-          <DonateTrust providerKey={account?.providerKey ?? null} />
-        </div>
-        {!account && (
-          // Admin preview only — a visitor never reaches an available page
-          // without a usable payment account.
-          <div className="rounded-[24px] border border-dashed p-5 text-center">
+      <DonateTrustIndicators />
+
+      {description && <DonateAbout description={description} />}
+
+      <DonateImpact theme={theme} />
+
+      {gallery.length > 0 && (
+        <DonateGallery
+          images={gallery.map((image) => ({
+            id: image.id,
+            imageUrl: image.imageUrl,
+            title: image.title,
+            width: image.width,
+            height: image.height,
+          }))}
+        />
+      )}
+
+      <DonateTrust providerKey={account?.providerKey ?? null} />
+
+      {!account && (
+        // Admin preview only — a visitor never reaches an available page
+        // without a usable payment account.
+        <div className="mx-auto max-w-[640px] px-5 pb-4 sm:px-6">
+          <div className="rounded-2xl border border-dashed p-5 text-center">
             <p className="font-medium">Donations disabled in preview</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Connect a payment method in Settings → Payments to let visitors donate. Everything else on this page is
               exactly what they will see.
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <DonateFooter templeName={tenant.name} contactPhone={tenant.defaultContactPhone} />
     </DonateModalProvider>

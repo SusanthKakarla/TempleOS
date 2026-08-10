@@ -26,16 +26,16 @@ export function DonateGallery({ images }: { images: DonateGalleryImage[] }) {
   const [lightbox, setLightbox] = useState<DonateGalleryImage | null>(null);
 
   return (
-    <section id="gallery" className="mx-auto max-w-[1040px] px-5 py-14 md:px-6 md:py-16">
-      <h2 className="text-center font-heading text-2xl text-[#2B2118] sm:text-3xl">From the Temple</h2>
+    <section id="gallery" className="mx-auto max-w-[640px] px-5 py-8 sm:px-6 lg:max-w-[900px]">
+      <h2 className="font-heading text-2xl font-semibold text-[#2F211B] sm:text-[26px]">From the Temple</h2>
 
-      <MotionStagger className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <MotionStagger className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {images.map((image) => (
           <MotionStaggerItem key={image.id}>
             <button
               type="button"
               onClick={() => setLightbox(image)}
-              className="group block w-full overflow-hidden rounded-[18px] border border-[#F3E7DA] bg-white focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:outline-none"
+              className="group block w-full overflow-hidden rounded-2xl border border-[#E9DED0] bg-white focus-visible:ring-2 focus-visible:ring-[#D98200] focus-visible:outline-none"
               aria-label={image.title ? `View ${image.title}` : "View campaign photo"}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset */}

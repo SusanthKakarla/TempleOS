@@ -15,12 +15,12 @@ interface DonateFooterProps {
  */
 export function DonateFooter({ templeName, contactPhone }: DonateFooterProps) {
   return (
-    <footer className="mt-12 bg-[#3E2723] px-5 py-6 text-[#FFF8E7]/70">
-      <div className="mx-auto flex max-w-[760px] flex-col items-center gap-1.5 text-center">
+    <footer className="mt-4 bg-[#45251F] px-5 py-6 text-[#F3EAE0]/80">
+      <div className="mx-auto flex max-w-[640px] flex-col items-center gap-1.5 text-center">
         <Image src="/donate-om-medallion.png" alt="" width={32} height={32} className="size-8 opacity-90" />
-        <p className="font-heading text-sm text-[#FFF8E7]">{templeName}</p>
-        {contactPhone && <p className="text-xs text-[#FFF8E7]/70">Contact: {contactPhone}</p>}
-        <p className="mt-1 text-[11px] text-[#FFF8E7]/40">Powered by TempleOS</p>
+        <p className="font-heading text-sm text-white">{templeName}</p>
+        {contactPhone && <p className="text-xs text-[#E9DED0]/70">Contact: {contactPhone}</p>}
+        <p className="mt-1 text-[11px] text-[#E9DED0]/50">Powered by TempleOS</p>
       </div>
     </footer>
   );

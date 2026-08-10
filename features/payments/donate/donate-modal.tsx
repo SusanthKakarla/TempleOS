@@ -38,7 +38,6 @@ export interface DonateModalProviderProps {
   campaignSlug: string;
   token: string;
   templeName: string;
-  campaignTitle: string;
   upi: { vpa: string; payeeName: string; qrCodeUrl: string | null } | null;
   canDonate: boolean;
   blockedReason: DonationBlockedReason | null;
@@ -52,7 +51,6 @@ export function DonateModalProvider({
   campaignSlug,
   token,
   templeName,
-  campaignTitle,
   upi,
   canDonate,
   blockedReason,
@@ -86,26 +84,29 @@ export function DonateModalProvider({
 
       {/* Sticky mobile CTA — the page's, not the form's: the form now lives in
           a dialog, where a `fixed` bar of its own would float above the
-          backdrop. */}
+          backdrop. Full-width, flush to the bottom edge, rounded top
+          corners only — a docked bar, not a floating pill, so it never
+          reads as visually disconnected from the page. */}
       <div
         className={cn(
-          "fixed inset-x-3 bottom-3 z-30 rounded-2xl border border-[#F3E7DA] bg-white/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur transition-all duration-300 md:hidden",
-          stickyVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0",
+          "fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-[#E9DED0] bg-white/97 px-4 pt-3 shadow-[0_-8px_24px_rgba(47,33,27,0.1)] backdrop-blur transition-transform duration-300 md:hidden",
+          "pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+          stickyVisible ? "translate-y-0" : "pointer-events-none translate-y-full",
         )}
         aria-hidden={!stickyVisible}
         inert={!stickyVisible}
       >
         {goalAmount > 0 && (
-          <p className="px-2 pb-1 text-center text-xs font-medium text-[#8C7B6D]">
-            {formatInr(raisedAmount)} raised of {formatInr(goalAmount)}
+          <p className="mb-2 text-center text-xs font-medium text-[#756A61]">
+            {formatInr(raisedAmount)} raised · {formatInr(goalAmount)} goal
           </p>
         )}
         <Button
           size="xl"
           onClick={open}
           className={cn(
-            "w-full gap-1.5 rounded-full text-white",
-            canDonate ? "bg-[#D4AF37] hover:bg-[#C19A2E]" : "bg-[#8C7B6D] hover:bg-[#7A6B5E]",
+            "h-[52px] w-full gap-1.5 rounded-full text-base font-semibold text-white",
+            canDonate ? "bg-[#D98200] hover:bg-[#E28700]" : "bg-[#756A61] hover:bg-[#7A6B5E]",
           )}
         >
           <Heart className="size-4" aria-hidden="true" />
@@ -116,16 +117,22 @@ export function DonateModalProvider({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         {/*
-          Wider than the default dialog and scrollable inside itself: the form
-          is long (amount presets, donor fields, then the UPI handoff screen),
-          and on a phone it has to be usable at 100dvh minus the browser
-          chrome without the page behind it scrolling.
+          One dialog, two shapes: a bottom sheet on mobile (flush to the
+          viewport edges, rounded top corners only, capped at 90vh so the
+          long form — amount presets, donor fields, the UPI handoff screen —
+          scrolls inside itself) and a centered ~520px card from `sm` up.
         */}
-        <DialogContent className="max-h-[90dvh] w-full overflow-y-auto p-0 sm:max-w-lg">
+        <DialogContent
+          className={cn(
+            "fixed inset-x-0 top-auto bottom-0 left-0 z-50 flex max-h-[90vh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-y-auto rounded-t-3xl rounded-b-none p-0",
+            "sm:inset-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl",
+          )}
+        >
           <DialogHeader className="px-5 pt-5 pb-0">
-            <DialogTitle className="text-left font-heading text-lg text-[#2B2118]">{campaignTitle}</DialogTitle>
+            <DialogTitle className="text-left font-heading text-lg font-semibold text-[#2F211B]">Support this campaign</DialogTitle>
+            <p className="text-sm text-[#756A61]">Choose your donation amount</p>
           </DialogHeader>
-          <div className="p-3 sm:p-4">
+          <div className="px-5 pb-5">
             <DonationCheckoutForm
               tenantSlug={tenantSlug}
               campaignSlug={campaignSlug}

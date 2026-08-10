@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
  * campaign theme colour the fill without every caller re-declaring these
  * arbitrary selector overrides.
  */
-export function DonateProgress({ value, accent = "#D4AF37" }: { value: number; accent?: string }) {
+export function DonateProgress({ value, accent = "#D7B53A" }: { value: number; accent?: string }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export function DonateProgress({ value, accent = "#D4AF37" }: { value: number; a
 
   return (
     <div
-      className="[&_[data-slot=progress-indicator]]:bg-(--donate-accent) [&_[data-slot=progress-indicator]]:duration-1000 [&_[data-slot=progress-indicator]]:ease-out [&_[data-slot=progress-track]]:bg-[#F6E8DA]"
+      className="[&_[data-slot=progress-indicator]]:bg-(--donate-accent) [&_[data-slot=progress-indicator]]:duration-1000 [&_[data-slot=progress-indicator]]:ease-out [&_[data-slot=progress-track]]:bg-[#E9DED0]"
       style={{ "--donate-accent": accent } as React.CSSProperties}
     >
       <Progress value={displayValue} />
