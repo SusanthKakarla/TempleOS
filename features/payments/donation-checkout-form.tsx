@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
 import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Download, Loader2, Maximize2, PartyPopper, PauseCircle } from "lucide-react";
@@ -15,6 +15,7 @@ import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-ser
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/image-lightbox";
+import { supportsUpiDeepLink } from "@/lib/upi-deep-link";
 
 declare global {
   interface Window {
@@ -49,6 +50,9 @@ interface DonationCheckoutFormProps {
 type Status = "idle" | "processing" | "success" | "awaiting_confirmation" | "cancelled" | "error";
 
 const PRESET_AMOUNTS = [101, 251, 501, 1001, 5001];
+
+/** The platform never changes mid-session, so the store has nothing to subscribe to. */
+const subscribeToNothing = () => () => {};
 
 /** "Soft filled" input treatment (Stripe-checkout style) — passed as `className` to every field in this form only; the shared Input/LabeledInput components keep their default bordered look everywhere else in the app. */
 const FILLED_INPUT_CLASS =
@@ -114,6 +118,15 @@ export function DonationCheckoutForm({
   const [upiUri, setUpiUri] = useState<string | null>(null);
   const [upiAmount, setUpiAmount] = useState<number | null>(null);
   const [qrZoomed, setQrZoomed] = useState(false);
+  // The server has no user agent to judge by, so it renders the safe answer
+  // (no deep link — QR and copy only) and the client swaps in the real one on
+  // hydration. useSyncExternalStore rather than an effect so those two never
+  // disagree mid-render.
+  const canOpenUpiApp = useSyncExternalStore(
+    subscribeToNothing,
+    () => supportsUpiDeepLink(navigator.userAgent),
+    () => false,
+  );
 
 
 
@@ -203,7 +216,12 @@ export function DonationCheckoutForm({
         setUpiUri(order.upiUri);
         setUpiAmount(validation.data.amount);
         setStatus("awaiting_confirmation");
-        window.location.href = order.upiUri;
+        // Deliberately NOT navigating to the upi:// link here. Doing it
+        // automatically meant an iPhone or Mac devotee was ambushed with
+        // 'allow this website to open "WhatsApp"?' before they had done
+        // anything — WhatsApp registers the upi:// scheme and Apple
+        // platforms have no app chooser. The handoff is now a tap on the
+        // next screen, and only offered where it can actually work.
         return;
       }
 
@@ -296,15 +314,15 @@ export function DonationCheckoutForm({
           </p>
         </div>
 
-        {upiUri && (
+        {upiUri && canOpenUpiApp && (
           <>
             {/*
-              The real, gesture-driven way into the UPI app. handleDonate also
-              assigns window.location straight after the order call, but that
-              navigation happens after an await — iOS Safari in particular can
-              drop a custom-scheme navigation that isn't attributable to a tap.
-              This button always is, and doubles as the retry when the devotee
-              cancels the chooser or comes back to try a different app.
+              Android only. The tap is the whole point: it is attributable to
+              a user gesture (Safari drops scheme navigations that aren't),
+              and it doubles as the retry when someone backs out of the app
+              chooser. On Apple platforms this button is not rendered at all —
+              WhatsApp registers upi:// there and would be offered instead of
+              a payment app.
             */}
             <Button
               size="xl"
@@ -314,19 +332,18 @@ export function DonationCheckoutForm({
               {upiAmount !== null ? `Pay ${formatInr(upiAmount)} via UPI` : "Pay via UPI"}
               <ArrowRight className="size-4" data-icon="inline-end" aria-hidden="true" />
             </Button>
-            {/*
-              Platform reality, without sniffing the user agent: on Android
-              the button hands off to the OS chooser (PhonePe / GPay / Paytm /
-              BHIM). On iOS it opens whichever UPI app claims the scheme, and
-              if none does nothing happens — so the QR and the copyable UPI ID
-              below are always present as the universal path. On desktop and
-              macOS no app can claim it at all, which is what this line says.
-            */}
             <p className="text-center text-xs text-[#8C7B6D]">
-              Not on your phone? {upi?.qrCodeUrl ? "Scan the QR code below" : "Copy the UPI ID below"} and pay from any
-              UPI app.
+              Choose PhonePe, Google Pay, Paytm, BHIM, or any UPI app.
             </p>
           </>
+        )}
+
+        {upiUri && !canOpenUpiApp && (
+          <p className="rounded-[14px] bg-[#FFF6ED] p-3 text-center text-sm text-[#6B5B4F]">
+            {upi?.qrCodeUrl
+              ? "Scan the QR code below with any UPI app, or copy the UPI ID and pay from your phone."
+              : "Copy the UPI ID below and pay from any UPI app on your phone."}
+          </p>
         )}
 
         {upi && (
@@ -400,7 +417,7 @@ export function DonationCheckoutForm({
                   <Copy className="size-3.5" />
                   Copy UPI ID
                 </Button>
-                {upiUri && (
+                {upiUri && canOpenUpiApp && (
                   <Button
                     type="button"
                     variant="outline"
