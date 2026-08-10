@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { useState } from "react";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion-reveal";
+import { ImageLightbox } from "@/components/image-lightbox";
 
 export interface DonateGalleryImage {
   id: string;
@@ -24,15 +24,6 @@ export interface DonateGalleryImage {
  */
 export function DonateGallery({ images }: { images: DonateGalleryImage[] }) {
   const [lightbox, setLightbox] = useState<DonateGalleryImage | null>(null);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setLightbox(null);
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightbox]);
 
   return (
     <section id="gallery" className="mx-auto max-w-[1040px] px-5 py-14 md:px-6 md:py-16">
@@ -63,29 +54,7 @@ export function DonateGallery({ images }: { images: DonateGalleryImage[] }) {
       </MotionStagger>
 
       {lightbox && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={lightbox.title ?? "Campaign photo"}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setLightbox(null)}
-        >
-          <button
-            type="button"
-            onClick={() => setLightbox(null)}
-            className="absolute top-4 right-4 rounded-full bg-white/15 p-2 text-white hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-            aria-label="Close photo"
-            autoFocus
-          >
-            <X className="size-5" aria-hidden="true" />
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset */}
-          <img
-            src={lightbox.imageUrl}
-            alt={lightbox.title ?? ""}
-            className="max-h-[85vh] max-w-full rounded-2xl object-contain"
-          />
-        </div>
+        <ImageLightbox src={lightbox.imageUrl} alt={lightbox.title ?? "Campaign photo"} onClose={() => setLightbox(null)} />
       )}
     </section>
   );

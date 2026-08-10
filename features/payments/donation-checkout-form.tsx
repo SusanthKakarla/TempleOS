@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
-import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Loader2, PartyPopper, PauseCircle, Upload } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarX2, CheckCircle2, ChevronDown, Copy, Download, Loader2, Maximize2, PartyPopper, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -14,6 +14,7 @@ import { donationCheckoutSchema } from "@/lib/validation/payments";
 import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { ImageLightbox } from "@/components/image-lightbox";
 
 declare global {
   interface Window {
@@ -110,14 +111,9 @@ export function DonationCheckoutForm({
   // upi_manual only — populated once the order route returns a pending
   // transaction + upi:// link; used by the "awaiting confirmation" screen
   // below (the fallback UPI ID/QR/link, and the optional proof submission).
-  const [upiTransactionId, setUpiTransactionId] = useState<string | null>(null);
   const [upiUri, setUpiUri] = useState<string | null>(null);
   const [upiAmount, setUpiAmount] = useState<number | null>(null);
-  const [upiReference, setUpiReference] = useState("");
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
-  const [confirmSubmitted, setConfirmSubmitted] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [qrZoomed, setQrZoomed] = useState(false);
 
 
 
@@ -147,31 +143,26 @@ export function DonationCheckoutForm({
     }
   }
 
-  async function handleSubmitProof() {
-    if (!upiTransactionId) return;
-    if (!upiReference.trim() && !screenshotFile) {
-      setConfirmError("Add a UPI reference or a screenshot before submitting.");
-      return;
-    }
-    setConfirmError(null);
-    setConfirmSubmitting(true);
+  /**
+   * Saves the QR rather than opening it. The `download` attribute is ignored
+   * for a cross-origin URL (the QR lives on ImageKit), so the bytes are
+   * fetched and handed over as a blob; if that is blocked, opening the image
+   * in a new tab still lets the devotee long-press or right-click to save.
+   */
+  async function handleDownloadQr(url: string) {
     try {
-      const formData = new FormData();
-      formData.append("transactionId", upiTransactionId);
-      if (upiReference.trim()) formData.append("upiReference", upiReference.trim());
-      if (screenshotFile) formData.append("screenshot", screenshotFile);
-
-      const response = await fetch(`/api/public/donate/${tenantSlug}/${campaignSlug}/${token}/confirm`, {
-        method: "POST",
-        body: formData,
-      });
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) throw new Error(body.error ?? "Something went wrong. Please try again.");
-      setConfirmSubmitted(true);
-    } catch (err) {
-      setConfirmError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setConfirmSubmitting(false);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Could not fetch the QR code");
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `${templeName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-upi-qr.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   }
 
@@ -209,7 +200,6 @@ export function DonationCheckoutForm({
       // confirmation" screen underneath (the browser tab stays open behind
       // the UPI app on Android; there is no callback to wait for).
       if (order.upiUri) {
-        setUpiTransactionId(order.transactionId);
         setUpiUri(order.upiUri);
         setUpiAmount(validation.data.amount);
         setStatus("awaiting_confirmation");
@@ -341,120 +331,96 @@ export function DonationCheckoutForm({
 
         {upi && (
           <div className="space-y-4 rounded-[14px] bg-[#FFF6ED] p-4">
-            <p className="text-sm font-medium text-[#2B2118]">Didn&apos;t open automatically?</p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              {upi.qrCodeUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset
-                <img
-                  src={upi.qrCodeUrl}
-                  alt="UPI QR code for this temple"
-                  className="mx-auto size-32 shrink-0 rounded-lg border border-[#F3E7DA] object-cover sm:mx-0"
-                />
-              )}
-              {/*
-                A VPA is one long unbreakable token. With `justify-between`
-                and no shrink rules, the label collapsed to its narrowest
-                wrap ("UPI" / "ID" on two lines) while the value still
-                couldn't shrink below min-content and overflowed the card.
-                Labels hold their width; values wrap within what's left.
-              */}
-              <div className="min-w-0 flex-1 space-y-2 text-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <span className="shrink-0 text-[#6B5B4F]">UPI ID</span>
-                  <span className="min-w-0 text-right font-medium break-all text-[#2B2118]">{upi.vpa}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="shrink-0 text-[#6B5B4F]">Payee Name</span>
-                  <span className="min-w-0 text-right font-medium break-words text-[#2B2118]">{upi.payeeName}</span>
-                </div>
-                {upiAmount !== null && (
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="shrink-0 text-[#6B5B4F]">Amount</span>
-                    <span className="shrink-0 font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => handleCopy(upi.vpa, "UPI ID copied to clipboard.")}>
-                    <Copy className="size-3.5" />
-                    Copy UPI ID
+            {/*
+              QR first and large: on a laptop it is the only way to pay (no
+              app can claim upi:// there), and on a phone it is what someone
+              points a second device at. Tapping it opens the full-screen
+              view, because a 200px QR photographed off a screen at an angle
+              is exactly the case that fails to scan.
+            */}
+            {upi.qrCodeUrl && (
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQrZoomed(true)}
+                  className="rounded-2xl border border-[#F3E7DA] bg-white p-2 transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:outline-none"
+                  aria-label="Enlarge the UPI QR code"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a local asset */}
+                  <img
+                    src={upi.qrCodeUrl}
+                    alt="UPI QR code for this temple"
+                    className="size-52 rounded-lg object-contain sm:size-60"
+                  />
+                </button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setQrZoomed(true)}>
+                    <Maximize2 className="size-3.5" />
+                    Enlarge
                   </Button>
-                  {upiUri && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                      onClick={() => handleCopy(upiUri, "UPI link copied to clipboard.")}
-                    >
-                      <Copy className="size-3.5" />
-                      Copy UPI Link
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => handleDownloadQr(upi.qrCodeUrl!)}
+                  >
+                    <Download className="size-3.5" />
+                    Download QR
+                  </Button>
                 </div>
+              </div>
+            )}
+
+            <p className="text-sm font-medium text-[#2B2118]">Didn&apos;t open automatically?</p>
+            {/*
+              A VPA is one long unbreakable token. With `justify-between` and
+              no shrink rules, the label collapsed to its narrowest wrap
+              ("UPI" / "ID" on two lines) while the value still couldn't
+              shrink below min-content and overflowed the card. Labels hold
+              their width; values wrap within what's left.
+            */}
+            <div className="min-w-0 space-y-2 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 text-[#6B5B4F]">UPI ID</span>
+                <span className="min-w-0 text-right font-medium break-all text-[#2B2118]">{upi.vpa}</span>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 text-[#6B5B4F]">Payee Name</span>
+                <span className="min-w-0 text-right font-medium break-words text-[#2B2118]">{upi.payeeName}</span>
+              </div>
+              {upiAmount !== null && (
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-[#6B5B4F]">Amount</span>
+                  <span className="shrink-0 font-medium text-[#2B2118]">{formatInr(upiAmount)}</span>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => handleCopy(upi.vpa, "UPI ID copied to clipboard.")}>
+                  <Copy className="size-3.5" />
+                  Copy UPI ID
+                </Button>
+                {upiUri && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => handleCopy(upiUri, "UPI link copied to clipboard.")}
+                  >
+                    <Copy className="size-3.5" />
+                    Copy UPI Link
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {confirmSubmitted ? (
-          <p className="rounded-[14px] bg-[#FFF6ED] p-4 text-center text-sm text-[#6B5B4F]">
-            Thanks — we&apos;ve recorded your submission for the temple to verify.
-          </p>
-        ) : (
-          /*
-            Nothing here is required of the donor: the donation row already
-            exists as `pending_verification` (created before the redirect to
-            their UPI app), and the temple confirms it against its own bank
-            record. A reference number cannot be captured automatically on
-            this flow — a `upi://pay` handoff sends no callback back to the
-            web page — so rather than demand that the donor copy a UTR across
-            from another app to "finish", the whole proof step is collapsed
-            out of the way. It stays available because a reference does make
-            the temple's reconciliation easier when a donor happens to have
-            it to hand.
-          */
-          <Collapsible>
-            <CollapsibleTrigger className="flex w-full items-center justify-center gap-1.5 text-sm text-[#8C7B6D] underline-offset-4 hover:underline">
-              <ChevronDown className="size-4" aria-hidden="true" />
-              Have a UPI reference number? (optional)
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-3 pt-3">
-            <LabeledInput
-              id="upi-reference"
-              label="UPI reference number"
-              placeholder="e.g. 123456789012"
-              inputSize="lg"
-              className={FILLED_INPUT_CLASS}
-              value={upiReference}
-              onChange={(event) => setUpiReference(event.target.value)}
-            />
-            <label
-              htmlFor="upi-screenshot"
-              className="flex h-[52px] cursor-pointer items-center justify-between rounded-[14px] border border-transparent bg-[#FFF6ED] px-4 text-sm text-[#6B5B4F]"
-            >
-              <span className="truncate">{screenshotFile ? screenshotFile.name : "Upload payment screenshot"}</span>
-              <Upload className="size-4 shrink-0" />
-              <input
-                id="upi-screenshot"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(event) => setScreenshotFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            {confirmError && <p className="text-sm text-destructive">{confirmError}</p>}
-            <Button
-              type="button"
-              disabled={confirmSubmitting}
-              className="w-full rounded-full bg-[#D4AF37] text-white hover:bg-[#C19A2E]"
-              onClick={handleSubmitProof}
-            >
-              {confirmSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              Submit
-            </Button>
-            </CollapsibleContent>
-          </Collapsible>
+        {qrZoomed && upi?.qrCodeUrl && (
+          <ImageLightbox src={upi.qrCodeUrl} alt="UPI QR code for this temple" onClose={() => setQrZoomed(false)} />
         )}
+
       </div>
     );
   }
