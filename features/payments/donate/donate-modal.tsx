@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatInr } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import type { DonationBlockedReason } from "@/lib/payments/donation-checkout-service";
@@ -122,15 +122,40 @@ export function DonateModalProvider({
           long form — amount presets, donor fields, the UPI handoff screen —
           scrolls inside itself) and a centered ~520px card from `sm` up.
         */}
+        {/* The default close button sits at top-2 right-2 with an icon-sm
+            (28px) hit area — too small for the 44px touch target this sheet
+            needs, so `showCloseButton` is off and a larger one is rendered
+            below at the same position. */}
         <DialogContent
+          overlayClassName="bg-[rgba(47,33,27,0.45)] backdrop-blur-none"
           className={cn(
-            "fixed inset-x-0 top-auto bottom-0 left-0 z-50 flex max-h-[90vh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-y-auto rounded-t-3xl rounded-b-none p-0",
-            "sm:inset-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl",
+            "fixed inset-x-0 top-auto bottom-0 left-0 z-50 flex max-h-[92vh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-y-auto rounded-t-[28px] rounded-b-none bg-[#FFFDF9] p-0 text-[#2F211B] shadow-[0_-8px_30px_rgba(47,33,27,0.12)]",
+            "sm:inset-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[90vh] sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[24px] sm:shadow-[0_20px_60px_rgba(47,33,27,0.18)]",
           )}
+          showCloseButton={false}
         >
-          <DialogHeader className="px-5 pt-5 pb-0">
-            <DialogTitle className="text-left font-heading text-lg font-semibold text-[#2F211B]">Support this campaign</DialogTitle>
-            <p className="text-sm text-[#756A61]">Choose your donation amount</p>
+          {/* Drag handle — mobile bottom-sheet affordance only, hidden once the dialog becomes a centered desktop card. */}
+          <div className="flex justify-center pt-2.5 pb-1 sm:hidden" aria-hidden="true">
+            <div className="h-1 w-10 rounded-full bg-[#D8CEC3]" />
+          </div>
+
+          <DialogClose
+            render={
+              <button
+                type="button"
+                aria-label="Close"
+                className="absolute top-2 right-2 flex size-11 items-center justify-center rounded-full text-[#2F211B] transition-colors hover:bg-[#F3E7DA]"
+              />
+            }
+          >
+            <XIcon className="size-5" aria-hidden="true" />
+          </DialogClose>
+
+          <DialogHeader className="px-5 pt-3 pb-0">
+            <DialogTitle className="text-left font-heading text-2xl leading-tight font-bold text-[#2F211B] sm:text-[26px]">
+              Support this campaign
+            </DialogTitle>
+            <p className="text-[15px] text-[#756A61]">Choose your donation amount</p>
           </DialogHeader>
           <div className="px-5 pb-5">
             <DonationCheckoutForm

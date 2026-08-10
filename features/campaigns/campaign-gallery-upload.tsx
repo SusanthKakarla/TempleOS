@@ -44,7 +44,7 @@ export function CampaignGalleryUpload({
   label,
   hint,
   addLabel,
-  max = 12,
+  max = 4,
 }: CampaignGalleryUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -153,68 +153,79 @@ export function CampaignGalleryUpload({
         </div>
       ))}
 
-      {remaining > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">{addLabel}</p>
-          <div
-            role="button"
-            tabIndex={0}
-            aria-disabled={Boolean(upload)}
-            onClick={() => !upload && inputRef.current?.click()}
-            onKeyDown={(event) => {
-              if (!upload && (event.key === "Enter" || event.key === " ")) {
+      {(() => {
+        const isFull = remaining <= 0;
+        const disabled = isFull || Boolean(upload);
+        return (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{addLabel}</p>
+            <div
+              role="button"
+              tabIndex={disabled ? -1 : 0}
+              aria-disabled={disabled}
+              onClick={() => !disabled && inputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (!disabled && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  inputRef.current?.click();
+                }
+              }}
+              onDragOver={(event) => {
                 event.preventDefault();
-                inputRef.current?.click();
-              }
-            }}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragging(false);
-              if (!upload) void handleFiles(event.dataTransfer.files);
-            }}
-            className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
-              upload ? "cursor-wait opacity-70" : "cursor-pointer"
-            } ${dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"}`}
-          >
-            {upload ? (
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            ) : (
-              <ImageIcon className="size-6 text-muted-foreground" />
-            )}
-            <p className="text-sm text-muted-foreground">
+                if (!disabled) setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                if (!disabled) void handleFiles(event.dataTransfer.files);
+              }}
+              className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
+                disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              } ${dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"}`}
+            >
               {upload ? (
-                `Uploading ${Math.min(upload.done + 1, upload.total)} of ${upload.total}...`
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
               ) : (
-                <>
-                  <span className="font-medium text-foreground">Drag &amp; drop</span> or click to select several photos
-                </>
+                <ImageIcon className="size-6 text-muted-foreground" />
               )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              JPG, PNG, or WEBP · up to 5MB each · {remaining} {remaining === 1 ? "slot" : "slots"} left
-            </p>
+              <p className="text-sm text-muted-foreground">
+                {upload ? (
+                  `Uploading ${Math.min(upload.done + 1, upload.total)} of ${upload.total}...`
+                ) : isFull ? (
+                  <span className="font-medium text-foreground">Maximum of {max} photos reached</span>
+                ) : (
+                  <>
+                    <span className="font-medium text-foreground">Drag &amp; drop</span> or click to select several photos
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isFull
+                  ? "Remove a photo to add another."
+                  : value.length === 0
+                    ? `JPG, PNG, or WEBP · up to 5MB each · ${max} photos maximum`
+                    : `JPG, PNG, or WEBP · up to 5MB each · ${remaining} ${remaining === 1 ? "slot" : "slots"} left`}
+              </p>
+            </div>
+
+            {upload && <Progress value={Math.round(((upload.done + upload.percent / 100) / upload.total) * 100)} />}
+
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              disabled={disabled}
+              className="hidden"
+              onChange={(event) => {
+                void handleFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
           </div>
-
-          {upload && <Progress value={Math.round(((upload.done + upload.percent / 100) / upload.total) * 100)} />}
-
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            className="hidden"
-            onChange={(event) => {
-              void handleFiles(event.target.files);
-              event.target.value = "";
-            }}
-          />
-        </div>
-      )}
+        );
+      })()}
 
       {errors.length > 0 && (
         <ul className="space-y-0.5">

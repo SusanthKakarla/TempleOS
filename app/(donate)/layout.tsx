@@ -29,7 +29,7 @@ const inter = Inter({
 export default function DonateLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`${poppins.variable} ${inter.variable} min-h-screen bg-[#FFF8E8] text-[#2F211B] [--font-heading:var(--font-donate-heading)] [--font-sans:var(--font-donate-sans)]`}
+      className={`${poppins.variable} ${inter.variable} donate-theme-light min-h-screen bg-[#FFF8E8] text-[#2F211B] [--font-heading:var(--font-donate-heading)] [--font-sans:var(--font-donate-sans)]`}
     >
       {children}
     </div>

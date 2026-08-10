@@ -57,7 +57,7 @@ const subscribeToNothing = () => () => {};
 
 /** Every text input in this form: visible border, white background, dark readable text — never a pale fill that makes placeholders hard to read. */
 const FILLED_INPUT_CLASS =
-  "h-[52px] rounded-[14px] border border-[#E9DED0] bg-white text-base text-[#2F211B] focus-visible:border-[#D98200] focus-visible:ring-[#D98200]/20";
+  "h-[52px] rounded-[14px] border border-[#E3D8CC] bg-white text-base text-[#2F211B] placeholder:text-[#8A7D72] focus-visible:border-[#D7B53A] focus-visible:ring-[#D7B53A]/25";
 
 const BLOCKED_COPY: Record<DonationBlockedReason, { icon: ReactNode; title: string; description: string }> = {
   not_started: {
@@ -563,7 +563,11 @@ export function DonationCheckoutForm({
         />
         <div>
           <label className="flex items-center gap-2 text-sm text-[#2F211B]">
-            <Checkbox checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked === true)} />
+            <Checkbox
+              checked={isAnonymous}
+              onCheckedChange={(checked) => setIsAnonymous(checked === true)}
+              className="border-[#E3D8CC] bg-white data-checked:border-[#D7B53A] data-checked:bg-[#D7B53A] data-checked:text-white"
+            />
             Donate anonymously
           </label>
           <p className="mt-1 pl-6 text-xs text-[#756A61]">Your name will not be displayed publicly.</p>
@@ -618,9 +622,9 @@ export function DonationCheckoutForm({
       </Collapsible>
 
       {status === "cancelled" && <p className="text-sm text-[#756A61]">Payment cancelled — you can try again.</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-[#B3261E]">{error}</p>}
 
-      <div className="sticky bottom-0 -mx-5 space-y-2 bg-white px-5 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 -mx-5 space-y-2 border-t border-[#E9DED0] bg-[#FFFDF9] px-5 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <p className="flex items-center justify-center gap-1.5 text-xs text-[#756A61]">
           <Lock className="size-3.5" aria-hidden="true" />
           Secure payment

@@ -201,6 +201,38 @@
 }
 
 /*
+ * The public donation page is reached from a WhatsApp link and shows the
+ * TEMPLE's own branding — it must look identical no matter the visitor's
+ * device dark-mode setting, not flip to the app's dark theme. Shared
+ * primitives (Dialog, Button, Progress, Input) read color from these CSS
+ * custom properties, so simply hardcoding hex on the donate page's own JSX
+ * (as it already does) isn't enough — this re-declares the light values on
+ * the route's own wrapper so they win over an ancestor `.dark` on <html>,
+ * via normal custom-property inheritance down the subtree.
+ */
+.donate-theme-light {
+  --background: oklch(0.981 0.005 220);
+  --foreground: oklch(0.18 0.02 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 240);
+  --primary: oklch(0.27 0.07 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.01 220);
+  --secondary-foreground: oklch(0.27 0.07 240);
+  --muted: oklch(0.95 0.005 220);
+  --muted-foreground: oklch(0.52 0.03 220);
+  --accent: oklch(0.76 0.17 58);
+  --accent-foreground: oklch(0.18 0.02 240);
+  --destructive: oklch(0.55 0.217 28.1);
+  --warning: oklch(0.769 0.165 70.1);
+  --border: oklch(0.89 0.01 220);
+  --input: oklch(0.89 0.01 220);
+  --ring: oklch(0.27 0.07 240);
+}
+
+/*
  * Telugu glyphs already fall back into Noto Sans Telugu today (it's the last
  * entry in --font-sans/--font-heading below), but CSS font-fallback resolves
  * per character, not per page — a Telugu string with mixed digits/Latin
