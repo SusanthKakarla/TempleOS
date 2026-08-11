@@ -119,9 +119,12 @@ describe("Epic 3 super-admin temple operation guardrails", () => {
     expect(source).toMatch(/\/super-admin\/temples\/new/);
     expect(source).not.toMatch(/getPilotTenant|admin_users|admin-users/i);
     expect(source).not.toMatch(/requireTenantAdminSession|getSessionAdmin/i);
-    expect(source.indexOf("await requireSuperAdminPage()")).toBeLessThan(
-      source.indexOf("await listTenantsForSuperAdmin()"),
-    );
+    // Order matters, not the exact argument lists: the super-admin gate has to
+    // run before any cross-tenant read on the page.
+    const guardIndex = source.indexOf("await requireSuperAdminPage(");
+    const readIndex = source.indexOf("listTenantsForSuperAdmin(");
+    expect(guardIndex).toBeGreaterThanOrEqual(0);
+    expect(readIndex).toBeGreaterThan(guardIndex);
   });
 
   it("keeps the super-admin temple detail page behind the super-admin boundary", () => {

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { getPool } from "./pool";
 import type { QueryClient } from "./query-client";
 import { createAuditLogEntry } from "./audit-log";
+import { DEFAULT_PAGE_SIZE, computeOffset } from "@/lib/pagination";
 import {
   isRoleCode,
   type PaymentAccountStatus,
@@ -308,7 +309,27 @@ export async function listTenantIdsAndTimezones(): Promise<{ id: string; timezon
   return rows;
 }
 
-export async function listTenantsForSuperAdmin(): Promise<SuperAdminTenantSummary[]> {
+export interface ListTenantsForSuperAdminOptions {
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * `page`/`pageSize` are optional — omitted, this returns every tenant
+ * (existing callers rely on that). There is deliberately no cap on how many
+ * tenants may exist; paging is a read-side concern only.
+ */
+export async function listTenantsForSuperAdmin(
+  options: ListTenantsForSuperAdminOptions = {},
+): Promise<SuperAdminTenantSummary[]> {
+  const params: unknown[] = [];
+  let pagingClause = "";
+  if (options.page !== undefined) {
+    const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.push(pageSize, computeOffset(options.page, pageSize));
+    pagingClause = ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+
   const { rows } = await getPool().query<SuperAdminTenantSummaryRow>(
     `SELECT t.id,
             t.slug,
@@ -360,9 +381,16 @@ export async function listTenantsForSuperAdmin(): Promise<SuperAdminTenantSummar
        ORDER BY wa.connected_at DESC NULLS LAST, wa.updated_at DESC, wa.id DESC
        LIMIT 1
      ) whatsapp_account ON true
-     ORDER BY t.created_at ASC, t.id ASC`,
+     ORDER BY t.created_at ASC, t.id ASC${pagingClause}`,
+    params,
   );
   return rows.map(mapSuperAdminTenantSummary);
+}
+
+/** Total tenant count for the Super Admin temples list — a plain count so paging never has to load every row. */
+export async function countTenantsForSuperAdmin(): Promise<number> {
+  const { rows } = await getPool().query<{ count: string }>("SELECT count(*) AS count FROM tenants");
+  return Number(rows[0]?.count ?? 0);
 }
 
 export async function getTenantDetailForSuperAdmin(

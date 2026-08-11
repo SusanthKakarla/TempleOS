@@ -15,6 +15,7 @@
     "migrate": "tsx scripts/migrate.mts",
     "seed": "tsx scripts/seed.mts",
     "provision:temple": "tsx scripts/provision-temple.mts",
+    "cleanup:tenants": "tsx scripts/cleanup-obsolete-tenants.mts",
     "seed:super-admin": "node scripts/seed-super-admin.mjs",
     "auth:clear-firebase": "tsx scripts/clear-person-firebase-uid.mts",
     "docs:ekb": "node scripts/generate-ekb.mjs"

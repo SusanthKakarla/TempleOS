@@ -7,7 +7,9 @@ import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
+  findTenantMembershipByPersonAndTenant,
   getTenantMembershipByTenantAndIdForSuperAdmin,
+  reactivateTenantMembership,
   replaceTenantMembershipRolesForSuperAdmin,
 } from "@/lib/db/tenant-memberships";
 import {
@@ -111,6 +113,13 @@ export interface UpdateProvisionedTempleInput {
   }>;
 }
 
+export interface AddTenantMemberInput {
+  tenantId: string;
+  displayName: string;
+  phoneNumber: string;
+  roles: RoleCode[];
+}
+
 export interface AssignTenantMemberRolesInput {
   tenantId: string;
   membershipId: string;
@@ -133,6 +142,15 @@ export type ProvisionTempleValidationResult =
 
 export type UpdateProvisionedTempleValidationResult =
   | { ok: true; data: UpdateProvisionedTempleInput }
+  | {
+      ok: false;
+      status: 400;
+      code: "VALIDATION_ERROR";
+      errors: ProvisionTempleValidationIssue[];
+    };
+
+export type AddTenantMemberValidationResult =
+  | { ok: true; data: AddTenantMemberInput }
   | {
       ok: false;
       status: 400;
@@ -170,6 +188,22 @@ export class UpdateProvisionedTempleError extends Error {
   ) {
     super(message);
     this.name = "UpdateProvisionedTempleError";
+  }
+}
+
+export class AddTenantMemberError extends Error {
+  constructor(
+    message: string,
+    public readonly status: 400 | 404 | 409 | 500,
+    public readonly code:
+      | "VALIDATION_ERROR"
+      | "TEMPLE_NOT_FOUND"
+      | "ALREADY_MEMBER"
+      | "ADD_MEMBER_FAILED",
+    public readonly errors: ProvisionTempleValidationIssue[] = [],
+  ) {
+    super(message);
+    this.name = "AddTenantMemberError";
   }
 }
 
@@ -249,6 +283,14 @@ const rawUpdateProvisionedTempleSchema = z.object({
     })
     .optional(),
 });
+
+const rawAddTenantMemberSchema = z
+  .object({
+    displayName: z.string().trim().min(1, "Member name is required.").max(200),
+    phoneNumber: z.string().trim().min(1, "Member phone number is required."),
+    roles: z.array(z.string(), "Roles are required.").min(1, "At least one role is required."),
+  })
+  .strict();
 
 const rawAssignTenantMemberRolesSchema = z
   .object({
@@ -408,6 +450,176 @@ export function parseUpdateProvisionedTempleInput(
       tenant: safeTenant,
     },
   };
+}
+
+export function parseAddTenantMemberInput(
+  raw: unknown,
+  tenantId: string,
+): AddTenantMemberValidationResult {
+  const issues: ProvisionTempleValidationIssue[] = [];
+  if (!uuidPattern.test(tenantId)) {
+    issues.push({ path: ["tenantId"], message: "Invalid tenant ID." });
+  }
+
+  const parsed = rawAddTenantMemberSchema.safeParse(raw);
+  if (!parsed.success) {
+    issues.push(
+      ...parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+      })),
+    );
+    return validationError(issues);
+  }
+
+  const phoneNumber = normalizeRequiredPhone(parsed.data.phoneNumber, ["phoneNumber"], issues);
+  const roles = normalizeRoleCodes(parsed.data.roles, issues, { path: ["roles"], requireAdmin: false });
+  if (roles.length === 0) {
+    issues.push({ path: ["roles"], message: "At least one role is required." });
+  }
+
+  if (issues.length > 0 || !phoneNumber) {
+    return validationError(issues);
+  }
+
+  return {
+    ok: true,
+    data: {
+      tenantId,
+      displayName: parsed.data.displayName,
+      phoneNumber,
+      roles,
+    },
+  };
+}
+
+/**
+ * Super Admin's manual counterpart to a tenant admin's own "invite member"
+ * flow (lib/provisioning/tenant-members.ts) — same person/membership/role
+ * writes, but attributed to a super_admin actor and reachable for any tenant.
+ * Returns the refreshed temple detail so the caller can re-render the Members
+ * table (and its active count) from one response.
+ */
+export async function addTenantMemberAsSuperAdmin(
+  input: AddTenantMemberInput,
+  actor: ProvisionTempleActor,
+): Promise<{ temple: SuperAdminTenantDetail; membershipId: string }> {
+  const parsed = parseAddTenantMemberInput(
+    {
+      displayName: input.displayName,
+      phoneNumber: input.phoneNumber,
+      roles: input.roles,
+    },
+    input.tenantId,
+  );
+  if (!parsed.ok) {
+    throw new AddTenantMemberError("Add member input is invalid.", 400, "VALIDATION_ERROR", parsed.errors);
+  }
+
+  if (actor.type !== "super_admin" || !actor.superAdminId) {
+    throw new AddTenantMemberError("Super admin actor is required to add a member.", 500, "ADD_MEMBER_FAILED");
+  }
+
+  const canonicalInput = parsed.data;
+  const client = await getPool().connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const activeRoleCodes = new Set(await listActiveRoleCodesForSuperAdmin(canonicalInput.roles, client));
+    const inactiveRoles = canonicalInput.roles.filter((role) => !activeRoleCodes.has(role));
+    if (inactiveRoles.length > 0) {
+      throw new AddTenantMemberError(
+        "Add member input is invalid.",
+        400,
+        "VALIDATION_ERROR",
+        inactiveRoles.map((role) => ({ path: ["roles"], message: `Inactive role code: ${role}` })),
+      );
+    }
+
+    const { rows: tenantRows } = await client.query<{ id: string }>(
+      "SELECT id FROM tenants WHERE id = $1",
+      [canonicalInput.tenantId],
+    );
+    if (!tenantRows[0]) {
+      throw new AddTenantMemberError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    const person = await findOrCreatePersonByPhoneForProvisioning(
+      {
+        phoneNumber: canonicalInput.phoneNumber,
+        displayName: canonicalInput.displayName,
+      },
+      client,
+    );
+
+    // Status-agnostic: (tenant_id, person_id) is UNIQUE, so a previously
+    // disabled membership has to be reactivated rather than re-inserted.
+    const existing = await findTenantMembershipByPersonAndTenant(
+      { personId: person.id, tenantId: canonicalInput.tenantId },
+      client,
+    );
+    if (existing?.status === "active") {
+      throw new AddTenantMemberError(
+        "This person is already a member of this temple.",
+        409,
+        "ALREADY_MEMBER",
+      );
+    }
+
+    const membership = existing
+      ? await reactivateTenantMembership(canonicalInput.tenantId, existing.id, client)
+      : await createTenantMembershipForProvisioning(
+          {
+            tenantId: canonicalInput.tenantId,
+            personId: person.id,
+            displayName: canonicalInput.displayName,
+          },
+          client,
+        );
+    if (!membership) {
+      throw new AddTenantMemberError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    const member = await assignTenantMembershipRolesForProvisioning(
+      { membershipId: membership.id, roles: canonicalInput.roles },
+      client,
+    );
+
+    await createAuditLogEntry(
+      {
+        actorType: "super_admin",
+        actorId: actor.superAdminId,
+        tenantId: canonicalInput.tenantId,
+        action: "tenant_member.added",
+        targetType: "tenant_membership",
+        targetId: member.id,
+        metadata: {
+          personId: person.id,
+          roles: canonicalInput.roles,
+          reactivated: Boolean(existing),
+        },
+      },
+      client,
+    );
+
+    const detail = await getTenantDetailForSuperAdmin(canonicalInput.tenantId, client);
+    if (!detail) {
+      throw new AddTenantMemberError("Temple not found.", 404, "TEMPLE_NOT_FOUND");
+    }
+
+    await client.query("COMMIT");
+    return { temple: detail, membershipId: member.id };
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original stable add-member error for callers.
+    }
+    throw toAddTenantMemberError(err);
+  } finally {
+    client.release();
+  }
 }
 
 export function parseAssignTenantMemberRolesInput(
@@ -884,6 +1096,14 @@ function toProvisionTempleError(err: unknown): ProvisionTempleError {
 function toUpdateProvisionedTempleError(err: unknown): UpdateProvisionedTempleError {
   if (err instanceof UpdateProvisionedTempleError) return err;
   return new UpdateProvisionedTempleError("Temple update failed.", 500, "TEMPLE_UPDATE_FAILED");
+}
+
+function toAddTenantMemberError(err: unknown): AddTenantMemberError {
+  if (err instanceof AddTenantMemberError) return err;
+  if (isUniqueViolation(err)) {
+    return new AddTenantMemberError("This person is already a member of this temple.", 409, "ALREADY_MEMBER");
+  }
+  return new AddTenantMemberError("Failed to add member.", 500, "ADD_MEMBER_FAILED");
 }
 
 function toAssignTenantMemberRolesError(err: unknown): AssignTenantMemberRolesError {

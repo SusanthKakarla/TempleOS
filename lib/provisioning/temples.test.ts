@@ -30,6 +30,8 @@ vi.mock("@/lib/db/persons", () => ({
 
 vi.mock("@/lib/db/tenant-memberships", () => ({
   assignTenantMembershipRolesForProvisioning: vi.fn(),
+  findTenantMembershipByPersonAndTenant: vi.fn(),
+  reactivateTenantMembership: vi.fn(),
   createTenantMembershipForProvisioning: vi.fn(),
   getTenantMembershipByTenantAndIdForSuperAdmin: vi.fn(),
   replaceTenantMembershipRolesForSuperAdmin: vi.fn(),
@@ -64,6 +66,8 @@ import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
+  findTenantMembershipByPersonAndTenant,
+  reactivateTenantMembership,
   getTenantMembershipByTenantAndIdForSuperAdmin,
   replaceTenantMembershipRolesForSuperAdmin,
   type TenantMembershipWithRoles,
@@ -76,6 +80,9 @@ import {
   PRODUCT_DOMAIN,
   provisionTemple,
   assignTenantMemberRoles,
+  addTenantMemberAsSuperAdmin,
+  AddTenantMemberError,
+  parseAddTenantMemberInput,
   parseAssignTenantMemberRolesInput,
   parseUpdateProvisionedTempleInput,
   updateProvisionedTemple,
@@ -223,6 +230,8 @@ beforeEach(() => {
     roles: ["admin", "volunteer"],
   });
   vi.mocked(linkWhatsAppAccountForProvisioning).mockResolvedValue(linkedWhatsAppAccount);
+  vi.mocked(findTenantMembershipByPersonAndTenant).mockResolvedValue(null);
+  vi.mocked(reactivateTenantMembership).mockResolvedValue({ ...createdMembership, phoneNumber: createdPerson.phoneNumber });
   vi.mocked(createAuditLogEntry).mockResolvedValue({ id: "audit-1" } as never);
   client.query.mockResolvedValue({ rows: [] });
 });
@@ -1087,5 +1096,172 @@ describe("super-admin tenant member role assignment", () => {
     ).rejects.toMatchObject({ status: 500, code: "ROLE_ASSIGNMENT_FAILED" });
 
     expect(getTenantMembershipByTenantAndIdForSuperAdmin).not.toHaveBeenCalled();
+  });
+});
+
+describe("super admin manual member addition", () => {
+  const tenantId = "11111111-1111-4111-8111-111111111111";
+
+  function mockTenantExists() {
+    // BEGIN / tenant-existence SELECT / COMMIT all go through client.query.
+    client.query.mockImplementation(async (sql: string) => {
+      if (typeof sql === "string" && sql.includes("FROM tenants")) {
+        return { rows: [{ id: tenantId }] };
+      }
+      return { rows: [] };
+    });
+  }
+
+  it("rejects an invalid phone number before touching the database", () => {
+    const result = parseAddTenantMemberInput(
+      { displayName: "Temple Admin", phoneNumber: "not-a-phone", roles: ["admin"] },
+      tenantId,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.errors).toContainEqual({ path: ["phoneNumber"], message: "Enter a valid phone number." });
+  });
+
+  it("rejects unknown fields and normalizes the phone number", () => {
+    const extraneous = parseAddTenantMemberInput(
+      { displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"], isSuperAdmin: true },
+      tenantId,
+    );
+    expect(extraneous.ok).toBe(false);
+
+    const valid = parseAddTenantMemberInput(
+      { displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+      tenantId,
+    );
+    expect(valid.ok).toBe(true);
+    if (!valid.ok) throw new Error("expected validation success");
+    expect(valid.data.phoneNumber).toBe("+918886655443");
+  });
+
+  it("rejects an unknown role code and an invalid tenant id", () => {
+    const badRole = parseAddTenantMemberInput(
+      { displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["superuser"] },
+      tenantId,
+    );
+    expect(badRole.ok).toBe(false);
+
+    const badTenant = parseAddTenantMemberInput(
+      { displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+      "not-a-uuid",
+    );
+    expect(badTenant.ok).toBe(false);
+    if (badTenant.ok) throw new Error("expected validation failure");
+    expect(badTenant.errors).toContainEqual({ path: ["tenantId"], message: "Invalid tenant ID." });
+  });
+
+  it("creates the person, membership, and roles in one transaction", async () => {
+    mockTenantExists();
+
+    const result = await addTenantMemberAsSuperAdmin(
+      { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+      actor,
+    );
+
+    expect(findOrCreatePersonByPhoneForProvisioning).toHaveBeenCalledWith(
+      { phoneNumber: "+918886655443", displayName: "Temple Admin" },
+      client,
+    );
+    expect(createTenantMembershipForProvisioning).toHaveBeenCalled();
+    expect(assignTenantMembershipRolesForProvisioning).toHaveBeenCalledWith(
+      { membershipId: "membership-1", roles: ["admin"] },
+      client,
+    );
+    expect(createAuditLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({ actorType: "super_admin", action: "tenant_member.added" }),
+      client,
+    );
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+    expect(result.membershipId).toBe("membership-1");
+    expect(result.temple.members).toHaveLength(1);
+  });
+
+  it("reuses an existing person rather than creating a duplicate", async () => {
+    mockTenantExists();
+
+    await addTenantMemberAsSuperAdmin(
+      { tenantId, displayName: "Temple Admin", phoneNumber: "+918886655443", roles: ["admin"] },
+      actor,
+    );
+
+    expect(findOrCreatePersonByPhoneForProvisioning).toHaveBeenCalledOnce();
+    expect(createTenantMembershipForProvisioning).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a person who is already an active member of the temple", async () => {
+    mockTenantExists();
+    vi.mocked(findTenantMembershipByPersonAndTenant).mockResolvedValue(createdMembership);
+
+    await expect(
+      addTenantMemberAsSuperAdmin(
+        { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+        actor,
+      ),
+    ).rejects.toMatchObject({ status: 409, code: "ALREADY_MEMBER" });
+
+    expect(createTenantMembershipForProvisioning).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("reactivates a previously disabled membership instead of inserting a duplicate", async () => {
+    mockTenantExists();
+    vi.mocked(findTenantMembershipByPersonAndTenant).mockResolvedValue({
+      ...createdMembership,
+      status: "inactive",
+    });
+
+    await addTenantMemberAsSuperAdmin(
+      { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+      actor,
+    );
+
+    expect(reactivateTenantMembership).toHaveBeenCalledWith(tenantId, "membership-1", client);
+    expect(createTenantMembershipForProvisioning).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("rejects an unknown temple before writing anything", async () => {
+    client.query.mockResolvedValue({ rows: [] });
+
+    await expect(
+      addTenantMemberAsSuperAdmin(
+        { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+        actor,
+      ),
+    ).rejects.toMatchObject({ status: 404, code: "TEMPLE_NOT_FOUND" });
+
+    expect(findOrCreatePersonByPhoneForProvisioning).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+  });
+
+  it("rejects a role that is no longer active in the database", async () => {
+    mockTenantExists();
+    vi.mocked(listActiveRoleCodesForSuperAdmin).mockResolvedValue([]);
+
+    await expect(
+      addTenantMemberAsSuperAdmin(
+        { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+        actor,
+      ),
+    ).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+
+    expect(createTenantMembershipForProvisioning).not.toHaveBeenCalled();
+  });
+
+  it("requires a super-admin actor", async () => {
+    await expect(
+      addTenantMemberAsSuperAdmin(
+        { tenantId, displayName: "Temple Admin", phoneNumber: "8886655443", roles: ["admin"] },
+        { ...actor, type: "tenant_member" } as never,
+      ),
+    ).rejects.toBeInstanceOf(AddTenantMemberError);
+
+    expect(findOrCreatePersonByPhoneForProvisioning).not.toHaveBeenCalled();
   });
 });

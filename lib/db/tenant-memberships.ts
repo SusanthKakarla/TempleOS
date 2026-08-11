@@ -63,6 +63,26 @@ export async function findActiveTenantMembershipByPersonAndTenant(input: {
   return rows[0] ? mapTenantMembership(rows[0]) : null;
 }
 
+/**
+ * Status-agnostic counterpart of findActiveTenantMembershipByPersonAndTenant.
+ * (tenant_id, person_id) is UNIQUE, so a *disabled* membership still blocks a
+ * fresh INSERT — callers that add a member need to see it to reactivate rather
+ * than fail on the constraint.
+ */
+export async function findTenantMembershipByPersonAndTenant(
+  input: { personId: string; tenantId: string },
+  client: QueryClient = getPool(),
+): Promise<TenantMembershipWithRoles | null> {
+  const { rows } = await client.query<TenantMembershipRow>(
+    `${membershipWithRolesSelect}
+     WHERE tm.person_id = $1 AND tm.tenant_id = $2
+     GROUP BY tm.id
+     LIMIT 1`,
+    [input.personId, input.tenantId],
+  );
+  return rows[0] ? mapTenantMembership(rows[0]) : null;
+}
+
 export const getTenantMembershipById = cache(async function getTenantMembershipById(
   membershipId: string,
   client: QueryClient = getPool(),
