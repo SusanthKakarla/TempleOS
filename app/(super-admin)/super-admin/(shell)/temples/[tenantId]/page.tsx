@@ -29,6 +29,7 @@ import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connecti
 import { RazorpayConnectionForm } from "@/features/super-admin/razorpay-connection-form";
 import { PhonePeConnectionForm } from "@/features/super-admin/phonepe-connection-form";
 import { MemberRoleEditor } from "@/features/super-admin/member-role-editor";
+import { AddTempleMemberDialog } from "@/features/super-admin/add-temple-member-dialog";
 import { TenantStatusControl } from "@/features/super-admin/tenant-status-control";
 import { TenantFeatureManagementCard } from "@/features/super-admin/tenant-feature-management-card";
 import { listRoleDefinitionsForSuperAdmin } from "@/lib/db/role-definitions";
@@ -194,7 +195,10 @@ export default async function SuperAdminTempleDetailPage({
                 assignments.
               </p>
             </div>
-            <Badge variant="secondary" className="shrink-0">{temple.members.length} active</Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant="secondary">{temple.members.length} active</Badge>
+              <AddTempleMemberDialog tenantId={temple.tenant.id} roles={roles} />
+            </div>
           </div>
           {temple.members.length === 0 ? (
             <EmptyState

@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { verifySessionToken } from "@/lib/auth/session";
-import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
+import { countTenantsForSuperAdmin, listTenantsForSuperAdmin } from "@/lib/db/tenants";
 import {
   parseProvisionTempleInput,
   provisionTemple,
   ProvisionTempleError,
 } from "@/lib/provisioning/temples";
 import { cookies } from "next/headers";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/auth/super-admin-session", () => ({
   requireSuperAdmin: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock("@/lib/provisioning/temples", () => {
 
 vi.mock("@/lib/db/tenants", () => ({
   listTenantsForSuperAdmin: vi.fn(),
+  countTenantsForSuperAdmin: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -154,6 +156,10 @@ const provisionedTemple = {
   paymentAccount: null,
 };
 
+function listRequest(url = "http://localhost/api/super-admin/temples"): NextRequest {
+  return new NextRequest(url);
+}
+
 function request(body: unknown): Request {
   return new Request("http://localhost/api/super-admin/temples", {
     method: "POST",
@@ -181,6 +187,7 @@ describe("super admin temple provisioning route", () => {
     vi.mocked(parseProvisionTempleInput).mockReset();
     vi.mocked(provisionTemple).mockReset();
     vi.mocked(listTenantsForSuperAdmin).mockReset();
+    vi.mocked(countTenantsForSuperAdmin).mockReset();
     vi.mocked(cookies).mockReset();
     mockTenantCookie();
   });
@@ -213,22 +220,39 @@ describe("super admin temple provisioning route", () => {
     ];
     vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin);
     vi.mocked(listTenantsForSuperAdmin).mockResolvedValue(temples);
+    vi.mocked(countTenantsForSuperAdmin).mockResolvedValue(1);
 
-    const res = await GET();
+    const res = await GET(listRequest());
 
     const body = await res.json();
-    expect(body).toEqual({ temples: activeOperationTemples });
+    expect(body).toEqual({
+      temples: activeOperationTemples,
+      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1 },
+    });
     expect(JSON.stringify(body)).not.toMatch(/whatsappStatus|linked|unlinked/i);
     expect(res.status).toBe(200);
-    expect(listTenantsForSuperAdmin).toHaveBeenCalledOnce();
+    expect(listTenantsForSuperAdmin).toHaveBeenCalledWith({ page: 1, pageSize: 10 });
     expect(parseProvisionTempleInput).not.toHaveBeenCalled();
     expect(provisionTemple).not.toHaveBeenCalled();
+  });
+
+  it("pages the temple list at the database and reports the real total", async () => {
+    vi.mocked(requireSuperAdmin).mockResolvedValue(superAdmin);
+    vi.mocked(listTenantsForSuperAdmin).mockResolvedValue([]);
+    vi.mocked(countTenantsForSuperAdmin).mockResolvedValue(116);
+
+    const res = await GET(listRequest("http://localhost/api/super-admin/temples?page=12&pageSize=10"));
+
+    await expect(res.json()).resolves.toMatchObject({
+      pagination: { page: 12, pageSize: 10, total: 116, totalPages: 12 },
+    });
+    expect(listTenantsForSuperAdmin).toHaveBeenCalledWith({ page: 12, pageSize: 10 });
   });
 
   it("returns 401 for unauthenticated list requests without reading tenant summaries", async () => {
     vi.mocked(requireSuperAdmin).mockResolvedValue(null);
 
-    const res = await GET();
+    const res = await GET(listRequest());
 
     await expect(res.json()).resolves.toMatchObject({ code: "UNAUTHENTICATED" });
     expect(res.status).toBe(401);
@@ -248,7 +272,7 @@ describe("super admin temple provisioning route", () => {
       exp: Date.now() + 60_000,
     });
 
-    const res = await GET();
+    const res = await GET(listRequest());
 
     await expect(res.json()).resolves.toMatchObject({ code: "FORBIDDEN" });
     expect(res.status).toBe(403);
@@ -261,7 +285,7 @@ describe("super admin temple provisioning route", () => {
       new Error("database stack trace with tenant details"),
     );
 
-    const res = await GET();
+    const res = await GET(listRequest());
 
     await expect(res.json()).resolves.toEqual({
       error: "Temple list failed.",

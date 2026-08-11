@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { getPool } from "./pool";
 import {
+  countTenantsForSuperAdmin,
   getTenantDetailForSuperAdmin,
   listTenantsForSuperAdmin,
   updateProvisionedTenantDetailsForSuperAdmin,
@@ -130,6 +131,25 @@ describe("tenant repository super-admin list", () => {
     expect(sql).toContain("role_assigned_at");
     expect(sql).toContain("latest_member_updated_at");
     expect(sql).toContain("ORDER BY");
+    expect(sql).not.toContain("LIMIT $");
+    expect(query.mock.calls[0][1]).toEqual([]);
+  });
+
+  it("pages at the database when a page is requested", async () => {
+    query.mockResolvedValueOnce({ rows: [summaryRow] });
+
+    await listTenantsForSuperAdmin({ page: 12, pageSize: 10 });
+
+    const [sql, params] = query.mock.calls[0];
+    expect(String(sql)).toContain("LIMIT $1 OFFSET $2");
+    expect(params).toEqual([10, 110]);
+  });
+
+  it("counts every tenant without loading their rows", async () => {
+    query.mockResolvedValueOnce({ rows: [{ count: "116" }] });
+
+    await expect(countTenantsForSuperAdmin()).resolves.toBe(116);
+    expect(String(query.mock.calls[0][0])).toContain("count(*)");
   });
 
   it("maps missing optional state without inventing domain, admin, or WhatsApp data", async () => {

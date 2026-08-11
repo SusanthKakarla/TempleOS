@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Globe2, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +9,17 @@ import { TableShell } from "@/components/table-shell";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
 import { PaginationControls } from "@/components/pagination-controls";
-import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { SuperAdminTenantSummary } from "@/lib/db/tenants";
+
+const PATHNAME = "/super-admin/temples";
+
+interface TemplesListProps {
+  /** Only the current page's rows — the server already applied LIMIT/OFFSET. */
+  temples: SuperAdminTenantSummary[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
 
 function pluralizeMembers(count: number): string {
   return `${count} active ${count === 1 ? "member" : "members"}`;
@@ -22,10 +30,7 @@ function formatTimestamp(value: string | null): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-export function TemplesList({ temples }: { temples: SuperAdminTenantSummary[] }) {
-  const [page, setPage] = useState(1);
-  const pagedTemples = temples.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE);
-
+export function TemplesList({ temples, page, pageSize, totalCount }: TemplesListProps) {
   return (
     <>
       <div className="hidden md:block">
@@ -41,7 +46,7 @@ export function TemplesList({ temples }: { temples: SuperAdminTenantSummary[] })
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pagedTemples.map((temple) => (
+              {temples.map((temple) => (
                 <TableRow key={temple.id}>
                   <TableCell>
                     <div className="min-w-52">
@@ -88,13 +93,13 @@ export function TemplesList({ temples }: { temples: SuperAdminTenantSummary[] })
               ))}
             </TableBody>
           </Table>
-          <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={temples.length} onPageChange={setPage} />
+          <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
         </TableShell>
       </div>
 
       <div className="space-y-3 md:hidden">
         <MobileListView>
-          {pagedTemples.map((temple) => (
+          {temples.map((temple) => (
             <MobileListRow
               key={temple.id}
               href={`/super-admin/temples/${temple.id}`}
@@ -110,7 +115,7 @@ export function TemplesList({ temples }: { temples: SuperAdminTenantSummary[] })
             />
           ))}
         </MobileListView>
-        <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={temples.length} onPageChange={setPage} />
+        <PaginationControls page={page} pageSize={pageSize} totalCount={totalCount} pathname={PATHNAME} />
       </div>
     </>
   );

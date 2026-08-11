@@ -4,12 +4,23 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { TemplesList } from "@/features/super-admin/temples-list";
-import { listTenantsForSuperAdmin } from "@/lib/db/tenants";
+import { countTenantsForSuperAdmin, listTenantsForSuperAdmin } from "@/lib/db/tenants";
+import { parsePageParam, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { requireSuperAdminPage } from "../../require-super-admin";
 
-export default async function SuperAdminTemplesPage() {
+interface SuperAdminTemplesPageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function SuperAdminTemplesPage({ searchParams }: SuperAdminTemplesPageProps) {
   await requireSuperAdminPage("/super-admin/temples");
-  const temples = await listTenantsForSuperAdmin();
+
+  const { page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const [temples, totalCount] = await Promise.all([
+    listTenantsForSuperAdmin({ page, pageSize: DEFAULT_PAGE_SIZE }),
+    countTenantsForSuperAdmin(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -24,7 +35,7 @@ export default async function SuperAdminTemplesPage() {
         }
       />
 
-      {temples.length === 0 ? (
+      {totalCount === 0 ? (
         <EmptyState
           icon={<Landmark className="size-6" />}
           title="No temples provisioned"
@@ -38,7 +49,7 @@ export default async function SuperAdminTemplesPage() {
           }
         />
       ) : (
-        <TemplesList temples={temples} />
+        <TemplesList temples={temples} page={page} pageSize={DEFAULT_PAGE_SIZE} totalCount={totalCount} />
       )}
     </div>
   );

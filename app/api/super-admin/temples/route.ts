@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { TENANT_SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
-import { listTenantsForSuperAdmin, type SuperAdminTenantSummary } from "@/lib/db/tenants";
+import {
+  countTenantsForSuperAdmin,
+  listTenantsForSuperAdmin,
+  type SuperAdminTenantSummary,
+} from "@/lib/db/tenants";
+import { computeTotalPages, parsePageParam, parsePageSizeParam } from "@/lib/pagination";
 import {
   parseProvisionTempleInput,
   provisionTemple,
@@ -28,15 +33,26 @@ const stableValidationMessages = new Set([
   "Contact phone is required",
 ]);
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const superAdmin = await requireSuperAdmin();
   if (!superAdmin) {
     return superAdminAuthError();
   }
 
+  const params = req.nextUrl.searchParams;
+  const page = parsePageParam(params.get("page") ?? undefined);
+  const pageSize = parsePageSizeParam(params.get("pageSize") ?? undefined);
+
   try {
-    const temples = (await listTenantsForSuperAdmin()).map(activeOperationTempleSummary);
-    return NextResponse.json({ temples });
+    const [rows, total] = await Promise.all([
+      listTenantsForSuperAdmin({ page, pageSize }),
+      countTenantsForSuperAdmin(),
+    ]);
+    const temples = rows.map(activeOperationTempleSummary);
+    return NextResponse.json({
+      temples,
+      pagination: { page, pageSize, total, totalPages: computeTotalPages(total, pageSize) },
+    });
   } catch {
     return NextResponse.json(
       { error: "Temple list failed.", code: "TEMPLE_LIST_FAILED" },
