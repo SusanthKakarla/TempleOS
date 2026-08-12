@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local scratch scripts used to poke the live database during development.
+*.tmp.mjs
+*.tmp.mts
