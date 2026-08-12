@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Globe2, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { TempleWebsiteCell } from "./temple-website-cell";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableShell } from "@/components/table-shell";
@@ -40,6 +41,7 @@ export function TemplesList({ temples, page, pageSize, totalCount }: TemplesList
               <TableRow>
                 <TableHead>Temple</TableHead>
                 <TableHead>Hostname</TableHead>
+                <TableHead>Public Website</TableHead>
                 <TableHead>Primary Admin</TableHead>
                 <TableHead className="text-right">Last Updated</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -63,6 +65,13 @@ export function TemplesList({ temples, page, pageSize, totalCount }: TemplesList
                     ) : (
                       <Badge variant="outline">Missing domain</Badge>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <TempleWebsiteCell
+                      tenantId={temple.id}
+                      hostname={temple.websiteHostname}
+                      published={temple.websitePublished}
+                    />
                   </TableCell>
                   <TableCell>
                     {temple.primaryAdminName ? (

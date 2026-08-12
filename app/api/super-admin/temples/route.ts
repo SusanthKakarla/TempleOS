@@ -70,6 +70,8 @@ function activeOperationTempleSummary(temple: SuperAdminTenantSummary) {
     primaryAdminName: temple.primaryAdminName,
     primaryAdminPhoneNumber: temple.primaryAdminPhoneNumber,
     activeMemberCount: temple.activeMemberCount,
+    websiteHostname: temple.websiteHostname,
+    websitePublished: temple.websitePublished,
     lastUpdatedAt: temple.lastUpdatedAt,
   };
 }

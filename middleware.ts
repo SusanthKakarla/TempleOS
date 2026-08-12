@@ -26,8 +26,13 @@ export function middleware(request: NextRequest) {
 
   // Already rewritten, or an internal path that must not be re-pointed at the
   // site tree (Next internals, the API surface, static files).
-  // Exact-segment match, not a prefix: "/sitemap.xml" starts with "/site" but
-  // is a page the site tree must still serve.
+  // Exact-segment match, not a prefix, so a future "/sitemapped" page would
+  // still be rewritten rather than mistaken for the "/site" tree.
+  //
+  // /robots.txt and /sitemap.xml never reach here at all — the matcher below
+  // skips any path with a file extension — which is why both are served by
+  // root-level metadata routes that resolve the temple from the hostname
+  // themselves (app/robots.ts, app/sitemap.ts) rather than by a rewrite.
   if (pathname === "/site" || pathname.startsWith("/site/") || pathname.startsWith("/_next") || pathname.startsWith("/api")) {
     return NextResponse.next();
   }

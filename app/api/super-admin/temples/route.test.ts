@@ -203,6 +203,8 @@ describe("super admin temple provisioning route", () => {
         primaryAdminPhoneNumber: "+14155552672",
         activeMemberCount: 2,
         whatsappStatus: "linked" as const,
+        websiteHostname: "sv-temple.templos.in",
+        websitePublished: false,
         lastUpdatedAt: "2026-07-18T08:00:00.000Z",
       },
     ];
@@ -215,6 +217,8 @@ describe("super admin temple provisioning route", () => {
         primaryAdminName: "Temple Admin",
         primaryAdminPhoneNumber: "+14155552672",
         activeMemberCount: 2,
+        websiteHostname: "sv-temple.templos.in",
+        websitePublished: false,
         lastUpdatedAt: "2026-07-18T08:00:00.000Z",
       },
     ];
