@@ -57,6 +57,18 @@ function mapTenantDomain(row: TenantDomainRow): TenantDomain {
   };
 }
 
+/** The tenant's public website hostname, if one has been provisioned. Used by the admin portal to show and link to the temple's own address. */
+export async function getWebsiteHostnameForTenant(
+  tenantId: string,
+  client: QueryClient = getPool(),
+): Promise<string | null> {
+  const { rows } = await client.query<{ hostname: string }>(
+    "SELECT hostname FROM tenant_domains WHERE tenant_id = $1 AND kind = 'website' AND status = 'active' LIMIT 1",
+    [tenantId],
+  );
+  return rows[0]?.hostname ?? null;
+}
+
 export async function getActiveTenantDomainByHostname(rawHostname: string): Promise<TenantDomain | null> {
   const hostname = normalizeTenantHostname(rawHostname);
   if (!hostname || isGenericTenantHostname(hostname)) return null;

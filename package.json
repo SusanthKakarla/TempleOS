@@ -18,6 +18,7 @@
     "cleanup:tenants": "tsx scripts/cleanup-obsolete-tenants.mts",
     "seed:super-admin": "node scripts/seed-super-admin.mjs",
     "auth:clear-firebase": "tsx scripts/clear-person-firebase-uid.mts",
+    "backfill:websites": "tsx scripts/backfill-tenant-websites.mts",
     "docs:ekb": "node scripts/generate-ekb.mjs"
   },
   "dependencies": {
