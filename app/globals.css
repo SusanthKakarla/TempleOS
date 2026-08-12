@@ -277,6 +277,41 @@ html[lang="te"] {
      its clipped content — never on the page/body, where the scrollbar is the
      only cue that there is more to read.
   */
+  /* Public temple website motion. Every one of these is decorative and is
+     switched off wholesale under prefers-reduced-motion — the site must read
+     identically without them. */
+  .site-float {
+    animation: site-float 7s ease-in-out infinite;
+  }
+  .site-sheen {
+    background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.28) 45%, transparent 60%);
+    background-size: 250% 100%;
+    animation: site-sheen 6.5s ease-in-out infinite;
+  }
+  .site-ember {
+    animation-name: site-ember;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    opacity: 0;
+  }
+  @keyframes site-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes site-sheen {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: -50% 0; }
+  }
+  @keyframes site-ember {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    12% { opacity: 0.85; }
+    100% { transform: translateY(-85vh) scale(1.1); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .site-float, .site-sheen, .site-ember { animation: none; }
+    .site-sheen { display: none; }
+  }
+
   .no-scrollbar {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* legacy Edge */
