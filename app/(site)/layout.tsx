@@ -18,14 +18,21 @@ const body = Noto_Sans({ subsets: ["latin"], variable: "--font-site-sans", displ
  */
 export async function generateMetadata(): Promise<Metadata> {
   const lookup = await getSiteForRequest();
-  if (lookup.status !== "ok") return { title: "Temple website", robots: { index: false, follow: false } };
+  if (lookup.status !== "ok") {
+    return { title: { absolute: "Temple website" }, robots: { index: false, follow: false } };
+  }
 
   const { content, hostname } = lookup.site;
   const canonical = siteUrl(hostname);
 
   return {
     metadataBase: new URL(canonical),
-    title: { default: content.seo.title, template: `%s · ${content.name}` },
+    // `absolute` for this page's own title, so the root layout's
+    // "%s · TempleOS" template does not append the platform's name to a
+    // temple's home page — a devotee searching for the temple should find the
+    // temple, not the software it runs on. `template` still applies to the
+    // pages below, which title themselves "Events", "Timings" and so on.
+    title: { absolute: content.seo.title, template: `%s · ${content.name}` },
     description: content.seo.description ?? undefined,
     alternates: { canonical },
     openGraph: {
