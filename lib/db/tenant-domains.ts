@@ -26,6 +26,25 @@ export async function createTenantDomainForSuperAdmin(
   return mapTenantDomain(rows[0]);
 }
 
+/**
+ * The tenant's public-website hostname, created alongside its admin hostname
+ * during provisioning. `kind = 'website'` is what keeps the two apart:
+ * resolveWebsiteByHostname only ever matches this kind, so an admin subdomain
+ * can never serve a temple site (or the reverse).
+ */
+export async function createTenantWebsiteDomainForProvisioning(
+  input: { tenantId: string; hostname: string },
+  client: QueryClient = getPool(),
+): Promise<TenantDomain> {
+  const { rows } = await client.query<TenantDomainRow>(
+    `INSERT INTO tenant_domains (tenant_id, hostname, kind, status)
+     VALUES ($1, $2, 'website', 'active')
+     RETURNING *`,
+    [input.tenantId, input.hostname],
+  );
+  return mapTenantDomain(rows[0]);
+}
+
 function mapTenantDomain(row: TenantDomainRow): TenantDomain {
   return {
     id: row.id,

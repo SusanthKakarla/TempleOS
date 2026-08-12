@@ -134,8 +134,44 @@ export interface Person {
   updatedAt: string;
 }
 
-export type TenantDomainKind = "primary" | "custom";
+/** `primary` is the tenant's admin subdomain, `website` its public temple site, `custom` a vanity domain pointed at either. */
+export type TenantDomainKind = "primary" | "custom" | "website";
 export type TenantDomainStatus = "active" | "inactive";
+
+export const WEBSITE_HERO_TEMPLATES = ["classic", "heritage", "divine", "minimal", "festival", "immersive"] as const;
+export type WebsiteHeroTemplate = (typeof WEBSITE_HERO_TEMPLATES)[number];
+
+export const WEBSITE_THEMES = ["saffron", "maroon", "gold", "emerald", "indigo"] as const;
+export type WebsiteTheme = (typeof WEBSITE_THEMES)[number];
+
+/**
+ * Presentation config for a tenant's public temple website. Deliberately
+ * holds no operational data — name, timings, address, contact, sevas, events,
+ * social links and gallery all come from the tables the admin portal already
+ * writes to, so the website is a read-only view of them.
+ */
+export interface TenantWebsite {
+  id: string;
+  tenantId: string;
+  enabled: boolean;
+  heroTemplate: WebsiteHeroTemplate;
+  theme: WebsiteTheme;
+  displayName: string | null;
+  deityName: string | null;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
+  story: string | null;
+  aboutContent: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  deityMediaId: string | null;
+  heroMediaId: string | null;
+  logoMediaId: string | null;
+  ogMediaId: string | null;
+  languages: SupportedLanguage[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface TenantDomain {
   id: string;
@@ -358,6 +394,11 @@ export interface WhatsAppMessageTemplate {
  * admin-authored CMS content is never machine-translated (see migrations/006_language_support.sql). */
 export type SupportedLanguage = "en" | "te";
 
+/** Narrows values read back from a TEXT[] column (tenant_websites.languages) to the languages the app actually ships. */
+export function isSupportedLanguage(value: unknown): value is SupportedLanguage {
+  return value === "en" || value === "te";
+}
+
 export type EventStatus = "draft" | "published" | "cancelled";
 
 export interface Event {
@@ -531,6 +572,13 @@ export const NOTIFICATION_MEDIA_CATEGORIES = [
   "donation_thank_you",
   "festival_greeting",
   "campaign_banner",
+  // Public temple website imagery (migrations/041) — same tenant-scoped
+  // media table, so uploads, ImageKit cleanup and tenant isolation are
+  // unchanged.
+  "temple_gallery",
+  "temple_deity",
+  "temple_hero",
+  "temple_logo",
 ] as const;
 export type NotificationMediaCategory = (typeof NOTIFICATION_MEDIA_CATEGORIES)[number];
 

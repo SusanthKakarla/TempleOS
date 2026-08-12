@@ -22,6 +22,10 @@ vi.mock("@/lib/db/tenants", () => ({
 
 vi.mock("@/lib/db/tenant-domains", () => ({
   createTenantDomainForSuperAdmin: vi.fn(),
+  createTenantWebsiteDomainForProvisioning: vi.fn(),
+}));
+vi.mock("@/lib/db/tenant-websites", () => ({
+  upsertTenantWebsite: vi.fn(),
 }));
 
 vi.mock("@/lib/db/persons", () => ({
@@ -61,7 +65,8 @@ import {
   getTenantDetailForSuperAdmin,
   updateProvisionedTenantDetailsForSuperAdmin,
 } from "@/lib/db/tenants";
-import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
+import { createTenantDomainForSuperAdmin, createTenantWebsiteDomainForProvisioning } from "@/lib/db/tenant-domains";
+import { upsertTenantWebsite } from "@/lib/db/tenant-websites";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import {
   assignTenantMembershipRolesForProvisioning,
@@ -150,6 +155,29 @@ const createdTenant = {
   updatedAt: "2026-07-18T00:00:00.000Z",
 };
 
+const createdWebsite = {
+  id: "website-1",
+  tenantId: "tenant-1",
+  enabled: false,
+  heroTemplate: "classic" as const,
+  theme: "saffron" as const,
+  displayName: "SV Temple",
+  deityName: null,
+  heroTitle: null,
+  heroSubtitle: null,
+  story: null,
+  aboutContent: null,
+  seoTitle: null,
+  seoDescription: null,
+  deityMediaId: null,
+  heroMediaId: null,
+  logoMediaId: null,
+  ogMediaId: null,
+  languages: ["en" as const],
+  createdAt: "2026-07-18T00:00:00.000Z",
+  updatedAt: "2026-07-18T00:00:00.000Z",
+};
+
 const createdDomain = {
   id: "domain-1",
   tenantId: "tenant-1",
@@ -220,6 +248,13 @@ beforeEach(() => {
     paymentAccount: null,
   });
   vi.mocked(createTenantDomainForSuperAdmin).mockResolvedValue(createdDomain);
+  vi.mocked(createTenantWebsiteDomainForProvisioning).mockResolvedValue({
+    ...createdDomain,
+    id: "domain-website",
+    kind: "website",
+    hostname: "sv-temple.templos.in",
+  });
+  vi.mocked(upsertTenantWebsite).mockResolvedValue(createdWebsite);
   vi.mocked(findOrCreatePersonByPhoneForProvisioning).mockResolvedValue(createdPerson);
   vi.mocked(createTenantMembershipForProvisioning).mockResolvedValue(createdMembership);
   vi.mocked(assignTenantMembershipRolesForProvisioning).mockResolvedValue(createdMembership);

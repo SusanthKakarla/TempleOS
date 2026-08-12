@@ -3,7 +3,9 @@ import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getPool } from "@/lib/db/pool";
 import { initializeTenantFeatures } from "@/lib/db/tenant-features";
 import { listActiveRoleCodesForSuperAdmin, V0_ROLE_DEFINITIONS } from "@/lib/db/role-definitions";
-import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
+import { createTenantDomainForSuperAdmin, createTenantWebsiteDomainForProvisioning } from "@/lib/db/tenant-domains";
+import { upsertTenantWebsite } from "@/lib/db/tenant-websites";
+import { buildWebsiteHostname } from "@/lib/site/website-host";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
@@ -717,6 +719,21 @@ export async function provisionTemple(
 
     await initializeTenantFeatures(tenant.id, canonicalInput.featureKeys ?? null, client);
 
+    // Public website, provisioned in the same transaction as the tenant so a
+    // temple can never exist without its website record and subdomain
+    // mapping. Created DISABLED: the subdomain is reserved and resolvable
+    // immediately, but nothing is published under the temple's name until an
+    // admin has filled in its content and switched it on.
+    const websiteHostname = buildWebsiteHostname(tenant.slug);
+    const websiteDomain = websiteHostname
+      ? await createTenantWebsiteDomainForProvisioning({ tenantId: tenant.id, hostname: websiteHostname }, client)
+      : null;
+    const website = await upsertTenantWebsite(
+      tenant.id,
+      { enabled: false, displayName: tenant.name, languages: ["en"] },
+      client,
+    );
+
     await createAuditLogEntry(
       {
         actorType: "super_admin",
@@ -734,6 +751,8 @@ export async function provisionTemple(
           whatsappAccountId: whatsappAccount?.id ?? null,
           paymentAccountId: paymentAccount?.id ?? null,
           featureKeys: canonicalInput.featureKeys ?? null,
+          websiteId: website.id,
+          websiteHostname: websiteDomain?.hostname ?? null,
         },
       },
       client,
