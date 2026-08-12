@@ -4,7 +4,7 @@ import { requireSite } from "@/lib/site/get-site";
 import { listSiteSocialLinks } from "@/lib/site/site-data";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { siteSection } from "@/lib/site/temple-content";
-import { EmptyNotice, PageHeader, SectionHeading } from "@/features/site/site-sections";
+import { EmptyNotice, PageHeader, SectionHeading, TempleMapActions } from "@/features/site/site-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("site.contact");
@@ -33,7 +33,7 @@ export default async function ContactPage() {
                 {content.address && (
                   <div>
                     <p className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                      {t("address")}
+                      {t("templeLocation")}
                     </p>
                     <p className="mt-1 whitespace-pre-line" style={{ color: theme.ink }}>
                       {content.address}
@@ -64,17 +64,11 @@ export default async function ContactPage() {
                     </a>
                   </div>
                 )}
-                {content.googleMapsUrl && (
-                  <a
-                    href={content.googleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-                    style={{ backgroundColor: theme.accent }}
-                  >
-                    {t("maps")}
-                  </a>
-                )}
+                {/* Same quiet treatment as the home page's location card, from
+                    the same component, so the two cannot drift apart. */}
+                <div className="border-t border-black/[0.06] pt-4">
+                  <TempleMapActions content={content} />
+                </div>
               </section>
             )}
 

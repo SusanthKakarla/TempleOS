@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ArrowUpRight, MapPin, Navigation } from "lucide-react";
 import { SITE_THEMES } from "@/lib/site/site-theme";
+import { templeMapLinks } from "@/lib/site/map-links";
 import type { SiteEvent, SiteImage, SiteSeva } from "@/lib/site/site-data";
 import type { TempleSiteContent } from "@/lib/site/temple-content";
 import { formatDateTime } from "@/lib/date";
@@ -331,6 +333,69 @@ export async function EventCard({ event, content }: { event: SiteEvent; content:
         </Link>
       </div>
     </article>
+  );
+}
+
+/**
+ * The temple's map destinations, as quiet inline actions rather than filled
+ * CTAs.
+ *
+ * Underlined-on-hover text with a small leading icon and a trailing external
+ * arrow, sized so the tap target still clears the ~44px guidance on a phone
+ * through its vertical padding. Deliberately not buttons: giving directions
+ * the same visual weight as "Donate" overstated it, and two large filled
+ * buttons stacked under the section read as a form rather than an address.
+ *
+ * Shared by the home page's location card and the standalone /contact page so
+ * the two cannot drift, and renders nothing at all for a temple that has
+ * published no location.
+ */
+export async function TempleMapActions({ content }: { content: TempleSiteContent }) {
+  const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.contact");
+  const { directionsUrl, mapUrl } = templeMapLinks(content);
+
+  if (!directionsUrl && !mapUrl) return null;
+
+  return (
+    <span className="flex flex-wrap gap-x-5 gap-y-2">
+      {directionsUrl && (
+        <MapAction href={directionsUrl} accent={theme.accent} icon={<Navigation className="size-3.5" />}>
+          {t("directions")}
+        </MapAction>
+      )}
+      {mapUrl && (
+        <MapAction href={mapUrl} accent={theme.accent} icon={<MapPin className="size-3.5" />}>
+          {t("maps")}
+        </MapAction>
+      )}
+    </span>
+  );
+}
+
+function MapAction({
+  href,
+  accent,
+  icon,
+  children,
+}: {
+  href: string;
+  accent: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 py-1 text-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      style={{ color: accent }}
+    >
+      <span aria-hidden="true">{icon}</span>
+      {children}
+      <ArrowUpRight className="size-3.5" aria-hidden="true" />
+    </a>
   );
 }
 

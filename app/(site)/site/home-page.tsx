@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Phone, Mail, Navigation } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireSite } from "@/lib/site/get-site";
 import {
@@ -11,11 +11,19 @@ import {
 } from "@/lib/site/site-data";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { SITE_SECTIONS } from "@/lib/site/site-anchors";
+import { templeMapLinks } from "@/lib/site/map-links";
 import { siteSection } from "@/lib/site/temple-content";
 import { SiteHero } from "@/features/site/site-hero";
 import { SiteCampaigns } from "@/features/site/site-campaigns";
 import { SiteGallery } from "@/features/site/site-gallery";
-import { EventCard, ProseBlock, SevaCard, SiteSection, TimingsList } from "@/features/site/site-sections";
+import {
+  EventCard,
+  ProseBlock,
+  SevaCard,
+  SiteSection,
+  TempleMapActions,
+  TimingsList,
+} from "@/features/site/site-sections";
 
 /**
  * The temple's home page - and, for a devotee, the whole website.
@@ -48,6 +56,10 @@ export async function TempleHomePage() {
 
   const story = content.story ?? content.about;
   const hasContact = siteSection.contact(content) || socialLinks.length > 0;
+  // Only to decide whether the card needs its divider — the actions themselves
+  // are rendered (and withheld) by TempleMapActions.
+  const mapLinks = templeMapLinks(content);
+  const hasMapLinks = Boolean(mapLinks.directionsUrl || mapLinks.mapUrl);
 
   return (
     <>
@@ -187,13 +199,22 @@ export async function TempleHomePage() {
             {content.address && (
               <ContactCard
                 icon={<MapPin className="size-4" />}
-                label={t("contact.address")}
+                label={t("contact.templeLocation")}
                 accent={theme.accent}
                 ink={theme.ink}
                 muted={theme.inkMuted}
                 emphasis
               >
                 <span className="whitespace-pre-line">{content.address}</span>
+
+                {/* The map actions live inside the location card, next to the
+                    address they act on, rather than as full-width buttons under
+                    the whole section. */}
+                {hasMapLinks && (
+                  <span className="mt-4 block border-t border-black/[0.06] pt-4">
+                    <TempleMapActions content={content} />
+                  </span>
+                )}
               </ContactCard>
             )}
             {content.phone && (
@@ -245,21 +266,6 @@ export async function TempleHomePage() {
               </ContactCard>
             )}
           </div>
-
-          {content.googleMapsUrl && (
-            <p className="mt-8 text-center">
-              <a
-                href={content.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:outline-none motion-reduce:hover:translate-y-0"
-                style={{ backgroundColor: theme.accent }}
-              >
-                <Navigation className="size-4" aria-hidden="true" />
-                {t("contact.directions")}
-              </a>
-            </p>
-          )}
         </SiteSection>
       )}
     </>
