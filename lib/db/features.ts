@@ -92,7 +92,10 @@ const FEATURE_CATALOG_SEED: FeatureSeed[] = [
   { key: "volunteers", displayName: "Volunteers", description: "Dedicated volunteer roster and scheduling.", icon: "HeartHandshake", category: "coming_soon", defaultEnabled: false, sortOrder: 34 },
   { key: "committee", displayName: "Committee", description: "Committee member roster and meeting records.", icon: "Users2", category: "coming_soon", defaultEnabled: false, sortOrder: 35 },
   { key: "priests", displayName: "Priests", description: "Dedicated priest roster and seva assignments.", icon: "UserRound", category: "coming_soon", defaultEnabled: false, sortOrder: 36 },
-  { key: "temple_website", displayName: "Temple Website", description: "A public-facing website for the temple.", icon: "Globe2", category: "coming_soon", defaultEnabled: false, sortOrder: 37 },
+  // Shipped: each temple gets its own public website on its own subdomain
+  // (see lib/site/*). Off by default — a temple opts in, and its site stays
+  // unpublished until an admin fills it in.
+  { key: "temple_website", displayName: "Temple Website", description: "A public-facing website for the temple, on its own address.", icon: "Globe2", category: "module", defaultEnabled: false, sortOrder: 37 },
   { key: "qr_donations", displayName: "QR Donations", description: "Scan-to-donate QR codes.", icon: "QrCode", category: "coming_soon", defaultEnabled: false, sortOrder: 38 },
   { key: "online_booking", displayName: "Online Booking", description: "Online seva/pooja booking.", icon: "CalendarCheck", category: "coming_soon", defaultEnabled: false, sortOrder: 39 },
   { key: "ai_assistant", displayName: "AI Assistant", description: "An AI assistant for devotee questions.", icon: "Sparkles", category: "coming_soon", defaultEnabled: false, sortOrder: 40 },

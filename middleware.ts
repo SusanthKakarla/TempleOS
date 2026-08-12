@@ -29,11 +29,20 @@ export function middleware(request: NextRequest) {
   // Exact-segment match, not a prefix, so a future "/sitemapped" page would
   // still be rewritten rather than mistaken for the "/site" tree.
   //
-  // /robots.txt and /sitemap.xml never reach here at all — the matcher below
-  // skips any path with a file extension — which is why both are served by
-  // root-level metadata routes that resolve the temple from the hostname
-  // themselves (app/robots.ts, app/sitemap.ts) rather than by a rewrite.
-  if (pathname === "/site" || pathname.startsWith("/site/") || pathname.startsWith("/_next") || pathname.startsWith("/api")) {
+  // /sitemap.xml and /robots.txt are served by root-level metadata routes
+  // (app/sitemap.ts, app/robots.ts) that resolve the temple from the hostname
+  // themselves, so they must never be rewritten into the /site tree — there
+  // is no route for them there. The matcher below already skips any path with
+  // a file extension; they are listed here too so that stays true if it ever
+  // widens.
+  if (
+    pathname === "/site" ||
+    pathname.startsWith("/site/") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt"
+  ) {
     return NextResponse.next();
   }
 

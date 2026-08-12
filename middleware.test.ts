@@ -30,6 +30,13 @@ describe("public website hostname routing", () => {
     }
   });
 
+  it("leaves sitemap.xml and robots.txt to the root handlers, which resolve the temple themselves", () => {
+    for (const pathname of ["/sitemap.xml", "/robots.txt"]) {
+      const response = middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}${pathname}`, `sivatemple.${WEBSITE_DOMAIN}`));
+      expect(rewriteTarget(response)).toBeNull();
+    }
+  });
+
   it("never rewrites API or already-rewritten paths, even on a temple hostname", () => {
     for (const pathname of ["/api/website", "/site/about"]) {
       const response = middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}${pathname}`, `sivatemple.${WEBSITE_DOMAIN}`));
