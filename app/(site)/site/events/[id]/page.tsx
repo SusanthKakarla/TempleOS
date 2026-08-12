@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireSite } from "@/lib/site/get-site";
 import { getSiteEvent } from "@/lib/site/site-data";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { formatDateTime } from "@/lib/date";
-import { PageHeader, ProseBlock } from "@/features/site/site-sections";
+import { PageHeader, ProseBlock, siteLanguage } from "@/features/site/site-sections";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,7 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tenant } = await requireSite();
   const { id } = await params;
   const event = await getSiteEvent(tenant.id, id);
-  if (!event) return { title: "Event" };
+  if (!event) {
+    const t = await getTranslations("site.events");
+    return { title: t("single") };
+  }
   return {
     title: event.title,
     description: event.description?.slice(0, 160) ?? undefined,
@@ -33,10 +37,12 @@ export default async function EventDetailPage({ params }: Props) {
   if (!event) notFound();
 
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.events");
+  const language = await siteLanguage();
 
   return (
     <>
-      <PageHeader title={event.title} subtitle={formatDateTime(event.startsAt, "en")} content={content} />
+      <PageHeader title={event.title} subtitle={formatDateTime(event.startsAt, language)} content={content} />
 
       <article className="mx-auto max-w-3xl px-5 py-14 md:px-8">
         {event.imageUrl && (
@@ -51,26 +57,26 @@ export default async function EventDetailPage({ params }: Props) {
         <dl className="grid gap-3 rounded-2xl border border-black/5 bg-white p-5 sm:grid-cols-2">
           <div>
             <dt className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-              Begins
+              {t("begins")}
             </dt>
             <dd className="mt-1 font-medium" style={{ color: theme.ink }}>
-              {formatDateTime(event.startsAt, "en")}
+              {formatDateTime(event.startsAt, language)}
             </dd>
           </div>
           {event.endsAt && (
             <div>
               <dt className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                Ends
+                {t("ends")}
               </dt>
               <dd className="mt-1 font-medium" style={{ color: theme.ink }}>
-                {formatDateTime(event.endsAt, "en")}
+                {formatDateTime(event.endsAt, language)}
               </dd>
             </div>
           )}
           {event.location && (
             <div className="sm:col-span-2">
               <dt className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                Location
+                {t("location")}
               </dt>
               <dd className="mt-1 font-medium" style={{ color: theme.ink }}>
                 {event.location}
@@ -86,7 +92,7 @@ export default async function EventDetailPage({ params }: Props) {
           className="mt-10 inline-block text-sm font-semibold underline-offset-4 hover:underline"
           style={{ color: theme.accent }}
         >
-          All events
+          {t("backToEvents")}
         </Link>
       </article>
     </>

@@ -245,6 +245,23 @@ html[lang="te"] {
   --font-heading: var(--font-noto-telugu), var(--font-playfair), serif;
 }
 
+/*
+ * The public temple site swaps in its own display faces, which would
+ * otherwise shadow the rule above for its whole subtree. Same reasoning
+ * applies, so the Telugu face leads there too — and in English the site's own
+ * fonts still come first, with Noto Sans Telugu only as the fallback that
+ * catches a Telugu temple name typed into an otherwise English page.
+ */
+.site-shell {
+  --font-sans: var(--font-site-sans), var(--font-noto-telugu), sans-serif;
+  --font-heading: var(--font-site-heading), var(--font-noto-telugu), serif;
+}
+
+html[lang="te"] .site-shell {
+  --font-sans: var(--font-noto-telugu), var(--font-site-sans), sans-serif;
+  --font-heading: var(--font-noto-telugu), var(--font-site-heading), serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -1,4 +1,5 @@
 import { ArrowDown } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { HERO_TEMPLATES, resolveDeityTreatment, SITE_THEMES } from "@/lib/site/site-theme";
 import { SITE_SECTIONS } from "@/lib/site/site-anchors";
 import type { TempleSiteContent } from "@/lib/site/temple-content";
@@ -31,7 +32,8 @@ const HEIGHTS = {
  * When none has been uploaded the composition centres on the copy instead of
  * showing an empty frame.
  */
-export function SiteHero({ content }: { content: TempleSiteContent }) {
+export async function SiteHero({ content }: { content: TempleSiteContent }) {
+  const t = await getTranslations("site.hero");
   const spec = HERO_TEMPLATES[content.hero.template];
   const theme = SITE_THEMES[content.hero.theme];
   const treatment = resolveDeityTreatment(content.hero.template, Boolean(content.hero.deityImageUrl));
@@ -135,13 +137,13 @@ export function SiteHero({ content }: { content: TempleSiteContent }) {
                 className="rounded-full px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none motion-reduce:hover:translate-y-0"
                 style={{ backgroundColor: theme.accent, boxShadow: `0 18px 40px -18px ${theme.accent}` }}
               >
-                Darshan timings
+                {t("timings")}
               </a>
               <a
                 href={`#${SITE_SECTIONS.about}`}
                 className="rounded-full border border-white/35 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
               >
-                About the temple
+                {t("about")}
               </a>
             </div>
           </div>
@@ -174,7 +176,7 @@ export function SiteHero({ content }: { content: TempleSiteContent }) {
         className="absolute inset-x-0 bottom-6 mx-auto flex w-fit items-center gap-2 rounded-full px-4 py-2 text-[0.7rem] tracking-[0.2em] text-white/55 uppercase transition-colors hover:text-white focus-visible:ring-2 focus-visible:outline-none"
       >
         <ArrowDown className="site-nudge size-3.5" aria-hidden="true" />
-        Explore
+        {t("explore")}
       </a>
     </section>
   );

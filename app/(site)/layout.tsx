@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Noto_Sans } from "next/font/google";
+import { getTranslations } from "next-intl/server";
 import { getSiteForRequest, siteUrl } from "@/lib/site/get-site";
 import { listSiteAnnouncements, listSiteSocialLinks } from "@/lib/site/site-data";
 import { SITE_THEMES } from "@/lib/site/site-theme";
@@ -19,7 +20,8 @@ const body = Noto_Sans({ subsets: ["latin"], variable: "--font-site-sans", displ
 export async function generateMetadata(): Promise<Metadata> {
   const lookup = await getSiteForRequest();
   if (lookup.status !== "ok") {
-    return { title: { absolute: "Temple website" }, robots: { index: false, follow: false } };
+    const t = await getTranslations("site.unavailable");
+    return { title: { absolute: t("metaTitle") }, robots: { index: false, follow: false } };
   }
 
   const { content, hostname } = lookup.site;
@@ -53,6 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const lookup = await getSiteForRequest();
+  const t = await getTranslations("site.unavailable");
 
   // Not a temple website hostname at all — an unknown subdomain, an inactive
   // tenant, or the admin/product domain. Deliberately one message for all of
@@ -60,10 +63,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   if (lookup.status === "not_found") {
     return (
       <SiteShell fonts={`${heading.variable} ${body.variable}`}>
-        <SiteUnavailable
-          title="Temple website not found"
-          message="This address doesn't belong to a temple website. Please check the link you followed."
-        />
+        <SiteUnavailable title={t("notFoundTitle")} message={t("notFoundMessage")} />
       </SiteShell>
     );
   }
@@ -72,8 +72,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     return (
       <SiteShell fonts={`${heading.variable} ${body.variable}`}>
         <SiteUnavailable
-          title="Website coming soon"
-          message={`${lookup.templeName}'s website is currently being prepared. Please check back soon.`}
+          title={t("comingSoonTitle")}
+          message={t("comingSoonMessage", { name: lookup.templeName })}
         />
       </SiteShell>
     );
@@ -101,6 +101,12 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
  * The public site sets its own typography and surface rather than inheriting
  * the admin portal's theme — a devotee should never see dashboard chrome, and
  * the admin portal is untouched by anything here.
+ *
+ * The `site-shell` class is what lets globals.css put Noto Sans Telugu first
+ * in both stacks when <html lang="te">. Without it these two custom
+ * properties would override the document-level Telugu rule for the entire
+ * site subtree, and Telugu would render in a per-character fallback that
+ * flips font mid-sentence around digits and punctuation.
  */
 function SiteShell({
   fonts,
@@ -115,7 +121,7 @@ function SiteShell({
 }) {
   return (
     <div
-      className={`${fonts} min-h-screen [--font-heading:var(--font-site-heading)] [--font-sans:var(--font-site-sans)]`}
+      className={`${fonts} site-shell min-h-screen`}
       style={{ backgroundColor: background, color: ink }}
     >
       {children}

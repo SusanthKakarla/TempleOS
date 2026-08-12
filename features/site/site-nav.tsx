@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Menu, ShieldCheck, X } from "lucide-react";
 import { ADMIN_LOGIN_HREF, SITE_NAV_ITEMS, type SiteSectionId } from "@/lib/site/site-anchors";
 import { cn } from "@/lib/utils";
+import { LanguageToggle } from "./language-toggle";
 
 /**
  * Navigation for the one-page temple site.
@@ -18,8 +20,13 @@ import { cn } from "@/lib/utils";
  * Admin Login is not part of that set. It is a genuine navigation to the
  * existing tenant admin login on this same hostname, styled as clearly
  * secondary to the devotional links around it.
+ *
+ * On small screens the language toggle stays outside the disclosure — a
+ * devotee who opened the page in the wrong language should not have to find
+ * a menu button first — while the links and Admin Login collapse into it.
  */
 export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
+  const t = useTranslations("site.nav");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<SiteSectionId | null>(null);
 
@@ -65,7 +72,7 @@ export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
 
   return (
     <>
-      <nav className="ml-auto hidden items-center gap-0.5 lg:flex" aria-label="Temple website">
+      <nav className="ml-auto hidden items-center gap-0.5 lg:flex" aria-label={t("label")}>
         {SITE_NAV_ITEMS.map((item) => (
           <a
             key={item.id}
@@ -78,7 +85,7 @@ export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
             )}
             style={{ color: active === item.id ? accent : `${ink}B3` }}
           >
-            {item.label}
+            {t(item.labelKey)}
             {active === item.id && (
               <span
                 className="absolute inset-x-3.5 -bottom-0.5 h-0.5 rounded-full"
@@ -90,31 +97,35 @@ export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
         ))}
       </nav>
 
-      <a
-        href={ADMIN_LOGIN_HREF}
-        className="ml-2 hidden items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[0.04] focus-visible:ring-2 focus-visible:outline-none lg:inline-flex"
-        style={{ borderColor: `${ink}26`, color: `${ink}CC` }}
-      >
-        <ShieldCheck className="size-4" aria-hidden="true" />
-        Admin Login
-      </a>
+      <div className="ml-auto flex items-center gap-2 lg:ml-2">
+        <LanguageToggle accent={accent} ink={ink} />
 
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-controls="site-mobile-nav"
-        aria-label={open ? "Close menu" : "Open menu"}
-        className="ml-auto rounded-full p-2.5 transition-colors hover:bg-black/[0.04] focus-visible:ring-2 focus-visible:outline-none lg:hidden"
-        style={{ color: ink }}
-      >
-        {open ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
-      </button>
+        <a
+          href={ADMIN_LOGIN_HREF}
+          className="hidden items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[0.04] focus-visible:ring-2 focus-visible:outline-none lg:inline-flex"
+          style={{ borderColor: `${ink}26`, color: `${ink}CC` }}
+        >
+          <ShieldCheck className="size-4" aria-hidden="true" />
+          {t("adminLogin")}
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-controls="site-mobile-nav"
+          aria-label={open ? t("closeMenu") : t("openMenu")}
+          className="rounded-full p-2.5 transition-colors hover:bg-black/[0.04] focus-visible:ring-2 focus-visible:outline-none lg:hidden"
+          style={{ color: ink }}
+        >
+          {open ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
+        </button>
+      </div>
 
       {open && (
         <nav
           id="site-mobile-nav"
-          aria-label="Temple website"
+          aria-label={t("label")}
           className="absolute inset-x-0 top-full border-b border-black/5 bg-white/95 p-3 shadow-xl backdrop-blur lg:hidden"
         >
           <ul className="grid grid-cols-2 gap-1.5">
@@ -133,7 +144,7 @@ export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
                     backgroundColor: active === item.id ? `${accent}14` : undefined,
                   }}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </a>
               </li>
             ))}
@@ -145,7 +156,7 @@ export function SiteNav({ accent, ink }: { accent: string; ink: string }) {
             style={{ borderColor: `${ink}26`, color: `${ink}CC` }}
           >
             <ShieldCheck className="size-4" aria-hidden="true" />
-            Admin Login
+            {t("adminLogin")}
           </a>
         </nav>
       )}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin, Phone, Mail, Navigation } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireSite } from "@/lib/site/get-site";
 import {
   listSiteCampaigns,
@@ -35,6 +36,7 @@ import { EventCard, ProseBlock, SevaCard, SiteSection, TimingsList } from "@/fea
 export async function TempleHomePage() {
   const { tenant, content } = await requireSite();
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site");
 
   const [sevas, events, gallery, campaigns, socialLinks] = await Promise.all([
     listSiteSevas(tenant.id),
@@ -54,8 +56,8 @@ export async function TempleHomePage() {
       {siteSection.about(content) && (
         <SiteSection
           id={SITE_SECTIONS.about}
-          eyebrow="Our sanctum"
-          title="About the temple"
+          eyebrow={t("about.eyebrow")}
+          title={t("about.title")}
           content={content}
           width="narrow"
         >
@@ -64,7 +66,7 @@ export async function TempleHomePage() {
             {content.history && content.history !== story && (
               <div className="mt-10">
                 <h3 className="font-heading text-xl" style={{ color: theme.ink }}>
-                  Temple history
+                  {t("about.history")}
                 </h3>
                 <ProseBlock text={content.history} className="mt-3" />
               </div>
@@ -77,7 +79,7 @@ export async function TempleHomePage() {
               className="text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
               style={{ color: theme.accent }}
             >
-              Read the full story
+              {t("about.readMore")}
             </Link>
           </p>
         </SiteSection>
@@ -86,22 +88,26 @@ export async function TempleHomePage() {
       {siteSection.timings(content) && (
         <SiteSection
           id={SITE_SECTIONS.timings}
-          eyebrow="Plan your visit"
-          title="Darshan &amp; pooja timings"
+          eyebrow={t("timings.eyebrow")}
+          title={t("timings.title")}
           content={content}
           tone="raised"
           width="narrow"
         >
           <TimingsList content={content} />
           <p className="mt-6 text-center text-xs" style={{ color: theme.inkMuted }}>
-            Timings shown in the temple&apos;s local time. Festival days may differ, so please check the announcements
-            above.
+            {t("timings.note")}
           </p>
         </SiteSection>
       )}
 
       {sevas.length > 0 && (
-        <SiteSection id={SITE_SECTIONS.sevas} eyebrow="Offerings" title="Sevas &amp; poojas" content={content}>
+        <SiteSection
+          id={SITE_SECTIONS.sevas}
+          eyebrow={t("sevas.eyebrow")}
+          title={t("sevas.title")}
+          content={content}
+        >
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {sevas.slice(0, 6).map((seva) => (
               <SevaCard key={seva.id} seva={seva} content={content} />
@@ -114,7 +120,7 @@ export async function TempleHomePage() {
                 className="text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                 style={{ color: theme.accent }}
               >
-                All {sevas.length} sevas
+                {t("sevas.all", { count: sevas.length })}
               </Link>
             </p>
           )}
@@ -124,8 +130,8 @@ export async function TempleHomePage() {
       {events.length > 0 && (
         <SiteSection
           id={SITE_SECTIONS.events}
-          eyebrow="What&apos;s happening"
-          title="Temple events &amp; updates"
+          eyebrow={t("events.eyebrow")}
+          title={t("events.title")}
           content={content}
           tone="raised"
         >
@@ -138,7 +144,12 @@ export async function TempleHomePage() {
       )}
 
       {gallery.length > 0 && (
-        <SiteSection id={SITE_SECTIONS.gallery} eyebrow="Darshan" title="Temple moments" content={content}>
+        <SiteSection
+          id={SITE_SECTIONS.gallery}
+          eyebrow={t("gallery.eyebrow")}
+          title={t("gallery.title")}
+          content={content}
+        >
           <SiteGallery images={gallery} feature />
           <p className="mt-8 text-center">
             <Link
@@ -146,7 +157,7 @@ export async function TempleHomePage() {
               className="text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
               style={{ color: theme.accent }}
             >
-              View the full gallery
+              {t("gallery.viewAll")}
             </Link>
           </p>
         </SiteSection>
@@ -155,8 +166,8 @@ export async function TempleHomePage() {
       {campaigns.length > 0 && (
         <SiteSection
           id={SITE_SECTIONS.donations}
-          eyebrow="Seva to the temple"
-          title="Support the temple"
+          eyebrow={t("donations.eyebrow")}
+          title={t("donations.title")}
           content={content}
           tone="raised"
         >
@@ -167,8 +178,8 @@ export async function TempleHomePage() {
       {hasContact && (
         <SiteSection
           id={SITE_SECTIONS.contact}
-          eyebrow="Come and see us"
-          title="Visit the temple"
+          eyebrow={t("contact.eyebrow")}
+          title={t("contact.title")}
           content={content}
           width="narrow"
         >
@@ -176,7 +187,7 @@ export async function TempleHomePage() {
             {content.address && (
               <ContactCard
                 icon={<MapPin className="size-4" />}
-                label="Address"
+                label={t("contact.address")}
                 accent={theme.accent}
                 ink={theme.ink}
                 muted={theme.inkMuted}
@@ -188,7 +199,7 @@ export async function TempleHomePage() {
             {content.phone && (
               <ContactCard
                 icon={<Phone className="size-4" />}
-                label="Phone"
+                label={t("contact.phone")}
                 accent={theme.accent}
                 ink={theme.ink}
                 muted={theme.inkMuted}
@@ -201,7 +212,7 @@ export async function TempleHomePage() {
             {content.email && (
               <ContactCard
                 icon={<Mail className="size-4" />}
-                label="Email"
+                label={t("contact.email")}
                 accent={theme.accent}
                 ink={theme.ink}
                 muted={theme.inkMuted}
@@ -212,7 +223,12 @@ export async function TempleHomePage() {
               </ContactCard>
             )}
             {socialLinks.length > 0 && (
-              <ContactCard label="Follow the temple" accent={theme.accent} ink={theme.ink} muted={theme.inkMuted}>
+              <ContactCard
+                label={t("contact.follow")}
+                accent={theme.accent}
+                ink={theme.ink}
+                muted={theme.inkMuted}
+              >
                 <span className="flex flex-wrap gap-2">
                   {socialLinks.map((link) => (
                     <a
@@ -240,7 +256,7 @@ export async function TempleHomePage() {
                 style={{ backgroundColor: theme.accent }}
               >
                 <Navigation className="size-4" aria-hidden="true" />
-                Get directions
+                {t("contact.directions")}
               </a>
             </p>
           )}

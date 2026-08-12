@@ -1,0 +1,122 @@
+{
+  "nav": {
+    "label": "Temple website",
+    "home": "Home",
+    "about": "About",
+    "timings": "Timings",
+    "sevas": "Sevas",
+    "events": "Events",
+    "gallery": "Gallery",
+    "contact": "Contact",
+    "adminLogin": "Admin Login",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "language": {
+    "label": "Change language",
+    "en": "English",
+    "te": "తెలుగు"
+  },
+  "announcements": {
+    "label": "Temple announcements",
+    "closed": "Temple closed"
+  },
+  "hero": {
+    "timings": "Darshan timings",
+    "about": "About the temple",
+    "explore": "Explore"
+  },
+  "about": {
+    "eyebrow": "Our sanctum",
+    "title": "About the temple",
+    "history": "Temple history",
+    "ourStory": "Our story",
+    "readMore": "Read the full story",
+    "subtitle": "The story of {name}.",
+    "empty": "This temple hasn't published its story yet."
+  },
+  "timings": {
+    "eyebrow": "Plan your visit",
+    "title": "Darshan & pooja timings",
+    "subtitle": "When you can visit {name}.",
+    "note": "Timings shown in the temple's local time. Festival days may differ, so please check the announcements above.",
+    "morning": "Morning darshan",
+    "evening": "Evening darshan",
+    "openNow": "Open now",
+    "closed": "Closed",
+    "daily": "Daily",
+    "specialDays": "Special days",
+    "allTimesIn": "All times are {timezone}.",
+    "empty": "This temple hasn't published its timings yet."
+  },
+  "sevas": {
+    "eyebrow": "Offerings",
+    "title": "Sevas & poojas",
+    "subtitle": "Sevas offered at {name}.",
+    "all": "All {count} sevas",
+    "empty": "This temple hasn't published its sevas yet."
+  },
+  "events": {
+    "eyebrow": "What's happening",
+    "title": "Temple events & updates",
+    "subtitle": "Upcoming events at {name}.",
+    "readMore": "Read more",
+    "readMoreAbout": "about {title}",
+    "empty": "This temple has no upcoming events right now.",
+    "notFound": "This event is no longer available.",
+    "backToEvents": "All events",
+    "upcoming": "Upcoming",
+    "past": "Past events",
+    "pageSubtitle": "Festivals and occasions at the temple.",
+    "begins": "Begins",
+    "ends": "Ends",
+    "location": "Location",
+    "single": "Event"
+  },
+  "gallery": {
+    "eyebrow": "Darshan",
+    "title": "Temple moments",
+    "subtitle": "Photographs from {name}.",
+    "viewAll": "View the full gallery",
+    "viewPhoto": "View temple photo",
+    "viewNamed": "View {title}",
+    "empty": "This temple hasn't published any photos yet."
+  },
+  "slokas": {
+    "title": "Slokas",
+    "subtitle": "Verses recited at the temple.",
+    "empty": "This temple hasn't published any slokas yet."
+  },
+  "donations": {
+    "eyebrow": "Seva to the temple",
+    "title": "Support the temple",
+    "donate": "Donate",
+    "donateTo": "to {title}",
+    "progress": "<b>{raised}</b> raised of {goal}",
+    "progressLabel": "{title}: {percent}% of the goal raised"
+  },
+  "contact": {
+    "eyebrow": "Come and see us",
+    "title": "Visit the temple",
+    "subtitle": "How to reach {name}.",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "follow": "Follow the temple",
+    "directions": "Get directions",
+    "maps": "View on Google Maps",
+    "empty": "This temple hasn't published its contact details yet."
+  },
+  "footer": {
+    "explore": "Explore",
+    "reach": "Reach the temple",
+    "poweredBy": "Powered by TempleOS"
+  },
+  "unavailable": {
+    "notFoundTitle": "Temple website not found",
+    "notFoundMessage": "This address doesn't belong to a temple website. Please check the link you followed.",
+    "comingSoonTitle": "Website coming soon",
+    "comingSoonMessage": "{name}'s website is currently being prepared. Please check back soon.",
+    "metaTitle": "Temple website"
+  }
+}

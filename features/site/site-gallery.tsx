@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ImageLightbox } from "@/components/image-lightbox";
 import type { SiteImage } from "@/lib/site/site-data";
 
@@ -17,6 +18,7 @@ import type { SiteImage } from "@/lib/site/site-data";
  * every photo is the more useful presentation.
  */
 export function SiteGallery({ images, feature = false }: { images: SiteImage[]; feature?: boolean }) {
+  const t = useTranslations("site.gallery");
   const [active, setActive] = useState<SiteImage | null>(null);
 
   return (
@@ -30,7 +32,7 @@ export function SiteGallery({ images, feature = false }: { images: SiteImage[]; 
             className={`group relative overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm focus-visible:ring-2 focus-visible:outline-none ${
               feature && index === 0 ? "col-span-2 row-span-2" : ""
             }`}
-            aria-label={image.title ? `View ${image.title}` : "View temple photo"}
+            aria-label={image.title ? t("viewNamed", { title: image.title }) : t("viewPhoto")}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL */}
             <img
@@ -55,7 +57,7 @@ export function SiteGallery({ images, feature = false }: { images: SiteImage[]; 
         ))}
       </div>
 
-      {active && <ImageLightbox src={active.url} alt={active.title ?? "Temple photo"} onClose={() => setActive(null)} />}
+      {active && <ImageLightbox src={active.url} alt={active.title ?? t("viewPhoto")} onClose={() => setActive(null)} />}
     </>
   );
 }

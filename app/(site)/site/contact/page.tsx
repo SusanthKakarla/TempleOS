@@ -1,26 +1,31 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { requireSite } from "@/lib/site/get-site";
 import { listSiteSocialLinks } from "@/lib/site/site-data";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { siteSection } from "@/lib/site/temple-content";
 import { EmptyNotice, PageHeader, SectionHeading } from "@/features/site/site-sections";
 
-export const metadata: Metadata = { title: "Contact" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("site.contact");
+  return { title: t("title") };
+}
 
 export default async function ContactPage() {
   const { tenant, content } = await requireSite();
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.contact");
   const socialLinks = await listSiteSocialLinks(tenant.id);
 
   const nothingToShow = !siteSection.contact(content) && socialLinks.length === 0;
 
   return (
     <>
-      <PageHeader title="Contact" subtitle={`How to reach ${content.name}.`} content={content} />
+      <PageHeader title={t("title")} subtitle={t("subtitle", { name: content.name })} content={content} />
 
       <div className="mx-auto max-w-3xl space-y-10 px-5 py-14 md:px-8">
         {nothingToShow ? (
-          <EmptyNotice message="This temple hasn't published its contact details yet." content={content} />
+          <EmptyNotice message={t("empty")} content={content} />
         ) : (
           <>
             {siteSection.contact(content) && (
@@ -28,7 +33,7 @@ export default async function ContactPage() {
                 {content.address && (
                   <div>
                     <p className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                      Address
+                      {t("address")}
                     </p>
                     <p className="mt-1 whitespace-pre-line" style={{ color: theme.ink }}>
                       {content.address}
@@ -38,7 +43,7 @@ export default async function ContactPage() {
                 {content.phone && (
                   <div>
                     <p className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                      Phone
+                      {t("phone")}
                     </p>
                     <a href={`tel:${content.phone}`} className="mt-1 block hover:underline" style={{ color: theme.ink }}>
                       {content.phone}
@@ -48,7 +53,7 @@ export default async function ContactPage() {
                 {content.email && (
                   <div>
                     <p className="text-xs tracking-wide uppercase" style={{ color: theme.inkMuted }}>
-                      Email
+                      {t("email")}
                     </p>
                     <a
                       href={`mailto:${content.email}`}
@@ -67,7 +72,7 @@ export default async function ContactPage() {
                     className="inline-block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
                     style={{ backgroundColor: theme.accent }}
                   >
-                    Open in Google Maps
+                    {t("maps")}
                   </a>
                 )}
               </section>
@@ -75,7 +80,7 @@ export default async function ContactPage() {
 
             {socialLinks.length > 0 && (
               <section>
-                <SectionHeading title="Follow the temple" accent={theme.accent} />
+                <SectionHeading title={t("follow")} accent={theme.accent} />
                 <ul className="mt-5 flex flex-wrap gap-2">
                   {socialLinks.map((link) => (
                     <li key={link.platform}>

@@ -45,13 +45,13 @@ describe("templeTimingWindows", () => {
     const windows = templeTimingWindows(content(), MORNING_IST);
 
     expect(windows).toHaveLength(2);
-    expect(windows[0]).toMatchObject({ label: "Morning", opens: "6:00 AM", closes: "12:00 PM" });
-    expect(windows[1]).toMatchObject({ label: "Evening", opens: "4:00 PM", closes: "9:00 PM" });
+    expect(windows[0]).toMatchObject({ key: "morning", opens: "6:00 AM", closes: "12:00 PM" });
+    expect(windows[1]).toMatchObject({ key: "evening", opens: "4:00 PM", closes: "9:00 PM" });
   });
 
   it("omits a window the temple hasn't fully configured rather than showing half of it", () => {
     const windows = templeTimingWindows(content({ eveningOpen: "16:00:00", eveningClose: null }), MORNING_IST);
-    expect(windows.map((window) => window.label)).toEqual(["Morning"]);
+    expect(windows.map((window) => window.key)).toEqual(["morning"]);
   });
 
   /*
@@ -63,8 +63,8 @@ describe("templeTimingWindows", () => {
   it("decides open/closed in the temple's own timezone, not the server's", () => {
     const windows = templeTimingWindows(content(), MORNING_IST);
 
-    expect(windows[0]).toMatchObject({ label: "Morning", openNow: true });
-    expect(windows[1]).toMatchObject({ label: "Evening", openNow: false });
+    expect(windows[0]).toMatchObject({ key: "morning", openNow: true });
+    expect(windows[1]).toMatchObject({ key: "evening", openNow: false });
   });
 
   it("treats the closing minute as closed, so a window never reads open past its end", () => {

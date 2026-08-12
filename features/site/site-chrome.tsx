@@ -1,4 +1,6 @@
 import { ShieldCheck } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
+import { isSupportedLanguage } from "@/types/db";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { ADMIN_LOGIN_HREF, SITE_NAV_ITEMS, SITE_SECTIONS } from "@/lib/site/site-anchors";
 import type { SiteAnnouncement, SiteSocialLink } from "@/lib/site/site-data";
@@ -35,7 +37,7 @@ export interface SiteChromeProps {
  * disabled under reduced motion — where it becomes a plain horizontally
  * scrollable row that the devotee moves themselves.
  */
-export function SiteAnnouncementTicker({
+export async function SiteAnnouncementTicker({
   announcements,
   content,
 }: {
@@ -44,13 +46,15 @@ export function SiteAnnouncementTicker({
 }) {
   if (announcements.length === 0) return null;
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.announcements");
+  const locale = await getLocale();
 
   const items = announcements.map((item) => (
     <span key={`${item.date}-${item.occasion}`} className="flex shrink-0 items-center gap-2 px-5 whitespace-nowrap">
       <span className="size-1 rounded-full" style={{ backgroundColor: theme.accentSoft }} aria-hidden="true" />
       <span className="font-medium">{item.occasion}</span>
-      <span className="text-white/55">{formatDate(item.date, "en")}</span>
-      {item.isClosed && <span className="text-white/55">· Temple closed</span>}
+      <span className="text-white/55">{formatDate(item.date, isSupportedLanguage(locale) ? locale : "en")}</span>
+      {item.isClosed && <span className="text-white/55">· {t("closed")}</span>}
     </span>
   ));
 
@@ -59,7 +63,7 @@ export function SiteAnnouncementTicker({
       className="site-marquee group relative overflow-hidden text-xs text-white/90"
       style={{ backgroundColor: theme.base }}
       role="region"
-      aria-label="Temple announcements"
+      aria-label={t("label")}
     >
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-black/25 to-transparent" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-black/25 to-transparent" aria-hidden="true" />
@@ -74,6 +78,15 @@ export function SiteAnnouncementTicker({
   );
 }
 
+/**
+ * The header's branding is the temple's NAME, not its mark.
+ *
+ * The circular logo was removed from here deliberately: at header size it read
+ * as a favicon next to the name it was already repeating, and it cost the row
+ * width that the navigation, the language toggle and Admin Login all need.
+ * The logo is untouched everywhere it carries weight — the hero, the footer,
+ * and every other place it is used.
+ */
 export function SiteHeader({ content }: { content: TempleSiteContent }) {
   const theme = SITE_THEMES[content.hero.theme];
 
@@ -82,22 +95,19 @@ export function SiteHeader({ content }: { content: TempleSiteContent }) {
       <div className="relative mx-auto flex max-w-6xl items-center gap-3 px-5 py-2.5 md:px-8">
         <a
           href={`#${SITE_SECTIONS.home}`}
-          className="flex min-w-0 items-center gap-3 rounded-full focus-visible:ring-2 focus-visible:outline-none"
+          className="flex min-w-0 flex-col rounded-lg focus-visible:ring-2 focus-visible:outline-none"
         >
-          <TempleLogo content={content} accent={theme.accent} size="sm" />
-          <span className="flex min-w-0 flex-col">
-            <span className="min-w-0 truncate font-heading text-[0.95rem] leading-tight font-semibold" style={{ color: theme.ink }}>
-              {content.name}
-            </span>
-            {content.deityName && (
-              <span
-                className="hidden truncate text-[0.62rem] tracking-[0.18em] uppercase sm:block"
-                style={{ color: theme.inkMuted }}
-              >
-                {content.deityName}
-              </span>
-            )}
+          <span className="min-w-0 truncate font-heading text-[0.95rem] leading-tight font-semibold" style={{ color: theme.ink }}>
+            {content.name}
           </span>
+          {content.deityName && (
+            <span
+              className="hidden truncate text-[0.62rem] tracking-[0.18em] uppercase sm:block"
+              style={{ color: theme.inkMuted }}
+            >
+              {content.deityName}
+            </span>
+          )}
         </a>
 
         <SiteNav accent={theme.accent} ink={theme.ink} />
@@ -106,8 +116,15 @@ export function SiteHeader({ content }: { content: TempleSiteContent }) {
   );
 }
 
-export function SiteFooter({ content, socialLinks }: { content: TempleSiteContent; socialLinks: SiteSocialLink[] }) {
+export async function SiteFooter({
+  content,
+  socialLinks,
+}: {
+  content: TempleSiteContent;
+  socialLinks: SiteSocialLink[];
+}) {
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site");
 
   return (
     <footer className="relative mt-24 overflow-hidden text-white" style={{ backgroundColor: theme.base }}>
@@ -136,8 +153,8 @@ export function SiteFooter({ content, socialLinks }: { content: TempleSiteConten
           )}
         </div>
 
-        <nav aria-label="Temple website footer">
-          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">Explore</p>
+        <nav aria-label={t("nav.label")}>
+          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">{t("footer.explore")}</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             {SITE_NAV_ITEMS.map((item) => (
               <li key={item.id}>
@@ -145,7 +162,7 @@ export function SiteFooter({ content, socialLinks }: { content: TempleSiteConten
                   href={`#${item.id}`}
                   className="text-white/75 transition-colors hover:text-white focus-visible:ring-2 focus-visible:outline-none"
                 >
-                  {item.label}
+                  {t(`nav.${item.labelKey}`)}
                 </a>
               </li>
             ))}
@@ -153,7 +170,7 @@ export function SiteFooter({ content, socialLinks }: { content: TempleSiteConten
         </nav>
 
         <div>
-          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">Reach the temple</p>
+          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">{t("footer.reach")}</p>
           <div className="mt-4 space-y-2.5 text-sm text-white/75">
             {content.address && <p className="whitespace-pre-line">{content.address}</p>}
             {content.phone && (
@@ -194,13 +211,13 @@ export function SiteFooter({ content, socialLinks }: { content: TempleSiteConten
             className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:outline-none"
           >
             <ShieldCheck className="size-3.5" aria-hidden="true" />
-            Admin Login
+            {t("nav.adminLogin")}
           </a>
         </div>
       </div>
 
       <div className="relative border-t border-white/10 py-4 text-center text-xs text-white/45">
-        © {new Date().getFullYear()} {content.name} · Powered by TempleOS
+        © {new Date().getFullYear()} {content.name} · {t("footer.poweredBy")}
       </div>
     </footer>
   );

@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { requireSite } from "@/lib/site/get-site";
 import { EmptyNotice, PageHeader } from "@/features/site/site-sections";
 
-export const metadata: Metadata = { title: "Slokas" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("site.slokas");
+  return { title: t("title") };
+}
 
 /**
  * Slokas are the one page of the reference site TempleOS cannot yet populate.
@@ -21,13 +25,14 @@ export const metadata: Metadata = { title: "Slokas" };
  */
 export default async function SlokasPage() {
   const { content } = await requireSite();
+  const t = await getTranslations("site.slokas");
 
   return (
     <>
-      <PageHeader title="Slokas" subtitle="Verses recited at the temple." content={content} />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} content={content} />
 
       <div className="mx-auto max-w-3xl px-5 py-14 md:px-8">
-        <EmptyNotice message="This temple hasn't published any slokas yet." content={content} />
+        <EmptyNotice message={t("empty")} content={content} />
       </div>
     </>
   );

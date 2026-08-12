@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import type { SiteEvent, SiteImage, SiteSeva } from "@/lib/site/site-data";
 import type { TempleSiteContent } from "@/lib/site/temple-content";
 import { formatDateTime } from "@/lib/date";
 import { formatInr } from "@/lib/currency";
+import { isSupportedLanguage } from "@/types/db";
+
+/** The next-intl locale narrowed to the app's own language union, for date and currency formatting. */
+export async function siteLanguage() {
+  const locale = await getLocale();
+  return isSupportedLanguage(locale) ? locale : "en";
+}
 
 /**
  * The reusable blocks every public page is built from. Each renders nothing
@@ -176,7 +184,8 @@ function minutesNowInTimeZone(timeZone: string, now: Date = new Date()): number 
 }
 
 export interface TimingWindow {
-  label: string;
+  /** Message key under `site.timings`, not a label — the caller translates it. */
+  key: "morning" | "evening";
   opens: string;
   closes: string;
   /** True when the temple is inside this window right now, null when it can't be determined. */
@@ -187,7 +196,7 @@ export interface TimingWindow {
 export function templeTimingWindows(content: TempleSiteContent, now: Date = new Date()): TimingWindow[] {
   const minutesNow = minutesNowInTimeZone(content.timezone, now);
 
-  const build = (label: string, open: string | null, close: string | null): TimingWindow | null => {
+  const build = (key: TimingWindow["key"], open: string | null, close: string | null): TimingWindow | null => {
     const opens = formatTime(open);
     const closes = formatTime(close);
     if (!opens || !closes) return null;
@@ -197,25 +206,26 @@ export function templeTimingWindows(content: TempleSiteContent, now: Date = new 
     const openNow =
       minutesNow === null || from === null || to === null ? null : minutesNow >= from && minutesNow < to;
 
-    return { label, opens, closes, openNow };
+    return { key, opens, closes, openNow };
   };
 
   return [
-    build("Morning", content.timings.morningOpen, content.timings.morningClose),
-    build("Evening", content.timings.eveningOpen, content.timings.eveningClose),
+    build("morning", content.timings.morningOpen, content.timings.morningClose),
+    build("evening", content.timings.eveningOpen, content.timings.eveningClose),
   ].filter((window): window is TimingWindow => window !== null);
 }
 
-export function TimingsList({ content, now }: { content: TempleSiteContent; now?: Date }) {
+export async function TimingsList({ content, now }: { content: TempleSiteContent; now?: Date }) {
   const windows = templeTimingWindows(content, now);
   if (windows.length === 0) return null;
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.timings");
 
   return (
     <ul className="grid gap-4 sm:grid-cols-2">
       {windows.map((window) => (
         <li
-          key={window.label}
+          key={window.key}
           className="site-lift relative overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-6 shadow-sm"
         >
           <span
@@ -225,7 +235,7 @@ export function TimingsList({ content, now }: { content: TempleSiteContent; now?
           />
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-medium tracking-[0.2em] uppercase" style={{ color: theme.accent }}>
-              {window.label} darshan
+              {t(window.key)}
             </p>
             {window.openNow !== null && (
               <span
@@ -236,7 +246,7 @@ export function TimingsList({ content, now }: { content: TempleSiteContent; now?
                     : { backgroundColor: "rgba(0,0,0,0.05)", color: theme.inkMuted }
                 }
               >
-                {window.openNow ? "Open now" : "Closed"}
+                {window.openNow ? t("openNow") : t("closed")}
               </span>
             )}
           </div>
@@ -274,8 +284,10 @@ export function SevaCard({ seva, content }: { seva: SiteSeva; content: TempleSit
   );
 }
 
-export function EventCard({ event, content }: { event: SiteEvent; content: TempleSiteContent }) {
+export async function EventCard({ event, content }: { event: SiteEvent; content: TempleSiteContent }) {
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.events");
+  const language = await siteLanguage();
   return (
     <article className="site-lift flex h-full flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
       {event.imageUrl && (
@@ -292,7 +304,7 @@ export function EventCard({ event, content }: { event: SiteEvent; content: Templ
       )}
       <div className="flex flex-1 flex-col p-6">
         <p className="text-xs font-medium tracking-wide uppercase" style={{ color: theme.accent }}>
-          {formatDateTime(event.startsAt, "en")}
+          {formatDateTime(event.startsAt, language)}
         </p>
         <h3 className="mt-2 font-heading text-lg" style={{ color: theme.ink }}>
           {event.title}
@@ -314,7 +326,8 @@ export function EventCard({ event, content }: { event: SiteEvent; content: Templ
           className="mt-auto pt-4 text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
           style={{ color: theme.accent }}
         >
-          Read more<span className="sr-only"> about {event.title}</span>
+          {t("readMore")}
+          <span className="sr-only"> {t("readMoreAbout", { title: event.title })}</span>
         </Link>
       </div>
     </article>

@@ -26,7 +26,8 @@ export type SiteSectionId = (typeof SITE_SECTIONS)[keyof typeof SITE_SECTIONS];
 
 export interface SiteNavItem {
   id: SiteSectionId;
-  label: string;
+  /** Key under the `site.nav` message namespace — the label itself is never stored here, so nothing is untranslatable by construction. */
+  labelKey: SiteSectionId;
   /** The standalone route this section mirrors — used as the link's href so it degrades to a real page without JS. */
   fallbackHref: string;
 }
@@ -39,13 +40,13 @@ export interface SiteNavItem {
  * than no nav item. The hero and the section itself link to it instead.
  */
 export const SITE_NAV_ITEMS: SiteNavItem[] = [
-  { id: SITE_SECTIONS.home, label: "Home", fallbackHref: "/" },
-  { id: SITE_SECTIONS.about, label: "About", fallbackHref: "/about" },
-  { id: SITE_SECTIONS.timings, label: "Timings", fallbackHref: "/timings" },
-  { id: SITE_SECTIONS.sevas, label: "Sevas", fallbackHref: "/sevas" },
-  { id: SITE_SECTIONS.events, label: "Events", fallbackHref: "/events" },
-  { id: SITE_SECTIONS.gallery, label: "Gallery", fallbackHref: "/gallery" },
-  { id: SITE_SECTIONS.contact, label: "Contact", fallbackHref: "/contact" },
+  { id: SITE_SECTIONS.home, labelKey: SITE_SECTIONS.home, fallbackHref: "/" },
+  { id: SITE_SECTIONS.about, labelKey: SITE_SECTIONS.about, fallbackHref: "/about" },
+  { id: SITE_SECTIONS.timings, labelKey: SITE_SECTIONS.timings, fallbackHref: "/timings" },
+  { id: SITE_SECTIONS.sevas, labelKey: SITE_SECTIONS.sevas, fallbackHref: "/sevas" },
+  { id: SITE_SECTIONS.events, labelKey: SITE_SECTIONS.events, fallbackHref: "/events" },
+  { id: SITE_SECTIONS.gallery, labelKey: SITE_SECTIONS.gallery, fallbackHref: "/gallery" },
+  { id: SITE_SECTIONS.contact, labelKey: SITE_SECTIONS.contact, fallbackHref: "/contact" },
 ];
 
 /**

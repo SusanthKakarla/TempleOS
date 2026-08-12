@@ -1,4 +1,5 @@
 import { Heart } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { SITE_THEMES } from "@/lib/site/site-theme";
 import { formatInr } from "@/lib/currency";
 import type { SiteCampaign } from "@/lib/site/site-data";
@@ -17,7 +18,7 @@ import type { TempleSiteContent } from "@/lib/site/temple-content";
  * goal and a purpose tag (enforced by listSiteCampaigns), so a bar can never
  * sit at a meaningless zero.
  */
-export function SiteCampaigns({
+export async function SiteCampaigns({
   campaigns,
   content,
 }: {
@@ -25,6 +26,7 @@ export function SiteCampaigns({
   content: TempleSiteContent;
 }) {
   const theme = SITE_THEMES[content.hero.theme];
+  const t = await getTranslations("site.donations");
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -70,7 +72,7 @@ export function SiteCampaigns({
                   aria-valuenow={percent}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${campaign.title}: ${percent}% of the goal raised`}
+                  aria-label={t("progressLabel", { title: campaign.title, percent })}
                 >
                   <div
                     className="h-full rounded-full"
@@ -78,10 +80,18 @@ export function SiteCampaigns({
                   />
                 </div>
                 <p className="mt-2.5 text-sm" style={{ color: theme.inkMuted }}>
-                  <span className="font-semibold" style={{ color: theme.ink }}>
-                    {formatInr(raised)}
-                  </span>{" "}
-                  raised of {formatInr(campaign.goalAmount)}
+                  {t.rich("progress", {
+                    raised: formatInr(raised),
+                    goal: formatInr(campaign.goalAmount),
+                    // The raised figure stays emphasised in both languages,
+                    // which a plain interpolation could not do without
+                    // assuming English word order.
+                    b: (chunks) => (
+                      <span className="font-semibold" style={{ color: theme.ink }}>
+                        {chunks}
+                      </span>
+                    ),
+                  })}
                 </p>
               </div>
 
@@ -91,7 +101,8 @@ export function SiteCampaigns({
                 style={{ backgroundColor: theme.accent }}
               >
                 <Heart className="size-4" aria-hidden="true" />
-                Donate<span className="sr-only"> to {campaign.title}</span>
+                {t("donate")}
+                <span className="sr-only"> {t("donateTo", { title: campaign.title })}</span>
               </a>
             </div>
           </article>
