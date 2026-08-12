@@ -8,6 +8,7 @@ import { verifyResultToken } from "@/lib/whatsapp/onboarding-handoff";
 import { getTenantWebsite } from "@/lib/db/tenant-websites";
 import { getWebsiteHostnameForTenant } from "@/lib/db/tenant-domains";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
+import { listSiteGallery } from "@/lib/site/site-data";
 import { PageHeader } from "@/components/page-header";
 import { WebsiteSettingsSection } from "@/features/website/website-settings-section";
 import { WhatsAppConnectionCard } from "@/features/chatbot-settings/whatsapp-connection-card";
@@ -39,6 +40,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   ]);
   // Media ids are resolved against this tenant's own media, so a stale id can
   // only ever resolve to null — never to another temple's image.
+  const galleryImages = (await listSiteGallery(session.tenantId)).map((image) => ({
+    id: image.id,
+    imageUrl: image.url,
+    title: image.title,
+  }));
+
   const websiteMedia = {
     deity: website?.deityMediaId ? await getNotificationMediaById(session.tenantId, website.deityMediaId) : null,
     hero: website?.heroMediaId ? await getNotificationMediaById(session.tenantId, website.heroMediaId) : null,
@@ -68,6 +75,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           website={website}
           media={websiteMedia}
           websiteUrl={websiteHostname ? `https://${websiteHostname}` : null}
+          galleryImages={galleryImages}
         />
       </section>
 

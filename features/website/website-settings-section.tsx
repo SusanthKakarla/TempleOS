@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MediaUpload } from "@/features/media/media-upload";
+import { WebsiteGalleryManager, type GalleryPhoto } from "./website-gallery-manager";
 import { HERO_TEMPLATES, SITE_THEMES } from "@/lib/site/site-theme";
 import {
   WEBSITE_HERO_TEMPLATES,
@@ -42,6 +43,8 @@ interface Props {
    * is decided entirely by the endpoint the server authorises.
    */
   endpoint?: string;
+  /** Existing gallery photos, managed in their own block below. */
+  galleryImages?: GalleryPhoto[];
 }
 
 /**
@@ -53,7 +56,26 @@ interface Props {
  * a second copy that could disagree with what the temple actually maintains.
  * The note in the UI says so, because otherwise an admin looks for them here.
  */
-export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = "/api/website" }: Props) {
+/** A labelled group, so the form reads as a few short decisions rather than one long column of inputs. */
+function Fieldset({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4 border-t pt-6 first:border-t-0 first:pt-0">
+      <div className="space-y-0.5">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function WebsiteSettingsSection({
+  website,
+  media,
+  websiteUrl,
+  endpoint = "/api/website",
+  galleryImages = [],
+}: Props) {
   const [enabled, setEnabled] = useState(website?.enabled ?? false);
   const [heroTemplate, setHeroTemplate] = useState<WebsiteHeroTemplate>(website?.heroTemplate ?? "classic");
   const [theme, setTheme] = useState<WebsiteTheme>(website?.theme ?? "saffron");
@@ -148,6 +170,7 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         <Switch checked={enabled} onCheckedChange={setEnabled} />
       </label>
 
+      <Fieldset title="Appearance" hint="How your website looks. The same content, composed differently.">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="website-template">Hero template</Label>
@@ -189,6 +212,9 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         </div>
       </div>
 
+      </Fieldset>
+
+      <Fieldset title="Identity" hint="Leave a field empty and the website falls back to your temple's own details.">
       <div className="grid gap-4 sm:grid-cols-2">
         <LabeledInput
           id="website-display-name"
@@ -218,6 +244,9 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         />
       </div>
 
+      </Fieldset>
+
+      <Fieldset title="Images" hint="Your own photographs, used exactly as uploaded.">
       <div className="grid gap-4 sm:grid-cols-2">
         <MediaUpload
           category="temple_deity"
@@ -243,6 +272,10 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         />
       </div>
 
+      <WebsiteGalleryManager images={galleryImages} />
+      </Fieldset>
+
+      <Fieldset title="Story" hint="Shown on the home and About pages. An empty section is hidden, never padded out.">
       <div className="space-y-1.5">
         <Label htmlFor="website-story">Temple story</Label>
         <Textarea id="website-story" rows={5} value={story} onChange={(event) => setStory(event.target.value)} />
@@ -259,6 +292,9 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         />
       </div>
 
+      </Fieldset>
+
+      <Fieldset title="Search &amp; sharing" hint="Used by search engines and link previews.">
       <div className="grid gap-4 sm:grid-cols-2">
         <LabeledInput
           id="website-seo-title"
@@ -274,15 +310,19 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
         />
       </div>
 
+      </Fieldset>
+
       <p className="rounded-xl bg-muted/50 p-4 text-xs text-muted-foreground">
         Timings, events, sevas, gallery photos, contact details and social links are managed in their own sections and
         appear on your website automatically — there is nothing to copy here.
       </p>
 
-      <Button type="button" onClick={handleSave} disabled={saving} className="gap-1.5">
-        {saving && <Loader2 className="size-4 animate-spin" />}
-        Save website settings
-      </Button>
+      <div className="sticky bottom-0 -mx-5 -mb-5 flex justify-end gap-3 rounded-b-2xl border-t bg-background/95 px-5 py-3 backdrop-blur">
+        <Button type="button" onClick={handleSave} disabled={saving} className="gap-1.5">
+          {saving && <Loader2 className="size-4 animate-spin" />}
+          Save website settings
+        </Button>
+      </div>
     </div>
   );
 }

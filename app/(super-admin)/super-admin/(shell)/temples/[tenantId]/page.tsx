@@ -29,6 +29,7 @@ import { WebsiteSettingsSection } from "@/features/website/website-settings-sect
 import { getTenantWebsite } from "@/lib/db/tenant-websites";
 import { getWebsiteHostnameForTenant } from "@/lib/db/tenant-domains";
 import { getNotificationMediaById } from "@/lib/db/notification-media";
+import { listSiteGallery } from "@/lib/site/site-data";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { RazorpayConnectionForm } from "@/features/super-admin/razorpay-connection-form";
 import { PhonePeConnectionForm } from "@/features/super-admin/phonepe-connection-form";
@@ -66,6 +67,12 @@ export default async function SuperAdminTempleDetailPage({
 
   // Resolved against this temple's own media, so a stale id yields null rather
   // than another temple's image.
+  const galleryImages = (await listSiteGallery(temple.tenant.id)).map((image) => ({
+    id: image.id,
+    imageUrl: image.url,
+    title: image.title,
+  }));
+
   const websiteMedia = {
     deity: website?.deityMediaId ? await getNotificationMediaById(temple.tenant.id, website.deityMediaId) : null,
     hero: website?.heroMediaId ? await getNotificationMediaById(temple.tenant.id, website.heroMediaId) : null,
@@ -163,6 +170,7 @@ export default async function SuperAdminTempleDetailPage({
           website={website}
           media={websiteMedia}
           websiteUrl={websiteHostname ? `https://${websiteHostname}` : null}
+          galleryImages={galleryImages}
           endpoint={`/api/super-admin/temples/${temple.tenant.id}/website`}
         />
 
