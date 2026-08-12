@@ -31,6 +31,13 @@ interface Props {
   };
   /** The temple's own public address, resolved server-side from its website domain row. */
   websiteUrl: string | null;
+  /**
+   * Where to save. Defaults to the tenant admin's own endpoint, which derives
+   * the tenant from the session; Super Admin passes its per-temple route. The
+   * component never sends a tenant id either way — which one is being edited
+   * is decided entirely by the endpoint the server authorises.
+   */
+  endpoint?: string;
 }
 
 /**
@@ -42,7 +49,7 @@ interface Props {
  * a second copy that could disagree with what the temple actually maintains.
  * The note in the UI says so, because otherwise an admin looks for them here.
  */
-export function WebsiteSettingsSection({ website, media, websiteUrl }: Props) {
+export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = "/api/website" }: Props) {
   const [enabled, setEnabled] = useState(website?.enabled ?? false);
   const [heroTemplate, setHeroTemplate] = useState<WebsiteHeroTemplate>(website?.heroTemplate ?? "classic");
   const [theme, setTheme] = useState<WebsiteTheme>(website?.theme ?? "saffron");
@@ -63,7 +70,7 @@ export function WebsiteSettingsSection({ website, media, websiteUrl }: Props) {
   async function handleSave() {
     setSaving(true);
     try {
-      const response = await fetch("/api/website", {
+      const response = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         // No tenant id: the server derives it from the session.

@@ -25,6 +25,10 @@ import { PageHeader } from "@/components/page-header";
 import { MobileListView } from "@/components/mobile-list-view";
 import { MobileListRow } from "@/components/mobile-list-row";
 import { TempleDetailEditForm } from "@/features/super-admin/temple-detail-edit-form";
+import { WebsiteSettingsSection } from "@/features/website/website-settings-section";
+import { getTenantWebsite } from "@/lib/db/tenant-websites";
+import { getWebsiteHostnameForTenant } from "@/lib/db/tenant-domains";
+import { getNotificationMediaById } from "@/lib/db/notification-media";
 import { WhatsAppConnectionForm } from "@/features/super-admin/whatsapp-connection-form";
 import { RazorpayConnectionForm } from "@/features/super-admin/razorpay-connection-form";
 import { PhonePeConnectionForm } from "@/features/super-admin/phonepe-connection-form";
@@ -52,11 +56,22 @@ export default async function SuperAdminTempleDetailPage({
   if (!temple) {
     notFound();
   }
-  const [roles, features, auditEntries] = await Promise.all([
+  const [roles, features, auditEntries, website, websiteHostname] = await Promise.all([
     listRoleDefinitionsForSuperAdmin().then((all) => all.filter((role) => role.active)),
     listTenantFeatures(temple.tenant.id),
     listAuditLogEntriesForTenant(temple.tenant.id, { limit: 10 }),
+    getTenantWebsite(temple.tenant.id),
+    getWebsiteHostnameForTenant(temple.tenant.id),
   ]);
+
+  // Resolved against this temple's own media, so a stale id yields null rather
+  // than another temple's image.
+  const websiteMedia = {
+    deity: website?.deityMediaId ? await getNotificationMediaById(temple.tenant.id, website.deityMediaId) : null,
+    hero: website?.heroMediaId ? await getNotificationMediaById(temple.tenant.id, website.heroMediaId) : null,
+    logo: website?.logoMediaId ? await getNotificationMediaById(temple.tenant.id, website.logoMediaId) : null,
+    og: website?.ogMediaId ? await getNotificationMediaById(temple.tenant.id, website.ogMediaId) : null,
+  };
 
   return (
     <div className="space-y-6">
@@ -140,6 +155,16 @@ export default async function SuperAdminTempleDetailPage({
         </section>
 
         <TempleDetailEditForm tenant={temple.tenant} />
+
+        {/* Same component the tenant admin uses, pointed at the Super Admin
+            endpoint. Which temple is edited comes from the route the server
+            authorises, never from anything the browser sends. */}
+        <WebsiteSettingsSection
+          website={website}
+          media={websiteMedia}
+          websiteUrl={websiteHostname ? `https://${websiteHostname}` : null}
+          endpoint={`/api/super-admin/temples/${temple.tenant.id}/website`}
+        />
 
         <WhatsAppConnectionForm tenantId={temple.tenant.id} account={temple.whatsappAccount} />
 
