@@ -104,7 +104,11 @@ export interface SuperAdminTenantSummary {
   primaryAdminPhoneNumber: string | null;
   activeMemberCount: number;
   whatsappStatus: "linked" | "unlinked";
-  /** The temple's public website hostname, or null if it has none provisioned yet. */
+  /**
+   * The temple's public website address — its own subdomain, which is also its
+   * admin portal's. Same value as primaryHostname; kept as its own field so
+   * the website column reads independently of the admin one.
+   */
   websiteHostname: string | null;
   /** null = no website row at all; false = provisioned but unpublished; true = live. */
   websitePublished: boolean | null;
@@ -347,7 +351,10 @@ export async function listTenantsForSuperAdmin(
             primary_admin.phone_number AS primary_admin_phone_number,
             COALESCE(member_counts.active_member_count, 0) AS active_member_count,
             CASE WHEN whatsapp_account.id IS NULL THEN 'unlinked' ELSE 'linked' END AS whatsapp_status,
-            website_domain.hostname AS website_hostname,
+            -- The website is served from the temple's own subdomain, which is
+            -- the same primary hostname its admins sign in on. There is no
+            -- second domain row to join.
+            primary_domain.hostname AS website_hostname,
             website.enabled AS website_published,
             GREATEST(
               t.updated_at,
@@ -365,15 +372,6 @@ export async function listTenantsForSuperAdmin(
        ORDER BY td.created_at ASC, td.id ASC
        LIMIT 1
      ) primary_domain ON true
-     -- The public website's own hostname, kept separate from the admin one
-     -- above by kind, so neither can ever be shown in the other's place.
-     LEFT JOIN LATERAL (
-       SELECT td.hostname
-       FROM tenant_domains td
-       WHERE td.tenant_id = t.id AND td.kind = 'website' AND td.status = 'active'
-       ORDER BY td.created_at ASC, td.id ASC
-       LIMIT 1
-     ) website_domain ON true
      LEFT JOIN tenant_websites website ON website.tenant_id = t.id
      LEFT JOIN LATERAL (
        SELECT tm.display_name, p.phone_number, tm.updated_at, tmr.assigned_at AS role_assigned_at

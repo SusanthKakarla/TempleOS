@@ -26,25 +26,6 @@ export async function createTenantDomainForSuperAdmin(
   return mapTenantDomain(rows[0]);
 }
 
-/**
- * The tenant's public-website hostname, created alongside its admin hostname
- * during provisioning. `kind = 'website'` is what keeps the two apart:
- * resolveWebsiteByHostname only ever matches this kind, so an admin subdomain
- * can never serve a temple site (or the reverse).
- */
-export async function createTenantWebsiteDomainForProvisioning(
-  input: { tenantId: string; hostname: string },
-  client: QueryClient = getPool(),
-): Promise<TenantDomain> {
-  const { rows } = await client.query<TenantDomainRow>(
-    `INSERT INTO tenant_domains (tenant_id, hostname, kind, status)
-     VALUES ($1, $2, 'website', 'active')
-     RETURNING *`,
-    [input.tenantId, input.hostname],
-  );
-  return mapTenantDomain(rows[0]);
-}
-
 function mapTenantDomain(row: TenantDomainRow): TenantDomain {
   return {
     id: row.id,
@@ -57,18 +38,35 @@ function mapTenantDomain(row: TenantDomainRow): TenantDomain {
   };
 }
 
-/** The tenant's public website hostname, if one has been provisioned. Used by the admin portal to show and link to the temple's own address. */
+/**
+ * The tenant's public address — which is its `primary` subdomain, the same one
+ * its admins already sign in on. Used by the admin portal and Super Admin to
+ * show and link to the temple's website.
+ *
+ * Reads only; the row itself is created once at provisioning and never
+ * rewritten here, so displaying the website address can never disturb a
+ * temple's existing admin hostname.
+ */
 export async function getWebsiteHostnameForTenant(
   tenantId: string,
   client: QueryClient = getPool(),
 ): Promise<string | null> {
   const { rows } = await client.query<{ hostname: string }>(
-    "SELECT hostname FROM tenant_domains WHERE tenant_id = $1 AND kind = 'website' AND status = 'active' LIMIT 1",
+    "SELECT hostname FROM tenant_domains WHERE tenant_id = $1 AND kind = 'primary' AND status = 'active' LIMIT 1",
     [tenantId],
   );
   return rows[0]?.hostname ?? null;
 }
 
+/**
+ * Resolves the tenant a sign-in request belongs to, from its hostname.
+ *
+ * Restricted to `kind = 'primary'` — a tenant's own subdomain is the only host
+ * that may establish an admin session. Rows of any other kind (such as the
+ * `website` rows left behind by the abandoned second-domain design) are inert
+ * here, so an obsolete hostname can never be used to reach a tenant's admin
+ * portal even if it were pointed back at this deployment.
+ */
 export async function getActiveTenantDomainByHostname(rawHostname: string): Promise<TenantDomain | null> {
   const hostname = normalizeTenantHostname(rawHostname);
   if (!hostname || isGenericTenantHostname(hostname)) return null;
@@ -76,7 +74,7 @@ export async function getActiveTenantDomainByHostname(rawHostname: string): Prom
   const { rows } = await getPool().query<TenantDomainRow>(
     `SELECT *
      FROM tenant_domains
-     WHERE hostname = $1 AND status = 'active'
+     WHERE hostname = $1 AND kind = 'primary' AND status = 'active'
      LIMIT 1`,
     [hostname],
   );

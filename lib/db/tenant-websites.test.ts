@@ -60,54 +60,47 @@ function websiteRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("resolveWebsiteByHostname — tenant isolation", () => {
-  it("derives the tenant from the hostname alone, and only from a website-kind, active domain of an active tenant", async () => {
+  it("derives the tenant from the hostname alone, and only from its active primary domain on an active tenant", async () => {
     query.mockResolvedValueOnce({ rows: [] });
 
-    await resolveWebsiteByHostname("sivatemple.templos.in");
+    await resolveWebsiteByHostname("sivatemple.trytempleos.com");
 
     const [sql, params] = query.mock.calls[0];
     const text = String(sql);
     expect(text).toContain("d.hostname = $1");
-    expect(text).toContain("d.kind = 'website'");
+    // The tenant's own subdomain — the same host its admin portal answers on.
+    expect(text).toContain("d.kind = 'primary'");
     expect(text).toContain("d.status = 'active'");
     expect(text).toContain("t.status = 'active'");
     // No tenant id can enter this query from anywhere but the hostname.
-    expect(params).toEqual(["sivatemple.templos.in"]);
+    expect(params).toEqual(["sivatemple.trytempleos.com"]);
     expect(params).toHaveLength(1);
-  });
-
-  it("refuses to resolve a tenant's ADMIN subdomain as a public website", async () => {
-    // The admin host is kind = 'primary'; the query's kind filter excludes it,
-    // so the database returns nothing for it.
-    query.mockResolvedValueOnce({ rows: [] });
-    expect(await resolveWebsiteByHostname("sivatemple.trytempleos.com")).toBeNull();
-    expect(String(query.mock.calls[0][0])).toContain("d.kind = 'website'");
   });
 
   it("normalises the hostname so casing or stray whitespace cannot bypass the match", async () => {
     query.mockResolvedValueOnce({ rows: [] });
-    await resolveWebsiteByHostname("  SivaTemple.Templos.IN ");
-    expect(query.mock.calls[0][1]).toEqual(["sivatemple.templos.in"]);
+    await resolveWebsiteByHostname("  SivaTemple.TryTempleOS.com ");
+    expect(query.mock.calls[0][1]).toEqual(["sivatemple.trytempleos.com"]);
   });
 
   it("returns null for an unknown host without disclosing why", async () => {
     query.mockResolvedValueOnce({ rows: [] });
-    expect(await resolveWebsiteByHostname("nope.templos.in")).toBeNull();
+    expect(await resolveWebsiteByHostname("nope.trytempleos.com")).toBeNull();
   });
 
   it("maps the temple and its website config together, so a page never has to look the tenant up again", async () => {
     query.mockResolvedValueOnce({ rows: [websiteRow()] });
 
-    const resolved = await resolveWebsiteByHostname("sivatemple.templos.in");
+    const resolved = await resolveWebsiteByHostname("sivatemple.trytempleos.com");
 
     expect(resolved?.tenant).toMatchObject({ id: "tenant-1", slug: "sivatemple", timezone: "Asia/Kolkata" });
     expect(resolved?.website).toMatchObject({ enabled: true, heroTemplate: "classic", languages: ["en", "te"] });
   });
 
-  it("still resolves a DISABLED website, so the caller can say 'unavailable' rather than 'not found'", async () => {
+  it("still resolves a DISABLED website, so the caller can say 'coming soon' rather than 'not found'", async () => {
     query.mockResolvedValueOnce({ rows: [websiteRow({ enabled: false })] });
 
-    const resolved = await resolveWebsiteByHostname("sivatemple.templos.in");
+    const resolved = await resolveWebsiteByHostname("sivatemple.trytempleos.com");
 
     expect(resolved).not.toBeNull();
     expect(resolved?.website.enabled).toBe(false);
@@ -115,8 +108,23 @@ describe("resolveWebsiteByHostname — tenant isolation", () => {
 
   it("drops any language value the app doesn't actually ship", async () => {
     query.mockResolvedValueOnce({ rows: [websiteRow({ languages: ["en", "fr", "te"] })] });
-    const resolved = await resolveWebsiteByHostname("sivatemple.templos.in");
+    const resolved = await resolveWebsiteByHostname("sivatemple.trytempleos.com");
     expect(resolved?.website.languages).toEqual(["en", "te"]);
+  });
+
+  it("resolves each temple strictly from its own hostname, so one site can never render another's data", async () => {
+    query.mockResolvedValueOnce({ rows: [websiteRow()] });
+    query.mockResolvedValueOnce({
+      rows: [websiteRow({ t_id: "tenant-2", t_slug: "lalitha", t_name: "Lalitha Temple", tenant_id: "tenant-2" })],
+    });
+
+    const siva = await resolveWebsiteByHostname("sivatemple.trytempleos.com");
+    const lalitha = await resolveWebsiteByHostname("lalitha.trytempleos.com");
+
+    expect(siva?.tenant.id).toBe("tenant-1");
+    expect(lalitha?.tenant.id).toBe("tenant-2");
+    expect(query.mock.calls[0][1]).toEqual(["sivatemple.trytempleos.com"]);
+    expect(query.mock.calls[1][1]).toEqual(["lalitha.trytempleos.com"]);
   });
 });
 

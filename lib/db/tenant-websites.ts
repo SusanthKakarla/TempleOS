@@ -64,13 +64,15 @@ export interface ResolvedTenantWebsite {
  * The single entry point that turns an incoming hostname into a temple.
  *
  * Security-critical: the tenant is derived ONLY from the request hostname,
- * matched against a `website`-kind row in tenant_domains. A tenant id from a
- * query string, header, or cookie is never consulted, so a visitor cannot
- * address another temple's content by manipulating the URL.
+ * matched against the tenant's `primary` row in tenant_domains. A tenant id
+ * from a query string, header, or cookie is never consulted, so a visitor
+ * cannot address another temple's content by manipulating the URL.
  *
- * `kind = 'website'` is part of the match on purpose: a tenant's ADMIN
- * subdomain must never resolve to a public site, and vice versa, even though
- * both live in the same table.
+ * `kind = 'primary'` is the tenant's own subdomain — the same hostname its
+ * admins sign in on. The public website and the admin portal deliberately
+ * share it, and are separated by path rather than by host (see middleware.ts).
+ * Obsolete `website`-kind rows from the abandoned second-domain design are not
+ * matched here, so they resolve to nothing and are inert.
  *
  * Returns null for an unknown host, an inactive domain, a suspended tenant,
  * or a temple with no website row at all — the caller renders "not found"
@@ -92,7 +94,7 @@ export async function resolveWebsiteByHostname(
      FROM tenant_domains d
      JOIN tenants t ON t.id = d.tenant_id
      JOIN tenant_websites w ON w.tenant_id = t.id
-     WHERE d.hostname = $1 AND d.kind = 'website' AND d.status = 'active' AND t.status = 'active'
+     WHERE d.hostname = $1 AND d.kind = 'primary' AND d.status = 'active' AND t.status = 'active'
      LIMIT 1`,
     [hostname.trim().toLowerCase()],
   );

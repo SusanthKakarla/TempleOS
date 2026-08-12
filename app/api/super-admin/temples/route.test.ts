@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-session";
 import { verifySessionToken } from "@/lib/auth/session";
@@ -203,7 +203,7 @@ describe("super admin temple provisioning route", () => {
         primaryAdminPhoneNumber: "+14155552672",
         activeMemberCount: 2,
         whatsappStatus: "linked" as const,
-        websiteHostname: "sv-temple.templos.in",
+        websiteHostname: "svtemple.trytempleos.com",
         websitePublished: false,
         lastUpdatedAt: "2026-07-18T08:00:00.000Z",
       },
@@ -217,7 +217,7 @@ describe("super admin temple provisioning route", () => {
         primaryAdminName: "Temple Admin",
         primaryAdminPhoneNumber: "+14155552672",
         activeMemberCount: 2,
-        websiteHostname: "sv-temple.templos.in",
+        websiteHostname: "svtemple.trytempleos.com",
         websitePublished: false,
         lastUpdatedAt: "2026-07-18T08:00:00.000Z",
       },

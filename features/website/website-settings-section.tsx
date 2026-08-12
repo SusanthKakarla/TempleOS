@@ -29,7 +29,11 @@ interface Props {
     logo: NotificationMedia | null;
     og: NotificationMedia | null;
   };
-  /** The temple's own public address, resolved server-side from its website domain row. */
+  /**
+   * The temple's own address, resolved server-side from its tenant domain row.
+   * It is the same hostname this dashboard is being viewed on: the public site
+   * answers at the root, the admin portal at /login and /dashboard.
+   */
   websiteUrl: string | null;
   /**
    * Where to save. Defaults to the tenant admin's own endpoint, which derives
@@ -110,7 +114,9 @@ export function WebsiteSettingsSection({ website, media, websiteUrl, endpoint = 
           <p className="text-sm text-muted-foreground">
             {websiteUrl ? (
               <>
-                Your temple&apos;s website address is <span className="font-medium">{websiteUrl}</span>.
+                Your temple&apos;s website address is <span className="font-medium">{websiteUrl}</span> — the same
+                address you sign in on. Devotees see the website; you and your team keep using{" "}
+                <span className="font-medium">/login</span> and <span className="font-medium">/dashboard</span>.
               </>
             ) : (
               "This temple doesn't have a website address yet. Contact TempleOS support."

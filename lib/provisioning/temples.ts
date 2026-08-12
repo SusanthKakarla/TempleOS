@@ -3,9 +3,8 @@ import { createAuditLogEntry } from "@/lib/db/audit-log";
 import { getPool } from "@/lib/db/pool";
 import { initializeTenantFeatures } from "@/lib/db/tenant-features";
 import { listActiveRoleCodesForSuperAdmin, V0_ROLE_DEFINITIONS } from "@/lib/db/role-definitions";
-import { createTenantDomainForSuperAdmin, createTenantWebsiteDomainForProvisioning } from "@/lib/db/tenant-domains";
+import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import { upsertTenantWebsite } from "@/lib/db/tenant-websites";
-import { buildWebsiteHostname } from "@/lib/site/website-host";
 import {
   assignTenantMembershipRolesForProvisioning,
   createTenantMembershipForProvisioning,
@@ -24,7 +23,13 @@ import { linkWhatsAppAccountForProvisioning } from "@/lib/db/whatsapp-accounts";
 import { linkPaymentAccountForProvisioning } from "@/lib/db/tenant-payment-accounts";
 import { getConstraintName, isUniqueViolation } from "@/lib/db/unique-violation";
 import { normalizePhoneNumber } from "@/lib/phone.mts";
-import { isGenericTenantHostname, normalizeTenantHostname } from "@/lib/tenant-domains";
+import {
+  isGenericTenantHostname,
+  isReservedTenantSubdomain,
+  normalizeTenantHostname,
+  PRODUCT_DOMAIN,
+  RESERVED_TENANT_SUBDOMAINS,
+} from "@/lib/tenant-domains";
 import {
   isRoleCode,
   type FeatureKey,
@@ -37,18 +42,14 @@ import {
 import type { SuperAdminTenantDetail } from "@/lib/db/tenants";
 import type { TenantMembershipWithRoles } from "@/lib/db/tenant-memberships";
 
-export const PRODUCT_DOMAIN = "trytempleos.com";
-export const RESERVED_TENANT_SUBDOMAINS = [
-  "www",
-  "admin",
-  "super-admin",
-  "api",
-  "localhost",
-  "trytempleos",
-  "trytempleos.com",
-] as const;
+/*
+ * Re-exported from lib/tenant-domains so provisioning and the edge middleware
+ * agree on one definition of "a tenant hostname" — the middleware cannot
+ * import this module (it pulls in the database), and two copies of the
+ * reserved list would eventually disagree.
+ */
+export { PRODUCT_DOMAIN, RESERVED_TENANT_SUBDOMAINS, isReservedTenantSubdomain };
 
-const RESERVED_TENANT_SUBDOMAIN_SET = new Set<string>(RESERVED_TENANT_SUBDOMAINS);
 const ACTIVE_V0_ROLE_CODES = new Set<RoleCode>(
   V0_ROLE_DEFINITIONS.filter((role) => role.active).map((role) => role.code),
 );
@@ -719,15 +720,15 @@ export async function provisionTemple(
 
     await initializeTenantFeatures(tenant.id, canonicalInput.featureKeys ?? null, client);
 
-    // Public website, provisioned in the same transaction as the tenant so a
-    // temple can never exist without its website record and subdomain
-    // mapping. Created DISABLED: the subdomain is reserved and resolvable
-    // immediately, but nothing is published under the temple's name until an
-    // admin has filled in its content and switched it on.
-    const websiteHostname = buildWebsiteHostname(tenant.slug);
-    const websiteDomain = websiteHostname
-      ? await createTenantWebsiteDomainForProvisioning({ tenantId: tenant.id, hostname: websiteHostname }, client)
-      : null;
+    // Public website config, provisioned in the same transaction as the tenant
+    // so a temple can never exist without one. No second domain row is created:
+    // the website is served from the tenant's own subdomain (`domain` above),
+    // which already exists and already resolves.
+    //
+    // Created DISABLED. The subdomain answers immediately — its admin portal is
+    // live at /login from the first second — but nothing is published under the
+    // temple's name at the root until an admin has filled in its content and
+    // switched the website on.
     const website = await upsertTenantWebsite(
       tenant.id,
       { enabled: false, displayName: tenant.name, languages: ["en"] },
@@ -752,7 +753,8 @@ export async function provisionTemple(
           paymentAccountId: paymentAccount?.id ?? null,
           featureKeys: canonicalInput.featureKeys ?? null,
           websiteId: website.id,
-          websiteHostname: websiteDomain?.hostname ?? null,
+          // Same hostname as the admin portal — the two surfaces share it.
+          websiteHostname: domain.hostname,
         },
       },
       client,
@@ -1017,10 +1019,6 @@ function normalizeSubdomain(value: string): string | null {
   const normalized = value.trim();
   if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(normalized)) return null;
   return normalized;
-}
-
-export function isReservedTenantSubdomain(value: string): boolean {
-  return RESERVED_TENANT_SUBDOMAIN_SET.has(value);
 }
 
 function isValidIanaTimeZone(value: string): boolean {

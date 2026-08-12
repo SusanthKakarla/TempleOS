@@ -40,9 +40,17 @@ describe("tenant domain repository", () => {
       updatedAt: "2026-07-18T00:00:00.000Z",
     });
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("WHERE hostname = $1 AND status = 'active'"),
+      expect.stringContaining("WHERE hostname = $1 AND kind = 'primary' AND status = 'active'"),
       ["svtemple.trytempleos.com"],
     );
+  });
+
+  it("only ever establishes a session from a tenant's own primary subdomain", async () => {
+    // Obsolete `website`-kind rows from the abandoned second-domain design must
+    // not be able to resolve a tenant for sign-in.
+    query.mockResolvedValueOnce({ rows: [] });
+    await getActiveTenantDomainByHostname("svtemple.templos.in");
+    expect(String(query.mock.calls[0][0])).toContain("kind = 'primary'");
   });
 
   it("returns null for inactive or missing hostnames", async () => {

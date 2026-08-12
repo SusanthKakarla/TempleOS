@@ -65,8 +65,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     return (
       <SiteShell fonts={`${heading.variable} ${body.variable}`}>
         <SiteUnavailable
-          title="This temple website is currently unavailable"
-          message={`${lookup.templeName} hasn't published its website yet. Please check back soon.`}
+          title="Website coming soon"
+          message={`${lookup.templeName}'s website is currently being prepared. Please check back soon.`}
         />
       </SiteShell>
     );

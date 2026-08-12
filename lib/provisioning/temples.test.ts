@@ -22,7 +22,6 @@ vi.mock("@/lib/db/tenants", () => ({
 
 vi.mock("@/lib/db/tenant-domains", () => ({
   createTenantDomainForSuperAdmin: vi.fn(),
-  createTenantWebsiteDomainForProvisioning: vi.fn(),
 }));
 vi.mock("@/lib/db/tenant-websites", () => ({
   upsertTenantWebsite: vi.fn(),
@@ -65,7 +64,7 @@ import {
   getTenantDetailForSuperAdmin,
   updateProvisionedTenantDetailsForSuperAdmin,
 } from "@/lib/db/tenants";
-import { createTenantDomainForSuperAdmin, createTenantWebsiteDomainForProvisioning } from "@/lib/db/tenant-domains";
+import { createTenantDomainForSuperAdmin } from "@/lib/db/tenant-domains";
 import { upsertTenantWebsite } from "@/lib/db/tenant-websites";
 import { findOrCreatePersonByPhoneForProvisioning } from "@/lib/db/persons";
 import {
@@ -248,12 +247,6 @@ beforeEach(() => {
     paymentAccount: null,
   });
   vi.mocked(createTenantDomainForSuperAdmin).mockResolvedValue(createdDomain);
-  vi.mocked(createTenantWebsiteDomainForProvisioning).mockResolvedValue({
-    ...createdDomain,
-    id: "domain-website",
-    kind: "website",
-    hostname: "sv-temple.templos.in",
-  });
   vi.mocked(upsertTenantWebsite).mockResolvedValue(createdWebsite);
   vi.mocked(findOrCreatePersonByPhoneForProvisioning).mockResolvedValue(createdPerson);
   vi.mocked(createTenantMembershipForProvisioning).mockResolvedValue(createdMembership);

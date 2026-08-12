@@ -4,26 +4,26 @@ import { WEBSITE_DOMAIN } from "../lib/site/website-host";
 import { getPool } from "../lib/db/pool";
 
 /**
- * Gives temples created before migration 041 the website row and subdomain
+ * Gives temples created before migration 041 the website configuration row
  * that provisioning now creates automatically.
  *
  *   npm run backfill:websites -- --dry-run   # report only, writes nothing
  *   npm run backfill:websites                # apply
  *
- * Safe to run repeatedly: existing website configuration is never edited and
- * admin hostnames are never touched.
+ * Safe to run repeatedly: existing website configuration is never edited, and
+ * tenant_domains is not touched at all — each temple's website is served from
+ * the subdomain it already has.
  */
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
 
-  console.log(`Website domain: ${WEBSITE_DOMAIN}`);
+  console.log(`Temple websites are served from *.${WEBSITE_DOMAIN} — the tenant's existing subdomain.`);
   console.log(dryRun ? "Mode: DRY RUN (no writes)\n" : "Mode: APPLY\n");
 
   const result = await backfillTenantWebsites({ dryRun });
 
   console.log(`Tenants scanned:   ${result.scanned}`);
   console.log(`Websites created:  ${result.websitesCreated}`);
-  console.log(`Domains created:   ${result.domainsCreated}`);
 
   if (result.skipped.length > 0) {
     console.log(`\nSkipped (${result.skipped.length}):`);

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { config, middleware } from "./middleware";
-import { WEBSITE_DOMAIN } from "@/lib/site/website-host";
+
+const TENANT_HOST = "sivatemple.trytempleos.com";
 
 function request(url: string, host?: string) {
   return new NextRequest(new URL(url), { headers: host ? { host } : undefined });
@@ -13,57 +14,84 @@ function rewriteTarget(response: Response): string | null {
   return destination ? new URL(destination).pathname : null;
 }
 
-describe("public website hostname routing", () => {
+describe("tenant hostname routing", () => {
   it.each([
     ["/", "/site"],
     ["/about", "/site/about"],
+    ["/timings", "/site/timings"],
+    ["/sevas", "/site/sevas"],
+    ["/events", "/site/events"],
     ["/events/abc-123", "/site/events/abc-123"],
-  ])("rewrites %s on a temple hostname to %s", (pathname, expected) => {
-    const response = middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}${pathname}`, `sivatemple.${WEBSITE_DOMAIN}`));
-    expect(rewriteTarget(response)).toBe(expected);
+    ["/gallery", "/site/gallery"],
+    ["/slokas", "/site/slokas"],
+    ["/contact", "/site/contact"],
+  ])("serves the public temple website at %s", (pathname, expected) => {
+    expect(rewriteTarget(middleware(request(`https://${TENANT_HOST}${pathname}`, TENANT_HOST)))).toBe(expected);
   });
 
-  it("leaves the admin/product hostname completely untouched — the Tenant Admin Portal's routing is unchanged", () => {
-    for (const pathname of ["/", "/login", "/dashboard", "/dashboard/devotees", "/donate/x/y/z"]) {
-      const response = middleware(request(`https://sivatemple.trytempleos.com${pathname}`, "sivatemple.trytempleos.com"));
-      expect(rewriteTarget(response)).toBeNull();
+  /*
+   * The single most important guarantee in this file: the Tenant Admin Portal
+   * shares this hostname with the public site, and none of its routes may be
+   * intercepted or redirected by the website layer.
+   */
+  it("never touches the admin portal, which lives on the same hostname", () => {
+    for (const pathname of [
+      "/login",
+      "/dashboard",
+      "/dashboard/devotees",
+      "/dashboard/devotees/family/new",
+      "/dashboard/settings",
+      "/dashboard/settings/payments",
+      "/api/auth/session",
+      "/api/website",
+      "/api/devotees/import/commit",
+      "/donate/sivatemple/deepam/token",
+      "/super-admin/temples",
+      "/access-denied",
+      "/whatsapp-onboarding",
+    ]) {
+      expect(rewriteTarget(middleware(request(`https://${TENANT_HOST}${pathname}`, TENANT_HOST)))).toBeNull();
+    }
+  });
+
+  it("leaves the platform's marketing host completely alone, so trytempleos.com keeps its landing page", () => {
+    for (const pathname of ["/", "/about", "/login", "/dashboard", "/privacy-policy"]) {
+      expect(rewriteTarget(middleware(request(`https://trytempleos.com${pathname}`, "trytempleos.com")))).toBeNull();
+      expect(
+        rewriteTarget(middleware(request(`https://www.trytempleos.com${pathname}`, "www.trytempleos.com"))),
+      ).toBeNull();
     }
   });
 
   it("leaves sitemap.xml and robots.txt to the root handlers, which resolve the temple themselves", () => {
     for (const pathname of ["/sitemap.xml", "/robots.txt"]) {
-      const response = middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}${pathname}`, `sivatemple.${WEBSITE_DOMAIN}`));
-      expect(rewriteTarget(response)).toBeNull();
+      expect(rewriteTarget(middleware(request(`https://${TENANT_HOST}${pathname}`, TENANT_HOST)))).toBeNull();
     }
   });
 
-  it("never rewrites API or already-rewritten paths, even on a temple hostname", () => {
-    for (const pathname of ["/api/website", "/site/about"]) {
-      const response = middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}${pathname}`, `sivatemple.${WEBSITE_DOMAIN}`));
-      expect(rewriteTarget(response)).toBeNull();
+  it("does not re-rewrite the /site tree it rewrites into", () => {
+    expect(rewriteTarget(middleware(request(`https://${TENANT_HOST}/site/about`, TENANT_HOST)))).toBeNull();
+  });
+
+  it("ignores lookalike and reserved hosts, so only real temple subdomains are served a website", () => {
+    for (const host of [
+      "evil-trytempleos.com",
+      "sivatemple.trytempleos.com.attacker.com",
+      "a.sivatemple.trytempleos.com",
+      "api.trytempleos.com",
+      "admin.trytempleos.com",
+    ]) {
+      expect(rewriteTarget(middleware(request(`https://${host}/about`, host)))).toBeNull();
     }
   });
 
-  it("rewrites a client-side navigation's data request the same way as the page itself", () => {
-    // Next resolves /_next/data/<buildId>/about.json to nextUrl.pathname
-    // "/about", so this is a page request and must follow the page's rewrite —
-    // otherwise a link click would fetch the marketing route's data instead.
+  it("keys the rewrite on the forwarded host, which is what the proxy actually presents", () => {
     const response = middleware(
-      request(`https://sivatemple.${WEBSITE_DOMAIN}/_next/data/build123/about.json`, `sivatemple.${WEBSITE_DOMAIN}`),
+      new NextRequest(new URL("https://internal.railway.app/about"), {
+        headers: { "x-forwarded-host": "ramatemple.trytempleos.com", host: "internal.railway.app" },
+      }),
     );
-    expect(rewriteTarget(response)).toContain("/site");
-  });
-
-  it("ignores the bare website domain and lookalike hosts, so only real temple subdomains are rewritten", () => {
-    expect(rewriteTarget(middleware(request(`https://${WEBSITE_DOMAIN}/about`, WEBSITE_DOMAIN)))).toBeNull();
-    expect(
-      rewriteTarget(middleware(request(`https://evil-${WEBSITE_DOMAIN}/about`, `evil-${WEBSITE_DOMAIN}`))),
-    ).toBeNull();
-    expect(
-      rewriteTarget(
-        middleware(request(`https://sivatemple.${WEBSITE_DOMAIN}.attacker.com/about`, `sivatemple.${WEBSITE_DOMAIN}.attacker.com`)),
-      ),
-    ).toBeNull();
+    expect(rewriteTarget(response)).toBe("/site/about");
   });
 
   /*
@@ -87,14 +115,5 @@ describe("public website hostname routing", () => {
         expect(matcher.test(pathname)).toBe(true);
       }
     });
-  });
-
-  it("keys the rewrite on the forwarded host, which is what the proxy actually presents", () => {
-    const response = middleware(
-      new NextRequest(new URL("https://internal.railway.app/about"), {
-        headers: { "x-forwarded-host": `ramatemple.${WEBSITE_DOMAIN}`, host: "internal.railway.app" },
-      }),
-    );
-    expect(rewriteTarget(response)).toBe("/site/about");
   });
 });
