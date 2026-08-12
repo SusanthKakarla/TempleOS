@@ -1,9 +1,11 @@
-import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { SITE_THEMES } from "@/lib/site/site-theme";
+import { ADMIN_LOGIN_HREF, SITE_NAV_ITEMS, SITE_SECTIONS } from "@/lib/site/site-anchors";
 import type { SiteAnnouncement, SiteSocialLink } from "@/lib/site/site-data";
 import type { TempleSiteContent } from "@/lib/site/temple-content";
 import { formatDate } from "@/lib/date";
 import { SiteNav } from "./site-nav";
+import { TempleLogo } from "./temple-logo";
 
 /**
  * Header, footer and announcement ticker for a temple's public site.
@@ -20,6 +22,19 @@ export interface SiteChromeProps {
   announcements: SiteAnnouncement[];
 }
 
+/**
+ * The temple's own upcoming special days, as a continuously scrolling ribbon.
+ *
+ * The list is rendered twice and the track translated by exactly -50%, which
+ * is what makes the loop seamless: at the moment the first copy has fully left
+ * the viewport the second sits precisely where the first began, so the reset
+ * is invisible. The duplicate is `aria-hidden` so a screen reader hears each
+ * announcement once.
+ *
+ * It pauses on hover and on keyboard focus, and the whole animation is
+ * disabled under reduced motion — where it becomes a plain horizontally
+ * scrollable row that the devotee moves themselves.
+ */
 export function SiteAnnouncementTicker({
   announcements,
   content,
@@ -30,26 +45,30 @@ export function SiteAnnouncementTicker({
   if (announcements.length === 0) return null;
   const theme = SITE_THEMES[content.hero.theme];
 
+  const items = announcements.map((item) => (
+    <span key={`${item.date}-${item.occasion}`} className="flex shrink-0 items-center gap-2 px-5 whitespace-nowrap">
+      <span className="size-1 rounded-full" style={{ backgroundColor: theme.accentSoft }} aria-hidden="true" />
+      <span className="font-medium">{item.occasion}</span>
+      <span className="text-white/55">{formatDate(item.date, "en")}</span>
+      {item.isClosed && <span className="text-white/55">· Temple closed</span>}
+    </span>
+  ));
+
   return (
-    <div className="overflow-hidden text-white" style={{ backgroundColor: theme.base }} role="status" aria-live="polite">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 py-2 text-xs md:px-8">
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
-          style={{ backgroundColor: theme.accent }}
-        >
-          Upcoming
-        </span>
-        {/* A plain scrollable row rather than a marquee: text that slides past
-            is hard to read and impossible to pause on a phone. */}
-        <ul className="no-scrollbar flex min-w-0 gap-5 overflow-x-auto">
-          {announcements.map((item) => (
-            <li key={`${item.date}-${item.occasion}`} className="shrink-0 whitespace-nowrap text-white/90">
-              <span className="font-medium">{item.occasion}</span>
-              <span className="text-white/60"> · {formatDate(item.date, "en")}</span>
-              {item.isClosed && <span className="text-white/60"> · Temple closed</span>}
-            </li>
-          ))}
-        </ul>
+    <div
+      className="site-marquee group relative overflow-hidden text-xs text-white/90"
+      style={{ backgroundColor: theme.base }}
+      role="region"
+      aria-label="Temple announcements"
+    >
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-black/25 to-transparent" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-black/25 to-transparent" aria-hidden="true" />
+
+      <div className="site-marquee-track flex w-max items-center py-2.5">
+        <div className="flex items-center">{items}</div>
+        <div className="flex items-center" aria-hidden="true">
+          {items}
+        </div>
       </div>
     </div>
   );
@@ -59,27 +78,29 @@ export function SiteHeader({ content }: { content: TempleSiteContent }) {
   const theme = SITE_THEMES[content.hero.theme];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 py-3 md:px-8">
-        <Link href="/" className="flex min-w-0 items-center gap-3 focus-visible:ring-2 focus-visible:outline-none">
-          {content.hero.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL
-            <img src={content.hero.logoUrl} alt="" className="size-10 shrink-0 rounded-lg object-contain" />
-          ) : (
-            <span
-              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg font-semibold text-white"
-              style={{ backgroundColor: theme.accent }}
-              aria-hidden="true"
-            >
-              {content.name.trim().charAt(0).toUpperCase()}
+    <header className="sticky top-0 z-40 border-b border-black/[0.06] bg-white/85 backdrop-blur-xl">
+      <div className="relative mx-auto flex max-w-6xl items-center gap-3 px-5 py-2.5 md:px-8">
+        <a
+          href={`#${SITE_SECTIONS.home}`}
+          className="flex min-w-0 items-center gap-3 rounded-full focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <TempleLogo content={content} accent={theme.accent} size="sm" />
+          <span className="flex min-w-0 flex-col">
+            <span className="min-w-0 truncate font-heading text-[0.95rem] leading-tight font-semibold" style={{ color: theme.ink }}>
+              {content.name}
             </span>
-          )}
-          <span className="min-w-0 truncate font-heading text-base font-semibold" style={{ color: theme.ink }}>
-            {content.name}
+            {content.deityName && (
+              <span
+                className="hidden truncate text-[0.62rem] tracking-[0.18em] uppercase sm:block"
+                style={{ color: theme.inkMuted }}
+              >
+                {content.deityName}
+              </span>
+            )}
           </span>
-        </Link>
+        </a>
 
-        <SiteNav accent={theme.accent} />
+        <SiteNav accent={theme.accent} ink={theme.ink} />
       </div>
     </header>
   );
@@ -89,55 +110,98 @@ export function SiteFooter({ content, socialLinks }: { content: TempleSiteConten
   const theme = SITE_THEMES[content.hero.theme];
 
   return (
-    <footer className="mt-16 text-white" style={{ backgroundColor: theme.base }}>
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-3 md:px-8">
+    <footer className="relative mt-24 overflow-hidden text-white" style={{ backgroundColor: theme.base }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: `linear-gradient(90deg, transparent, ${theme.accentSoft}, transparent)` }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -top-24 left-1/2 size-[28rem] -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: theme.accent, opacity: 0.16 }}
+        aria-hidden="true"
+      />
+
+      <div className="relative mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr_1fr] md:px-8">
         <div>
-          <p className="font-heading text-lg">{content.name}</p>
-          {content.deityName && <p className="mt-1 text-sm text-white/70">{content.deityName}</p>}
+          <TempleLogo content={content} accent={theme.accent} size="md" />
+          <p className="mt-4 font-heading text-xl">{content.name}</p>
+          {content.deityName && (
+            <p className="mt-1 text-xs tracking-[0.2em] uppercase" style={{ color: theme.accentSoft }}>
+              {content.deityName}
+            </p>
+          )}
+          {content.shortDescription && (
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">{content.shortDescription}</p>
+          )}
         </div>
 
-        {(content.address || content.phone || content.email) && (
-          <div className="space-y-1 text-sm text-white/80">
-            {content.address && <p>{content.address}</p>}
+        <nav aria-label="Temple website footer">
+          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">Explore</p>
+          <ul className="mt-4 space-y-2.5 text-sm">
+            {SITE_NAV_ITEMS.map((item) => (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  className="text-white/75 transition-colors hover:text-white focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div>
+          <p className="text-xs font-medium tracking-wide text-white/50 uppercase">Reach the temple</p>
+          <div className="mt-4 space-y-2.5 text-sm text-white/75">
+            {content.address && <p className="whitespace-pre-line">{content.address}</p>}
             {content.phone && (
               <p>
-                <a className="hover:underline" href={`tel:${content.phone}`}>
+                <a className="hover:text-white" href={`tel:${content.phone}`}>
                   {content.phone}
                 </a>
               </p>
             )}
             {content.email && (
               <p>
-                <a className="hover:underline" href={`mailto:${content.email}`}>
+                <a className="hover:text-white" href={`mailto:${content.email}`}>
                   {content.email}
                 </a>
               </p>
             )}
           </div>
-        )}
 
-        {socialLinks.length > 0 && (
-          <div>
-            <p className="text-xs font-medium tracking-wide text-white/60 uppercase">Follow the temple</p>
-            <ul className="mt-3 flex flex-wrap gap-2">
+          {socialLinks.length > 0 && (
+            <ul className="mt-5 flex flex-wrap gap-2">
               {socialLinks.map((link) => (
                 <li key={link.platform}>
                   <a
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full border border-white/25 px-3 py-1.5 text-xs capitalize transition-colors hover:bg-white/10"
+                    className="inline-block rounded-full border border-white/20 px-3 py-1.5 text-xs capitalize transition-colors hover:bg-white/10"
                   >
                     {link.platform}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          )}
+
+          <a
+            href={ADMIN_LOGIN_HREF}
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <ShieldCheck className="size-3.5" aria-hidden="true" />
+            Admin Login
+          </a>
+        </div>
       </div>
 
-      <div className="border-t border-white/10 py-4 text-center text-xs text-white/50">Powered by TempleOS</div>
+      <div className="relative border-t border-white/10 py-4 text-center text-xs text-white/45">
+        © {new Date().getFullYear()} {content.name} · Powered by TempleOS
+      </div>
     </footer>
   );
 }

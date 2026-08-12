@@ -294,6 +294,41 @@ html[lang="te"] {
     animation-iteration-count: infinite;
     opacity: 0;
   }
+  .site-ray {
+    animation-name: site-ray;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    filter: blur(14px);
+    opacity: 0;
+  }
+  .site-spin {
+    animation: site-spin 90s linear infinite;
+  }
+  .site-nudge {
+    animation: site-nudge 2.4s ease-in-out infinite;
+  }
+  /* Cards and tiles lift slightly toward the reader on hover. Transform-only,
+     so it composites on the GPU and never reflows the grid around it. */
+  .site-lift {
+    transition: transform 300ms ease, box-shadow 300ms ease;
+  }
+  .site-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 48px -28px rgb(0 0 0 / 0.45);
+  }
+
+  /* The announcement ribbon. The track holds the list twice and slides exactly
+     -50%, so the second copy lands where the first began and the loop has no
+     visible seam. Paused while a pointer is over it or anything inside it has
+     keyboard focus, so an announcement can always be read. */
+  .site-marquee-track {
+    animation: site-marquee 38s linear infinite;
+  }
+  .site-marquee:hover .site-marquee-track,
+  .site-marquee:focus-within .site-marquee-track {
+    animation-play-state: paused;
+  }
+
   @keyframes site-float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
@@ -307,9 +342,39 @@ html[lang="te"] {
     12% { opacity: 0.85; }
     100% { transform: translateY(-85vh) scale(1.1); opacity: 0; }
   }
+  @keyframes site-ray {
+    0%, 100% { opacity: 0.25; transform: translateY(-4%) scaleY(0.96); }
+    50% { opacity: 0.65; transform: translateY(0) scaleY(1); }
+  }
+  @keyframes site-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes site-nudge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+  @keyframes site-marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .site-float, .site-sheen, .site-ember { animation: none; }
+    .site-float, .site-sheen, .site-ember, .site-ray, .site-spin, .site-nudge, .site-marquee-track {
+      animation: none;
+    }
     .site-sheen { display: none; }
+    .site-lift { transition: none; }
+    .site-lift:hover { transform: none; }
+    /* Without the animation the ribbon can overflow its container, so it
+       becomes a row the devotee scrolls themselves. */
+    .site-marquee-track { width: 100%; overflow-x: auto; }
+  }
+
+  /* The one-page site's sections are programmatic scroll targets and take
+     focus on arrival; the ring would otherwise draw a box around a whole
+     screenful of page. Keyboard focus on the elements inside is unaffected. */
+  .site-section:focus {
+    outline: none;
   }
 
   .no-scrollbar {

@@ -1,35 +1,42 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Mandala } from "./hero-backdrop";
 
 /**
  * The temple's own deity portrait, presented as a physical framed object in
- * 3D space. Ported from the reference site's DeityFrame.
+ * 3D space.
  *
- * CSS 3D only — no WebGL, no Three.js. The frame tilts toward the pointer and
- * its layers separate slightly in Z, so the movement reads as depth rather
- * than as a flat image being skewed. Tilt is capped at 9°, past which the
- * perspective distortion looks like a glitch.
+ * CSS 3D only — no WebGL, no Three.js. The composition is a stack of layers at
+ * different Z depths inside one shared perspective: halo and mandala pushed
+ * far behind, the framed portrait at zero, the sheen and corner lamps in
+ * front. Tilting the whole stack toward the pointer makes those offsets
+ * separate, which is what reads as depth; a single flat image given the same
+ * rotation just looks skewed. Tilt is capped at 9°, past which the perspective
+ * distortion looks like a glitch.
  *
- * Pointer tilt is skipped entirely for touch devices (where there is no
- * hover) and under `prefers-reduced-motion`. The image itself is never
- * cropped, recoloured or generated — it is the temple's uploaded photograph,
- * shown as supplied.
+ * Pointer tilt is skipped entirely for touch devices (where there is no hover)
+ * and under `prefers-reduced-motion`. The image itself is never cropped,
+ * recoloured or generated — it is the temple's uploaded photograph, shown as
+ * supplied.
  */
 export function DeityFrame({
   src,
   alt,
   accent,
+  accentSoft,
   treatment = "framed",
 }: {
   src: string;
   alt: string;
   accent: string;
+  accentSoft?: string;
   treatment?: "framed" | "bare" | "medallion";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [interactive, setInteractive] = useState(false);
+  const halo = accentSoft ?? accent;
 
   useEffect(() => {
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -73,9 +80,9 @@ export function DeityFrame({
     };
   }, [interactive]);
 
-  const rounded = treatment === "medallion" ? "rounded-full" : "rounded-[26px]";
-  const innerRounded = treatment === "medallion" ? "rounded-full" : "rounded-[23px]";
-  const imageRounded = treatment === "medallion" ? "rounded-full" : "rounded-[17px]";
+  const rounded = treatment === "medallion" ? "rounded-full" : "rounded-[28px]";
+  const innerRounded = treatment === "medallion" ? "rounded-full" : "rounded-[25px]";
+  const imageRounded = treatment === "medallion" ? "rounded-full" : "rounded-[19px]";
 
   return (
     <div ref={containerRef} className="[perspective:1400px]">
@@ -83,22 +90,42 @@ export function DeityFrame({
         className="site-float relative transition-transform duration-300 ease-out [transform-style:preserve-3d]"
         style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}
       >
-        {/* Warm halo, pushed behind the frame in Z so it separates on tilt. */}
+        {/* Mandala ring, furthest back, so it swings widest on tilt. */}
+        <Mandala
+          color={halo}
+          className="absolute top-1/2 left-1/2 size-[150%] -translate-x-1/2 -translate-y-1/2 [transform:translate(-50%,-50%)_translateZ(-140px)]"
+        />
+
+        {/* Warm sanctum halo. */}
         <div
           className="pointer-events-none absolute -inset-10 rounded-full blur-3xl"
-          style={{ background: accent, opacity: 0.25, transform: "translateZ(-90px)" }}
+          style={{ background: halo, opacity: 0.3, transform: "translateZ(-90px)" }}
           aria-hidden="true"
         />
 
         {treatment === "bare" ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL
-          <img src={src} alt={alt} className="relative h-auto w-full rounded-[26px] object-cover shadow-2xl" />
+          <div className="relative" style={{ transform: "translateZ(10px)" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL */}
+            <img
+              src={src}
+              alt={alt}
+              className="relative h-auto w-full rounded-[28px] object-cover shadow-[0_50px_90px_-35px_rgba(0,0,0,0.8)]"
+            />
+            <div
+              className="site-sheen pointer-events-none absolute inset-0 rounded-[28px]"
+              style={{ transform: "translateZ(30px)" }}
+              aria-hidden="true"
+            />
+          </div>
         ) : (
           <div
-            className={`relative overflow-hidden ${rounded} p-[3px] shadow-[0_40px_80px_-30px_rgba(46,12,19,0.85)]`}
-            style={{ background: `linear-gradient(135deg, ${accent}, #F3DFA2, ${accent})` }}
+            className={`relative overflow-hidden ${rounded} p-[3px] shadow-[0_50px_90px_-32px_rgba(0,0,0,0.85)]`}
+            style={{
+              background: `linear-gradient(135deg, ${accent}, #F3DFA2, ${accent})`,
+              transform: "translateZ(10px)",
+            }}
           >
-            <div className={`relative overflow-hidden ${innerRounded} bg-[#2E0C13] p-2`}>
+            <div className={`relative overflow-hidden ${innerRounded} bg-black/70 p-2`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- external ImageKit URL, not a bundled asset */}
               <img src={src} alt={alt} className={`h-auto w-full ${imageRounded} object-cover`} />
               <div
@@ -106,9 +133,15 @@ export function DeityFrame({
                 style={{ transform: "translateZ(40px)" }}
                 aria-hidden="true"
               />
+              {/* Floor glow, as if the portrait were lit from a lamp below. */}
+              <div
+                className={`pointer-events-none absolute inset-x-0 bottom-0 h-1/3 ${imageRounded}`}
+                style={{ background: `linear-gradient(to top, ${accent}44, transparent)` }}
+                aria-hidden="true"
+              />
             </div>
             <div
-              className={`pointer-events-none absolute inset-[3px] ${innerRounded} ring-1 ring-inset ring-[#2E0C13]/40`}
+              className={`pointer-events-none absolute inset-[3px] ${innerRounded} ring-1 ring-inset ring-black/40`}
               aria-hidden="true"
             />
           </div>
@@ -119,7 +152,7 @@ export function DeityFrame({
             <span
               key={position}
               className={`pointer-events-none absolute ${position} size-2.5 rounded-full bg-[#F3DFA2]`}
-              style={{ transform: "translateZ(26px)", boxShadow: "0 0 10px rgba(243,223,162,0.9)" }}
+              style={{ transform: "translateZ(46px)", boxShadow: "0 0 12px rgba(243,223,162,0.95)" }}
               aria-hidden="true"
             />
           ))}
