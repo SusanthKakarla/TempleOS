@@ -3,7 +3,6 @@ import type { TempleSiteContent } from "@/lib/site/temple-content";
 const SIZES = {
   sm: "size-10",
   md: "size-12 md:size-14",
-  lg: "size-20 md:size-24",
 } as const;
 
 /**

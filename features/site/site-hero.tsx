@@ -5,7 +5,6 @@ import { SITE_SECTIONS } from "@/lib/site/site-anchors";
 import type { TempleSiteContent } from "@/lib/site/temple-content";
 import { DeityFrame } from "./deity-frame";
 import { Embers, HeroParallax, LightRays, Mandala, TempleSilhouette } from "./hero-backdrop";
-import { TempleLogo } from "./temple-logo";
 
 const HEIGHTS = {
   tall: "min-h-[max(40rem,92svh)]",
@@ -99,17 +98,20 @@ export async function SiteHero({ content }: { content: TempleSiteContent }) {
           }
         >
           <div className={centered ? "" : "order-2 text-center lg:order-1 lg:text-left"}>
-            <div className={`flex ${centered ? "justify-center" : "justify-center lg:justify-start"}`}>
-              <TempleLogo content={content} accent={theme.accent} size="lg" />
-            </div>
-
+            {/* The hero opens on the deity label. No logo mark here: the
+                temple's identity is carried by the deity portrait beside this
+                copy and by the name directly under the heading, and a third
+                repetition of it above the fold pushed the heading down without
+                adding anything. It is still shown in the footer. */}
             {content.deityName && (
-              <p className="mt-6 text-[0.7rem] font-medium tracking-[0.34em] uppercase" style={{ color: theme.accentSoft }}>
+              <p className="text-[0.7rem] font-medium tracking-[0.34em] uppercase" style={{ color: theme.accentSoft }}>
                 {content.deityName}
               </p>
             )}
 
-            <h1 className="mt-3 font-heading text-[clamp(2rem,7vw,3.75rem)] leading-[1.1] text-white">
+            {/* `first:mt-0` so the heading sits flush at the top of the column
+                for a temple that has set no deity label. */}
+            <h1 className="mt-3 font-heading text-[clamp(2rem,7vw,3.75rem)] leading-[1.1] text-white first:mt-0">
               {content.hero.title}
             </h1>
 
